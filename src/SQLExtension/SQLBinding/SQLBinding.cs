@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL
     /// specified in SQLQuery <see cref="SQLBindingAttribute"/>
     /// </summary>
     [Extension("SQLBinding")]
-    public class SQLBinding : IExtensionConfigProvider
+    internal class SQLBinding : IExtensionConfigProvider
     {
         public void Initialize(ExtensionConfigContext context)
         {
