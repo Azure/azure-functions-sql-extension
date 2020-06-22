@@ -1,7 +1,7 @@
 ﻿using Microsoft.Azure.WebJobs;
 using System;
 
-namespace SQLBinding
+namespace Microsoft.Azure.WebJobs.Extensions.SQL
 {
     public static class SQLBindingExtension
     {
