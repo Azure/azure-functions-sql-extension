@@ -5,10 +5,10 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Azure.WebJobs.Extensions.SQL;
 
-namespace SQLBindingFunction
+namespace SQLFunction
 {
-    
-    class SQLBindingFunction
+
+    class SQLFunction
     {
 
         [FunctionName("GetProducts")]

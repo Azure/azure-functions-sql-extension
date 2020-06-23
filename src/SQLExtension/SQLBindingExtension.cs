@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            builder.AddExtension<SQLBinding>();
+            builder.AddExtension<SQLBindingConfigProvider>();
             return builder;
         }
     }
