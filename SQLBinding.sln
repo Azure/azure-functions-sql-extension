@@ -7,6 +7,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SQLFunction", "src\SQLFunct
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SQLBindingExtension", "src\SQLExtension\SQLBindingExtension.csproj", "{4453B407-2CA3-4011-BDE5-247FCE5C1974}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SQLExtension.tests", "test\SQLExtension.tests\SQLExtension.tests.csproj", "{A5B55530-71C8-4A9A-92AD-1D33A5E80FC1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{21CDC01C-247B-46B0-A8F5-9D35686C628B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{F7E99EB5-47D3-4B50-A6AA-D8D5508A121A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,9 +27,18 @@ Global
 		{4453B407-2CA3-4011-BDE5-247FCE5C1974}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4453B407-2CA3-4011-BDE5-247FCE5C1974}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4453B407-2CA3-4011-BDE5-247FCE5C1974}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5B55530-71C8-4A9A-92AD-1D33A5E80FC1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5B55530-71C8-4A9A-92AD-1D33A5E80FC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5B55530-71C8-4A9A-92AD-1D33A5E80FC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5B55530-71C8-4A9A-92AD-1D33A5E80FC1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B2E0EFB9-BEDB-48F7-BD5A-0E1010333475} = {21CDC01C-247B-46B0-A8F5-9D35686C628B}
+		{4453B407-2CA3-4011-BDE5-247FCE5C1974} = {21CDC01C-247B-46B0-A8F5-9D35686C628B}
+		{A5B55530-71C8-4A9A-92AD-1D33A5E80FC1} = {F7E99EB5-47D3-4B50-A6AA-D8D5508A121A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {49902AA5-150F-4567-B562-4AA8549B2CF4}
