@@ -9,7 +9,7 @@ using System.Text;
 
 namespace SQLBindingExtension
 {
-    internal class SQLGenericsConverter<T> : IConverter<SQLBindingAttribute, IEnumerable<T>>
+    public class SQLGenericsConverter<T> : IConverter<SQLBindingAttribute, IEnumerable<T>>
     {
         private SqlConnectionWrapper _connection;
         public SQLGenericsConverter(SqlConnectionWrapper connection)
@@ -37,7 +37,7 @@ namespace SQLBindingExtension
         /// Thrown if an exception occurs when opening the SQL connection or when running the query.
         /// </exception>
         /// <returns></returns>
-        public string BuildItemFromAttribute(SQLBindingAttribute arg)
+        public virtual string BuildItemFromAttribute(SQLBindingAttribute arg)
         {
             BuildConnection(arg);
             string result = string.Empty;
