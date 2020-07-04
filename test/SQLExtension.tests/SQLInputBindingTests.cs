@@ -1,15 +1,10 @@
 using Moq;
 using System;
 using Xunit;
-using Microsoft.Azure.WebJobs.Extensions.SQL;
-using System.Data.SqlClient;
 using SQLBindingExtension;
-using System.Collections;
 using System.Collections.Generic;
-using System.Data;
-using System.Runtime.InteropServices;
-using Microsoft.Extensions.Azure;
 using System.Linq;
+using static SQLBindingExtension.SQLConverters;
 
 namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
 {
@@ -31,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
         public void TestNullContext()
         {
             var connection = new SqlConnectionWrapper();
-            var configProvider = new SQLBindingConfigProvider(connection);
+            var configProvider = new SQLBindingConfigProvider();
             Assert.Throws<ArgumentNullException>(() => configProvider.Initialize(null));
         }
 
