@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Data.SqlClient;
 using Microsoft.Azure.WebJobs.Description;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Config;
-using SQLBindingExtension;
+using static SQLBindingExtension.SQLConverters;
 
 namespace Microsoft.Azure.WebJobs.Extensions.SQL
 {
@@ -13,11 +14,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL
     [Extension("SQLBinding")]
     public class SQLBindingConfigProvider : IExtensionConfigProvider
     {
-        private SqlConnectionWrapper _connection;
-        public SQLBindingConfigProvider(SqlConnectionWrapper connection)
-        {
-            _connection = connection;
-        }
         public void Initialize(ExtensionConfigContext context)
         {
             if (context == null)
@@ -25,7 +21,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL
                 throw new ArgumentNullException("context is null");
             }
             var rule = context.AddBindingRule<SQLBindingAttribute>();
-            rule.BindToInput<OpenType>(typeof(SQLGenericsConverter<>), _connection);
+            var converter = new SQLConverter();
+            rule.BindToInput<SqlCommand>(converter);
+            rule.BindToInput<OpenType>(typeof(SQLGenericsConverter<>));
         }
     }
 }

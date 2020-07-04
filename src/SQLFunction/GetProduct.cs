@@ -12,13 +12,13 @@ namespace SQLFunction
 
     class GetProduct
     {
-
-        [FunctionName("GetProduct")]
+        
+        [FunctionName("GetProducts")]
         public static IActionResult Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "products/{id}")]
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "products/{cost}")]
             HttpRequest req,
             ILogger logger,
-            [SQLBinding(SQLQuery = "select * from dbo.Products",
+            [SQLBinding(SQLQuery = "select * from dbo.Products where cost = {cost}",
                 Authentication = "%SQLServerAuthentication%",
                 ConnectionString = "Data Source=sotevo.database.windows.net;Database=TestDB;")]
             IEnumerable<Product> products)
@@ -30,6 +30,41 @@ namespace SQLFunction
             }
             return (ActionResult)new OkObjectResult(result);
         }
+
+        /**
+        [FunctionName("GetProduct")]
+        public static IActionResult Run(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "products/{id}")]
+            HttpRequest req,
+            ILogger logger,
+            [SQLBinding(SQLQuery = "select * from dbo.Products",
+                Authentication = "%SQLServerAuthentication%",
+                ConnectionString = "Data Source=sotevo.database.windows.net;Database=TestDB;")]
+            SqlCommand command)
+        {
+            string result = string.Empty;
+            using (SqlConnection connection = command.Connection)
+            {
+                try
+                {
+                    connection.Open();
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            result += reader[0];
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    throw new InvalidOperationException("Exception in executing query: " + e.Message);
+                }
+
+            }
+            return (ActionResult)new OkObjectResult(result);
+        } **/
+
 
         public class Product
         {
