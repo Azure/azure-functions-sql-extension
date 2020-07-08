@@ -24,6 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL
             var converter = new SQLConverter();
             rule.BindToInput<SqlCommand>(converter);
             rule.BindToInput<OpenType>(typeof(SQLGenericsConverter<>));
+            rule.BindToCollector<OpenType>(typeof(SQLGenericsConverter<>));
         }
     }
 }

@@ -17,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
         {
             var arg = new SQLBindingAttribute();
             var connection = new SqlConnectionWrapper();
-            var converter = new SQLGenericsConverter<string>(connection);
+            var converter = new SQLConverters<string>(connection);
             Assert.Throws<ArgumentNullException>(() => converter.BuildItemFromAttribute(arg));
         }
 
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
             var arg = new SQLBindingAttribute();
             arg.ConnectionString = connectionString;
             var connection = new SqlConnectionWrapper();
-            var converter = new SQLGenericsConverter<string>(connection);
+            var converter = new SQLConverters<string>(connection);
 
             // User ID identified incorrectly
             arg.Authentication = "UserID=test;Password=test;";
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
             var arg = new SQLBindingAttribute();
             arg.ConnectionString = connectionString;
             var connection = new SqlConnectionWrapper();
-            var converter = new SQLGenericsConverter<string>(connection);
+            var converter = new SQLConverters<string>(connection);
             Assert.Throws<InvalidOperationException>(() => converter.BuildItemFromAttribute(arg));
         }
 
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
             var arg = new SQLBindingAttribute();
             arg.ConnectionString = connectionString;
             var connection = new SqlConnectionWrapper();
-            var converter = new SQLGenericsConverter<string>(connection);
+            var converter = new SQLConverters<string>(connection);
 
             // Make sure that authentication works even without semicolon at the end. In that case exception should be thrown when the connection
             // is opened
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
         {
             var arg = new SQLBindingAttribute();
             var connection = new SqlConnectionWrapper();
-            var converter = new Mock<SQLGenericsConverter<Data>>(connection);
+            var converter = new Mock<SQLConverters<Data>>(connection);
             string json = "[{ \"ID\":1,\"Name\":\"Broom\",\"Cost\":32.5,\"Timestamp\":\"2019-11-22T06:32:15\"},{ \"ID\":2,\"Name\":\"Brush\",\"Cost\":12.3," +
                 "\"Timestamp\":\"2017-01-27T03:13:11\"},{ \"ID\":3,\"Name\":\"Comb\",\"Cost\":100.12,\"Timestamp\":\"1997-05-03T10:11:56\"}]";
             converter.Setup(_ => _.BuildItemFromAttribute(arg)).Returns(json);
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
         {
             var arg = new SQLBindingAttribute();
             var connection = new SqlConnectionWrapper();
-            var converter = new Mock<SQLGenericsConverter<Data>>(connection);
+            var converter = new Mock<SQLConverters<Data>>(connection);
 
             // SQL data is missing a field
             string json = "[{ \"ID\":1,\"Name\":\"Broom\",\"Timestamp\":\"2019-11-22T06:32:15\"}]";
