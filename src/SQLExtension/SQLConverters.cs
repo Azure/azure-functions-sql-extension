@@ -5,15 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Security;
-using System.Threading;
-using System.Threading.Tasks;
-using static SQLBindingExtension.SQLCollectors;
 
 namespace SQLBindingExtension
 {
-    public class SQLConverters
+    internal class SQLConverters
     {
-        public class SQLConverter : IConverter<SQLBindingAttribute, SqlCommand>
+        internal  class SQLConverter : IConverter<SQLBindingAttribute, SqlCommand>
         {
             private SqlConnectionWrapper _connection;
 
@@ -29,17 +26,16 @@ namespace SQLBindingExtension
 
             public SQLConverter() { }
 
-            public SqlCommand Convert(SQLBindingAttribute arg)
+            public SqlCommand Convert(SQLBindingAttribute attribute)
             {
-                _connection = BuildConnection(_connection, arg);
-                SqlCommand command = new SqlCommand(arg.SQLQuery + " FOR JSON AUTO", _connection.GetConnection());
+                _connection = BuildConnection(_connection, attribute);
+                SqlCommand command = new SqlCommand(attribute.SQLQuery + " FOR JSON AUTO", _connection.GetConnection());
                 return command;
             }
 
         }
 
-        public class SQLGenericsConverter<T> : IConverter<SQLBindingAttribute, IEnumerable<T>>, IAsyncConverter<SQLBindingAttribute, IAsyncCollector<T>>, 
-            IConverter<SQLBindingAttribute, ICollector<T>>
+        internal class SQLGenericsConverter<T> : IConverter<SQLBindingAttribute, IEnumerable<T>>
         {
             private SqlConnectionWrapper _connection;
 
@@ -59,39 +55,39 @@ namespace SQLBindingExtension
             /// Opens a SqlConnection, reads in the data from the user's database, and returns it as a list of POCOs. Throws an exception if 
             /// the SqlConnection cannot be established or the data cannot be read from the database <see cref="BuildItemFromAttribute(SQLBindingAttribute)"/>
             /// </summary>
-            /// <param name="arg">
+            /// <param name="attribute">
             /// Contains the information necessary to establish a SqlConnection, and the query to be executed on the database
             /// </param>
             /// <returns>An IEnumerable containing the rows read from the user's database in the form of the user-defined POCO</returns>
-            public IEnumerable<T> Convert(SQLBindingAttribute arg)
+            public IEnumerable<T> Convert(SQLBindingAttribute attribute)
             {
-                string json = BuildItemFromAttribute(arg);
+                string json = BuildItemFromAttribute(attribute);
                 return JsonConvert.DeserializeObject<IEnumerable<T>>(json);
             }
 
             /// <summary>
-            /// Extracts the ConnectionString in arg and uses it (in combination with the Authentication string, if provided) to establish a connection
+            /// Extracts the ConnectionString in attribute and uses it (in combination with the Authentication string, if provided) to establish a connection
             /// to the SQL database. (Must be virtual for mocking the method in unit tests)
             /// </summary>
-            /// <param name="arg">
+            /// <param name="attribute">
             /// The binding attribute that contains the connection string, authentication, and query.
             /// </param>
             /// <exception cref="ArgumentNullException">
-            /// Thrown when the ConnectionString in arg is null.
+            /// Thrown when the ConnectionString in attribute is null.
             /// </exception>
             /// <exception cref="InvalidOperationException">
             /// Thrown if an exception occurs when opening the SQL connection or when running the query.
             /// </exception>
             /// <returns></returns>
-            public virtual string BuildItemFromAttribute(SQLBindingAttribute arg)
+            public virtual string BuildItemFromAttribute(SQLBindingAttribute attribute)
             {
-                _connection = BuildConnection(_connection, arg);
+                _connection = BuildConnection(_connection, attribute);
                 string result = string.Empty;
                 using (SqlConnection connection = _connection.GetConnection())
                 {
                     try
                     {
-                        string query = arg.SQLQuery + " FOR JSON AUTO";
+                        string query = attribute.SQLQuery + " FOR JSON AUTO";
                         SqlCommand command = new SqlCommand(query, connection);
                         command.Connection.Open();
                         using (SqlDataReader reader = command.ExecuteReader())
@@ -112,30 +108,20 @@ namespace SQLBindingExtension
 
                 return result;
             }
-
-            async Task<IAsyncCollector<T>> IAsyncConverter<SQLBindingAttribute, IAsyncCollector<T>>.ConvertAsync(SQLBindingAttribute arg, CancellationToken token)
-            {
-                return new SQLAsyncCollector<T>(BuildConnection(null, arg), arg);
-            }
-
-            ICollector<T> IConverter<SQLBindingAttribute, ICollector<T>>.Convert(SQLBindingAttribute arg)
-            {
-                return new SQLCollector<T>(BuildConnection(null, arg), arg);
-            }
         }
 
-        private  static SqlConnectionWrapper BuildConnection(SqlConnectionWrapper connection, SQLBindingAttribute arg)
+        internal static SqlConnectionWrapper BuildConnection(SqlConnectionWrapper connection, SQLBindingAttribute attribute)
         {
-            if (arg.ConnectionString == null)
+            if (attribute.ConnectionString == null)
             {
                 throw new ArgumentNullException("Must specify a connection string to connect to your SQL server instance.");
             }
 
             if (connection == null)
             {
-                connection = new SqlConnectionWrapper(arg.ConnectionString);
+                connection = new SqlConnectionWrapper(attribute.ConnectionString);
             }
-            connection.SetCredential(GetCredential(arg.Authentication));
+            connection.SetCredential(GetCredential(attribute.Authentication));
             return connection;
         }
 

@@ -1,19 +1,17 @@
 ﻿using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.SQL;
 using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace SQLBindingExtension
 {
-    public class SQLCollectors
+    internal class SQLCollectors
     {
-        public class SQLAsyncCollector<T> : IAsyncCollector<T>
+        internal class SQLAsyncCollector<T> : IAsyncCollector<T>
         {
             private readonly SqlConnectionWrapper _connection;
             private readonly SQLBindingAttribute _attribute;
@@ -46,7 +44,7 @@ namespace SQLBindingExtension
             }
         }
 
-        public class SQLCollector<T> : ICollector<T>
+        internal class SQLCollector<T> : ICollector<T>
         {
             private readonly SqlConnectionWrapper _connection;
             private readonly SQLBindingAttribute _attribute;
