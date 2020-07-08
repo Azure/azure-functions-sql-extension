@@ -5,6 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Security;
+using System.Threading;
+using System.Threading.Tasks;
+using static SQLBindingExtension.SQLCollectors;
 
 namespace SQLBindingExtension
 {
@@ -33,77 +36,10 @@ namespace SQLBindingExtension
                 return command;
             }
 
-            internal static SqlConnectionWrapper BuildConnection(SqlConnectionWrapper connection, SQLBindingAttribute arg)
-            {
-                if (arg.ConnectionString == null)
-                {
-                    throw new ArgumentNullException("Must specify a connection string to connect to your SQL server instance.");
-                }
-
-                if (connection == null)
-                {
-                    connection = new SqlConnectionWrapper(arg.ConnectionString);
-                }
-                connection.SetCredential(GetCredential(arg.Authentication));
-                return connection;
-            }
-
-            /// <summary>
-            /// Extracts the User ID and password from the authentication string if authentication string is not null and returns a SqlCredential object
-            /// with the authentication information. Returns null if authentication is null.
-            /// </summary>
-            /// <param name="authentication">
-            /// The authentication string, must follow the format "User ID=<userid>;Password=<password>"
-            /// </param>
-            /// <returns>
-            /// SqlCredential object with User ID and password in the authentication string. Null if authentication string is null.
-            /// </returns>
-            /// <exception cref="ArgumentException">
-            /// Thrown if the authentication string is malformed.
-            /// </exception>
-            private static SqlCredential GetCredential(string authentication)
-            {
-                if (authentication == null)
-                {
-                    return null;
-                }
-
-                string[] credentials = authentication.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-                Dictionary<string, string> dict = new Dictionary<string, string>();
-                foreach (var pair in credentials)
-                {
-                    string[] items = pair.Split('=');
-                    if (items.Length != 2)
-                    {
-                        throw new ArgumentException("Keys must be separated by \";\" and key and value must be separated by \"=\", i.e. " +
-                            "\"User ID =<userid>;Password =<password>;\"");
-                    }
-                    dict.Add(items[0], items[1]);
-                }
-
-                string passwordStr;
-                string username;
-                if (!dict.TryGetValue("User ID", out username))
-                {
-                    throw new ArgumentException("User ID must be specified in the Authentication string as \"User ID =<userid>;\"");
-                }
-
-                if (!dict.TryGetValue("Password", out passwordStr))
-                {
-                    throw new ArgumentException("Password must be specified in the Authentication string as \"Password =<password>;\"");
-                }
-
-                SecureString password = new SecureString();
-                for (int i = 0; i < passwordStr.Length; i++)
-                {
-                    password.AppendChar(passwordStr[i]);
-                }
-                password.MakeReadOnly();
-                return new SqlCredential(username, password);
-            }
         }
 
-        public class SQLGenericsConverter<T> : IConverter<SQLBindingAttribute, IEnumerable<T>>
+        public class SQLGenericsConverter<T> : IConverter<SQLBindingAttribute, IEnumerable<T>>, IAsyncConverter<SQLBindingAttribute, IAsyncCollector<T>>, 
+            IConverter<SQLBindingAttribute, ICollector<T>>
         {
             private SqlConnectionWrapper _connection;
 
@@ -149,7 +85,7 @@ namespace SQLBindingExtension
             /// <returns></returns>
             public virtual string BuildItemFromAttribute(SQLBindingAttribute arg)
             {
-                _connection = SQLConverter.BuildConnection(_connection, arg);
+                _connection = BuildConnection(_connection, arg);
                 string result = string.Empty;
                 using (SqlConnection connection = _connection.GetConnection())
                 {
@@ -165,6 +101,7 @@ namespace SQLBindingExtension
                                 result += reader[0];
                             }
                         }
+                        command.Connection.Close();
                     }
                     catch (Exception e)
                     {
@@ -175,6 +112,85 @@ namespace SQLBindingExtension
 
                 return result;
             }
+
+            async Task<IAsyncCollector<T>> IAsyncConverter<SQLBindingAttribute, IAsyncCollector<T>>.ConvertAsync(SQLBindingAttribute arg, CancellationToken token)
+            {
+                return new SQLAsyncCollector<T>(BuildConnection(null, arg), arg);
+            }
+
+            ICollector<T> IConverter<SQLBindingAttribute, ICollector<T>>.Convert(SQLBindingAttribute arg)
+            {
+                return new SQLCollector<T>(BuildConnection(null, arg), arg);
+            }
+        }
+
+        private  static SqlConnectionWrapper BuildConnection(SqlConnectionWrapper connection, SQLBindingAttribute arg)
+        {
+            if (arg.ConnectionString == null)
+            {
+                throw new ArgumentNullException("Must specify a connection string to connect to your SQL server instance.");
+            }
+
+            if (connection == null)
+            {
+                connection = new SqlConnectionWrapper(arg.ConnectionString);
+            }
+            connection.SetCredential(GetCredential(arg.Authentication));
+            return connection;
+        }
+
+        /// <summary>
+        /// Extracts the User ID and password from the authentication string if authentication string is not null and returns a SqlCredential object
+        /// with the authentication information. Returns null if authentication is null.
+        /// </summary>
+        /// <param name="authentication">
+        /// The authentication string, must follow the format "User ID=<userid>;Password=<password>"
+        /// </param>
+        /// <returns>
+        /// SqlCredential object with User ID and password in the authentication string. Null if authentication string is null.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// Thrown if the authentication string is malformed.
+        /// </exception>
+        private static SqlCredential GetCredential(string authentication)
+        {
+            if (authentication == null)
+            {
+                return null;
+            }
+
+            string[] credentials = authentication.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+            Dictionary<string, string> dict = new Dictionary<string, string>();
+            foreach (var pair in credentials)
+            {
+                string[] items = pair.Split('=');
+                if (items.Length != 2)
+                {
+                    throw new ArgumentException("Keys must be separated by \";\" and key and value must be separated by \"=\", i.e. " +
+                        "\"User ID =<userid>;Password =<password>;\"");
+                }
+                dict.Add(items[0], items[1]);
+            }
+
+            string passwordStr;
+            string username;
+            if (!dict.TryGetValue("User ID", out username))
+            {
+                throw new ArgumentException("User ID must be specified in the Authentication string as \"User ID =<userid>;\"");
+            }
+
+            if (!dict.TryGetValue("Password", out passwordStr))
+            {
+                throw new ArgumentException("Password must be specified in the Authentication string as \"Password =<password>;\"");
+            }
+
+            SecureString password = new SecureString();
+            for (int i = 0; i < passwordStr.Length; i++)
+            {
+                password.AppendChar(passwordStr[i]);
+            }
+            password.MakeReadOnly();
+            return new SqlCredential(username, password);
         }
     }
 }
