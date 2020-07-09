@@ -17,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
         {
             var arg = new SQLBindingAttribute();
             var connection = new SqlConnectionWrapper();
-            var converter = new SQLConverters<string>(connection);
+            var converter = new SQLGenericsConverter<string>(connection);
             Assert.Throws<ArgumentNullException>(() => converter.BuildItemFromAttribute(arg));
         }
 
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
             var arg = new SQLBindingAttribute();
             arg.ConnectionString = connectionString;
             var connection = new SqlConnectionWrapper();
-            var converter = new SQLConverters<string>(connection);
+            var converter = new SQLGenericsConverter<string>(connection);
 
             // User ID identified incorrectly
             arg.Authentication = "UserID=test;Password=test;";
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
             var arg = new SQLBindingAttribute();
             arg.ConnectionString = connectionString;
             var connection = new SqlConnectionWrapper();
-            var converter = new SQLConverters<string>(connection);
+            var converter = new SQLGenericsConverter<string>(connection);
             Assert.Throws<InvalidOperationException>(() => converter.BuildItemFromAttribute(arg));
         }
 
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
             var arg = new SQLBindingAttribute();
             arg.ConnectionString = connectionString;
             var connection = new SqlConnectionWrapper();
-            var converter = new SQLConverters<string>(connection);
+            var converter = new SQLGenericsConverter<string>(connection);
 
             // Make sure that authentication works even without semicolon at the end. In that case exception should be thrown when the connection
             // is opened
@@ -105,26 +105,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
         {
             var arg = new SQLBindingAttribute();
             var connection = new SqlConnectionWrapper();
-            var converter = new Mock<SQLConverters<Data>>(connection);
+            var converter = new Mock<SQLGenericsConverter<Data>>(connection);
             string json = "[{ \"ID\":1,\"Name\":\"Broom\",\"Cost\":32.5,\"Timestamp\":\"2019-11-22T06:32:15\"},{ \"ID\":2,\"Name\":\"Brush\",\"Cost\":12.3," +
                 "\"Timestamp\":\"2017-01-27T03:13:11\"},{ \"ID\":3,\"Name\":\"Comb\",\"Cost\":100.12,\"Timestamp\":\"1997-05-03T10:11:56\"}]";
             converter.Setup(_ => _.BuildItemFromAttribute(arg)).Returns(json);
             var list = new List<Data>();
-            var data1 = new Data();
-            data1.ID = 1;
-            data1.Name = "Broom";
-            data1.Cost = 32.5;
-            data1.Timestamp = new DateTime(2019, 11, 22, 6, 32, 15);
-            var data2 = new Data();
-            data2.ID = 2;
-            data2.Name = "Brush";
-            data2.Cost = 12.3;
-            data2.Timestamp = new DateTime(2017, 1, 27, 3, 13, 11);
-            var data3 = new Data();
-            data3.ID = 3;
-            data3.Name = "Comb";
-            data3.Cost = 100.12;
-            data3.Timestamp = new DateTime(1997, 5, 3, 10, 11, 56);
+            var data1 = new Data
+            {
+                ID = 1,
+                Name = "Broom",
+                Cost = 32.5,
+                Timestamp = new DateTime(2019, 11, 22, 6, 32, 15)
+            };
+            var data2 = new Data
+            {
+                ID = 2,
+                Name = "Brush",
+                Cost = 12.3,
+                Timestamp = new DateTime(2017, 1, 27, 3, 13, 11)
+            };
+            var data3 = new Data()
+            {
+                ID = 3,
+                Name = "Comb",
+                Cost = 100.12,
+                Timestamp = new DateTime(1997, 5, 3, 10, 11, 56)
+            };
             list.Add(data1);
             list.Add(data2);
             list.Add(data3);
@@ -137,17 +143,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
         {
             var arg = new SQLBindingAttribute();
             var connection = new SqlConnectionWrapper();
-            var converter = new Mock<SQLConverters<Data>>(connection);
+            var converter = new Mock<SQLGenericsConverter<Data>>(connection);
 
             // SQL data is missing a field
             string json = "[{ \"ID\":1,\"Name\":\"Broom\",\"Timestamp\":\"2019-11-22T06:32:15\"}]";
             converter.Setup(_ => _.BuildItemFromAttribute(arg)).Returns(json);
             var list = new List<Data>();
-            var data = new Data();
-            data.ID = 1;
-            data.Name = "Broom";
-            data.Cost = 0;
-            data.Timestamp = new DateTime(2019, 11, 22, 6, 32, 15);
+            var data = new Data
+            {
+                ID = 1,
+                Name = "Broom",
+                Cost = 0,
+                Timestamp = new DateTime(2019, 11, 22, 6, 32, 15)
+            };
             list.Add(data);
             IEnumerable<Data> enActual = converter.Object.Convert(arg);
             Assert.True(enActual.ToList<Data>().SequenceEqual<Data>(list));
@@ -156,10 +164,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
             json = "[{ \"ID\":1,\"Product Name\":\"Broom\",\"Price\":32.5,\"Timessstamp\":\"2019-11-22T06:32:15\"}]";
             converter.Setup(_ => _.BuildItemFromAttribute(arg)).Returns(json);
             list = new List<Data>();
-            data = new Data();
-            data.ID = 1;
-            data.Name = null;
-            data.Cost = 0;
+            data = new Data
+            {
+                ID = 1,
+                Name = null,
+                Cost = 0,
+            };
             list.Add(data);
             enActual = converter.Object.Convert(arg);
             Assert.True(enActual.ToList<Data>().SequenceEqual<Data>(list));
@@ -168,11 +178,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
             json = "[{ \"id\":1,\"nAme\":\"Broom\",\"coSt\":32.5,\"TimEStamp\":\"2019-11-22T06:32:15\"}]";
             converter.Setup(_ => _.BuildItemFromAttribute(arg)).Returns(json);
             list = new List<Data>();
-            data = new Data();
-            data.ID = 1;
-            data.Name = "Broom";
-            data.Cost = 32.5;
-            data.Timestamp = new DateTime(2019, 11, 22, 6, 32, 15);
+            data = new Data
+            {
+                ID = 1,
+                Name = "Broom",
+                Cost = 32.5,
+                Timestamp = new DateTime(2019, 11, 22, 6, 32, 15)
+            };
             list.Add(data);
             enActual = converter.Object.Convert(arg);
             Assert.True(enActual.ToList<Data>().SequenceEqual<Data>(list));
