@@ -3,6 +3,7 @@ using System.Data.SqlClient;
 using Microsoft.Azure.WebJobs.Description;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Config;
+using SQLBindingExtension;
 using static SQLBindingExtension.SQLCollectorBuilders;
 using static SQLBindingExtension.SQLConverters;
 
@@ -15,21 +16,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL
     [Extension("SQLBinding")]
     public class SQLBindingConfigProvider : IExtensionConfigProvider
     {
+        /// <summary>
+        /// Initializes the SQL binding rules
+        /// </summary>
+        /// <param name="context"> The config context </param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown if context is null
+        /// </exception>
         public void Initialize(ExtensionConfigContext context)
         {
             if (context == null)
             {
                 throw new ArgumentNullException("context is null");
             }
-
             var rule = context.AddBindingRule<SQLBindingAttribute>();
             var converter = new SQLConverter();
-            // Input bindings
             rule.BindToInput<SqlCommand>(converter);
-            rule.BindToInput<OpenType>(typeof(SQLGenericsConverter<>));
-            // Output bindings
             rule.BindToCollector<OpenType>(typeof(SQLAsyncCollectorBuilder<>));
             rule.BindToCollector<OpenType>(typeof(SQLCollectorBuilder<>));
+            rule.BindToInput<OpenType>(typeof(SQLGenericsConverter<>));
         }
     }
 }

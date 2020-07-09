@@ -8,9 +8,9 @@ using System.Security;
 
 namespace SQLBindingExtension
 {
-    internal class SQLConverters
+    public class SQLConverters
     {
-        internal  class SQLConverter : IConverter<SQLBindingAttribute, SqlCommand>
+        public class SQLConverter : IConverter<SQLBindingAttribute, SqlCommand>
         {
             private SqlConnectionWrapper _connection;
 
@@ -35,7 +35,7 @@ namespace SQLBindingExtension
 
         }
 
-        internal class SQLGenericsConverter<T> : IConverter<SQLBindingAttribute, IEnumerable<T>>
+        public class SQLGenericsConverter<T> : IConverter<SQLBindingAttribute, IEnumerable<T>>
         {
             private SqlConnectionWrapper _connection;
 
@@ -89,7 +89,7 @@ namespace SQLBindingExtension
                     {
                         string query = attribute.SQLQuery + " FOR JSON AUTO";
                         SqlCommand command = new SqlCommand(query, connection);
-                        command.Connection.Open();
+                        connection.Open();
                         using (SqlDataReader reader = command.ExecuteReader())
                         {
                             while (reader.Read())
@@ -97,7 +97,6 @@ namespace SQLBindingExtension
                                 result += reader[0];
                             }
                         }
-                        command.Connection.Close();
                     }
                     catch (Exception e)
                     {
@@ -110,6 +109,17 @@ namespace SQLBindingExtension
             }
         }
 
+        /// <summary>
+        /// Builds a connection using the connection string and authentication information specified in "attribute". 
+        /// Only builds a new connection if "connection" is null. Otherwise just returns "connection" 
+        /// </summary>
+        /// <param name="connection">Used to determine whether or not a new connection must be built. The function 
+        /// simply returns "connection" if it is non-null </param>
+        /// <param name="attribute">Contains the connection string and authentication information for the user's database</param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown if the connection string in "attribute" is null
+        /// </exception>
+        /// <returns>The built connection </returns>
         internal static SqlConnectionWrapper BuildConnection(SqlConnectionWrapper connection, SQLBindingAttribute attribute)
         {
             if (attribute.ConnectionString == null)
@@ -178,5 +188,13 @@ namespace SQLBindingExtension
             password.MakeReadOnly();
             return new SqlCredential(username, password);
         }
+    }
+    public class Product
+    {
+        public int ProductID { get; set; }
+
+        public string Name { get; set; }
+
+        public int Cost { get; set; }
     }
 }
