@@ -153,7 +153,11 @@ namespace SQLBindingExtension
                 var dataAdapter = new SqlDataAdapter("SELECT * FROM " + table + ";", connection);
                 SqlCommandBuilder commandBuilder = new SqlCommandBuilder(dataAdapter);
                 connection.Open();
-                dataAdapter.Update(dataSet, table);
+                using (var bulk = new SqlBulkCopy(connection))
+                {
+                    bulk.DestinationTableName = table;
+                    bulk.WriteToServer(dataTable);
+                }
                 connection.Close();
             } catch (Exception e)
             {

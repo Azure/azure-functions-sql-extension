@@ -16,8 +16,11 @@ using Microsoft.Build.Framework;
 
 namespace SQLFunction
 {
+    
     public static class AddProducts
     {
+        
+        /**
         [FunctionName("AddProduct")]
         public static IActionResult Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct")]
@@ -34,9 +37,9 @@ namespace SQLFunction
                 Cost = int.Parse(req.Query["cost"])
             };
             return new CreatedResult($"/api/addproduct", product);
-        }
+        } **/
 
-        /**
+       /**
         [FunctionName("AddProduct")]
         public static IActionResult Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct")] HttpRequest req)
@@ -52,33 +55,48 @@ namespace SQLFunction
             var dataAdapter = new SqlDataAdapter("SELECT * FROM dbo.Products;", connection);
             SqlCommandBuilder commandBuilder = new SqlCommandBuilder(dataAdapter);
             connection.Open();
-            dataAdapter.Update(dataSet, "dbo.Products");
+            using (var bulk = new SqlBulkCopy(connection))
+            {
+                bulk.DestinationTableName = "dbo.Products";
+                bulk.WriteToServer(dataTable);
+            }
             connection.Close();
 
             return new CreatedResult($"/api/addproduct", newProducts);
-        }
+        } **/
 
-
+        /**
         [FunctionName("AddProduct")]
         public static IActionResult Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct")]
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct")] HttpRequest req,
         [SQLBinding(SQLQuery = "dbo.Products",
                     Authentication = "%SQLServerAuthentication%",
                     ConnectionString = "Data Source=sotevo.database.windows.net;Database=TestDB;")]
         IAsyncCollector<Product> products)
         {
-            var newProducts = GetNewProducts();
+            var newProducts = GetNewProducts(10000);
             foreach (var product in newProducts)
             {
                 products.AddAsync(product);
             }
-            return new CreatedResult($"/api/addproduct", newProducts);
+            return new CreatedResult($"/api/addproduct", "done");
         } **/
 
 
-        public static List<Product> GetNewProducts()
+        public static List<Product> GetNewProducts(int num)
         {
-            return null;
+            var products = new List<Product>();
+            for (int i = 1; i < num; i++)
+            {
+                var product = new Product
+                {
+                    ProductID = i,
+                    Cost = 100,
+                    Name = "test"
+                };
+                products.Add(product);
+            }
+            return products;
         }
 
         public static SqlConnection BuildSqlConnection()
@@ -86,30 +104,30 @@ namespace SQLFunction
             return null;
         }
 
-        /**
-
+       
+       
         [FunctionName("AddProduct")]
         public static IActionResult Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "products")]
             HttpRequest req,
-            ILogger logger,
         [SQLBinding(SQLQuery = "dbo.Products",
                 Authentication = "%SQLServerAuthentication%",
                 ConnectionString = "Data Source=sotevo.database.windows.net;Database=TestDB;")]
-        IAsyncCollector<Product> output)
+        out Product[] output)
         {
+            output = new Product[2];
             var product = new Product();
             product.ProductID = 10;
             product.Name = "Bottle";
             product.Cost = 52;
-            output.AddAsync(product);
+            output[0] = product;
             product = new Product();
             product.ProductID = 11;
             product.Name = "Glasses";
             product.Cost = 12;
-            output.AddAsync(product);
+            output[1] = product;
             return new CreatedResult($"/api/products/10", product);
-        } **/
+        }
 
     }
 }

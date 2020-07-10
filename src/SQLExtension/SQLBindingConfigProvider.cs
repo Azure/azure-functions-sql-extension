@@ -4,7 +4,6 @@ using Microsoft.Azure.WebJobs.Description;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Config;
 using SQLBindingExtension;
-using static SQLBindingExtension.SQLCollectorBuilders;
 using static SQLBindingExtension.SQLConverters;
 
 namespace Microsoft.Azure.WebJobs.Extensions.SQL
@@ -32,9 +31,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL
             var rule = context.AddBindingRule<SQLBindingAttribute>();
             var converter = new SQLConverter();
             rule.BindToInput<SqlCommand>(converter);
-            rule.BindToCollector<OpenType>(typeof(SQLAsyncCollectorBuilder<>));
-            rule.BindToCollector<OpenType>(typeof(SQLCollectorBuilder<>));
+            // For some reason, this is the only way I could get it to bind to the SQLCollector class in the case that the user's
+            // function has as its output binding an ICollector. Otherwise, it would keep binding to the SQLAsyncCollector instead,
+            // even if the collector type was an ICollector, not an IAsyncCollector. 
+            // The SQLGenericsConverter has two Convert methods, one that creates the SQLCollector and another that creates the 
+            // SQLAsyncCollector. The former is called when the user's output binding is an ICollector. The latter is called when 
+            // the output binding is an IAsyncCollector. If the output binding is neither, for example a POCO or array of POCOs, then 
+            // the SQLAsyncCollectorBuilder is called. This is essentially just a wrapper for a Convert method that creates a 
+            // SQLAsyncCollector. 
             rule.BindToInput<OpenType>(typeof(SQLGenericsConverter<>));
+            rule.BindToCollector<OpenType>(typeof(SQLAsyncCollectorBuilder<>)); 
         }
     }
 }
