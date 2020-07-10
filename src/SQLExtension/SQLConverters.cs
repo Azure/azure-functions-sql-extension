@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Security;
+using static SQLBindingExtension.SQLCollectors;
 
 namespace SQLBindingExtension
 {
@@ -35,7 +36,8 @@ namespace SQLBindingExtension
 
         }
 
-        public class SQLGenericsConverter<T> : IConverter<SQLBindingAttribute, IEnumerable<T>>
+        public class SQLGenericsConverter<T> : IConverter<SQLBindingAttribute, IEnumerable<T>>, IConverter<SQLBindingAttribute, ICollector<T>>, 
+            IConverter<SQLBindingAttribute, IAsyncCollector<T>>
         {
             private SqlConnectionWrapper _connection;
 
@@ -106,6 +108,16 @@ namespace SQLBindingExtension
                 }
 
                 return result;
+            }
+
+            ICollector<T> IConverter<SQLBindingAttribute, ICollector<T>>.Convert(SQLBindingAttribute attribute)
+            {
+                return new SQLCollector<T>(SQLConverters.BuildConnection(null, attribute), attribute);
+            }
+
+            IAsyncCollector<T> IConverter<SQLBindingAttribute, IAsyncCollector<T>>.Convert(SQLBindingAttribute attribute)
+            {
+                return new SQLAsyncCollector<T>(SQLConverters.BuildConnection(null, attribute), attribute);
             }
         }
 
