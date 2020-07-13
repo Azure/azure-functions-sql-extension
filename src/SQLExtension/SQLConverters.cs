@@ -3,6 +3,7 @@ using Microsoft.Azure.WebJobs.Extensions.SQL;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 using System.Security;
 using static SQLBindingExtension.SQLCollectors;
@@ -30,7 +31,7 @@ namespace SQLBindingExtension
             public SqlCommand Convert(SQLBindingAttribute attribute)
             {
                 _connection = BuildConnection(_connection, attribute);
-                SqlCommand command = new SqlCommand(attribute.SQLQuery + " FOR JSON AUTO", _connection.GetConnection());
+                SqlCommand command = new SqlCommand(attribute.SQLQuery, _connection.GetConnection());
                 return command;
             }
 
@@ -84,30 +85,41 @@ namespace SQLBindingExtension
             public virtual string BuildItemFromAttribute(SQLBindingAttribute attribute)
             {
                 _connection = BuildConnection(_connection, attribute);
-                string result = string.Empty;
                 using (SqlConnection connection = _connection.GetConnection())
                 {
-                    try
+                    using (SqlDataAdapter adapter = new SqlDataAdapter())
                     {
-                        string query = attribute.SQLQuery + " FOR JSON AUTO";
-                        SqlCommand command = new SqlCommand(query, connection);
-                        connection.Open();
-                        using (SqlDataReader reader = command.ExecuteReader())
+                        try
                         {
-                            while (reader.Read())
+                            SqlCommand command = new SqlCommand();
+                            command.Connection = connection;
+                            if (attribute.SQLQuery != null)
                             {
-                                result += reader[0];
+                                command.CommandText = attribute.SQLQuery;
                             }
+                            else if (attribute.Procedure != null)
+                            {
+                                command.CommandText = attribute.Procedure;
+                                command.CommandType = CommandType.StoredProcedure;
+                                command.Parameters.Add(new SqlParameter("@Cost", "100"));
+                            }
+                            else
+                            {
+                                throw new ArgumentException("Must specify either a SQLQuery or Procedure in the SQL input binding");
+                            }
+                            adapter.SelectCommand = command;
+                            connection.Open();
+                            DataTable dataTable = new DataTable();
+                            adapter.Fill(dataTable);
+                            return JsonConvert.SerializeObject(dataTable);
+                        }
+
+                        catch (Exception e)
+                        {
+                            throw new InvalidOperationException("Exception in executing query: " + e.Message);
                         }
                     }
-                    catch (Exception e)
-                    {
-                        throw new InvalidOperationException("Exception in executing query: " + e.Message);
-                    }
-
                 }
-
-                return result;
             }
 
             ICollector<T> IConverter<SQLBindingAttribute, ICollector<T>>.Convert(SQLBindingAttribute attribute)
@@ -200,13 +212,5 @@ namespace SQLBindingExtension
             password.MakeReadOnly();
             return new SqlCredential(username, password);
         }
-    }
-    public class Product
-    {
-        public int ProductID { get; set; }
-
-        public string Name { get; set; }
-
-        public int Cost { get; set; }
     }
 }

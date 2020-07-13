@@ -15,6 +15,7 @@ namespace SQLFunction
     public class GetProducts
     {
 
+        /**
          [FunctionName("GetProducts")]
          public static IActionResult Run(
              [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts/{cost}")]
@@ -26,6 +27,21 @@ namespace SQLFunction
          {
              return (ActionResult)new OkObjectResult(products);
          }
+        **/
+
+        
+        [FunctionName("GetProducts")]
+        public static IActionResult Run(
+             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts/{cost}")]
+             HttpRequest req,
+             [SQLBinding(Procedure = "SelectProductsCost",
+                 Parameters = "@Cost: {cost}",
+                 Authentication = "%SQLServerAuthentication%",
+                 ConnectionString = "Data Source=sotevo.database.windows.net;Database=TestDB;")]
+             IEnumerable<Product> products)
+        {
+            return (ActionResult)new OkObjectResult(products);
+        }
 
         /**
         [FunctionName("GetProducts")]

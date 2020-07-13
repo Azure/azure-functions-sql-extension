@@ -20,7 +20,7 @@ namespace SQLFunction
     public static class AddProducts
     {
         
-        /**
+        
         [FunctionName("AddProduct")]
         public static IActionResult Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct")]
@@ -37,7 +37,7 @@ namespace SQLFunction
                 Cost = int.Parse(req.Query["cost"])
             };
             return new CreatedResult($"/api/addproduct", product);
-        } **/
+        }
 
        /**
         [FunctionName("AddProduct")]
@@ -105,7 +105,7 @@ namespace SQLFunction
         }
 
        
-       
+       /**
         [FunctionName("AddProduct")]
         public static IActionResult Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "products")]
@@ -127,7 +127,7 @@ namespace SQLFunction
             product.Cost = 12;
             output[1] = product;
             return new CreatedResult($"/api/products/10", product);
-        }
+        } **/
 
     }
 }

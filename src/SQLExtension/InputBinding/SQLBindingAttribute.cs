@@ -1,5 +1,6 @@
 ﻿using Microsoft.Azure.WebJobs.Description;
 using System;
+using System.Collections.Generic;
 
 namespace Microsoft.Azure.WebJobs.Extensions.SQL
 {
@@ -32,5 +33,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL
         /// </summary>
         [AutoResolve]
         public string Authentication { get; set; }
+
+        [AutoResolve]
+        public string Parameters { get; set; }
+
+        [AutoResolve]
+        public string Procedure { get; set; }
     }
 }
