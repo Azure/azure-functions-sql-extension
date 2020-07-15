@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using System.Data.SqlClient;
+using System.Threading.Tasks;
 
 namespace SQLFunction
 {
@@ -29,7 +30,7 @@ namespace SQLFunction
          }
         **/
 
-        
+        /**
         [FunctionName("GetProducts")]
         public static IActionResult Run(
              [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts/{cost}")]
@@ -41,6 +42,25 @@ namespace SQLFunction
              IEnumerable<Product> products)
         {
             return (ActionResult)new OkObjectResult(products);
+        } **/
+
+        [FunctionName("GetProducts")]
+        public static async Task<IActionResult> Run(
+             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts/{cost}")]
+             HttpRequest req,
+             [SQLBinding(SQLQuery = "select * from Products where cost = {cost}",
+                 Authentication = "%SQLServerAuthentication%",
+                 ConnectionString = "Data Source=sotevo.database.windows.net;Database=TestDB;")]
+             IAsyncEnumerable<Product> products)
+        {
+            var enumerator = products.GetAsyncEnumerator();
+            var list = new List<Product>();
+            while (await enumerator.MoveNextAsync())
+            {
+                list.Add(enumerator.Current);
+            }
+            await enumerator.DisposeAsync();
+            return (ActionResult)new OkObjectResult(list);
         }
 
         /**

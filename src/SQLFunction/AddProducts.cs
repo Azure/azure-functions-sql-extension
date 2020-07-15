@@ -72,12 +72,12 @@ namespace SQLFunction
         [SQLBinding(SQLQuery = "dbo.Products",
                     Authentication = "%SQLServerAuthentication%",
                     ConnectionString = "Data Source=sotevo.database.windows.net;Database=TestDB;")]
-        IAsyncCollector<Product> products)
+        ICollector<Product> products)
         {
-            var newProducts = GetNewProducts(10000);
+            var newProducts = GetNewProducts(5000);
             foreach (var product in newProducts)
             {
-                products.AddAsync(product);
+                products.Add(product);
             }
             return new CreatedResult($"/api/addproduct", "done");
         } **/
