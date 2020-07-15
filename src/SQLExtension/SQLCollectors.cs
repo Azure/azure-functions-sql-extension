@@ -79,7 +79,7 @@ namespace SQLBindingExtension
                 }
 
                 string rows = JsonConvert.SerializeObject(_rows);
-                InsertRows(rows, _attribute.SQLQuery, _connection.GetConnection());
+                InsertRows(rows, _attribute.SQLQuery, _connection.GetConnection(), true);
                 _rows.Clear();
                 return Task.CompletedTask;
             }
@@ -127,8 +127,9 @@ namespace SQLBindingExtension
                 {
                     throw new ArgumentNullException("Item passed to AddAsync cannot be null");
                 }
+                // We need the square braces to then convert the row into a DataTable
                 string row = "[" + JsonConvert.SerializeObject(item) + "]";
-                InsertRows(row, _attribute.SQLQuery, _connection.GetConnection());
+                InsertRows(row, _attribute.SQLQuery, _connection.GetConnection(), false);
             }
         }
 
@@ -142,7 +143,7 @@ namespace SQLBindingExtension
         /// <exception cref="InvalidOperationException">
         /// Thrown if an exception is encountered while executing the SQL transaction to insert the rows
         /// </exception>
-        private static void InsertRows(string rows, string table, SqlConnection connection)
+        private static void InsertRows(string rows, string table, SqlConnection connection, bool isAsync)
         {
             DataTable dataTable = (DataTable)JsonConvert.DeserializeObject(rows, typeof(DataTable));
             dataTable.TableName = table;
@@ -153,10 +154,18 @@ namespace SQLBindingExtension
                 var dataAdapter = new SqlDataAdapter("SELECT * FROM " + table + ";", connection);
                 SqlCommandBuilder commandBuilder = new SqlCommandBuilder(dataAdapter);
                 connection.Open();
-                using (var bulk = new SqlBulkCopy(connection))
+                // If async, meaning we are performing a batch insertion, use SqlBulkCopy which is built for 
+                // batch processing of data
+                if (isAsync)
                 {
-                    bulk.DestinationTableName = table;
-                    bulk.WriteToServer(dataTable);
+                    using (var bulk = new SqlBulkCopy(connection))
+                    {
+                        bulk.DestinationTableName = table;
+                        bulk.WriteToServer(dataTable);
+                    }
+                } else
+                {
+                    dataAdapter.Update(dataSet, table);
                 }
                 connection.Close();
             } catch (Exception e)
