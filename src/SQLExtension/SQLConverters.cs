@@ -192,7 +192,7 @@ namespace SQLBindingExtension
                 if (items.Length != 2)
                 {
                     throw new ArgumentException("Keys must be separated by \";\" and key and value must be separated by \"=\", i.e. " +
-                        "\"User ID =<userid>;Password =<password>;\"");
+                        "\"User ID=<userid>;Password=<password>;\"");
                 }
                 dict.Add(items[0], items[1]);
             }
