@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\SQLExtension\SQLBindingExtension.csproj" />
+    <ProjectReference Include="..\..\src\SqlBinding\SqlBinding.csproj" />
   </ItemGroup>
 
 </Project>
