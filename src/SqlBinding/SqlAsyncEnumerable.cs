@@ -1,7 +1,10 @@
-﻿using Newtonsoft.Json;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly SqlAttribute _attribute;
 
         /// <summary>
-        /// Builds a SqlAsyncEnumerable
+        /// Initializes a new instance of the <see cref="SqlAsyncEnumerable<typeparamref name="T"/>"/> class.
         /// </summary>
         /// <param name="connection">The SqlConnection to be used by the enumerator</param>
         /// <param name="attribute">The attribute containing the query, parameters, and query type</param>
@@ -22,21 +25,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </exception>
         public SqlAsyncEnumerable(SqlConnectionWrapper connection, SqlAttribute attribute)
         {
-            if (connection == null)
-            {
-                throw new ArgumentNullException("connection");
-            }
-            if (attribute == null)
-            {
-                throw new ArgumentNullException("attribute");
-            }
-            _connection = connection;
-            _attribute = attribute;
+            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            _attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
         }
         /// <summary>
         /// Returns the enumerator associated with this enumerable. The enumerator will execute the query specified
         /// in attribute and "lazily" grab the Sql rows corresponding to the query result. It will only read a 
-        /// row into memory if MoveNextAsync is called
+        /// row into memory if <see cref="MoveNextAsync"/> is called
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns>The enumerator</returns>
@@ -46,7 +41,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
 
-        public class SqlAsyncEnumerator<T> : IAsyncEnumerator<T>
+        internal class SqlAsyncEnumerator<T> : IAsyncEnumerator<T>
         {
             private readonly SqlConnectionWrapper _connection;
             private readonly SqlAttribute _attribute;
@@ -54,7 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             private SqlDataReader _reader;
 
             /// <summary>
-            /// Builds a SqlAsyncEnumerator
+            /// Initializes a new instance of the <see cref="SqlAsyncEnumerator<typeparamref name="T"/>"/> class.
             /// </summary>
             /// <param name="connection">The SqlConnection to be used by the enumerator</param>
             /// <param name="attribute">The attribute containing the query, parameters, and query type</param>
@@ -63,24 +58,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </exception>
             public SqlAsyncEnumerator(SqlConnectionWrapper connection, SqlAttribute attribute)
             {
-                if (connection == null)
-                {
-                    throw new ArgumentNullException("connection");
-                }
-                if (attribute == null)
-                {
-                    throw new ArgumentNullException("attribute");
-                }
-                _connection = connection;
-                _attribute = attribute;
+                _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+                _attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
             }
 
             /// <summary>
             /// Returns the current row of the query result that the enumerator is on
             /// </summary>
             /// <exception cref="InvalidOperationException">
-            /// Thrown if Current is called before a call to MoveNextAsync is ever made, or if Current is called
-            /// after MoveNextAsync has moved through all of the rows returned by the query.
+            /// Thrown if Current is called before a call to <see cref="MoveNextAsync"/> is ever made, or if Current is called
+            /// after <see cref="MoveNextAsync"/> has moved through all of the rows returned by the query.
             /// </exception>
             public T Current => _currentRow == null ? throw new InvalidOperationException("Invalid attempt to get current element when no data is present") 
                 : _currentRow;
@@ -91,6 +78,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns></returns>
             public ValueTask DisposeAsync()
             {
+                // Doesn't seem like there's an async version of closing the reader/connection 
                 _reader.Close();
                 var connection = _connection.GetConnection();
                 connection.Close();
@@ -111,29 +99,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <summary>
             /// Attempts to grab the next row of the Sql query result. 
             /// </summary>
-            /// <exception cref="InvalidOperationException">
-            /// Thrown if there is an error while executing the Sql query
-            /// </exception>
             /// <returns>
             /// True if there is another row left in the query to process, or false if this was the last row
             /// </returns>
-            private bool GetNextRow()
+            private async Task<bool> GetNextRow()
             {
                 if (_reader == null)
                 {
                     var connection = _connection.GetConnection();
-                    try
-                    {
-                        SqlCommand command = SqlConverters.BuildCommand(_attribute, connection);
-                        command.Connection.Open();
-                        _reader = command.ExecuteReader();
-                    }
-                    catch (Exception e)
-                    {
-                        throw new InvalidOperationException("Exception in executing query: " + e.Message);
-                    }
+                    SqlCommand command = SqlConverters.BuildCommand(_attribute, connection);
+                    await command.Connection.OpenAsync();
+                    _reader = await command.ExecuteReaderAsync();
                 }
-                if (_reader.Read())
+                if (await _reader.ReadAsync())
                 {
                     _currentRow = JsonConvert.DeserializeObject<T>(SerializeRow());
                     return true;

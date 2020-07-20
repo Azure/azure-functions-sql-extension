@@ -1,9 +1,12 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -24,15 +27,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 _connection = connection;
             }
 
+            /// <summary>
+            /// Initializes a new instance of the <see cref="SqlConverter/>"/> class.
+            /// </summary>
+            /// <param name="configuration"></param>
+            /// <exception cref="ArgumentNullException">
+            /// Thrown if the configuration is null
+            /// </exception>
             public SqlConverter(IConfiguration configuration)
             {
-                _configuration = configuration;
+                _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             }
 
+            /// <summary>
+            /// Creates a SqlCommand containing a Sql connection and the Sql query and parameters specified in attribute.
+            /// The user can open the connection in the SqlCommand and use it to read in the results of the query themselves. 
+            /// </summary>
+            /// <param name="attribute">
+            /// Contains the Sql query and parameters as well as the information necessary to build the Sql Connection
+            /// </param>
+            /// <returns>The SqlCommand</returns>
             public SqlCommand Convert(SqlAttribute attribute)
             {
                 _connection = BuildConnection(_connection, attribute, _configuration);
-                SqlCommand command = new SqlCommand(attribute.Command, _connection.GetConnection());
+                SqlCommand command = new SqlCommand(attribute.CommandText, _connection.GetConnection());
+                ParseParameters(attribute.Parameters, command);
                 return command;
             }
 
@@ -54,14 +73,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 _connection = connection;
             }
 
+            /// <summary>
+            /// Initializes a new instance of the <see cref="SqlGenericsConverter<typeparamref name="T"/>"/> class.
+            /// </summary>
+            /// <param name="configuration"></param>
+            /// <exception cref="ArgumentNullException">
+            /// Thrown if the configuration is null
+            /// </exception>
             public SqlGenericsConverter(IConfiguration configuration) 
             {
-                _configuration = configuration;
+                _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             }
 
             /// <summary>
-            /// Opens a SqlConnection, reads in the data from the user's database, and returns it as a list of POCOs. Throws an exception if 
-            /// the SqlConnection cannot be established or the data cannot be read from the database <see cref="BuildItemFromAttribute(SqlAttribute)"/>
+            /// Opens a SqlConnection, reads in the data from the user's database, and returns it as a list of POCOs.
             /// </summary>
             /// <param name="attribute">
             /// Contains the information necessary to establish a SqlConnection, and the query to be executed on the database
@@ -79,39 +104,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             /// <summary>
-            /// Extracts the ConnectionStringSetting in attribute and uses it (in combination with the Authentication string, if provided) to establish a connection
+            /// Extracts the <see cref="SqlAttribute.ConnectionStringSetting"/> in attribute and uses it to establish a connection
             /// to the SQL database. (Must be virtual for mocking the method in unit tests)
             /// </summary>
             /// <param name="attribute">
-            /// The binding attribute that contains the connection string, authentication, and query.
+            /// The binding attribute that contains the name of the connection string app setting and query.
             /// </param>
-            /// <exception cref="InvalidOperationException">
-            /// Thrown if an exception occurs when opening the SQL connection or when running the query.
-            /// </exception>
             /// <returns></returns>
             public virtual string BuildItemFromAttribute(SqlAttribute attribute)
             {
                 _connection = BuildConnection(_connection, attribute, _configuration);
-                using (SqlConnection connection = _connection.GetConnection())
+                SqlConnection connection = _connection.GetConnection();
+                using (SqlDataAdapter adapter = new SqlDataAdapter())
                 {
-                    using (SqlDataAdapter adapter = new SqlDataAdapter())
-                    {
-                        try
-                        {
-                            SqlCommand command = BuildCommand(attribute, connection);
-                            adapter.SelectCommand = command;
-                            connection.Open();
-                            DataTable dataTable = new DataTable();
-                            adapter.Fill(dataTable);
-                            return JsonConvert.SerializeObject(dataTable);
-                        }
-
-                        catch (Exception e)
-                        {
-                            throw new InvalidOperationException("Exception in executing query: " + e.Message);
-                        }
-                    }
+                    SqlCommand command = BuildCommand(attribute, connection);
+                    adapter.SelectCommand = command;
+                    // Manually opening the connection because a "using" statement disposes it afterwards. If a function
+                    // is invoked multiple times in one run, the invocations following the first one will fail because the
+                    // SqlConnection has been disposed of
+                    connection.Open();
+                    DataTable dataTable = new DataTable();
+                    adapter.Fill(dataTable);
+                    connection.Close();
+                    return JsonConvert.SerializeObject(dataTable);
                 }
+                
             }
 
             IAsyncEnumerable<T> IConverter<SqlAttribute, IAsyncEnumerable<T>>.Convert(SqlAttribute attribute)
@@ -144,7 +161,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 if (configuration == null)
                 {
-                    throw new ArgumentNullException("configuration");
+                    throw new ArgumentNullException(nameof(configuration));
                 }
                 connection = new SqlConnectionWrapper(configuration.GetConnectionStringOrSetting(attribute.ConnectionStringSetting));
             }
@@ -167,12 +184,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             SqlCommand command = new SqlCommand();
             command.Connection = connection;
-            command.CommandText = attribute.Command;
-            if (attribute.Type == CommandType.StoredProcedure)
+            command.CommandText = attribute.CommandText;
+            if (attribute.CommandType == CommandType.StoredProcedure)
             {
                 command.CommandType = CommandType.StoredProcedure;
             }
-            else if (attribute.Type != CommandType.Text)
+            else if (attribute.CommandType != CommandType.Text)
             {
                 throw new ArgumentException("The Type of the Sql attribute for an input binding must be either CommandType.Text for a plain text" +
                     "Sql query, or CommandType.StoredProcedure for a stored procedure.");
@@ -197,7 +214,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             if (command == null)
             {
-                throw new ArgumentNullException("command");
+                throw new ArgumentNullException(nameof(command));
             }
 
             // If parameters is null, user did not specify any parameters in their function so nothing to parse
