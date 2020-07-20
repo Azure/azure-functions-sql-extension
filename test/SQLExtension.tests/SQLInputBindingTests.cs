@@ -6,7 +6,7 @@ using System.Linq;
 using Microsoft.Azure.WebJobs.Extensions.Sql;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlConverters;
 using Microsoft.Extensions.Configuration;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 
 namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
 {
@@ -18,6 +18,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
         public void TestNullConfiguration()
         {
             Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(null));
+            IConfiguration config = null;
+            Assert.Throws<ArgumentNullException>(() => new SqlConverter(config));
+            Assert.Throws<ArgumentNullException>(() => new SqlGenericsConverter<string>(config));
+        }
+
+        [Fact]
+        public void TestNullCommandText()
+        {
+            Assert.Throws<ArgumentNullException>(() => new SqlAttribute(null));
         }
 
         [Fact]
@@ -41,7 +50,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
             try
             {
                 SqlConverters.ParseParameters("", null);
-            } catch (ArgumentNullException e)
+            }
+            catch (ArgumentNullException e)
             {
                 Assert.Equal("Value cannot be null. (Parameter 'command')", e.Message);
             }
@@ -117,7 +127,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
             try
             {
                 var attribute = new SqlAttribute("");
-                attribute.Type = System.Data.CommandType.TableDirect;
+                attribute.CommandType = System.Data.CommandType.TableDirect;
                 SqlConverters.BuildCommand(attribute, null);
             }
             catch (ArgumentException e)
@@ -144,14 +154,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
         {
             var query = "select * from Products";
             var attribute = new SqlAttribute(query);
-            attribute.Type = System.Data.CommandType.Text;
+            attribute.CommandType = System.Data.CommandType.Text;
             var command = SqlConverters.BuildCommand(attribute, null);
             Assert.Equal(System.Data.CommandType.Text, command.CommandType);
             Assert.Equal(query, command.CommandText);
 
             var procedure = "StoredProceudre";
             attribute = new SqlAttribute(procedure);
-            attribute.Type = System.Data.CommandType.StoredProcedure;
+            attribute.CommandType = System.Data.CommandType.StoredProcedure;
             command = SqlConverters.BuildCommand(attribute, null);
             Assert.Equal(System.Data.CommandType.StoredProcedure, command.CommandType);
             Assert.Equal(procedure, command.CommandText);
@@ -166,7 +176,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
             {
                 string parameters = "@param1=param1,param2=param2";
                 SqlConverters.ParseParameters(parameters, command);
-            } catch (ArgumentException e)
+            }
+            catch (ArgumentException e)
             {
                 Assert.Equal("Parameter name must start with \"@\", i.e. \"@param1=param1,@param2=param2\"", e.Message);
             }
@@ -285,17 +296,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
         }
 
         [Fact]
-        public void TestSqlConnectionFailure()
-        {
-            // Should get an invalid operation exception because the SqlConnection inside the SqlConnectionWrapper is null, 
-            // so shouldn't be able to open it.
-            var arg = new SqlAttribute(string.Empty);
-            var connection = new SqlConnectionWrapper();
-            var converter = new SqlGenericsConverter<string>(connection);
-            Assert.Throws<InvalidOperationException>(() => converter.BuildItemFromAttribute(arg));
-        }
-
-        [Fact]
         public void TestWellformedDeserialization()
         {
             var arg = new SqlAttribute(string.Empty);
@@ -383,28 +383,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.SQL.Tests
             list.Add(data);
             enActual = converter.Object.Convert(arg);
             Assert.True(enActual.ToList<Data>().SequenceEqual<Data>(list));
-        }
-
-        public class Data
-        {
-            public int ID { get; set; }
-
-            public string Name { get; set; }
-
-            public double Cost { get; set; }
-
-            public DateTime Timestamp { get; set; }
-
-            public override bool Equals(object obj)
-            {
-                var otherData = obj as Data;
-                if (otherData == null)
-                {
-                    return false;
-                }
-                return this.ID == otherData.ID && this.Cost == otherData.Cost && ((this.Name == null && otherData.Name == null) || 
-                    string.Equals(this.Name, otherData.Name, StringComparison.OrdinalIgnoreCase)) && this.Timestamp.Equals(otherData.Timestamp);
-            }
         }
     }
 }
