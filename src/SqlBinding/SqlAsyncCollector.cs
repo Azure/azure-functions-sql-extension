@@ -1,8 +1,11 @@
-﻿using Newtonsoft.Json;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,7 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly List<T> _rows;
 
         /// <summary>
-        /// Builds a SQLAsynCollector
+        /// Initializes a new instance of the <see cref="SqlAsyncCollector<typeparamref name="T"/>"/> class.
         /// </summary>
         /// <param name="connection"> 
         /// Contains the SQL connection that will be used by the collector when it inserts SQL rows 
@@ -29,22 +32,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </exception>
         public SqlAsyncCollector(SqlConnectionWrapper connection, SqlAttribute attribute)
         {
-            if (connection == null)
-            {
-                throw new ArgumentNullException("connection");
-            }
-            if (attribute == null)
-            {
-                throw new ArgumentNullException("attribute");
-            }
-            _connection = connection;
-            _attribute = attribute;
+            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            _attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
             _rows = new List<T>();
         }
 
         /// <summary>
         /// Adds an item to this collector that is processed in a batch along with all other items added via 
-        /// AddAsync when FlushAsync is called. Each item is interpreted as a row to be added to the SQL table
+        /// AddAsync when <see cref="FlushAsync"/> is called. Each item is interpreted as a row to be added to the SQL table
         /// specified in the SQL Binding.
         /// </summary>
         /// <param name="item"> The item to add to the collector </param>
@@ -60,7 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Processes all items added to the collector via AddAsync. Each item is interpreted as a row to be added
+        /// Processes all items added to the collector via <see cref="AddAsync"/>. Each item is interpreted as a row to be added
         /// to the SQL table specified in the SQL Binding. All rows are added in one transaction. Nothing is done
         /// if no items were added via AddAsync.
         /// </summary>
@@ -75,7 +70,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             string rows = JsonConvert.SerializeObject(_rows);
-            InsertRows(rows, _attribute.Command, _connection.GetConnection());
+            InsertRows(rows, _attribute.CommandText, _connection.GetConnection());
             _rows.Clear();
             return Task.CompletedTask;
         }
@@ -88,38 +83,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="table"> The name of the table that is being modified </param>
         /// <param name="connection"> The SqlConnection that has all connection and authentication information 
         /// already specified</param>
-        /// <exception cref="InvalidOperationException">
-        /// Thrown if an exception is encountered while executing the SQL transaction to insert the rows
-        /// </exception>
-        private static void InsertRows(string rows, string table, SqlConnection connection)
+        private static async void InsertRows(string rows, string table, SqlConnection connection)
         {
             DataTable dataTable = (DataTable)JsonConvert.DeserializeObject(rows, typeof(DataTable));
             dataTable.TableName = table;
             DataSet dataSet = new DataSet();
             dataSet.Tables.Add(dataTable);
-            try
-            {
-                var dataAdapter = new SqlDataAdapter("SELECT * FROM " + table + ";", connection);
-                SqlCommandBuilder commandBuilder = new SqlCommandBuilder(dataAdapter);
-                connection.Open();
-                /** Keeping this here for now. Hesitant to do the other way of inserting because it takes a lot longer
-                 * for more rows.
-                    using (var bulk = new SqlBulkCopy(connection))
-                    {
-                        bulk.DestinationTableName = table;
-                        bulk.WriteToServer(dataTable);
-                    }
-                **/
-                // This creates a separate transaction for each row. It seems like the standard way to do wrap multiple
-                // row insertions in a transaction in C# is the bulk copy, but not sure.
-                dataAdapter.Update(dataSet, table);
-                connection.Close();
-            }
-            catch (Exception e)
-            {
-                throw new InvalidOperationException("Exception encountered when attempting to execute" +
-                    "the SQL transaction: " + e.Message);
-            }
+            var dataAdapter = new SqlDataAdapter($"SELECT * FROM [{table}];", connection);
+            SqlCommandBuilder commandBuilder = new SqlCommandBuilder(dataAdapter);
+            // Manually opening the connection because a "using" statement disposes it afterwards. If a user invokes
+            // FlushAsync themselves within the function implementation, then FlushAsync and InsertRows is called
+            // multipled times. The invocations of FlushAsync following the first one will fail because the SqlConnection 
+            // has been disposed of
+            await connection.OpenAsync();
+            /** Keeping this here for now. Hesitant to do the other way of inserting because it takes a lot longer
+                * for more rows.
+                using (var bulk = new SqlBulkCopy(connection))
+                {
+                    bulk.DestinationTableName = table;
+                    bulk.WriteToServer(dataTable);
+                }
+            **/
+            // This creates a separate transaction for each row. It seems like the standard way to do wrap multiple
+            // row insertions in a transaction in C# is the bulk copy, but not sure.
+            dataAdapter.Update(dataSet, table);
+            connection.Close();
         }
     }
 }
