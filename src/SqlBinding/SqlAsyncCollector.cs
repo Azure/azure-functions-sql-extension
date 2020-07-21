@@ -92,7 +92,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 await connection.OpenAsync();
                 var transaction = connection.BeginTransaction();
-                var dataAdapter = new SqlDataAdapter(new SqlCommand($"SELECT * FROM [{table}];", connection, transaction));
+                // The command builder actually executes the select command attached to the data adapter to get information
+                // about the table. If the select command returns a lot of rows this could be an unnecessarily heavy operation, 
+                // so best to just grab one row
+                var dataAdapter = new SqlDataAdapter(new SqlCommand($"SELECT TOP 1 * FROM [{table}];", connection, transaction));
                 SqlCommandBuilder commandBuilder = new SqlCommandBuilder(dataAdapter);
                 // Obviously shouldn't hardcode this value in. Is batching something we want to support? 
                 dataAdapter.UpdateBatchSize = 1000;
