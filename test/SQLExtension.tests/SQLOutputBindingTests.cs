@@ -1,40 +1,35 @@
-﻿using Microsoft.Azure.WebJobs;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Sql;
+using Microsoft.Extensions.Configuration;
+using Moq;
 using System;
 using Xunit;
 
-namespace SQLExtension.tests
+namespace SqlExtension.Tests
 {
-    public class SQLOutputBindingTests
+    public class SqlOutputBindingTests
     {
+        private static Mock<IConfiguration> config = new Mock<IConfiguration>();
 
         [Fact]
         public void TestNullCollectorConstructorArguments()
         {
             var arg = new SqlAttribute(string.Empty);
-            var connection = new SqlConnectionWrapper();
-            Assert.Throws<ArgumentNullException>(() => new SqlAsyncCollector<string>(connection, null));
+            Assert.Throws<ArgumentNullException>(() => new SqlAsyncCollector<string>(config.Object, null));
             Assert.Throws<ArgumentNullException>(() => new SqlAsyncCollector<string>(null, arg));
-        }
-
-        [Fact]
-        public void TestNullItem()
-        {
-            var arg = new SqlAttribute(string.Empty);
-            var connection = new SqlConnectionWrapper();
-            var collector = new SqlAsyncCollector<string>(connection, arg);
-            Assert.ThrowsAsync<ArgumentNullException>(() => collector.AddAsync(null));
         }
 
         [Fact]
         public void TestAddAsync()
         {
-            // Really a pretty silly test. Just confirms that the Sql connection is only opened when FlushAsync is called,
-            // because otherwise we would get an exception in AddAsync (since the Sql connection in the wrapper is null)
+            // Really a pretty silly test. Just confirms that the SQL connection is only opened when FlushAsync is called,
+            // because otherwise we would get an exception in AddAsync (since the SQL connection in the wrapper is null)
             var arg = new SqlAttribute(string.Empty);
-            var connection = new SqlConnectionWrapper();
-            var collector = new SqlAsyncCollector<Data>(connection, arg);
-            var data = new Data
+            var collector = new SqlAsyncCollector<TestData>(config.Object, arg);
+            var data = new TestData
             {
                 ID = 1,
                 Name = "Data",

@@ -8,7 +8,9 @@ using System.Data;
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
-    /// An input binding that can be used to establish a connection to a SQL server database and extract the results of a query run against that database.
+    /// An input and output binding that can be used to either:
+    /// - Establish a connection to a SQL server database and extract the results of a query run against that database, in the case of an input binding
+    /// - Establish a connection to a SQL server database and insert rows into a given table, in the case of an output binding
     /// </summary>
     [Binding]
     [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.ReturnValue)]
@@ -41,14 +43,14 @@ namespace Microsoft.Azure.WebJobs
         public string CommandText { get; set; }
 
         /// <summary>
-        /// Specifies whether <see cref="CommandText"/> refers to a stored procedure or Sql query string. 
+        /// Specifies whether <see cref="CommandText"/> refers to a stored procedure or SQL query string. 
         /// Use <see cref="CommandType.StoredProcedure"/> for the former, <see cref="CommandType.Text"/> for the latter
         /// </summary>
         public CommandType CommandType { get; set; }
 
         /// <summary>
-        /// Specifies the parameters that will be used to execute the Sql query or stored procedure specified in <see cref="CommandText"/>. 
-        /// Must follow the format "@param1=param1,@param2=param2". For example, if your Sql query looks like 
+        /// Specifies the parameters that will be used to execute the SQL query or stored procedure specified in <see cref="CommandText"/>. 
+        /// Must follow the format "@param1=param1,@param2=param2". For example, if your SQL query looks like 
         /// "select * from Products where cost = @Cost and name = @Name", then Parameters must have the form "@Cost=100,@Name=Computer"
         /// </summary>
         [AutoResolve]

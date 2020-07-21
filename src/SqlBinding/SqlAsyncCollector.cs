@@ -8,12 +8,13 @@ using System.Data;
 using Microsoft.Data.SqlClient;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
-    public class SqlAsyncCollector<T> : IAsyncCollector<T>
+    internal class SqlAsyncCollector<T> : IAsyncCollector<T>
     {
-        private readonly SqlConnectionWrapper _connection;
+        private readonly IConfiguration _configuration;
         private readonly SqlAttribute _attribute;
         private readonly List<T> _rows;
 
@@ -28,11 +29,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Contains as one of its attributes the SQL table that rows will be inserted into 
         /// </param>
         /// <exception cref="ArgumentNullException">
-        /// Thrown if either connection or attribute is null
+        /// Thrown if either configuration or attribute is null
         /// </exception>
-        public SqlAsyncCollector(SqlConnectionWrapper connection, SqlAttribute attribute)
+        public SqlAsyncCollector(IConfiguration configuration, SqlAttribute attribute)
         {
-            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
             _rows = new List<T>();
         }
@@ -62,17 +63,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="cancellationToken"></param>
         /// <returns> A CompletedTask if executed successfully. If no rows were added, this is returned 
         /// automatically. </returns>
-        public Task FlushAsync(CancellationToken cancellationToken = default)
+        public async Task FlushAsync(CancellationToken cancellationToken = default)
         {
-            if (_rows.Count == 0)
+            if (_rows.Count != 0)
             {
-                return Task.CompletedTask;
+                string rows = JsonConvert.SerializeObject(_rows);
+                await InsertRowsAsync(rows, _attribute, _configuration);
+                _rows.Clear();
             }
-
-            string rows = JsonConvert.SerializeObject(_rows);
-            InsertRows(rows, _attribute.CommandText, _connection.GetConnection());
-            _rows.Clear();
-            return Task.CompletedTask;
         }
 
 
@@ -80,34 +78,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Adds the rows specified in "rows" to "table", a SQL table in the user's database, using "connection"
         /// </summary>
         /// <param name="rows"> The rows to be inserted </param>
-        /// <param name="table"> The name of the table that is being modified </param>
-        /// <param name="connection"> The SqlConnection that has all connection and authentication information 
-        /// already specified</param>
-        private static async void InsertRows(string rows, string table, SqlConnection connection)
+        /// <param name="attribute"> Contains the name of the table to be modified and SQL connection information </param>
+        /// <param name="configuration"> Used to build up the 
+        /// connection </param>
+        private static async Task InsertRowsAsync(string rows, SqlAttribute attribute, IConfiguration configuration)
         {
+            var table = attribute.CommandText;
             DataTable dataTable = (DataTable)JsonConvert.DeserializeObject(rows, typeof(DataTable));
             dataTable.TableName = table;
             DataSet dataSet = new DataSet();
             dataSet.Tables.Add(dataTable);
-            var dataAdapter = new SqlDataAdapter($"SELECT * FROM [{table}];", connection);
-            SqlCommandBuilder commandBuilder = new SqlCommandBuilder(dataAdapter);
-            // Manually opening the connection because a "using" statement disposes it afterwards. If a user invokes
-            // FlushAsync themselves within the function implementation, then FlushAsync and InsertRows is called
-            // multipled times. The invocations of FlushAsync following the first one will fail because the SqlConnection 
-            // has been disposed of
-            await connection.OpenAsync();
-            /** Keeping this here for now. Hesitant to do the other way of inserting because it takes a lot longer
-                * for more rows.
-                using (var bulk = new SqlBulkCopy(connection))
-                {
-                    bulk.DestinationTableName = table;
-                    bulk.WriteToServer(dataTable);
-                }
-            **/
-            // This creates a separate transaction for each row. It seems like the standard way to do wrap multiple
-            // row insertions in a transaction in C# is the bulk copy, but not sure.
-            dataAdapter.Update(dataSet, table);
-            connection.Close();
+            using (var connection = SqlBindingUtilities.BuildConnection(attribute, configuration))
+            {
+                await connection.OpenAsync();
+                var transaction = connection.BeginTransaction();
+                var dataAdapter = new SqlDataAdapter(new SqlCommand($"SELECT * FROM [{table}];", connection, transaction));
+                SqlCommandBuilder commandBuilder = new SqlCommandBuilder(dataAdapter);
+                // Obviously shouldn't hardcode this value in. Is batching something we want to support? 
+                dataAdapter.UpdateBatchSize = 1000;
+                dataAdapter.Update(dataSet, table);
+                transaction.Commit();
+            }
         }
     }
 }

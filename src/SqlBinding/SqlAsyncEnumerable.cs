@@ -1,18 +1,18 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using Microsoft.Data.SqlClient;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
-    public class SqlAsyncEnumerable<T> : IAsyncEnumerable<T>
+    internal class SqlAsyncEnumerable<T> : IAsyncEnumerable<T>
     {
-        private readonly SqlConnectionWrapper _connection;
+        private readonly SqlConnection _connection;
         private readonly SqlAttribute _attribute;
 
         /// <summary>
@@ -23,14 +23,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <exception cref="ArgumentNullException">
         /// Thrown if either connection or attribute is null
         /// </exception>
-        public SqlAsyncEnumerable(SqlConnectionWrapper connection, SqlAttribute attribute)
+        public SqlAsyncEnumerable(SqlConnection connection, SqlAttribute attribute)
         {
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
             _attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
         }
         /// <summary>
         /// Returns the enumerator associated with this enumerable. The enumerator will execute the query specified
-        /// in attribute and "lazily" grab the Sql rows corresponding to the query result. It will only read a 
+        /// in attribute and "lazily" grab the SQL rows corresponding to the query result. It will only read a 
         /// row into memory if <see cref="MoveNextAsync"/> is called
         /// </summary>
         /// <param name="cancellationToken"></param>
@@ -41,12 +41,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
 
-        internal class SqlAsyncEnumerator<T> : IAsyncEnumerator<T>
+        private class SqlAsyncEnumerator<T> : IAsyncEnumerator<T>
         {
-            private readonly SqlConnectionWrapper _connection;
+            private readonly SqlConnection _connection;
             private readonly SqlAttribute _attribute;
             private T _currentRow;
             private SqlDataReader _reader;
+            private List<string> _cols;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="SqlAsyncEnumerator<typeparamref name="T"/>"/> class.
@@ -56,7 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <exception cref="ArgumentNullException">
             /// Thrown if either connection or attribute is null
             /// </exception>
-            public SqlAsyncEnumerator(SqlConnectionWrapper connection, SqlAttribute attribute)
+            public SqlAsyncEnumerator(SqlConnection connection, SqlAttribute attribute)
             {
                 _connection = connection ?? throw new ArgumentNullException(nameof(connection));
                 _attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
@@ -73,20 +74,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 : _currentRow;
 
             /// <summary>
-            /// Closes the Sql connection and resources associated with reading the results of the query
+            /// Closes the SQL connection and resources associated with reading the results of the query
             /// </summary>
             /// <returns></returns>
             public ValueTask DisposeAsync()
             {
                 // Doesn't seem like there's an async version of closing the reader/connection 
                 _reader.Close();
-                var connection = _connection.GetConnection();
-                connection.Close();
+                _connection.Close();
                 return new ValueTask(Task.CompletedTask);
             }
 
             /// <summary>
-            /// Moves the enumerator to the next row of the Sql query result
+            /// Moves the enumerator to the next row of the SQL query result
             /// </summary>
             /// <returns> 
             /// True if there is another row left in the query to process, or false if this was the last row
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             /// <summary>
-            /// Attempts to grab the next row of the Sql query result. 
+            /// Attempts to grab the next row of the SQL query result. 
             /// </summary>
             /// <returns>
             /// True if there is another row left in the query to process, or false if this was the last row
@@ -106,8 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 if (_reader == null)
                 {
-                    var connection = _connection.GetConnection();
-                    SqlCommand command = SqlConverters.BuildCommand(_attribute, connection);
+                    SqlCommand command = SqlBindingUtilities.BuildCommand(_attribute, _connection);
                     await command.Connection.OpenAsync();
                     _reader = await command.ExecuteReaderAsync();
                 }
@@ -123,15 +122,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
             }
 
+            /// <summary>
+            /// Serializes the reader's current SQL row into JSON
+            /// </summary>
+            /// <returns>JSON string version of the SQL row</returns>
             private string SerializeRow()
             {
-                var cols = new List<string>();
-                for (var i = 0; i < _reader.FieldCount; i++)
+                if (_cols == null)
                 {
-                    cols.Add(_reader.GetName(i));
+                    _cols = new List<string>(_reader.FieldCount);
+                    for (var i = 0; i < _reader.FieldCount; i++)
+                    {
+                        _cols.Add(_reader.GetName(i));
+                    }
                 }
+
                 var result = new Dictionary<string, object>();
-                foreach (var col in cols)
+                foreach (var col in _cols)
                 {
                     result.Add(col, _reader[col]);
                 }

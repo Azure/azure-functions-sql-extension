@@ -12,7 +12,7 @@ namespace SqlExtensionSamples
       
         [FunctionName("GetProductsSqlCommand")]
         public static IActionResult Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "getproducts-sqlcommand/{cost}")]
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-sqlcommand/{cost}")]
             HttpRequest req,
             [Sql("select * from Products where cost = @Cost",
                 CommandType = System.Data.CommandType.Text,

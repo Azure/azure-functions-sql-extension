@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace SQLExtension.tests
+namespace SqlExtension.Tests
 {
-    public  class Data
+    public class TestData
     {
         public int ID { get; set; }
 
@@ -16,7 +14,7 @@ namespace SQLExtension.tests
 
         public override bool Equals(object obj)
         {
-            var otherData = obj as Data;
+            var otherData = obj as TestData;
             if (otherData == null)
             {
                 return false;

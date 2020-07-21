@@ -7,7 +7,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     public static class SqlBindingExtension
     {
-        public static IWebJobsBuilder AddSqlBinding(this IWebJobsBuilder builder)
+        public static IWebJobsBuilder AddSql(this IWebJobsBuilder builder)
         {
             if (builder == null)
             {

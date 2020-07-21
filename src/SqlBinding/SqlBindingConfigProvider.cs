@@ -12,10 +12,10 @@ using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlConverters;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     /// <summary>
-    /// Exposes Sql input, output, and trigger bindings
+    /// Exposes SQL input, output, and trigger bindings
     /// </summary>
     [Extension("sql")]
-    public class SqlBindingConfigProvider : IExtensionConfigProvider
+    internal class SqlBindingConfigProvider : IExtensionConfigProvider
     {
         private readonly IConfiguration _configuration;
 
