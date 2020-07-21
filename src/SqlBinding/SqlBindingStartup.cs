@@ -11,7 +11,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     {
         public void Configure(IWebJobsBuilder builder)
         {
-            builder.AddSqlBinding();
+            builder.AddSql();
         }
     }
 }

@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqlExtensionSamples", "samp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqlBinding", "src\SqlBinding\SqlBinding.csproj", "{4453B407-2CA3-4011-BDE5-247FCE5C1974}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SQLExtension.tests", "test\SQLExtension.tests\SQLExtension.tests.csproj", "{A5B55530-71C8-4A9A-92AD-1D33A5E80FC1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqlExtension.Tests", "test\SQLExtension.tests\SqlExtension.Tests.csproj", "{A5B55530-71C8-4A9A-92AD-1D33A5E80FC1}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{21CDC01C-247B-46B0-A8F5-9D35686C628B}"
 EndProject

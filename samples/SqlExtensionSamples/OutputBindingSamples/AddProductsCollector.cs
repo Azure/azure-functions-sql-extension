@@ -13,12 +13,12 @@ namespace SqlExtensionSamples
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproducts-collector")] HttpRequest req,
         [Sql("Products", ConnectionStringSetting = "SQLServerAuthentication")] ICollector<Product> products)
         {
-            var newProducts = GetNewProducts(5);
+            var newProducts = GetNewProducts(5000);
             foreach (var product in newProducts)
             {
                 products.Add(product);
             }
-            return new CreatedResult($"/api/addproducts-collector", newProducts);
+            return new CreatedResult($"/api/addproducts-collector", "done");
         }
     }
 }

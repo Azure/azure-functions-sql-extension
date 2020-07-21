@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
         IAsyncCollector<T> IConverter<SqlAttribute, IAsyncCollector<T>>.Convert(SqlAttribute attribute)
         {
-            return new SqlAsyncCollector<T>(SqlConverters.BuildConnection(null, attribute, _configuration), attribute);
+            return new SqlAsyncCollector<T>(_configuration, attribute);
         }
     }
 }
