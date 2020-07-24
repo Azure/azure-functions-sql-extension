@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Data;
 using Microsoft.Data.SqlClient;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -39,16 +40,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns>The SqlCommand</returns>
             public SqlCommand Convert(SqlAttribute attribute)
             {
-                var connection = SqlBindingUtilities.BuildConnection(attribute, _configuration);
-                SqlCommand command = new SqlCommand(attribute.CommandText, connection);
-                SqlBindingUtilities.ParseParameters(attribute.Parameters, command);
-                return command;
+                return SqlBindingUtilities.BuildCommand(attribute, SqlBindingUtilities.BuildConnection(attribute, _configuration));
             }
 
         }
 
-        internal class SqlGenericsConverter<T> : IConverter<SqlAttribute, IEnumerable<T>>, IConverter<SqlAttribute, IAsyncEnumerable<T>>,
-            IConverter<SqlAttribute, string>
+        internal class SqlGenericsConverter<T> : IAsyncConverter<SqlAttribute, IEnumerable<T>>, IConverter<SqlAttribute, IAsyncEnumerable<T>>,
+            IAsyncConverter<SqlAttribute, string>
         {
             private IConfiguration _configuration;
 
@@ -71,9 +69,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// Contains the information necessary to establish a SqlConnection, and the query to be executed on the database
             /// </param>
             /// <returns>An IEnumerable containing the rows read from the user's database in the form of the user-defined POCO</returns>
-            public IEnumerable<T> Convert(SqlAttribute attribute)
+            public async Task<IEnumerable<T>> ConvertAsync(SqlAttribute attribute, CancellationToken cancellationToken)
             {
-                string json = Task.Run<string>(() => BuildItemFromAttribute(attribute)).GetAwaiter().GetResult();
+                string json = await BuildItemFromAttribute(attribute);
                 return JsonConvert.DeserializeObject<IEnumerable<T>>(json);
             }
 
@@ -88,11 +86,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// then the returned JSON string could look like
             /// [{"productID":3,"name":"Bottle","cost":90},{"productID":5,"name":"Cup","cost":100}]
             /// </returns>
-            string IConverter<SqlAttribute, string>.Convert(SqlAttribute attribute)
+            async Task<string> IAsyncConverter<SqlAttribute, string>.ConvertAsync(SqlAttribute attribute, CancellationToken cancellationToken)
             {
-                //https://docs.microsoft.com/en-us/archive/msdn-magazine/2015/july/async-programming-brownfield-async-development#the-thread-pool-hack
-                //Does the BuildItemFromAttribute method use "per-thread" state?
-                return Task.Run<string>(() => BuildItemFromAttribute(attribute)).GetAwaiter().GetResult();
+                return await BuildItemFromAttribute(attribute);
             }
 
             /// <summary>
@@ -118,6 +114,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     }
                 }
             }
+
 
             IAsyncEnumerable<T> IConverter<SqlAttribute, IAsyncEnumerable<T>>.Convert(SqlAttribute attribute)
             {
