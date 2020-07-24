@@ -11,6 +11,7 @@ using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlConverters;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Data.SqlClient;
 using Microsoft.Azure.WebJobs;
+using System.Threading;
 
 namespace SqlExtension.Tests
 {
@@ -300,7 +301,7 @@ namespace SqlExtension.Tests
         }
 
         [Fact]
-        public void TestWellformedDeserialization()
+        public async void TestWellformedDeserialization()
         {
             var arg = new SqlAttribute(string.Empty);
             var converter = new Mock<SqlGenericsConverter<TestData>>(config.Object);
@@ -332,12 +333,12 @@ namespace SqlExtension.Tests
             list.Add(data1);
             list.Add(data2);
             list.Add(data3);
-            IEnumerable<TestData> enActual = converter.Object.Convert(arg);
+            IEnumerable<TestData> enActual = await converter.Object.ConvertAsync(arg, new CancellationToken());
             Assert.True(enActual.ToList<TestData>().SequenceEqual<TestData>(list));
         }
 
         [Fact]
-        public void TestMalformedDeserialization()
+        public async void TestMalformedDeserialization()
         {
             var arg = new SqlAttribute(string.Empty);
             var converter = new Mock<SqlGenericsConverter<TestData>>(config.Object);
@@ -354,7 +355,7 @@ namespace SqlExtension.Tests
                 Timestamp = new DateTime(2019, 11, 22, 6, 32, 15)
             };
             list.Add(data);
-            IEnumerable<TestData> enActual = converter.Object.Convert(arg);
+            IEnumerable<TestData> enActual = await converter.Object.ConvertAsync(arg, new CancellationToken());
             Assert.True(enActual.ToList<TestData>().SequenceEqual<TestData>(list));
 
             // SQL data's columns are named differently than the POCO's fields
@@ -368,7 +369,7 @@ namespace SqlExtension.Tests
                 Cost = 0,
             };
             list.Add(data);
-            enActual = converter.Object.Convert(arg);
+            enActual = await converter.Object.ConvertAsync(arg, new CancellationToken());
             Assert.True(enActual.ToList<TestData>().SequenceEqual<TestData>(list));
 
             // Confirm that the JSON fields are case-insensitive (technically malformed string, but still works)
@@ -383,7 +384,7 @@ namespace SqlExtension.Tests
                 Timestamp = new DateTime(2019, 11, 22, 6, 32, 15)
             };
             list.Add(data);
-            enActual = converter.Object.Convert(arg);
+            enActual = await converter.Object.ConvertAsync(arg, new CancellationToken());
             Assert.True(enActual.ToList<TestData>().SequenceEqual<TestData>(list));
         }
     }
