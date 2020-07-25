@@ -1,11 +1,14 @@
-﻿using Microsoft.Data.SqlClient;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Data;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
-    internal class SqlBindingUtilities
+    internal static class SqlBindingUtilities
     {
         /// <summary>
         /// Builds a connection using the connection string and authentication information specified in "attribute". 

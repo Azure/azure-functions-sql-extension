@@ -8,13 +8,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     internal class SqlAsyncCollectorBuilder<T> : IConverter<SqlAttribute, IAsyncCollector<T>>
     {
         private readonly IConfiguration _configuration;
+        private SqlAsyncCollector<T> _collector;
+
         public SqlAsyncCollectorBuilder(IConfiguration configuration)
         {
             _configuration = configuration;
         }
+
         IAsyncCollector<T> IConverter<SqlAttribute, IAsyncCollector<T>>.Convert(SqlAttribute attribute)
         {
-            return new SqlAsyncCollector<T>(_configuration, attribute);
+            if (_collector == null)
+            {
+                _collector = new SqlAsyncCollector<T>(_configuration, attribute);
+            }
+            return _collector;
         }
     }
 }

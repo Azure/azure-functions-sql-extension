@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     {
         internal class SqlConverter : IConverter<SqlAttribute, SqlCommand>
         {
-            private IConfiguration _configuration;
+            private readonly IConfiguration _configuration;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="SqlConverter/>"/> class.
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         internal class SqlGenericsConverter<T> : IAsyncConverter<SqlAttribute, IEnumerable<T>>, IConverter<SqlAttribute, IAsyncEnumerable<T>>,
             IAsyncConverter<SqlAttribute, string>
         {
-            private IConfiguration _configuration;
+            private readonly IConfiguration _configuration;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="SqlGenericsConverter<typeparamref name="T"/>"/> class.
