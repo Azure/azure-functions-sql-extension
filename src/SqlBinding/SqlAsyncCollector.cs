@@ -17,6 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly IConfiguration _configuration;
         private readonly SqlAttribute _attribute;
         private readonly List<T> _rows;
+        private SqlCommandBuilder _commandBuilder;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlAsyncCollector<typeparamref name="T"/>"/> class.
@@ -81,7 +82,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="attribute"> Contains the name of the table to be modified and SQL connection information </param>
         /// <param name="configuration"> Used to build up the 
         /// connection </param>
-        private static async Task InsertRowsAsync(string rows, SqlAttribute attribute, IConfiguration configuration)
+        private async Task InsertRowsAsync(string rows, SqlAttribute attribute, IConfiguration configuration)
         {
             var table = attribute.CommandText;
             DataTable dataTable = (DataTable)JsonConvert.DeserializeObject(rows, typeof(DataTable));
@@ -92,12 +93,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 await connection.OpenAsync();
                 var transaction = connection.BeginTransaction();
-                // The command builder actually executes the select command attached to the data adapter to get information
-                // about the table. If the select command returns a lot of rows this could be an unnecessarily heavy operation, 
-                // so best to just grab one row
-                var dataAdapter = new SqlDataAdapter(new SqlCommand($"SELECT TOP 1 * FROM [{table}];", connection, transaction));
-                SqlCommandBuilder commandBuilder = new SqlCommandBuilder(dataAdapter);
-                // Obviously shouldn't hardcode this value in. Is batching something we want to support? 
+                SqlDataAdapter dataAdapter;
+                // First function invocation, meaning we should create the command builder that uses the SelectCommand of the 
+                // dataAdapter to discover the table schema and generate other commands
+                if (_commandBuilder == null)
+                {
+                    // The command builder actually executes the select command attached to the data adapter to get information
+                    // about the table. If the select command returns a lot of rows this could be an unnecessarily heavy operation, 
+                    // so best to just grab one row
+                    dataAdapter = new SqlDataAdapter(new SqlCommand($"SELECT TOP 1 * FROM [{table}];", connection, transaction));
+                    _commandBuilder = new SqlCommandBuilder(dataAdapter);
+                } else
+                {
+                    // Commands have already been generated, so we just need to attach them to the dataAdapter. No need to 
+                    // discover the table schema
+                    dataAdapter = new SqlDataAdapter();
+                    var insertCommand = _commandBuilder.GetInsertCommand();
+                    insertCommand.Connection = connection;
+                    insertCommand.Transaction = transaction;
+                    dataAdapter.InsertCommand = insertCommand;
+                }
                 dataAdapter.UpdateBatchSize = 1000;
                 dataAdapter.Update(dataSet, table);
                 transaction.Commit();
