@@ -14,14 +14,17 @@ namespace SqlExtensionSamples
             HttpRequest req,
         [Sql("Products", ConnectionStringSetting = "SQLServerAuthentication")] out Product[] output)
         {
+            // Suppose that the ProductID column is the primary key in the Products table, and the 
+            // table already contains a row with ProductID = 1. In that case, the row will be updated
+            // instead of inserted to have values Name = "Cup" and Cost = 2. 
             output = new Product[2];
             var product = new Product();
-            product.ProductID = 10;
-            product.Name = "Bottle";
-            product.Cost = 52;
+            product.ProductID = 1;
+            product.Name = "Cup";
+            product.Cost = 2;
             output[0] = product;
             product = new Product();
-            product.ProductID = 11;
+            product.ProductID = 2;
             product.Name = "Glasses";
             product.Cost = 12;
             output[1] = product;

@@ -33,7 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// in attribute and "lazily" grab the SQL rows corresponding to the query result. It will only read a 
         /// row into memory if <see cref="MoveNextAsync"/> is called
         /// </summary>
-        /// <param name="cancellationToken"></param>
+        /// <param name="cancellationToken">The cancellationToken is not used in this method</param>
         /// <returns>The enumerator</returns>
         public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
         {
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </returns>
             public ValueTask<bool> MoveNextAsync()
             {
-                return new ValueTask<bool>(GetNextRow());
+                return new ValueTask<bool>(GetNextRowAsync());
             }
 
             /// <summary>
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns>
             /// True if there is another row left in the query to process, or false if this was the last row
             /// </returns>
-            private async Task<bool> GetNextRow()
+            private async Task<bool> GetNextRowAsync()
             {
                 if (_reader == null)
                 {
