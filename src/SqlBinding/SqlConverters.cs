@@ -68,10 +68,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <param name="attribute">
             /// Contains the information necessary to establish a SqlConnection, and the query to be executed on the database
             /// </param>
+            /// <param name="cancellationToken">The cancellationToken is not used in this method</param>
             /// <returns>An IEnumerable containing the rows read from the user's database in the form of the user-defined POCO</returns>
             public async Task<IEnumerable<T>> ConvertAsync(SqlAttribute attribute, CancellationToken cancellationToken)
             {
-                string json = await BuildItemFromAttribute(attribute);
+                string json = await BuildItemFromAttributeAsync(attribute);
                 return JsonConvert.DeserializeObject<IEnumerable<T>>(json);
             }
 
@@ -81,6 +82,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <param name="attribute">
             /// Contains the information necessary to establish a SqlConnection, and the query to be executed on the database
             /// </param>
+            /// <param name="cancellationToken">The cancellationToken is not used in this method</param>
             /// <returns>
             /// The JSON string. I.e., if the result has two rows from a table with schema ProductID: int, Name: varchar, Cost: int, 
             /// then the returned JSON string could look like
@@ -88,7 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </returns>
             async Task<string> IAsyncConverter<SqlAttribute, string>.ConvertAsync(SqlAttribute attribute, CancellationToken cancellationToken)
             {
-                return await BuildItemFromAttribute(attribute);
+                return await BuildItemFromAttributeAsync(attribute);
             }
 
             /// <summary>
@@ -99,7 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// The binding attribute that contains the name of the connection string app setting and query.
             /// </param>
             /// <returns></returns>
-            public virtual async Task<string> BuildItemFromAttribute(SqlAttribute attribute)
+            public virtual async Task<string> BuildItemFromAttributeAsync(SqlAttribute attribute)
             {
                 using (var connection = SqlBindingUtilities.BuildConnection(attribute, _configuration))
                 {

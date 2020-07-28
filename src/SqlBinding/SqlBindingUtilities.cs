@@ -25,8 +25,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             if (attribute.ConnectionStringSetting == null)
             {
-                throw new InvalidOperationException("Must specify a ConnectionStringSetting, which refers to the name of an app setting which contains" +
-                    "the SQL connection string, to connect to your SQL server instance.");
+                throw new InvalidOperationException("Must specify ConnectionStringSetting, which should refer to the name of an app setting that " +
+                    "contains a SQL connection string");
             }
             if (configuration == null)
             {
@@ -54,10 +54,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             // If parameters is null, user did not specify any parameters in their function so nothing to parse
-            if (parameters != null)
+            if (!string.IsNullOrEmpty(parameters))
             {
-                // Because we remove empty entries, we will ignore any commas that appear at the beginning/end of the parameter list.
-                // I.e., ",,@param1=param1,@param2=param2,,," will be parsed just like "@param1=param1,@param2=param2" is.
+                // Because we remove empty entries, we will ignore any commas that appear at the beginning/end of the parameter list,
+                // as well as extra commas that appear between parameter pairs.
+                // I.e., ",,@param1=param1,,@param2=param2,,," will be parsed just like "@param1=param1,@param2=param2" is.
                 // Do we want this? 
                 string[] paramPairs = parameters.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 

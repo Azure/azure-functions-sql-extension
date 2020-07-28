@@ -9,6 +9,7 @@ using Microsoft.Data.SqlClient;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using System.Collections.Concurrent;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -17,7 +18,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly IConfiguration _configuration;
         private readonly SqlAttribute _attribute;
         private readonly List<T> _rows;
-        private SqlCommandBuilder _commandBuilder;
+        // Maps from database name + table name to SqlCommandBuilders
+        private static ConcurrentDictionary<string, SqlCommandBuilder> _commandBuilders = new ConcurrentDictionary<string, SqlCommandBuilder>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlAsyncCollector<typeparamref name="T"/>"/> class.
@@ -45,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// specified in the SQL Binding.
         /// </summary>
         /// <param name="item"> The item to add to the collector </param>
-        /// <param name="cancellationToken"></param>
+        /// <param name="cancellationToken">The cancellationToken is not used in this method</param>
         /// <returns> A CompletedTask if executed successfully </returns>
         public Task AddAsync(T item, CancellationToken cancellationToken = default)
         {
@@ -61,7 +63,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// to the SQL table specified in the SQL Binding. All rows are added in one transaction. Nothing is done
         /// if no items were added via AddAsync.
         /// </summary>
-        /// <param name="cancellationToken"></param>
+        /// <param name="cancellationToken">The cancellationToken is not used in this method</param>
         /// <returns> A CompletedTask if executed successfully. If no rows were added, this is returned 
         /// automatically. </returns>
         public async Task FlushAsync(CancellationToken cancellationToken = default)
@@ -69,49 +71,65 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             if (_rows.Count != 0)
             {
                 string rows = JsonConvert.SerializeObject(_rows);
-                await InsertRowsAsync(rows, _attribute, _configuration);
+                await UpsertRowsAsync(rows, _attribute, _configuration);
                 _rows.Clear();
             }
         }
 
 
         /// <summary>
-        /// Adds the rows specified in "rows" to "table", a SQL table in the user's database, using "connection"
+        /// Upserts the rows specified in "rows" to the table specified in "attribute"
+        /// If a primary key in "rows" already exists in the table, the row is interpreted as an update rather than an insert.
+        /// The column values associated with that primary key in the table are updated to have the values specified in "rows".
+        /// If a new primary key is encountered in "rows", the row is simply inserted into the table. 
         /// </summary>
-        /// <param name="rows"> The rows to be inserted </param>
+        /// <param name="rows"> The rows to be upserted </param>
         /// <param name="attribute"> Contains the name of the table to be modified and SQL connection information </param>
-        /// <param name="configuration"> Used to build up the 
-        /// connection </param>
-        private async Task InsertRowsAsync(string rows, SqlAttribute attribute, IConfiguration configuration)
+        /// <param name="configuration"> Used to build up the connection </param>
+        private async Task UpsertRowsAsync(string rows, SqlAttribute attribute, IConfiguration configuration)
         {
-            var table = attribute.CommandText;
-            DataTable dataTable = (DataTable)JsonConvert.DeserializeObject(rows, typeof(DataTable));
-            dataTable.TableName = table;
-            DataSet dataSet = new DataSet();
-            dataSet.Tables.Add(dataTable);
+           
             using (var connection = SqlBindingUtilities.BuildConnection(attribute, configuration))
             {
+                var table = attribute.CommandText;
+                DataSet dataSet = new DataSet();
+                DataTable newData = (DataTable)JsonConvert.DeserializeObject(rows, typeof(DataTable));
+
                 await connection.OpenAsync();
                 var transaction = connection.BeginTransaction();
-                SqlDataAdapter dataAdapter;
-                // First function invocation, meaning we should create the command builder that uses the SelectCommand of the 
-                // dataAdapter to discover the table schema and generate other commands
-                if (_commandBuilder == null)
-                {
-                    // The command builder actually executes the select command attached to the data adapter to get information
-                    // about the table. If the select command returns a lot of rows this could be an unnecessarily heavy operation, 
-                    // so best to just grab one row
-                    dataAdapter = new SqlDataAdapter(new SqlCommand($"SELECT TOP 1 * FROM [{table}];", connection, transaction));
-                    _commandBuilder = new SqlCommandBuilder(dataAdapter);
-                } else
+                SqlDataAdapter dataAdapter = new SqlDataAdapter(new SqlCommand($"SELECT * FROM [{table}];", connection, transaction));
+                // Specifies which column should be intepreted as the primary key
+                dataAdapter.FillSchema(newData, SchemaType.Source);
+                newData.TableName = table;
+                DataTable originalData = newData.Clone();
+                // Get the rows currently stored in table
+                dataAdapter.Fill(originalData);
+                // Merge them with the new data. This will mark a row as "modified" if both originalData and newData have
+                // the same primary key. If newData has new primary keys, those rows as marked as "inserted"
+                originalData.Merge(newData);
+                dataSet.Tables.Add(originalData);
+
+                var key = connection.Database + table;
+                SqlCommandBuilder builder;
+                // First time we've encountered this table, meaning we should create the command builder that uses the SelectCommand 
+                // of the dataAdapter to discover the table schema and generate other commands
+                if (!_commandBuilders.TryGetValue(key, out builder))
+                {                    
+                    builder = new SqlCommandBuilder(dataAdapter);
+                    _commandBuilders.TryAdd(key, builder);
+                } 
+                else 
                 {
                     // Commands have already been generated, so we just need to attach them to the dataAdapter. No need to 
                     // discover the table schema
-                    dataAdapter = new SqlDataAdapter();
-                    var insertCommand = _commandBuilder.GetInsertCommand();
+                    var insertCommand = builder.GetInsertCommand();
                     insertCommand.Connection = connection;
                     insertCommand.Transaction = transaction;
                     dataAdapter.InsertCommand = insertCommand;
+                    var updateCommand = builder.GetUpdateCommand();
+                    updateCommand.Connection = connection;
+                    updateCommand.Transaction = transaction;
+                    dataAdapter.UpdateCommand = updateCommand;
                 }
                 dataAdapter.UpdateBatchSize = 1000;
                 dataAdapter.Update(dataSet, table);

@@ -51,7 +51,7 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Specifies the parameters that will be used to execute the SQL query or stored procedure specified in <see cref="CommandText"/>. 
         /// Must follow the format "@param1=param1,@param2=param2". For example, if your SQL query looks like 
-        /// "select * from Products where cost = @Cost and name = @Name", then Parameters must have the form "@Cost=100,@Name=Computer"
+        /// "select * from Products where cost = @Cost and name = @Name", then Parameters must have the form "@Cost=100,@Name={Name}"
         /// </summary>
         [AutoResolve]
         public string Parameters { get; set; }
