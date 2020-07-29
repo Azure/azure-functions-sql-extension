@@ -40,7 +40,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns>The SqlCommand</returns>
             public SqlCommand Convert(SqlAttribute attribute)
             {
-                return SqlBindingUtilities.BuildCommand(attribute, SqlBindingUtilities.BuildConnection(attribute, _configuration));
+                return SqlBindingUtilities.BuildCommand(attribute, SqlBindingUtilities.BuildConnection(
+                    attribute.ConnectionStringSetting, _configuration));
             }
 
         }
@@ -103,7 +104,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns></returns>
             public virtual async Task<string> BuildItemFromAttributeAsync(SqlAttribute attribute)
             {
-                using (var connection = SqlBindingUtilities.BuildConnection(attribute, _configuration))
+                using (var connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, _configuration))
                 {
                     using (SqlDataAdapter adapter = new SqlDataAdapter())
                     {
@@ -120,7 +121,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             IAsyncEnumerable<T> IConverter<SqlAttribute, IAsyncEnumerable<T>>.Convert(SqlAttribute attribute)
             {
-                return new SqlAsyncEnumerable<T>(SqlBindingUtilities.BuildConnection(attribute, _configuration), attribute);
+                return new SqlAsyncEnumerable<T>(SqlBindingUtilities.BuildConnection(
+                    attribute.ConnectionStringSetting, _configuration), attribute);
             }
         }
     }
