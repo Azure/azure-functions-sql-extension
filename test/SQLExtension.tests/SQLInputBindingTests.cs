@@ -76,6 +76,7 @@ namespace SqlExtension.Tests
         {
             var attribute = new SqlAttribute("");
             Assert.Throws<InvalidOperationException>(() => SqlBindingUtilities.BuildConnection(attribute, config.Object));
+            Assert.Throws<ArgumentNullException>(() => SqlBindingUtilities.BuildConnection(null, config.Object));
 
             attribute = new SqlAttribute("");
             attribute.ConnectionStringSetting = "ConnectionStringSetting";

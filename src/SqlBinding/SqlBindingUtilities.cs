@@ -11,27 +11,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     internal static class SqlBindingUtilities
     {
         /// <summary>
-        /// Builds a connection using the connection string and authentication information specified in "attribute". 
-        /// Only builds a new connection if "connection" is null. Otherwise just returns "connection" 
+        /// Builds a connection using the connection information specified in "attribute"
         /// </summary>
-        /// <param name="connection">Used to determine whether or not a new connection must be built. The function 
-        /// simply returns "connection" if it is non-null </param>
-        /// <param name="attribute">Contains the connection string and authentication information for the user's database</param>
+        /// <param name="attribute">Contains the name of the app setting where the SQL connection string is stored</param>
+        /// <param name="configuration">Used to extract the SQL connection string from the app setting</param>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if the connection string in "attribute" is null
+        /// Thrown if ConnectionStringSetting in attribute is null
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown if configuration or attribute is null
         /// </exception>
         /// <returns>The built connection </returns>
         internal static SqlConnection BuildConnection(SqlAttribute attribute, IConfiguration configuration)
         {
-            if (attribute.ConnectionStringSetting == null)
+            if (attribute == null)
             {
-                throw new InvalidOperationException("Must specify ConnectionStringSetting, which should refer to the name of an app setting that " +
-                    "contains a SQL connection string");
+                throw new ArgumentNullException(nameof(attribute));
             }
             if (configuration == null)
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
+            if (attribute.ConnectionStringSetting == null)
+            {
+                throw new InvalidOperationException("Must specify ConnectionStringSetting, which should refer to the name of an app setting that " +
+                    "contains a SQL connection string");
+            }
+            
             return new SqlConnection(configuration.GetConnectionStringOrSetting(attribute.ConnectionStringSetting));
         }
 
