@@ -1,43 +1,45 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
-    internal class SqlTriggerListener : IListener
+    /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
+    internal class SqlTriggerListener<T> : IListener
     {
+        // Can't use an enum for these because it doesn't work with the Interlocked class
+        private int _status;
         private const int ListenerNotRegistered = 0;
         private const int ListenerRegistering = 1;
         private const int ListenerRegistered = 2;
 
-        private SqlTableWatcher _watcher;
-        private int _status;
+        private readonly SqlTableWatcher<T> _watcher;
+        private readonly ILogger logger;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SqlTriggerListener"/> class.
+        /// Initializes a new instance of the <see cref="SqlTriggerListener<typeparamref name="T"/>>
         /// </summary>
-        /// <param name="connectionStringSetting"> 
-        /// The name of the app setting that stores the SQL connection string
+        /// <param name="connectionString">
+        /// The SQL connection string used to connect to the user's database
         /// </param>
         /// <param name="table"> 
         /// The name of the user table that changes are being tracked on
         /// </param>
-        /// <param name="configuration">
-        /// Used to extract the connection string from connectionStringSetting
-        /// </param>
         /// <param name="executor">
         /// Used to execute the user's function when changes are detected on "table"
         /// </param>
-        public SqlTriggerListener(string table, string connectionStringSetting, IConfiguration configuration, ITriggeredFunctionExecutor executor)
+        public SqlTriggerListener(string table, string connectionString, ITriggeredFunctionExecutor executor, ILogger logger)
         {
             _status = ListenerNotRegistered;
-            _watcher = new SqlTableWatcher(table, connectionStringSetting, configuration, executor);
+            _watcher = new SqlTableWatcher<T>(table, connectionString, executor, logger);
         }
 
         /// <summary>
@@ -45,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         public void Cancel()
         {
-            StopAsync(CancellationToken.None).Wait();
+            StopAsync(CancellationToken.None).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -66,7 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns></returns>
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            int previousStatus = Interlocked.CompareExchange(ref _status, ListenerRegistering, ListenerNotRegistered); 
+            int previousStatus = Interlocked.CompareExchange(ref _status, ListenerRegistering, ListenerNotRegistered);
 
             if (previousStatus == ListenerRegistering)
             {
@@ -80,13 +82,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 await _watcher.StartAsync();
                 Interlocked.CompareExchange(ref _status, ListenerRegistered, ListenerRegistering);
-            } 
+            }
             catch (Exception ex)
             {
                 _status = ListenerNotRegistered;
                 throw ex;
             }
-            
+
         }
 
         /// <summary>

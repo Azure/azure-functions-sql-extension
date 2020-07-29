@@ -37,6 +37,6 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// The name of the table to monitor for changes
         /// </summary>
-        public string TableName { get; set; }
+        public string TableName { get; }
     }
 }
