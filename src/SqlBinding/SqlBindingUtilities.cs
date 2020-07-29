@@ -11,19 +11,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     internal static class SqlBindingUtilities
     {
         /// <summary>
-        /// Builds a connection using the connection string and authentication information specified in "attribute". 
-        /// Only builds a new connection if "connection" is null. Otherwise just returns "connection" 
+        /// Builds a connection using the connection string attached to the app setting with name ConnectionStringSetting
         /// </summary>
-        /// <param name="connection">Used to determine whether or not a new connection must be built. The function 
-        /// simply returns "connection" if it is non-null </param>
-        /// <param name="attribute">Contains the connection string and authentication information for the user's database</param>
+        /// <param name="attribute">The name of the app setting that stores the SQL connection string</param>
+        /// <param name="configuration">Used to obtain the value of the app setting</param>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if the connection string in "attribute" is null
+        /// Thrown if ConnectionStringSetting is empty or null
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown if configuration is null
         /// </exception>
         /// <returns>The built connection </returns>
-        internal static SqlConnection BuildConnection(SqlAttribute attribute, IConfiguration configuration)
+        internal static SqlConnection BuildConnection(string connectionStringSetting, IConfiguration configuration)
         {
-            if (attribute.ConnectionStringSetting == null)
+            if (string.IsNullOrEmpty(connectionStringSetting))
             {
                 throw new InvalidOperationException("Must specify ConnectionStringSetting, which should refer to the name of an app setting that " +
                     "contains a SQL connection string");
@@ -32,7 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
-            return new SqlConnection(configuration.GetConnectionStringOrSetting(attribute.ConnectionStringSetting));
+            return new SqlConnection(configuration.GetConnectionStringOrSetting(connectionStringSetting));
         }
 
         /// <summary>
