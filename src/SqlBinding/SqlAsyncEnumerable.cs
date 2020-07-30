@@ -64,14 +64,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             /// <summary>
-            /// Returns the current row of the query result that the enumerator is on
+            /// Returns the current row of the query result that the enumerator is on. If Current is called before a call
+            /// to <see cref="MoveNextAsync"/> is ever made, it will return null. If Current is called after 
+            /// <see cref="MoveNextAsync"/> has moved through all of the rows returned by the query, it will return 
+            /// the last row of the query.
             /// </summary>
-            /// <exception cref="InvalidOperationException">
-            /// Thrown if Current is called before a call to <see cref="MoveNextAsync"/> is ever made, or if Current is called
-            /// after <see cref="MoveNextAsync"/> has moved through all of the rows returned by the query.
-            /// </exception>
-            public T Current => _currentRow == null ? throw new InvalidOperationException("Invalid attempt to get current element when no data is present") 
-                : _currentRow;
+            public T Current => _currentRow;
 
             /// <summary>
             /// Closes the SQL connection and resources associated with reading the results of the query
@@ -117,7 +115,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 else
                 {
-                    _currentRow = default(T);
                     return false;
                 }
             }
