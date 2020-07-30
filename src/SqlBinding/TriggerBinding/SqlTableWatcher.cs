@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
@@ -13,13 +13,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly string _workerTable;
         private readonly string _connectionStringSetting;
         private readonly IConfiguration _configuration;
-        private Dictionary<string, string> _primaryKeys;
-        // Use JSON to serialize each row into a Dictionary mapping from column name to column value
-        // Then use _primaryKeys to check if a given column is a primary key by checking if it 
-        // exists in the map
-        private List<Dictionary<string, string>> _rows;
-        public static int _batchSize = 10;
-        public static int _maxDequeueCount = 5;
+        private readonly Dictionary<string, string> _primaryKeys;
+        private readonly List<Dictionary<string, string>> _rows;
+        private readonly Dictionary<string, string> _queryStrings;
+        private readonly Dictionary<Dictionary<string, string>, string> _whereChecks;
+        private State _state;
+
+        private static int _batchSize = 10;
+        private static int _maxDequeueCount = 5;
+        // Unit of time is seconds
+        private static string _leaseUnits = "s";
+        private static int _leaseTime = 30;
+        // The minimal possible retention period is 1 minute. Is 10 seconds an acceptable polling time given that?
+        private static int _pollingInterval = 10;
 
         public SqlTableWatcher(string table, string connectionStringSetting, IConfiguration configuration)
         {
@@ -27,6 +33,58 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             _workerTable = "Worker_Table_" + _table;
             _connectionStringSetting = connectionStringSetting;
             _configuration = configuration;
+            _rows = new List<Dictionary<string, string>>();
+            _queryStrings = new Dictionary<string, string>();
+            _primaryKeys = new Dictionary<string, string>();
+            _whereChecks = new Dictionary<Dictionary<string, string>, string>();
+            _state = State.Startup;
+            // Call Run here?
+        }
+
+        /* Presumably, we should
+         * spin off a thread for this watcher, and it will just exist in an endless while loop in its Run function. Should see how other
+         * watchers are implemented. 
+         */
+        public async Task Run()
+        {
+            // Also cleanup task, how to do that? 
+            while (true)
+            {
+                if (_state == State.Startup)
+                {
+                    await CreateWorkerTableAsync();
+                    _state = State.CheckingForChanges;
+                }
+                if (_state == State.CheckingForChanges)
+                {
+                    await CheckForChangesAsync();
+                    // Found some changes to process
+                    if (_rows.Count > 0)
+                    {
+                        _state = State.ProcessingChanges;
+                    }
+                }
+                // If we just acquired the leases on the rows in the previous if check, we also immediately
+                // renew the leases. Maybe not the best use of resources
+                if (_state == State.ProcessingChanges)
+                {
+                    await RenewLeasesAsync();
+                }
+                // How would this ever be the state?
+                if (_state == State.DoneProcessingChanges)
+                {
+                    await ReleaseLeasesAsync();
+                    _state = State.CheckingForChanges;
+                }
+                if (_state == State.ProcessingChanges)
+                {
+                    Thread.Sleep(_leaseTime * 1000);
+                } else
+                {
+                    // Otherwise, we are polling for changes
+                    Thread.Sleep(_pollingInterval * 1000);
+                }
+            }
         }
 
         private async Task CreateWorkerTableAsync()
@@ -41,8 +99,99 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
         }
 
+        private async Task GetPrimaryKeysAsync()
+        {
+            var getPrimaryKeysQuery = String.Format(
+                "SELECT c.name, t.name\n" +
+                "FROM sys.indexes i\n" +
+                "INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id\n" +
+                "INNER JOIN sys.columns c ON ic.object_id = c.object_id AND c.column_id = ic.column_id\n" +
+                "INNER JOIN sys.types t ON c.user_type_id = t.user_type_id\n" +
+                "WHERE i.is_primar_key = 1 and i.object_id = OBJECT_ID(\'{0}\');",
+                _table
+                );
+
+            using (var connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
+            {
+                var getPrimaryKeysCommand = new SqlCommand(getPrimaryKeysQuery, connection);
+                await connection.OpenAsync();
+                using (var reader = await getPrimaryKeysCommand.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        _primaryKeys.Add(reader.GetString(0), reader.GetString(1));
+                    }
+                }
+            }
+        }
+
+        private async Task CheckForChangesAsync()
+        {
+            using (var connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
+            {
+                await connection.OpenAsync();
+                // TODO: Set up locks on transaction
+                SqlTransaction transaction = connection.BeginTransaction();
+                var getChangesCommand = new SqlCommand(BuildCheckForChangesString(), connection, transaction);
+                using (var reader = await getChangesCommand.ExecuteReaderAsync())
+                {
+                    List<string> cols = new List<string>();
+                    while (await reader.ReadAsync())
+                    {
+                        var row = SqlBindingUtilities.BuildDictionaryFromSqlRow(reader, cols);
+                        _rows.Add(row);
+                    }
+                }
+
+                foreach (var row in _rows)
+                {
+                    var acquireLeaseCommand = new SqlCommand(BuildAcquireLeaseOnRowString(row), connection, transaction);
+                    await acquireLeaseCommand.ExecuteNonQueryAsync();
+                }
+
+                await transaction.CommitAsync();
+            }
+        }
+
+        private async Task RenewLeasesAsync()
+        {
+            using (var connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
+            {
+                await connection.OpenAsync();
+                // TODO: Set up locks on transaction
+                SqlTransaction transaction = connection.BeginTransaction();
+                foreach (var row in _rows)
+                {
+                    var acquireLeaseCommand = new SqlCommand(BuildRenewLeaseOnRowString(row), connection, transaction);
+                    await acquireLeaseCommand.ExecuteNonQueryAsync();
+                }
+                await transaction.CommitAsync();
+            }
+        }
+
+        private async Task ReleaseLeasesAsync()
+        {
+            using (var connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
+            {
+                await connection.OpenAsync();
+                // TODO: Set up locks on transaction
+                SqlTransaction transaction = connection.BeginTransaction();
+                foreach (var row in _rows)
+                {
+                    var releaseLeaseCommand = new SqlCommand(BuildReleaseLeaseOnRowString(row), connection, transaction);
+                    await releaseLeaseCommand.ExecuteNonQueryAsync();
+                }
+                await transaction.CommitAsync();
+            }
+            _rows.Clear();
+            _queryStrings.Clear();
+            _whereChecks.Clear();
+        }
+
         private async Task<string> BuildCreateTableCommandStringAsync()
         {
+            await GetPrimaryKeysAsync();
+
             var primaryKeysWithTypes = string.Empty;
             var primaryKeysList = string.Empty;
             foreach (var primaryKey in _primaryKeys.Keys)
@@ -54,6 +203,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             // Remove the trailing ", "
             primaryKeysList = primaryKeysList.Substring(0, primaryKeysList.Length - 2);
+
             var createTableString = String.Format(
                 "IF OBJECT_ID(N\'dt{0}\', \'U\') IS NULL\n" +
                 "BEGIN\n" +
@@ -69,57 +219,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             return createTableString;
         }
 
-        private async Task GetPrimaryKeysAsync()
-        {
-            if (_primaryKeys == null)
-            {
-                _primaryKeys = new Dictionary<string, string>();
-                var getPrimaryKeysQuery = String.Format(
-                    "SELECT c.name, t.name\n" +
-                    "FROM sys.indexes i\n" +
-                    "INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id\n" +
-                    "INNER JOIN sys.columns c ON ic.object_id = c.object_id AND c.column_id = ic.column_id\n" +
-                    "INNER JOIN sys.types t ON c.user_type_id = t.user_type_id\n" +
-                    "WHERE i.is_primar_key = 1 and i.object_id = OBJECT_ID(\'{0}\');",
-                    _table
-                    );
-                SqlCommand getPrimaryKeysCommand = new SqlCommand(getPrimaryKeysQuery);
-                using (var connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
-                {
-                    getPrimaryKeysCommand.Connection = connection;
-                    using (var reader = await getPrimaryKeysCommand.ExecuteReaderAsync())
-                    {
-                        while (await reader.ReadAsync())
-                        {
-                            _primaryKeys.Add(reader.GetString(0), reader.GetString(1));
-                        }
-                    }
-                }
-            }
-        }
-
         private async Task GetPollingIntervalAsync()
         {
 
         }
 
-        private async Task CheckForChangesAsync()
+        private string BuildCheckForChangesString()
         {
-            var primaryKeysList = string.Empty;
-            var primaryKeysJoin = string.Empty;
-            bool first = true;
-            foreach (var key in _primaryKeys.Keys)
+            string primaryKeysSelectList;
+            string primaryKeysInnerJoin;
+
+            if (!_queryStrings.TryGetValue("primaryKeysSelectList", out primaryKeysSelectList))
             {
-                primaryKeysList += "c." + key + ", ";
-                if (!first)
+                // If one isn't in the dictionary, neither is
+                primaryKeysInnerJoin = string.Empty;
+                primaryKeysSelectList = string.Empty;
+                bool first = true;
+
+                foreach (var key in _primaryKeys.Keys)
                 {
-                    primaryKeysJoin += " AND ";
-                } 
-                else
-                {
-                    first = false;
+                    primaryKeysSelectList += "c." + key + ", ";
+                    if (!first)
+                    {
+                        primaryKeysInnerJoin += " AND ";
+                    }
+                    else
+                    {
+                        first = false;
+                    }
+                    primaryKeysInnerJoin += "c." + key + " = w." + key;
                 }
-                primaryKeysJoin += "c." + key + " = w." + key;
+
+                _queryStrings.Add("primaryKeysSelectList", primaryKeysSelectList);
+                _queryStrings.Add("primaryKeysInnerJoin", primaryKeysInnerJoin);
+            }
+            else
+            {
+                _queryStrings.TryGetValue("primaryKeysInnerJoin", out primaryKeysInnerJoin);
             }
 
             var getChangesQuery = String.Format(
@@ -134,10 +270,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 "WHERE (Changes.LeaseExpirationTime IS NULL OR Changes.LeaseExpirationTime < SYSDATETIME())\n" +
                 "AND (Changes.DequeueCount IS NULL OR Changes.DequeueCount < {5})\n" +
                 "ORDER BY Changes.SYS_CHANGE_VERSION ASC;\n",
-                _table, _batchSize, primaryKeysList, _workerTable, primaryKeysJoin, _maxDequeueCount
+                _table, _batchSize, primaryKeysSelectList, _workerTable, primaryKeysInnerJoin, _maxDequeueCount
                 );
 
-            var acquireLeases =
+            return getChangesQuery;
+        }
+
+        private string BuildAcquireLeaseOnRowString(Dictionary<string, string> row)
+        {
+            var acquireLeaseOnRow =
                 "IF NOT EXISTS (SELECT * FROM {0} WHERE {1})\n" +
                 "INSERT INTO {0}\n" +
                 "VALUES ({2}DATEADD({3}, {4}, SYSDATETIME()), 0, {5})\n" +
@@ -146,18 +287,77 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 "SET LeaseExpirationTime = DATEADD({3}, {4}, SYSDATETIME()), VersionNumber = {5}, DequeueCount = DequeueCount + 1\n" +
                 "WHERE {1};";
 
+            var whereCheck = string.Empty;
+            string valuesList;
+            bool buildValuesList = !_queryStrings.TryGetValue("valuesList", out valuesList);
+            bool first = true;
 
-            using (var connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
+            foreach (var key in _primaryKeys.Keys)
             {
-                await connection.OpenAsync();
-                var transaction = await connection.BeginTransactionAsync();
+                string primaryKeyValue;
+                row.TryGetValue(key, out primaryKeyValue);
+                if (!first)
+                {
+                    whereCheck += " AND ";
+                }
+                else
+                {
+                    first = false;
+                    valuesList = string.Empty;
+                }
+                whereCheck += key + " = " + primaryKeyValue;
+
+                if (buildValuesList)
+                {
+                    valuesList += primaryKeyValue + ", ";
+                }
             }
 
+            _whereChecks.Add(row, whereCheck);
+            if (buildValuesList)
+            {
+                _queryStrings.Add("valuesList", valuesList);
+            }
+
+            string versionNumber;
+            row.TryGetValue("VersionNumber", out versionNumber);
+
+            return String.Format(acquireLeaseOnRow, _workerTable, whereCheck, valuesList, _leaseUnits,
+                _leaseTime, versionNumber);
         }
 
-        private async Task RenewLeases()
+        private string BuildRenewLeaseOnRowString(Dictionary<string, string> row)
         {
+            var renewLeaseOnRow =
+                "UPDATE {0}\n" +
+                "SET LeaseExpirationTime = DATEADD({1}, {2}, SYSDATETIME())\n" +
+                "WHERE {3};";
+            string whereCheck;
+            _whereChecks.TryGetValue(row, out whereCheck);
+            return String.Format(renewLeaseOnRow, _workerTable, _leaseUnits, _leaseTime, whereCheck);
+        }
 
+        private string BuildReleaseLeaseOnRowString(Dictionary<string, string> row)
+        {
+            var releaseLeaseOnRow =
+                "UPDATE {0}\n" +
+                "SET LeaseExpirationTime = NULL, DequeueCount = 0, VersionNumber = {1}\n" +
+                "WHERE {2};";
+
+            string whereCheck;
+            _whereChecks.TryGetValue(row, out whereCheck);
+            string versionNumber;
+            row.TryGetValue("VersionNumber", out versionNumber);
+
+            return String.Format(releaseLeaseOnRow, _workerTable, versionNumber, whereCheck);
+        }
+
+        enum State
+        {
+            Startup,
+            CheckingForChanges,
+            ProcessingChanges,
+            DoneProcessingChanges
         }
     }
 }

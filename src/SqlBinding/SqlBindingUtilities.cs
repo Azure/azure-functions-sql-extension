@@ -4,6 +4,7 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Collections.Generic;
 using System.Data;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
@@ -109,6 +110,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             SqlBindingUtilities.ParseParameters(attribute.Parameters, command);
             return command;
+        }
+
+        internal static Dictionary<string, string> BuildDictionaryFromSqlRow(SqlDataReader reader, List<string> cols)
+        {
+            if (cols.Count == 0)
+            {
+                for (var i = 0; i < reader.FieldCount; i++)
+                {
+                    cols.Add(reader.GetName(i));
+                }
+            }
+
+            var result = new Dictionary<string, string>();
+            foreach (var col in cols)
+            {
+                result.Add(col, reader[col].ToString());
+            }
+            return result;
         }
     }
 }
