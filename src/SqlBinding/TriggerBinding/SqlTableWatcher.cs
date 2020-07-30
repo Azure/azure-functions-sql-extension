@@ -70,7 +70,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     await RenewLeasesAsync();
                 }
-                // How would this ever be the state?
+                // How would this ever be the state? When "processing changes", need to go and get the corresponding
+                // data from the user table, and then trigger the function with the list
+                // Probably the right way to do this is to ... actually it doesn't have to be the case that the 
+                // listener is responsible for this. It is in the file example, but for CosmosDB the observer actually
+                // does this.
                 if (_state == State.DoneProcessingChanges)
                 {
                     await ReleaseLeasesAsync();
