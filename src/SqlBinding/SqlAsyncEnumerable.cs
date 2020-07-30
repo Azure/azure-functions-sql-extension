@@ -47,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             private readonly SqlAttribute _attribute;
             private T _currentRow;
             private SqlDataReader _reader;
-            private List<string> _cols;
+            private readonly List<string> _cols;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="SqlAsyncEnumerator<typeparamref name="T"/>"/> class.
@@ -61,6 +61,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 _connection = connection ?? throw new ArgumentNullException(nameof(connection));
                 _attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
+                _cols = new List<string>();
             }
 
             /// <summary>
@@ -125,20 +126,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns>JSON string version of the SQL row</returns>
             private string SerializeRow()
             {
-                if (_cols == null)
-                {
-                    _cols = new List<string>(_reader.FieldCount);
-                    for (var i = 0; i < _reader.FieldCount; i++)
-                    {
-                        _cols.Add(_reader.GetName(i));
-                    }
-                }
-
-                var result = new Dictionary<string, object>();
-                foreach (var col in _cols)
-                {
-                    result.Add(col, _reader[col]);
-                }
+                var result = SqlBindingUtilities.BuildDictionaryFromSqlRow(_reader, _cols);
                 return JsonConvert.SerializeObject(result);
             }
         }
