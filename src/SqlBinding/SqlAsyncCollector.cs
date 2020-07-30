@@ -96,7 +96,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 DataTable newData = (DataTable)JsonConvert.DeserializeObject(rows, typeof(DataTable));
 
                 await connection.OpenAsync();
-                var transaction = connection.BeginTransaction();
+                SqlTransaction transaction = connection.BeginTransaction();
                 SqlDataAdapter dataAdapter = new SqlDataAdapter(new SqlCommand($"SELECT * FROM [{table}];", connection, transaction));
                 // Specifies which column should be intepreted as the primary key
                 dataAdapter.FillSchema(newData, SchemaType.Source);
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 dataAdapter.UpdateBatchSize = 1000;
                 dataAdapter.Update(dataSet, table);
-                transaction.Commit();
+                await transaction.CommitAsync();
             }
         }
     }

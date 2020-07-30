@@ -21,13 +21,13 @@ namespace SqlExtensionSamples
              IAsyncEnumerable<Product> products)
         {
             var enumerator = products.GetAsyncEnumerator();
-            var list = new List<Product>();
+            var productList = new List<Product>();
             while (await enumerator.MoveNextAsync())
             {
-                list.Add(enumerator.Current);
+                productList.Add(enumerator.Current);
             }
             await enumerator.DisposeAsync();
-            return (ActionResult)new OkObjectResult(list);
+            return (ActionResult)new OkObjectResult(productList);
         }
     }
 }

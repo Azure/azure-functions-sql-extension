@@ -64,11 +64,11 @@ namespace SqlExtension.Tests
         }
 
         [Fact]
-        public void TestInvalidOperationEnumerator()
+        public void TestNullCurrentValueEnumerator()
         {
             var enumerable = new SqlAsyncEnumerable<string>(connection, new SqlAttribute(""));
             var enumerator = enumerable.GetAsyncEnumerator();
-            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+            Assert.Null(enumerator.Current);
         }
 
         [Fact]
@@ -177,6 +177,26 @@ namespace SqlExtension.Tests
                 else
                 {
                     Assert.True(param.Value.Equals("param2"));
+                }
+            }
+
+            // Confirm we interpret "null" as being a NULL parameter value, and that we interpret
+            // a string like "@param1=,@param2=param2" as @param1 having an empty string as its value
+            command = new SqlCommand();
+            parameters = "@param1=,@param2=null";
+            SqlBindingUtilities.ParseParameters(parameters, command);
+
+            Assert.Equal(2, command.Parameters.Count);
+            foreach (SqlParameter param in command.Parameters)
+            {
+                Assert.True(param.ParameterName.Equals("@param1") || param.ParameterName.Equals("@param2"));
+                if (param.ParameterName.Equals("@param1"))
+                {
+                    Assert.True(param.Value.Equals(string.Empty));
+                }
+                else
+                {
+                    Assert.True(param.Value.Equals(DBNull.Value));
                 }
             }
 

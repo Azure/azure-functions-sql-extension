@@ -46,6 +46,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// "@param1=param2". "@param1" is the parameter name to be used in the query or stored procedure, and param1 is the 
         /// parameter value. Parameter name and parameter value are separated by "=". Parameter names/values cannot contain ',' or '='. 
         /// A valid parameter string would be "@param1=param1,@param2=param2". Attaches each parsed parameter to command.
+        /// If the value of a parameter should be null, use "null", as in @param1=null,@param2=param2". 
+        /// If the value of a parameter should be an empty string, do not add anything after the equals sign and before the comma,
+        /// as in "@param1=,@param2=param2"
         /// </summary>
         /// <param name="parameters">The parameter string to be parsed</param>
         /// <param name="command">The SqlCommand to which the parsed parameters will be added to</param>
@@ -65,7 +68,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // Because we remove empty entries, we will ignore any commas that appear at the beginning/end of the parameter list,
                 // as well as extra commas that appear between parameter pairs.
                 // I.e., ",,@param1=param1,,@param2=param2,,," will be parsed just like "@param1=param1,@param2=param2" is.
-                // Do we want this? 
                 string[] paramPairs = parameters.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 
                 foreach (var pair in paramPairs)
@@ -76,13 +78,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     if (items.Length != 2)
                     {
                         throw new ArgumentException("Parameters must be separated by \",\" and parameter name and parameter value must be separated by \"=\", " +
-                            "i.e. \"@param1=param1,@param2=param2\"");
+                           "i.e. \"@param1=param1,@param2=param2\". To specify a null value, use null, as in \"@param1=null,@param2=param2\"." +
+                           "To specify an empty string as a value, simply do not add anything after the equals sign, as in \"@param1=,@param2=param2\".");
                     }
                     if (!items[0].StartsWith("@"))
                     {
                         throw new ArgumentException("Parameter name must start with \"@\", i.e. \"@param1=param1,@param2=param2\"");
                     }
-                    command.Parameters.Add(new SqlParameter(items[0], items[1]));
+                    
+
+                    if (items[1].Equals("null", StringComparison.OrdinalIgnoreCase))
+                    {
+                        command.Parameters.Add(new SqlParameter(items[0], DBNull.Value));
+                    } 
+                    else
+                    {
+                        command.Parameters.Add(new SqlParameter(items[0], items[1]));
+                    }
+
                 }
             }
         }

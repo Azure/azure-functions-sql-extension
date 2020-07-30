@@ -117,7 +117,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
             }
 
-
             IAsyncEnumerable<T> IConverter<SqlAttribute, IAsyncEnumerable<T>>.Convert(SqlAttribute attribute)
             {
                 return new SqlAsyncEnumerable<T>(SqlBindingUtilities.BuildConnection(attribute, _configuration), attribute);
