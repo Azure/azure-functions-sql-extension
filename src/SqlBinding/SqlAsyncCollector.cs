@@ -91,8 +91,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="configuration"> Used to build up the connection </param>
         private async Task UpsertRowsAsync(string rows, SqlAttribute attribute, IConfiguration configuration)
         {
-
-            using (var connection = SqlBindingUtilities.BuildConnection(attribute, configuration))
+            using (var connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
                 var tableName = attribute.CommandText;
                 // In the case that the user specified the table name as something like 'dbo.Products', we split this into
