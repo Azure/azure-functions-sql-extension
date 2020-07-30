@@ -89,7 +89,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private async Task UpsertRowsAsync(string rows, SqlAttribute attribute, IConfiguration configuration)
         {
            
-            using (var connection = SqlBindingUtilities.BuildConnection(attribute, configuration))
+            using (var connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
                 var table = attribute.CommandText;
                 DataSet dataSet = new DataSet();
