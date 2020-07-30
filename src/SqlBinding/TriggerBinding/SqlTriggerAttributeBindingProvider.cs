@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 return null;
             }
 
-            return new SqlTriggerBinding();
+            return Task.FromResult<ITriggerBinding>(new SqlTriggerBinding());
         }
     }
 }
