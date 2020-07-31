@@ -8,6 +8,8 @@ using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Extensions.Configuration;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlConverters;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -50,7 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             rule.BindToInput<string>(typeof(SqlGenericsConverter<string>), _configuration);
             rule.BindToCollector<OpenType>(typeof(SqlAsyncCollectorBuilder<>), _configuration);
             rule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), _configuration);
-            context.AddBindingRule<SqlTriggerAttribute>().BindToTrigger(new SqlTriggerBindingProvider());
+            context.AddBindingRule<SqlTriggerAttribute>().BindToTrigger<IEnumerable<SqlChangeTrackingEntry>>(new SqlTriggerAttributeBindingProvider(_configuration));
         }
     }
 }

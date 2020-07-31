@@ -41,19 +41,5 @@ namespace Microsoft.Azure.WebJobs
         /// For an output binding, the table name.
         /// </summary>
         public string CommandText { get; set; }
-
-        /// <summary>
-        /// Specifies whether <see cref="CommandText"/> refers to a stored procedure or SQL query string. 
-        /// Use <see cref="CommandType.StoredProcedure"/> for the former, <see cref="CommandType.Text"/> for the latter
-        /// </summary>
-        public CommandType CommandType { get; set; }
-
-        /// <summary>
-        /// Specifies the parameters that will be used to execute the SQL query or stored procedure specified in <see cref="CommandText"/>. 
-        /// Must follow the format "@param1=param1,@param2=param2". For example, if your SQL query looks like 
-        /// "select * from Products where cost = @Cost and name = @Name", then Parameters must have the form "@Cost=100,@Name={Name}"
-        /// </summary>
-        [AutoResolve]
-        public string Parameters { get; set; }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Microsoft.Azure.WebJobs.Host.Executors;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -13,32 +14,51 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly string _workerTable;
         private readonly string _connectionStringSetting;
         private readonly IConfiguration _configuration;
+        private readonly ITriggeredFunctionExecutor _executor;
+        private readonly CancellationTokenSource _cancellationTokenSource;
+
         private readonly Dictionary<string, string> _primaryKeys;
         private readonly List<Dictionary<string, string>> _rows;
         private readonly Dictionary<string, string> _queryStrings;
         private readonly Dictionary<Dictionary<string, string>, string> _whereChecks;
         private State _state;
 
-        private static int _batchSize = 10;
-        private static int _maxDequeueCount = 5;
+        private const int _batchSize = 10;
+        private const int _maxDequeueCount = 5;
         // Unit of time is seconds
-        private static string _leaseUnits = "s";
-        private static int _leaseTime = 30;
+        private const string _leaseUnits = "s";
+        private const int _leaseTime = 30;
         // The minimal possible retention period is 1 minute. Is 10 seconds an acceptable polling time given that?
-        private static int _pollingInterval = 10;
+        private const int _pollingInterval = 10;
 
-        public SqlTableWatcher(string table, string connectionStringSetting, IConfiguration configuration)
+        public SqlTableWatcher(string table, string connectionStringSetting, IConfiguration configuration, ITriggeredFunctionExecutor executor)
         {
             _table = table;
             _workerTable = "Worker_Table_" + _table;
             _connectionStringSetting = connectionStringSetting;
+            _executor = executor;
             _configuration = configuration;
+            _cancellationTokenSource = new CancellationTokenSource();
             _rows = new List<Dictionary<string, string>>();
             _queryStrings = new Dictionary<string, string>();
             _primaryKeys = new Dictionary<string, string>();
             _whereChecks = new Dictionary<Dictionary<string, string>, string>();
             _state = State.Startup;
             // Call Run here?
+        }
+
+        public async Task StartAsync()
+        {
+            var entries = new List<SqlChangeTrackingEntry>();
+            var entry = new SqlChangeTrackingEntry();
+            entry.Name = "name";
+            entries.Add(entry);
+            await _executor.TryExecuteAsync(new TriggeredFunctionData() { TriggerValue = entries }, _cancellationTokenSource.Token);
+        }
+
+        public async Task StopAsync()
+        {
+
         }
 
         /* Presumably, we should
@@ -95,6 +115,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             var createTableCommandString = await BuildCreateTableCommandStringAsync();
             
+            // Should maybe change this so that we don't have to extract the connection string from the app setting
+            // every time
             using (var connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
             {
                 SqlCommand createTableCommand = new SqlCommand(createTableCommandString, connection);
