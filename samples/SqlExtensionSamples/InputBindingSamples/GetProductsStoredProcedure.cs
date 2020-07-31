@@ -14,9 +14,9 @@ namespace SqlExtensionSamples
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-storedprocedure/{cost}")]
             HttpRequest req,
-            [Sql("SelectProductsTest",
+            [Sql("SelectProductsCost",
                 CommandType = System.Data.CommandType.StoredProcedure,
-                Parameters = "@Test=DbNull.Value",
+                Parameters = "@Cost={cost}",
                 ConnectionStringSetting = "SQLServerAuthentication")]
             IEnumerable<Product> products)
         {

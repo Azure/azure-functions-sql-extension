@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Concurrent;
+using System.IO;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -20,6 +21,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly List<T> _rows;
         // Maps from database name + table name to SqlCommandBuilders
         private static ConcurrentDictionary<string, SqlCommandBuilder> _commandBuilders = new ConcurrentDictionary<string, SqlCommandBuilder>();
+        // Maps from database name + table name to a byte array which contains information about that table's schema
+        private static ConcurrentDictionary<string, byte[]> _schemas = new ConcurrentDictionary<string, byte[]>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlAsyncCollector<typeparamref name="T"/>"/> class.
@@ -92,14 +95,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             using (var connection = SqlBindingUtilities.BuildConnection(attribute, configuration))
             {
                 var table = attribute.CommandText;
-                DataSet dataSet = new DataSet();
-                DataTable newData = (DataTable)JsonConvert.DeserializeObject(rows, typeof(DataTable));
+                var dataSet = new DataSet();
+                var newData = (DataTable)JsonConvert.DeserializeObject(rows, typeof(DataTable));
+                var key = connection.Database + table;
 
                 await connection.OpenAsync();
-                SqlTransaction transaction = connection.BeginTransaction();
+                SqlTransaction transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead);
                 SqlDataAdapter dataAdapter = new SqlDataAdapter(new SqlCommand($"SELECT * FROM [{table}];", connection, transaction));
-                // Specifies which column should be intepreted as the primary key
-                dataAdapter.FillSchema(newData, SchemaType.Source);
+
+                byte[] schema;
+                if (!_schemas.TryGetValue(key, out schema))
+                {
+                    dataAdapter.FillSchema(newData, SchemaType.Source);
+                    var schemaStream = new MemoryStream();
+                    newData.WriteXmlSchema(schemaStream);
+                    schemaStream.Seek(0, SeekOrigin.Begin);
+                    _schemas.TryAdd(key, schemaStream.ToArray());
+                } else
+                {
+                    // For some reason, it doesn't seem like I can load a schema into a newData, which is already populated
+                    // with rows. So I have to load the schema into an entirely new table, and then copy the rows over.
+                    var newDataWithSchema = new DataTable();
+                    newDataWithSchema.ReadXmlSchema(new MemoryStream(schema));
+                    newDataWithSchema.Load(newData.CreateDataReader());
+                    newData = newDataWithSchema;
+                }
+
                 newData.TableName = table;
                 DataTable originalData = newData.Clone();
                 // Get the rows currently stored in table
@@ -109,7 +130,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 originalData.Merge(newData);
                 dataSet.Tables.Add(originalData);
 
-                var key = connection.Database + table;
                 SqlCommandBuilder builder;
                 // First time we've encountered this table, meaning we should create the command builder that uses the SelectCommand 
                 // of the dataAdapter to discover the table schema and generate other commands
