@@ -105,6 +105,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 using (var connection = SqlBindingUtilities.BuildConnection(attribute, _configuration))
                 {
+                    // Ideally, we would like to move away from using SqlDataAdapter both here and in the 
+                    // SqlAsyncCollector since it does not support asynchronous operations. 
+                    // There is a GitHub issue open to track this
                     using (SqlDataAdapter adapter = new SqlDataAdapter())
                     {
                         SqlCommand command = SqlBindingUtilities.BuildCommand(attribute, connection);
