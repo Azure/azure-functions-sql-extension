@@ -55,6 +55,7 @@ namespace Microsoft.Azure.WebJobs
         /// If the value of a parameter should be null, use "null", as in @param1=null,@param2=param2". 
         /// If the value of a parameter should be an empty string, do not add anything after the equals sign and before the comma,
         /// as in "@param1=,@param2=param2"
+        /// Note that neither the parameter name nor the parameter value can have ',' or '=' 
         /// </summary>
         [AutoResolve]
         public string Parameters { get; set; }
