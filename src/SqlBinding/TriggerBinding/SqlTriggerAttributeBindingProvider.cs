@@ -1,5 +1,6 @@
 ﻿using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Host.Triggers;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -10,6 +11,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     internal class SqlTriggerAttributeBindingProvider : ITriggerBindingProvider
     {
+        IConfiguration _configuration;
+
+        public SqlTriggerAttributeBindingProvider(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
+
         public Task<ITriggerBinding> TryCreateAsync(TriggerBindingProviderContext context)
         {
             if (context == null)
@@ -22,10 +30,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             if (attribute == null)
             {
-                return null;
+                return Task.FromResult<ITriggerBinding>(null);
             }
 
-            return Task.FromResult<ITriggerBinding>(new SqlTriggerBinding());
+            return Task.FromResult<ITriggerBinding>(new SqlTriggerBinding(attribute.CommandText, attribute.ConnectionStringSetting, 
+                _configuration, parameter));
         }
     }
 }
