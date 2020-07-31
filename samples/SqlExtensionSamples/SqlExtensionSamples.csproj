@@ -7,7 +7,7 @@
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.3" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\SQLExtension\SQLBindingExtension.csproj" />
+    <ProjectReference Include="..\..\src\SqlBinding\SqlBinding.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">
