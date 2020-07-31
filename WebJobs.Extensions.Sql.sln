@@ -3,15 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30204.135
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SQLFunction", "src\SQLFunction\SQLFunction.csproj", "{B2E0EFB9-BEDB-48F7-BD5A-0E1010333475}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqlExtensionSamples", "samples\SqlExtensionSamples\SqlExtensionSamples.csproj", "{B2E0EFB9-BEDB-48F7-BD5A-0E1010333475}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SQLBindingExtension", "src\SQLExtension\SQLBindingExtension.csproj", "{4453B407-2CA3-4011-BDE5-247FCE5C1974}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqlBinding", "src\SqlBinding\SqlBinding.csproj", "{4453B407-2CA3-4011-BDE5-247FCE5C1974}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SQLExtension.tests", "test\SQLExtension.tests\SQLExtension.tests.csproj", "{A5B55530-71C8-4A9A-92AD-1D33A5E80FC1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqlExtension.Tests", "test\SQLExtension.tests\SqlExtension.Tests.csproj", "{A5B55530-71C8-4A9A-92AD-1D33A5E80FC1}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{21CDC01C-247B-46B0-A8F5-9D35686C628B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{F7E99EB5-47D3-4B50-A6AA-D8D5508A121A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{3691FB44-971D-43FD-9B2F-916B8CE689DB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -36,7 +38,7 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{B2E0EFB9-BEDB-48F7-BD5A-0E1010333475} = {21CDC01C-247B-46B0-A8F5-9D35686C628B}
+		{B2E0EFB9-BEDB-48F7-BD5A-0E1010333475} = {3691FB44-971D-43FD-9B2F-916B8CE689DB}
 		{4453B407-2CA3-4011-BDE5-247FCE5C1974} = {21CDC01C-247B-46B0-A8F5-9D35686C628B}
 		{A5B55530-71C8-4A9A-92AD-1D33A5E80FC1} = {F7E99EB5-47D3-4B50-A6AA-D8D5508A121A}
 	EndGlobalSection
