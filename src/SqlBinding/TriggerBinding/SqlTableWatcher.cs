@@ -20,7 +20,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly Dictionary<string, string> _primaryKeys;
         private readonly List<Dictionary<string, string>> _rows;
         private readonly Dictionary<string, string> _queryStrings;
-        private readonly Dictionary<Dictionary<string, string>, string> _whereChecks;
+        private readonly Dictionary<Dictionary<string, string>, string> _whereChecksOfRows;
+        private readonly Dictionary<Dictionary<string, string>, string> _primaryKeyValuesOfRows;
         private State _state;
 
         private const int _batchSize = 10;
@@ -42,18 +43,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             _rows = new List<Dictionary<string, string>>();
             _queryStrings = new Dictionary<string, string>();
             _primaryKeys = new Dictionary<string, string>();
-            _whereChecks = new Dictionary<Dictionary<string, string>, string>();
+            _whereChecksOfRows = new Dictionary<Dictionary<string, string>, string>();
+            _primaryKeyValuesOfRows = new Dictionary<Dictionary<string, string>, string>();
             _state = State.Startup;
             // Call Run here?
         }
 
         public async Task StartAsync()
         {
+            /**
             var entries = new List<SqlChangeTrackingEntry>();
             var entry = new SqlChangeTrackingEntry();
             entry.Name = "name";
             entries.Add(entry);
-            await _executor.TryExecuteAsync(new TriggeredFunctionData() { TriggerValue = entries }, _cancellationTokenSource.Token);
+            await _executor.TryExecuteAsync(new TriggeredFunctionData() { TriggerValue = entries }, _cancellationTokenSource.Token); **/
+            // think this spins off a thread?
+            await Run();
         }
 
         public async Task StopAsync()
@@ -64,6 +69,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /* Presumably, we should
          * spin off a thread for this watcher, and it will just exist in an endless while loop in its Run function. Should see how other
          * watchers are implemented. 
+         * Should use timers instead of Thread.Sleep
          */
         public async Task Run()
         {
@@ -82,6 +88,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     if (_rows.Count > 0)
                     {
                         _state = State.ProcessingChanges;
+                        // Should instead somehow return the rows back. Then stay in this loop until the Listener informs me that 
+                        // the rows have been delivered for the function. And then go to State.DoneProcessingChanges. It can tell me
+                        // via an async function call. Maybe it can give me access to this queue looking object that the File trigger uses.
+                        // I can add the rows to the queue, and it can spin off a thread to process them by calling a generic converter function
+                        // Need to research the queue though.
+                        // Spin off a thread for these. How do I do that? Does await do that for me?
+
+                        // I think what the file one does is that it calls this with its FileSystemEventArgs, and then converters are
+                        // called if necessary. So actually maybe don't even need to return the rows. Can just call this still
+                        await _executor.TryExecuteAsync(new TriggeredFunctionData() { TriggerValue = _rows }, _cancellationTokenSource.Token);
                     }
                 }
                 // If we just acquired the leases on the rows in the previous if check, we also immediately
@@ -111,6 +127,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
         }
 
+        
+
+
         private async Task CreateWorkerTableAsync()
         {
             var createTableCommandString = await BuildCreateTableCommandStringAsync();
@@ -133,7 +152,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 "INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id\n" +
                 "INNER JOIN sys.columns c ON ic.object_id = c.object_id AND c.column_id = ic.column_id\n" +
                 "INNER JOIN sys.types t ON c.user_type_id = t.user_type_id\n" +
-                "WHERE i.is_primar_key = 1 and i.object_id = OBJECT_ID(\'{0}\');",
+                "WHERE i.is_primary_key = 1 and i.object_id = OBJECT_ID(\'{0}\');",
                 _table
                 );
 
@@ -171,6 +190,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 foreach (var row in _rows)
                 {
+                    // Not great that we're doing a SqlCommand per row, should batch this
                     var acquireLeaseCommand = new SqlCommand(BuildAcquireLeaseOnRowString(row), connection, transaction);
                     await acquireLeaseCommand.ExecuteNonQueryAsync();
                 }
@@ -188,6 +208,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 SqlTransaction transaction = connection.BeginTransaction();
                 foreach (var row in _rows)
                 {
+                    // Not great that we're doing a SqlCommand per row, should batch this
                     var acquireLeaseCommand = new SqlCommand(BuildRenewLeaseOnRowString(row), connection, transaction);
                     await acquireLeaseCommand.ExecuteNonQueryAsync();
                 }
@@ -204,14 +225,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 SqlTransaction transaction = connection.BeginTransaction();
                 foreach (var row in _rows)
                 {
+                    // Not great that we're doing a SqlCommand per row, should batch this
                     var releaseLeaseCommand = new SqlCommand(BuildReleaseLeaseOnRowString(row), connection, transaction);
                     await releaseLeaseCommand.ExecuteNonQueryAsync();
                 }
                 await transaction.CommitAsync();
             }
             _rows.Clear();
-            _queryStrings.Clear();
-            _whereChecks.Clear();
+            _whereChecksOfRows.Clear();
+            _primaryKeyValuesOfRows.Clear();
         }
 
         private async Task<string> BuildCreateTableCommandStringAsync()
@@ -227,11 +249,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 primaryKeysWithTypes += primaryKey + " " + type + ",\n";
                 primaryKeysList += primaryKey + ", ";
             }
+            _queryStrings.Add("primaryKeysList", primaryKeysList);
             // Remove the trailing ", "
             primaryKeysList = primaryKeysList.Substring(0, primaryKeysList.Length - 2);
 
             var createTableString = String.Format(
-                "IF OBJECT_ID(N\'dt{0}\', \'U\') IS NULL\n" +
+                "IF OBJECT_ID(N\'{0}\', \'U\') IS NULL\n" +
                 "BEGIN\n" +
                 "CREATE TABLE {0} (\n" +
                 "{1}" +
@@ -287,13 +310,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             var getChangesQuery = String.Format(
                 "DECLARE @version bigint;\n" +
                 "SET @version = CHANGE_TRACKING_MIN_VALID_VERSION(OBJECT_ID(\'{0}\'));\n" +
-                "(SELECT TOP {1} *\n" +
+                "SELECT TOP {1} *\n" +
                 "FROM\n" +
-                "(SELECT {2}c.SYS_CHANGE_VERSION, c.SYS_CHANGE_CREATION_VERSION, c.SYS_CHANGE_OPERATION\n" +
+                "(SELECT {2}c.SYS_CHANGE_VERSION, c.SYS_CHANGE_CREATION_VERSION, c.SYS_CHANGE_OPERATION, \n" +
                 "c.SYS_CHANGE_COLUMNS, c.SYS_CHANGE_CONTEXT, w.LeaseExpirationTime, w.DequeueCount, w.VersionNumber\n" +
                 "FROM CHANGETABLE (CHANGES {0}, @version) AS c\n" +
                 "LEFT OUTER JOIN {3} AS w ON {4}) AS Changes\n" +
-                "WHERE (Changes.LeaseExpirationTime IS NULL OR Changes.LeaseExpirationTime < SYSDATETIME())\n" +
+                "WHERE (Changes.LeaseExpirationTime IS NULL AND\n" +
+                "(Changes.VersionNumber IS NULL OR Changes.VersionNumber < Changes.SYS_CHANGE_VERSION)\n" +
+                "OR Changes.LeaseExpirationTime < SYSDATETIME())\n" +
                 "AND (Changes.DequeueCount IS NULL OR Changes.DequeueCount < {5})\n" +
                 "ORDER BY Changes.SYS_CHANGE_VERSION ASC;\n",
                 _table, _batchSize, primaryKeysSelectList, _workerTable, primaryKeysInnerJoin, _maxDequeueCount
@@ -310,12 +335,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 "VALUES ({2}DATEADD({3}, {4}, SYSDATETIME()), 0, {5})\n" +
                 "ELSE\n" +
                 "UPDATE {0}\n" +
-                "SET LeaseExpirationTime = DATEADD({3}, {4}, SYSDATETIME()), VersionNumber = {5}, DequeueCount = DequeueCount + 1\n" +
+                "SET LeaseExpirationTime = DATEADD({3}, {4}, SYSDATETIME()), DequeueCount = DequeueCount + 1, VersionNumber = {5}\n" +
                 "WHERE {1};";
 
             var whereCheck = string.Empty;
-            string valuesList;
-            bool buildValuesList = !_queryStrings.TryGetValue("valuesList", out valuesList);
+            var valuesList = string.Empty;
             bool first = true;
 
             foreach (var key in _primaryKeys.Keys)
@@ -329,24 +353,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 else
                 {
                     first = false;
-                    valuesList = string.Empty;
                 }
                 whereCheck += key + " = " + primaryKeyValue;
-
-                if (buildValuesList)
-                {
-                    valuesList += primaryKeyValue + ", ";
-                }
+                valuesList += primaryKeyValue + ", ";
             }
 
-            _whereChecks.Add(row, whereCheck);
-            if (buildValuesList)
-            {
-                _queryStrings.Add("valuesList", valuesList);
-            }
+            _whereChecksOfRows.Add(row, whereCheck);
+            _primaryKeyValuesOfRows.Add(row, valuesList);
 
             string versionNumber;
-            row.TryGetValue("VersionNumber", out versionNumber);
+            row.TryGetValue("SYS_CHANGE_VERSION", out versionNumber);
 
             return String.Format(acquireLeaseOnRow, _workerTable, whereCheck, valuesList, _leaseUnits,
                 _leaseTime, versionNumber);
@@ -359,7 +375,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 "SET LeaseExpirationTime = DATEADD({1}, {2}, SYSDATETIME())\n" +
                 "WHERE {3};";
             string whereCheck;
-            _whereChecks.TryGetValue(row, out whereCheck);
+            _whereChecksOfRows.TryGetValue(row, out whereCheck);
             return String.Format(renewLeaseOnRow, _workerTable, _leaseUnits, _leaseTime, whereCheck);
         }
 
@@ -371,9 +387,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 "WHERE {2};";
 
             string whereCheck;
-            _whereChecks.TryGetValue(row, out whereCheck);
+            _whereChecksOfRows.TryGetValue(row, out whereCheck);
             string versionNumber;
-            row.TryGetValue("VersionNumber", out versionNumber);
+            row.TryGetValue("SYS_CHANGE_VERSION", out versionNumber);
 
             return String.Format(releaseLeaseOnRow, _workerTable, versionNumber, whereCheck);
         }
