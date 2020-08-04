@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlConverters;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -46,13 +47,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 throw new ArgumentNullException(nameof(context));
             }
-            var rule = context.AddBindingRule<SqlAttribute>();
+            var inputOutputRule = context.AddBindingRule<SqlAttribute>();
             var converter = new SqlConverter(_configuration);
-            rule.BindToInput<SqlCommand>(converter);
-            rule.BindToInput<string>(typeof(SqlGenericsConverter<string>), _configuration);
-            rule.BindToCollector<OpenType>(typeof(SqlAsyncCollectorBuilder<>), _configuration);
-            rule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), _configuration);
-            context.AddBindingRule<SqlTriggerAttribute>().BindToTrigger<IEnumerable<SqlChangeTrackingEntry>>(new SqlTriggerAttributeBindingProvider(_configuration));
+            inputOutputRule.BindToInput<SqlCommand>(converter);
+            inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), _configuration);
+            inputOutputRule.BindToCollector<OpenType>(typeof(SqlAsyncCollectorBuilder<>), _configuration);
+            inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), _configuration);
+
+            var triggerRule = context.AddBindingRule<SqlTriggerAttribute>();
+            triggerRule.BindToTrigger<OpenType>(new SqlTriggerAttributeBindingProvider(_configuration));
+            triggerRule.BindToValueProvider<OpenType>(SqlTriggerBinding.GetBinder);
+            // Change this to worker table row. And the Converter probably needs to implement some sort of interface, have to
+            // find a binding that uses this function
+            //triggerRule.AddOpenConverter<List<Dictionary<string, string>>, OpenType>(
+            //    typeof(SqlChangeTrackingConverter<>), _configuration);
         }
     }
 }
