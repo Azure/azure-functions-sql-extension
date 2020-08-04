@@ -55,12 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), _configuration);
 
             var triggerRule = context.AddBindingRule<SqlTriggerAttribute>();
-            triggerRule.BindToTrigger<OpenType>(new SqlTriggerAttributeBindingProvider(_configuration));
-            triggerRule.BindToValueProvider<OpenType>(SqlTriggerBinding.GetBinder);
-            // Change this to worker table row. And the Converter probably needs to implement some sort of interface, have to
-            // find a binding that uses this function
-            //triggerRule.AddOpenConverter<List<Dictionary<string, string>>, OpenType>(
-            //    typeof(SqlChangeTrackingConverter<>), _configuration);
+            triggerRule.BindToTrigger(new SqlTriggerAttributeBindingProvider(_configuration));
         }
     }
 }
