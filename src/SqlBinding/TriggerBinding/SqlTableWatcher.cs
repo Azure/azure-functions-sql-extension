@@ -51,13 +51,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public async Task StartAsync()
         {
-            /**
-            var entries = new List<SqlChangeTrackingEntry>();
-            var entry = new SqlChangeTrackingEntry();
-            entry.Name = "name";
-            entries.Add(entry);
-            await _executor.TryExecuteAsync(new TriggeredFunctionData() { TriggerValue = entries }, _cancellationTokenSource.Token); **/
-            // think this spins off a thread?
             await Run();
         }
 
@@ -88,16 +81,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     if (_rows.Count > 0)
                     {
                         _state = State.ProcessingChanges;
-                        // Should instead somehow return the rows back. Then stay in this loop until the Listener informs me that 
-                        // the rows have been delivered for the function. And then go to State.DoneProcessingChanges. It can tell me
-                        // via an async function call. Maybe it can give me access to this queue looking object that the File trigger uses.
-                        // I can add the rows to the queue, and it can spin off a thread to process them by calling a generic converter function
-                        // Need to research the queue though.
-                        // Spin off a thread for these. How do I do that? Does await do that for me?
-
-                        // I think what the file one does is that it calls this with its FileSystemEventArgs, and then converters are
-                        // called if necessary. So actually maybe don't even need to return the rows. Can just call this still
-                        await _executor.TryExecuteAsync(new TriggeredFunctionData() { TriggerValue = _rows }, _cancellationTokenSource.Token);
+                        // Await makes sure we wait for this to finish before continuing execution right? Can we still refresh leases in that case? 
+                        // Probably not, need to fix this. Maybe get rid of the await and have the listener indicate to me when to change state
+                        var triggerValue = new ChangeTableData();
+                        triggerValue.workerTableRows = _rows;
+                        triggerValue.whereChecks = _whereChecksOfRows;
+                        await _executor.TryExecuteAsync(new TriggeredFunctionData() { TriggerValue = triggerValue }, _cancellationTokenSource.Token);
                     }
                 }
                 // If we just acquired the leases on the rows in the previous if check, we also immediately

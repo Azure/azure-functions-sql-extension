@@ -26,13 +26,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             _connectionStringSetting = connectionStringSetting;
             _configuration = configuration;
         }
-        public Task<IEnumerable<SqlChangeTrackingEntry<T>>> ConvertAsync<T>(List<Dictionary<string, string>> input, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
 
         // Should make this use the WorkerTableRow type eventually, but for now keep as dictionary
-        public async Task<IEnumerable<SqlChangeTrackingEntry<T>>> BuildSqlChangeTrackingEntries<T>(List<Dictionary<String, String>> rows, 
+        public async Task<object> BuildSqlChangeTrackingEntries<T>(List<Dictionary<String, String>> rows, 
             Dictionary<Dictionary<string, string>, string> whereChecksOfRows)
         {
             var entries = new List<SqlChangeTrackingEntry<T>>();

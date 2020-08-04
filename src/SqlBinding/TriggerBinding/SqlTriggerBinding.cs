@@ -21,8 +21,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly SqlTriggerAttribute _attribute;
         private readonly BindingDataProvider _bindingDataProvider;
         private readonly IReadOnlyDictionary<string, Type> _contract;
-        private readonly IReadOnlyDictionary<string, Type> _emptyBindingContract = new Dictionary<string, Type>();
-        private readonly IReadOnlyDictionary<string, object> _emptyBindingData = new Dictionary<string, object>();
 
         public SqlTriggerBinding(string table, string connectionStringSetting, IConfiguration configuration, ParameterInfo parameter)
         {
@@ -38,8 +36,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private IReadOnlyDictionary<string, Type> CreateBindingContract()
         {
             var contract = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
-            contract.Add("SqlTrigger", typeof(List<Dictionary<string, string>>));
+            contract.Add("SqlTrigger", typeof(ChangeTableData));
 
+            // Do I even need this? And should follow what HTTP does for adding contract stuff about POCOs both here and in BindAsync
             if (_bindingDataProvider.Contract != null)
             {
                 foreach (KeyValuePair<string, Type> item in _bindingDataProvider.Contract)
@@ -52,38 +51,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             return contract;
         }
 
-        // Change this to WorkerTableRow
-        public Type TriggerValueType => typeof(List<Dictionary<string, string>>);
+        public Type TriggerValueType => typeof(ChangeTableData);
 
         public IReadOnlyDictionary<string, Type> BindingDataContract
         {
             get { return _contract; }
-            //get { return _emptyBindingContract; }
         }
 
 
         public Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
         {
-            
-            var workerTableRows = value as List<Dictionary<string, string>>;
+            var changeData = value as ChangeTableData;
 
-            if (workerTableRows ==  null)
+            if (changeData ==  null)
             {
                 //Populate this with message
                 throw new InvalidOperationException();
             }
 
             var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-            bindingData.Add("SqlTrigger", workerTableRows);
+            bindingData.Add("SqlTrigger", changeData);
 
-            return Task.FromResult<ITriggerData>(new TriggerData(new SqlValueBinder(_parameter, workerTableRows, _table, _connectionStringSetting, _configuration), bindingData));
-            
-            //return Task.FromResult<ITriggerData>(new TriggerData(null, _emptyBindingData));
-        }
-
-        public static Task<IValueBinder> GetBinder(SqlTriggerAttribute attribute, Type type)
-        {
-            throw new NotImplementedException();
+            return Task.FromResult<ITriggerData>(new TriggerData(new SqlValueBinder(_parameter, changeData, _table, _connectionStringSetting, _configuration), bindingData));
         }
 
         public Task<IListener> CreateListenerAsync(ListenerFactoryContext context)
@@ -106,52 +95,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             };
         }
 
-        private class SqlValueBinder : IValueBinder
+        private class SqlValueBinder : IValueProvider
         {
             private readonly ParameterInfo _parameter;
-            private List<Dictionary<string, string>> _workerTableRows;
+            private ChangeTableData _changeData;
             private readonly SqlChangeTrackingConverter _converter;
+            private readonly string _table;
 
-            public SqlValueBinder(ParameterInfo parameter, List<Dictionary<string, string>> workerTableRows, string table, string connectionStringSetting, 
+            public SqlValueBinder(ParameterInfo parameter, ChangeTableData changeData, string table, string connectionStringSetting, 
                 IConfiguration configuration)
             {
+                _table = table;
                 _parameter = parameter;
-                _workerTableRows = workerTableRows;
+                _changeData = changeData;
                 _converter = new SqlChangeTrackingConverter(table, connectionStringSetting, configuration);
             }
 
-            public Type Type => throw new NotImplementedException();
+            public Type Type => _parameter.ParameterType;
 
-            public Task<object> GetValueAsync()
+            public async Task<object> GetValueAsync()
             {
-                Type type = _parameter.ParameterType;
-                var nestedTypes = type.GetNestedTypes();
+                // Should check that the array is populated and all that. Otherwise throw an exception for an invalid type. Is there
+                // a way to enforce this somewhere else?
+                var type = _parameter.ParameterType.GetGenericArguments()[0].GetGenericArguments();
                 var typeOfConverter = _converter.GetType();
                 var method = typeOfConverter.GetMethod("BuildSqlChangeTrackingEntries");
-                var methods = typeOfConverter.GetMethods();
                 var genericMethod = method.MakeGenericMethod(type);
-                var result = genericMethod.Invoke(_converter, new object[] { _workerTableRows, null });
-
-                return Task.FromResult<object>(_workerTableRows);
-            }
-
-            public Task SetValueAsync(object value, CancellationToken cancellationToken)
-            {
-                var workerTableRows = value as List<Dictionary<string, string>>;
-
-                if (workerTableRows == null)
-                {
-                    //Populate this with message
-                    throw new InvalidOperationException();
-                }
-
-                _workerTableRows = workerTableRows;
-                return Task.CompletedTask;
+                var task = (Task<object>) genericMethod.Invoke(_converter, new object[] { _changeData.workerTableRows, _changeData.whereChecks});
+                return await task;
             }
 
             public string ToInvokeString()
             {
-                return _workerTableRows.ToString();
+                return _table;
             }
         }
     }
