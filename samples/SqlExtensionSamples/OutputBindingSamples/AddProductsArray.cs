@@ -12,7 +12,7 @@ namespace SqlExtensionSamples
         public static IActionResult Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproducts-array")]
             HttpRequest req,
-        [Sql("Products", ConnectionStringSetting = "SQLServerAuthentication")] out Product[] output)
+        [Sql("dbo.Products", ConnectionStringSetting = "SQLServerAuthentication")] out Product[] output)
         {
             // Suppose that the ProductID column is the primary key in the Products table, and the 
             // table already contains a row with ProductID = 1. In that case, the row will be updated
