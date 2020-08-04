@@ -15,10 +15,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{F7E99EB5-4
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{3691FB44-971D-43FD-9B2F-916B8CE689DB}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs", "..\Azure-Webjobs-SDK\src\Microsoft.Azure.WebJobs\WebJobs.csproj", "{263D8BFF-78C7-4589-B1E1-2240424953DB}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebJobs.Host", "..\Azure-Webjobs-SDK\src\Microsoft.Azure.WebJobs.Host\WebJobs.Host.csproj", "{5C26B387-3DE7-42A6-A4B5-B21F58BF76FA}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -37,14 +33,6 @@ Global
 		{A5B55530-71C8-4A9A-92AD-1D33A5E80FC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A5B55530-71C8-4A9A-92AD-1D33A5E80FC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A5B55530-71C8-4A9A-92AD-1D33A5E80FC1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{263D8BFF-78C7-4589-B1E1-2240424953DB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{263D8BFF-78C7-4589-B1E1-2240424953DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{263D8BFF-78C7-4589-B1E1-2240424953DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{263D8BFF-78C7-4589-B1E1-2240424953DB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5C26B387-3DE7-42A6-A4B5-B21F58BF76FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5C26B387-3DE7-42A6-A4B5-B21F58BF76FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5C26B387-3DE7-42A6-A4B5-B21F58BF76FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5C26B387-3DE7-42A6-A4B5-B21F58BF76FA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
