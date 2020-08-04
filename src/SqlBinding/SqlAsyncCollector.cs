@@ -95,12 +95,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             using (var connection = SqlBindingUtilities.BuildConnection(attribute, configuration))
             {
                 var table = attribute.CommandText;
+                // In the case that the user specified the table name as something like 'dbo.Products', we split this into
+                // 'dbo' and 'Products' to build the select query in the SqlDataAdapter
+                var tableNameComponents = table.Split(new[] { '.' }, 2);
+
                 DataSet dataSet = new DataSet();
                 DataTable newData = (DataTable)JsonConvert.DeserializeObject(rows, typeof(DataTable));
 
                 await connection.OpenAsync();
                 SqlTransaction transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead);
-                SqlDataAdapter dataAdapter = new SqlDataAdapter(new SqlCommand($"SELECT * FROM [{table}];", connection, transaction));
+                SqlDataAdapter dataAdapter = new SqlDataAdapter(new SqlCommand($"SELECT * FROM [{tableNameComponents[0]}].[{tableNameComponents[1]}];", connection, transaction));
                 // Specifies which column should be intepreted as the primary key
                 dataAdapter.FillSchema(newData, SchemaType.Source);
                 newData.TableName = table;
