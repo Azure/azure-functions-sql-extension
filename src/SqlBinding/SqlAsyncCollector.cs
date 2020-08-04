@@ -94,16 +94,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             using (var connection = SqlBindingUtilities.BuildConnection(attribute, configuration))
             {
-                var table = attribute.CommandText;
+                var tableName = attribute.CommandText;
+                // In the case that the user specified the table name as something like 'dbo.Products', we split this into
+                // 'dbo' and 'Products' to build the select query in the SqlDataAdapter. In that case, the length of the
+                // tableNameComponents array is 2. Otherwise, the user specified a table name without the prefix so we 
+                // just surround it by brackets
+                var tableNameComponents = tableName.Split(new[] { '.' }, 2);
+                if (tableNameComponents.Length == 2)
+                {
+                    tableName = $"[{tableNameComponents[0]}].[{tableNameComponents[1]}]";
+                } else
+                {
+                    tableName = $"[{tableName}]";
+                }
+
                 DataSet dataSet = new DataSet();
                 DataTable newData = (DataTable)JsonConvert.DeserializeObject(rows, typeof(DataTable));
 
                 await connection.OpenAsync();
                 SqlTransaction transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead);
-                SqlDataAdapter dataAdapter = new SqlDataAdapter(new SqlCommand($"SELECT * FROM [{table}];", connection, transaction));
+                SqlDataAdapter dataAdapter = new SqlDataAdapter(new SqlCommand($"SELECT * FROM {tableName};", connection, transaction));
                 // Specifies which column should be intepreted as the primary key
                 dataAdapter.FillSchema(newData, SchemaType.Source);
-                newData.TableName = table;
+                newData.TableName = tableName;
                 DataTable originalData = newData.Clone();
                 // Get the rows currently stored in table
                 dataAdapter.Fill(originalData);
@@ -112,7 +125,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 originalData.Merge(newData);
                 dataSet.Tables.Add(originalData);
 
-                var key = connection.Database + table;
+                var key = connection.Database + tableName;
                 SqlCommandBuilder builder;
                 // First time we've encountered this table, meaning we should create the command builder that uses the SelectCommand 
                 // of the dataAdapter to discover the table schema and generate other commands
@@ -135,7 +148,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     dataAdapter.UpdateCommand = updateCommand;
                 }
                 dataAdapter.UpdateBatchSize = 1000;
-                dataAdapter.Update(dataSet, table);
+                dataAdapter.Update(dataSet, tableName);
                 await transaction.CommitAsync();
             }
         }
