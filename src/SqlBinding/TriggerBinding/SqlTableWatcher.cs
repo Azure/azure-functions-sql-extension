@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly CancellationTokenSource _cancellationTokenSource;
 
-        // It should be impossible for multiple threads to access these at the same time.
+        // It should be impossible for multiple threads to access these at the same time because of the semaphores we use
         private readonly Dictionary<string, string> _primaryKeys;
         private readonly List<Dictionary<string, string>> _rows;
         private readonly Dictionary<string, string> _queryStrings;
@@ -36,23 +36,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const int _maxDequeueCount = 5;
         // Unit of time is seconds
         private const string _leaseUnits = "s";
-        private const int _leaseTime = 30;
+        private const int _leaseTime = 30 * 1000;
         // The minimal possible retention period is 1 minute. Is 10 seconds an acceptable polling time given that?
-        private const int _pollingInterval = 10;
+        private const int _pollingInterval = 10 * 1000;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SqlTableWatcher"/> class.
+        /// </summary>
+        /// <param name="connectionStringSetting"> 
+        /// The name of the app setting that stores the SQL connection string
+        /// </param>
+        /// <param name="table"> 
+        /// The name of the user table that changes are being tracked on
+        /// </param>
+        /// <param name="configuration">
+        /// Used to extract the connection string from connectionStringSetting
+        /// </param>
+        /// <param name="executor">
+        /// Used to execute the user's function when changes are detected on "table"
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown if any of the parameters are null
+        /// </exception>
         public SqlTableWatcher(string table, string connectionStringSetting, IConfiguration configuration, ITriggeredFunctionExecutor executor)
         {
-            _table = table;
+            _table = table ?? throw new ArgumentNullException(nameof(table));
+            _connectionStringSetting = connectionStringSetting ?? throw new ArgumentNullException(nameof(connectionStringSetting));
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _executor = executor ?? throw new ArgumentNullException(nameof(executor));
             _workerTable = "Worker_Table_" + _table;
-            _connectionStringSetting = connectionStringSetting;
-            _executor = executor;
-            _configuration = configuration;
+
             _cancellationTokenSource = new CancellationTokenSource();
             _rows = new List<Dictionary<string, string>>();
             _queryStrings = new Dictionary<string, string>();
             _primaryKeys = new Dictionary<string, string>();
             _whereChecksOfRows = new Dictionary<Dictionary<string, string>, string>();
             _primaryKeyValuesOfRows = new Dictionary<Dictionary<string, string>, string>();
+
             _checkForChangesTimer = new Timer(CheckForChangesCallback);
             _renewLeasesTimer = new Timer(RenewLeasesCallback);
             // Should these be just normal semaphores?
@@ -61,27 +81,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         }
 
+        /// <summary>
+        /// Starts the watcher which begins polling for changes on the user's table specified in the constructor
+        /// </summary>
+        /// <returns></returns>
         public async Task StartAsync()
         {
             await CreateWorkerTableAsync();
             _state = State.CheckingForChanges;
-            _checkForChangesTimer.Change(0, _pollingInterval * 1000);
-            _renewLeasesTimer.Change(0, _leaseTime * 1000);
+            _checkForChangesTimer.Change(0, _pollingInterval);
+            _renewLeasesTimer.Change(0, _leaseTime);
         }
 
+        /// <summary>
+        /// Stops the watcher which stops polling for changes on the user's table
+        /// </summary>
+        /// <returns></returns>
         public async Task StopAsync()
         {
             await _checkForChangesTimer.DisposeAsync();
             await _renewLeasesTimer.DisposeAsync();
         }
 
+        /// <summary>
+        /// Executed once every "_leastTime" period. If the state of the watcher is <see cref="State.ProcessingChanges"/>, then 
+        /// we will renew the leases held by the watcher on "_rows"
+        /// </summary>
+        /// <param name="state">Unused </param>
         private async void RenewLeasesCallback(object state)
         {
             await _renewLeasesLock.WaitAsync();
             try
             {
                 // Should I be using the state parameter instead? Is it unsafe otherwise because the other timer thread can modify this instance variable?
-                // What happens if we try to renew leases while also attempting to release them? Should probably have a lock in the release method
                 if (_state == State.ProcessingChanges)
                 {
                     // To prevent useless reinvocation of the callback while it's executing
@@ -92,12 +124,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             finally
             {
                 // Re-enable timer
-                _renewLeasesTimer.Change(0, _leaseTime * 1000);
+                _renewLeasesTimer.Change(0, _leaseTime);
                 _renewLeasesLock.Release();
             }
         }
 
-        // Can this be async? With the timer?
+        /// <summary>
+        /// Executed once every "_pollingInterval" period. If the state of the watcher is <see cref="State.CheckingForChanges"/>, then 
+        /// the method query the change/worker tables for changes on the user's table. If any are found, the state of the watcher is
+        /// transitioned to <see cref="State.ProcessingChanges"/> and the user's function is executed with the found changes. 
+        /// If execution is successful, the leases on "_rows" are released and the state transitions to <see cref="State.CheckingForChanges"/>
+        /// once more
+        /// </summary>
+        /// <param name="state"></param>
         private async void CheckForChangesCallback(object state)
         {
             await _checkForChangesLock.WaitAsync();
@@ -131,11 +170,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             finally
             {
                 // Re-enable timer
-                _checkForChangesTimer.Change(0, _pollingInterval * 1000);
+                _checkForChangesTimer.Change(0, _pollingInterval);
                 _checkForChangesLock.Release();
             }   
         }
 
+        /// <summary>
+        /// Creates the worker table associated with the user's table, if one does not already exist
+        /// </summary>
+        /// <returns></returns>
         private async Task CreateWorkerTableAsync()
         {
             var createTableCommandString = await BuildCreateTableCommandStringAsync();
@@ -150,6 +193,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
         }
 
+        /// <summary>
+        /// Retrieves the primary keys of the user's table and stores them in the "_primaryKeys" dictionary,
+        /// which maps from primary key name to primary key type
+        /// </summary>
+        /// <returns></returns>
         private async Task GetPrimaryKeysAsync()
         {
             var getPrimaryKeysQuery = String.Format(
@@ -176,6 +224,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
         }
 
+        /// <summary>
+        /// Queries the change/worker tables to check for new changes on the user's table
+        /// </summary>
+        /// <returns></returns>
         private async Task CheckForChangesAsync()
         {
             using (var connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
@@ -205,6 +257,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
         }
 
+        /// <summary>
+        /// Renews the leases held on _rows
+        /// </summary>
+        /// <returns></returns>
         private async Task RenewLeasesAsync()
         {
             using (var connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
@@ -222,6 +278,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
         }
 
+        /// <summary>
+        /// Releases the leases held on _rows
+        /// </summary>
+        /// <returns></returns>
         private async Task ReleaseLeasesAsync()
         {
             // Don't want to change the _rows while another thread is attempting to renew leases on them
@@ -251,6 +311,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
         }
 
+        /// <summary>
+        /// Builds the query to create the worker table if one does not already exist (<see cref="CreateWorkerTableAsync"/>)
+        /// </summary>
+        /// <returns>The query</returns>
         private async Task<string> BuildCreateTableCommandStringAsync()
         {
             await GetPrimaryKeysAsync();
@@ -283,6 +347,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             return createTableString;
         }
 
+        /// <summary>
+        /// Builds the query to check for changes on the user's table (<see cref="CheckForChangesAsync"/>)
+        /// </summary>
+        /// <returns>The query</returns>
         private string BuildCheckForChangesString()
         {
             string primaryKeysSelectList;
@@ -337,6 +405,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             return getChangesQuery;
         }
 
+        /// <summary>
+        /// Builds the query to acquire leases on the rows in "_rows" if changes are detected in the user's table (<see cref="CheckForChangesAsync"/>)
+        /// </summary>
+        /// <returns>The query</returns>
         private string BuildAcquireLeaseOnRowString(Dictionary<string, string> row)
         {
             var acquireLeaseOnRow =
@@ -378,6 +450,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 _leaseTime, versionNumber);
         }
 
+        /// <summary>
+        /// Builds the query to renew leases on the rows in "_rows" (<see cref="RenewLeasesCallback(object)"/>)
+        /// </summary>
+        /// <returns>The query</returns>
         private string BuildRenewLeaseOnRowString(Dictionary<string, string> row)
         {
             var renewLeaseOnRow =
@@ -389,6 +465,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             return String.Format(renewLeaseOnRow, _workerTable, _leaseUnits, _leaseTime, whereCheck);
         }
 
+        /// <summary>
+        /// Builds the query to release leases on the rows in "_rows" after successful invocation of the user's function (<see cref="CheckForChangesCallback(object)"/>)
+        /// </summary>
+        /// <returns>The query</returns>
         private string BuildReleaseLeaseOnRowString(Dictionary<string, string> row)
         {
             var releaseLeaseOnRow =
@@ -404,12 +484,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             return String.Format(releaseLeaseOnRow, _workerTable, versionNumber, whereCheck);
         }
 
+        /// <summary>
+        /// Represents the current state of the watcher, which is either that it is currently polling for new changes (CheckingForChanges)
+        /// or currently processing new changes that it found (ProcessingChanges)
+        /// </summary>
         enum State
         {
-            Startup,
             CheckingForChanges,
-            ProcessingChanges,
-            DoneProcessingChanges
+            ProcessingChanges
         }
     }
 }
