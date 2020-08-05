@@ -19,23 +19,51 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private SqlTableWatcher _watcher;
         private int _status;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SqlTriggerListener"/> class.
+        /// </summary>
+        /// <param name="connectionStringSetting"> 
+        /// The name of the app setting that stores the SQL connection string
+        /// </param>
+        /// <param name="table"> 
+        /// The name of the user table that changes are being tracked on
+        /// </param>
+        /// <param name="configuration">
+        /// Used to extract the connection string from connectionStringSetting
+        /// </param>
+        /// <param name="executor">
+        /// Used to execute the user's function when changes are detected on "table"
+        /// </param>
         public SqlTriggerListener(string table, string connectionStringSetting, IConfiguration configuration, ITriggeredFunctionExecutor executor)
         {
             _status = ListenerNotRegistered;
             _watcher = new SqlTableWatcher(table, connectionStringSetting, configuration, executor);
         }
 
+        /// <summary>
+        /// Stops the listener which stops checking for changes on the user's table
+        /// </summary>
         public void Cancel()
         {
-            this.StopAsync(CancellationToken.None).Wait();
+            StopAsync(CancellationToken.None).Wait();
         }
 
+        /// <summary>
+        /// Disposes resources held by the listener to poll for changes
+        /// </summary>
         public void Dispose()
         {
-            // Do I need to dispose for the SqlTableWatcher somehow?
-            throw new NotImplementedException();
+            // Nothing to dispose
         }
 
+        /// <summary>
+        /// Starts the listener, which starts polling for changes on the user's table
+        /// </summary>
+        /// <param name="cancellationToken">Unused</param>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if StartAsync is called more than once
+        /// </exception>
+        /// <returns></returns>
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             int previousStatus = Interlocked.CompareExchange(ref _status, ListenerRegistering, ListenerNotRegistered); 
@@ -61,6 +89,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             
         }
 
+        /// <summary>
+        /// Stops the listener which stops checking for changes on the user's table
+        /// </summary>
         public async Task StopAsync(CancellationToken cancellationToken)
         {
             await _watcher.StopAsync();

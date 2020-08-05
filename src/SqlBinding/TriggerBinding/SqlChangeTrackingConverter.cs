@@ -17,14 +17,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly string _connectionStringSetting;
         private readonly IConfiguration _configuration;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SqlChangeTrackingConverter"/> class.
+        /// </summary>
+        /// <param name="connectionStringSetting"> 
+        /// The name of the app setting that stores the SQL connection string
+        /// </param>
+        /// <param name="table"> 
+        /// The name of the user table that changes are being tracked on
+        /// </param>
+        /// <param name="configuration">
+        /// Used to extract the connection string from connectionStringSetting
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown if any of the parameters are null
+        /// </exception>
         public SqlChangeTrackingConverter(string table, string connectionStringSetting, IConfiguration configuration)
         {
-            _table = table;
-            _connectionStringSetting = connectionStringSetting;
-            _configuration = configuration;
+            _table = table ?? throw new ArgumentNullException(nameof(table));
+            _connectionStringSetting = connectionStringSetting ?? throw new ArgumentNullException(nameof(connectionStringSetting));
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
 
-        // Should make this use the WorkerTableRow type eventually, but for now keep as dictionary
+        /// <summary>
+        /// Returns a list of SqlChangeTrackingEntry. Each entry is populated with the type of the change
+        /// and the associated data from the user table for each row in rows
+        /// </summary>
+        /// <typeparam name="T">
+        /// The POCO representing a row of the user's table
+        /// </typeparam>
+        /// <param name="rows">
+        /// The list of rows that were changed. Each row is populated by its primary key values,
+        /// as well as all columns from both the worker table and change table (<see cref="ChangeTableData.workerTableRows"/>)
+        /// </param>
+        /// <param name="whereChecksOfRows">
+        /// Used to build up the query to read the associated row from the user table (<see cref="ChangeTableData.whereChecksOfRows"/>)
+        /// </param>
+        /// <returns></returns>
         public async Task<object> BuildSqlChangeTrackingEntries<T>(List<Dictionary<String, String>> rows, 
             Dictionary<Dictionary<string, string>, string> whereChecksOfRows)
         {
@@ -35,6 +64,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var entry = new SqlChangeTrackingEntry<T>
                 {
                     ChangeType = changeType,
+                    // Not great that we're doing a SqlCommand per row, should batch this
                     Data = await GetRowData<T>(row, changeType, new List<string>(), whereChecksOfRows)
                 };
                 entries.Add(entry);
@@ -42,6 +72,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             return entries;
         }
 
+        /// <summary>
+        /// Gets the change associated with this row (either an insert, update or delete)
+        /// </summary>
+        /// <param name="row">
+        /// The (combined) row from the change table and worker table
+        /// </param>
+        /// <returns>
+        /// WatcherChangeTypes.Created for an insert, WatcherChangeTypes.Changed for an update,
+        /// and WatcherChangeTypes.Deleted for a delete 
+        /// </returns>
         private WatcherChangeTypes GetChangeType(Dictionary<string, string> row)
         {
             string changeType;
@@ -64,12 +104,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
         }
 
-        // Not great that we're doing a SqlCommand per row, should batch this
+        /// <summary>
+        /// Gets the current data from the user table associated with the primary key values of "row". Only
+        /// gets the data if the row was inserted or updated, since a deleted row no longer exists in the user table
+        /// </summary>
+        /// <typeparam name="T">
+        /// The POCO representing a row of the user's table
+        /// </typeparam>
+        /// <param name="row">
+        /// The row containing the primary key value used to retrieve the associated row from the user table
+        /// </param>
+        /// <param name="changeType">
+        /// The type of change, used to determine if the associated row still exists in the user table
+        /// </param>
+        /// <param name="cols">
+        /// The columns of the user table (cached to improve performance)
+        /// </param>
+        /// <param name="whereChecksOfRows">
+        /// Used to build up the query to read the associated row from the user table (<see cref="ChangeTableData.whereChecksOfRows"/>)
+        /// </param>
+        /// <returns>
+        /// The row from the user table for an insert or update, or the default value of T for a delete
+        /// The result could also be empty in the case that we are processing a change that does not reflect the current state of the user
+        /// table. For example, the most recent change to the row could be that it was deleted, but the method is processing an older change
+        /// in which it was updated. In that case, attempting to get the data from the user table will also fail
+        /// </returns>
         private async Task<T> GetRowData<T>(Dictionary<string, string> row, WatcherChangeTypes changeType, List<string> cols,
             Dictionary<Dictionary<string, string>, string> whereChecksOfRows)
         {
-            // Can't retrieve the data of a deleted row. Though we could still fail to get the row data if, for example,
-            // the row was deleted in a later change than we are currently processing. So should probably have a case for this
+            // Can't retrieve the data of a deleted row.
             if (changeType != WatcherChangeTypes.Deleted)
             {
                 using (var connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
@@ -91,6 +154,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             return default(T);
         }
 
+        /// <summary>
+        /// Builds the string for the SQL query used to read the row with the same primary key values as "row" from the user table
+        /// </summary>
+        /// <param name="row">
+        /// The row from the change/worker tables containing the primary key values to match with row from the user table
+        /// </param>
+        /// <param name="whereChecksOfRows">
+        /// Used to build up the query to read the associated row from the user table (<see cref="ChangeTableData.whereChecksOfRows"/>)
+        /// </param>
+        /// <returns>
+        /// The SQL query
+        /// </returns>
         private string BuildAcquireRowDataString(Dictionary<string, string> row, Dictionary<Dictionary<string, string>, string> whereChecksOfRows)
         {
             var acquireRowData =
