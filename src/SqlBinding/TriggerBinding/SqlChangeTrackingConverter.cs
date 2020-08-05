@@ -1,19 +1,16 @@
-﻿using Microsoft.Azure.WebJobs.Host.Executors;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
-    // Will the BindingConfigProvider instantiate one of these per function? In that case it should be safe to save the table name, right?
-    // And the connection and stuff? Should also check one of each of the other classes is created per function so that saving connection 
-    // information is fine. That seems to be the case given that that's what the CosmosDB binding does, and the fact that you get the 
-    // attribute and stuff that triggered the call. But should check.
     internal class SqlChangeTrackingConverter
     {
         private readonly string _table;

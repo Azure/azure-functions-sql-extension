@@ -3,26 +3,24 @@
 
 using Microsoft.Azure.WebJobs.Description;
 using System;
-using System.Data;
 
 namespace Microsoft.Azure.WebJobs
 {
     /// <summary>
-    /// An input and output binding that can be used to either:
-    /// - Establish a connection to a SQL server database and extract the results of a query run against that database, in the case of an input binding
-    /// - Establish a connection to a SQL server database and insert rows into a given table, in the case of an output binding
+    /// A trigger binding that can be used to establish a connection to a SQL server database and trigger a user's function
+    /// whenever changes happen to a given table in that database
     /// </summary>
     [Binding]
     [AttributeUsage(AttributeTargets.Parameter)]
     public sealed class SqlTriggerAttribute : Attribute
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="SqlAttribute/>"/> class.
+        /// Initializes a new instance of the <see cref="SqlTriggerAttribute/>"/> class.
         /// </summary>
-        /// <param name="commandText">The text of the command</param>
-        public SqlTriggerAttribute(string commandText)
+        /// <param name="tableName">The name of the table to monitor for changes</param>
+        public SqlTriggerAttribute(string tableName)
         {
-            CommandText = commandText ?? throw new ArgumentNullException(nameof(commandText));
+            TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
         }
 
         /// <summary>
@@ -37,9 +35,8 @@ namespace Microsoft.Azure.WebJobs
         public string ConnectionStringSetting { get; set; }
 
         /// <summary>
-        /// For an input binding, either a SQL query or stored procedure that will be run in the database referred to in the ConnectionString.
-        /// For an output binding, the table name.
+        /// The name of the table to monitor for changes
         /// </summary>
-        public string CommandText { get; set; }
+        public string TableName { get; set; }
     }
 }
