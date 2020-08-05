@@ -1,4 +1,7 @@
-﻿using Microsoft.Azure.WebJobs.Host.Executors;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using System;
@@ -17,11 +20,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly CancellationTokenSource _cancellationTokenSource;
 
+        // It should be impossible for multiple threads to access these at the same time.
         private readonly Dictionary<string, string> _primaryKeys;
         private readonly List<Dictionary<string, string>> _rows;
         private readonly Dictionary<string, string> _queryStrings;
         private readonly Dictionary<Dictionary<string, string>, string> _whereChecksOfRows;
         private readonly Dictionary<Dictionary<string, string>, string> _primaryKeyValuesOfRows;
+        private readonly Timer _renewLeasesTimer;
+        private readonly Timer _checkForChangesTimer;
+        private readonly SemaphoreSlim _checkForChangesLock;
+        private readonly SemaphoreSlim _renewLeasesLock;
         private State _state;
 
         private const int _batchSize = 10;
@@ -45,79 +53,88 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             _primaryKeys = new Dictionary<string, string>();
             _whereChecksOfRows = new Dictionary<Dictionary<string, string>, string>();
             _primaryKeyValuesOfRows = new Dictionary<Dictionary<string, string>, string>();
-            _state = State.Startup;
-            // Call Run here?
+            _checkForChangesTimer = new Timer(CheckForChangesCallback);
+            _renewLeasesTimer = new Timer(RenewLeasesCallback);
+            // Should these be just normal semaphores?
+            _checkForChangesLock = new SemaphoreSlim(1);
+            _renewLeasesLock = new SemaphoreSlim(1);
+
         }
 
         public async Task StartAsync()
         {
-            await Run();
+            await CreateWorkerTableAsync();
+            _state = State.CheckingForChanges;
+            _checkForChangesTimer.Change(0, _pollingInterval * 1000);
+            _renewLeasesTimer.Change(0, _leaseTime * 1000);
         }
 
         public async Task StopAsync()
         {
-
+            await _checkForChangesTimer.DisposeAsync();
+            await _renewLeasesTimer.DisposeAsync();
         }
 
-        /* Presumably, we should
-         * spin off a thread for this watcher, and it will just exist in an endless while loop in its Run function. Should see how other
-         * watchers are implemented. 
-         * Should use timers instead of Thread.Sleep
-         */
-        public async Task Run()
+        private async void RenewLeasesCallback(object state)
         {
-            // Also cleanup task, how to do that? 
-            while (true)
+            await _renewLeasesLock.WaitAsync();
+            try
             {
-                if (_state == State.Startup)
-                {
-                    await CreateWorkerTableAsync();
-                    _state = State.CheckingForChanges;
-                }
-                if (_state == State.CheckingForChanges)
-                {
-                    await CheckForChangesAsync();
-                    // Found some changes to process
-                    if (_rows.Count > 0)
-                    {
-                        _state = State.ProcessingChanges;
-                        // Await makes sure we wait for this to finish before continuing execution right? Can we still refresh leases in that case? 
-                        // Probably not, need to fix this. Maybe get rid of the await and have the listener indicate to me when to change state
-                        var triggerValue = new ChangeTableData();
-                        triggerValue.workerTableRows = _rows;
-                        triggerValue.whereChecks = _whereChecksOfRows;
-                        await _executor.TryExecuteAsync(new TriggeredFunctionData() { TriggerValue = triggerValue }, _cancellationTokenSource.Token);
-                    }
-                }
-                // If we just acquired the leases on the rows in the previous if check, we also immediately
-                // renew the leases. Maybe not the best use of resources
+                // Should I be using the state parameter instead? Is it unsafe otherwise because the other timer thread can modify this instance variable?
+                // What happens if we try to renew leases while also attempting to release them? Should probably have a lock in the release method
                 if (_state == State.ProcessingChanges)
                 {
+                    // To prevent useless reinvocation of the callback while it's executing
+                    _renewLeasesTimer.Change(Timeout.Infinite, Timeout.Infinite);
                     await RenewLeasesAsync();
                 }
-                // How would this ever be the state? When "processing changes", need to go and get the corresponding
-                // data from the user table, and then trigger the function with the list
-                // Probably the right way to do this is to ... actually it doesn't have to be the case that the 
-                // listener is responsible for this. It is in the file example, but for CosmosDB the observer actually
-                // does this.
-                if (_state == State.DoneProcessingChanges)
-                {
-                    await ReleaseLeasesAsync();
-                    _state = State.CheckingForChanges;
-                }
-                if (_state == State.ProcessingChanges)
-                {
-                    Thread.Sleep(_leaseTime * 1000);
-                } else
-                {
-                    // Otherwise, we are polling for changes
-                    Thread.Sleep(_pollingInterval * 1000);
-                }
+            }
+            finally
+            {
+                // Re-enable timer
+                _renewLeasesTimer.Change(0, _leaseTime * 1000);
+                _renewLeasesLock.Release();
             }
         }
 
-        
-
+        // Can this be async? With the timer?
+        private async void CheckForChangesCallback(object state)
+        {
+            await _checkForChangesLock.WaitAsync();
+            try
+            {
+                if (_state == State.CheckingForChanges)
+                {
+                    // To prevent useless reinvocation of the callback while it's executing
+                    _checkForChangesTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                    await CheckForChangesAsync();
+                    if (_rows.Count > 0)
+                    {
+                        _state = State.ProcessingChanges;
+                        var triggerValue = new ChangeTableData();
+                        triggerValue.workerTableRows = _rows;
+                        triggerValue.whereChecks = _whereChecksOfRows;
+                        var result = await _executor.TryExecuteAsync(new TriggeredFunctionData() { TriggerValue = triggerValue }, _cancellationTokenSource.Token);
+                        if (result.Succeeded)
+                        {
+                            await ReleaseLeasesAsync();
+                            _state = State.CheckingForChanges;
+                        }
+                        else
+                        {
+                            //Should probably have some count for how many times we tried to execute the function. After a certain amount of times
+                            // we should give up
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                // Re-enable timer
+                _checkForChangesTimer.Change(0, _pollingInterval * 1000);
+                _checkForChangesLock.Release();
+            }   
+        }
 
         private async Task CreateWorkerTableAsync()
         {
@@ -207,22 +224,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         private async Task ReleaseLeasesAsync()
         {
-            using (var connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
+            // Don't want to change the _rows while another thread is attempting to renew leases on them
+            await _renewLeasesLock.WaitAsync();
+            try
             {
-                await connection.OpenAsync();
-                // TODO: Set up locks on transaction
-                SqlTransaction transaction = connection.BeginTransaction();
-                foreach (var row in _rows)
+                using (var connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
                 {
-                    // Not great that we're doing a SqlCommand per row, should batch this
-                    var releaseLeaseCommand = new SqlCommand(BuildReleaseLeaseOnRowString(row), connection, transaction);
-                    await releaseLeaseCommand.ExecuteNonQueryAsync();
+                    await connection.OpenAsync();
+                    // TODO: Set up locks on transaction
+                    SqlTransaction transaction = connection.BeginTransaction();
+                    foreach (var row in _rows)
+                    {
+                        // Not great that we're doing a SqlCommand per row, should batch this
+                        var releaseLeaseCommand = new SqlCommand(BuildReleaseLeaseOnRowString(row), connection, transaction);
+                        await releaseLeaseCommand.ExecuteNonQueryAsync();
+                    }
+                    await transaction.CommitAsync();
                 }
-                await transaction.CommitAsync();
+                _rows.Clear();
+                _whereChecksOfRows.Clear();
+                _primaryKeyValuesOfRows.Clear();
             }
-            _rows.Clear();
-            _whereChecksOfRows.Clear();
-            _primaryKeyValuesOfRows.Clear();
+            finally
+            {
+                _renewLeasesLock.Release();
+            }
         }
 
         private async Task<string> BuildCreateTableCommandStringAsync()
@@ -255,11 +281,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 "END",
                 _workerTable, primaryKeysWithTypes, primaryKeysList);
             return createTableString;
-        }
-
-        private async Task GetPollingIntervalAsync()
-        {
-
         }
 
         private string BuildCheckForChangesString()
