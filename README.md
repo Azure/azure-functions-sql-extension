@@ -5,6 +5,30 @@ This repository contains extension code for SQL Server input and output bindings
 
 ## Quick Start
 
+### .NET Function App
+
+1. Add MyGet package feed.
+
+    ```bash
+    dotnet nuget add source https://www.myget.org/F/azure-appservice/api/v3/index.json
+    ```
+
+1. Create a function app.
+
+    ```bash
+    mkdir MyApp
+    cd MyApp
+    func init --worker-runtime dotnet
+    ```
+
+1. Install the extension.
+
+    ```bash
+    dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql --version 1.0.0-preview1
+    ```
+
+1. See samples below for information on how to use the binding.
+
 ## Input Binding Samples
 The input binding takes four arguments
 - **CommandText**: Passed as a constructor argument to the binding. Represents either a query string or the name of a stored procedure.
