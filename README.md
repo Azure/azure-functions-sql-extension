@@ -38,6 +38,25 @@ The input binding executes the "select * from Products where Cost = @Cost" query
   }
 ```
 
+`Product` is a user-defined POCO that follows the structure of the Products table. It represents a row of the Products table, with field names and types copying those of the `Products` table schema. For example, if the Products table has three columns of the form
+- **ProductID**: int
+- **Name**: varchar
+- **Cost**: int
+
+Then the `Product` class would look like
+```csharp
+public class Product
+{
+    public int ProductID { get; set; }
+
+    public string Name { get; set; }
+
+    public int Cost { get; set; }
+
+}
+```
+
+### Empty Parameter Value
 In this case, the parameter value of the `@Name` parameter is an empty string. 
 ```csharp
 [FunctionName("GetProductsNameEmpty")]
@@ -53,7 +72,8 @@ In this case, the parameter value of the `@Name` parameter is an empty string.
       return (ActionResult)new OkObjectResult(products);
   }
   ```
-  
+
+### Null Parameter Value
 If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", the query returns all rows for which the Name column is `NULL`. Otherwise, it returns all rows for which the value of the Name column matches the string passed in `{name}`
 ```csharp
 [FunctionName("GetProductsNameNull")]
@@ -89,7 +109,28 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
 ```
 
 ### IAsyncEnumerable
+Using the `IAsyncEnumerable` binding generally requires that the `Run` function be `async`. It is also important to call `DisposeAsync` at the end of function execution to make sure all resources used by the enumerator are freed. 
 
+```csharp
+public static async Task<IActionResult> Run(
+    [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-async/{cost}")]
+     HttpRequest req,
+    [Sql("select * from Products where cost = @Cost",
+         CommandType = System.Data.CommandType.Text,
+         Parameters = "@Cost={cost}",
+         ConnectionStringSetting = "SqlConnectionString")]
+     IAsyncEnumerable<Product> products)
+{
+    var enumerator = products.GetAsyncEnumerator();
+    var productList = new List<Product>();
+    while (await enumerator.MoveNextAsync())
+    {
+        productList.Add(enumerator.Current);
+    }
+    await enumerator.DisposeAsync();
+    return (ActionResult)new OkObjectResult(productList);
+}
+```
 
 
 # Contributing
