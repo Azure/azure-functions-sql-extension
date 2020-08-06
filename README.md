@@ -187,7 +187,7 @@ public static async Task<IActionResult> Run(
 }
 ```
 
-### T[]
+### Array
 This output binding type requires explicit instantiation within the function body. Note also that the `Product[]` array must be prefixed by `out` when attached to the output binding
 ``` csharp
 [FunctionName("AddProductsArray")]
@@ -214,7 +214,7 @@ public static IActionResult Run(
 }
 ```
 
-### T
+### Single Row
 When binding to a single row, it is also necessary to prefix the row with `out`
 ```csharp
 [FunctionName("AddProduct")]
