@@ -1,3 +1,96 @@
+SQL Server Extension for Azure Functions
+===
+
+This repository contains extension code for SQL Server input and output bindings. Trigger bindings are coming soon.
+
+## Quick Start
+
+## Input Binding Samples
+The input binding takes four arguments
+- **CommandText**: Passed as a constructor argument to the binding. Represents either a query string or the name of a stored procedure.
+- **CommandType**: Specifies whether CommandText is a query (`System.Data.CommandType.Text`) or a stored procedure (`System.Data.CommandType.StoredProcedure`)
+- **Parameters**: The parameters to the query/stored procedure. This string must follow the format "@param1=param1,@param2=param2" where @param1 is the name of the parameter and param1 is the parameter value. Each pair of parameter name, parameter value is separated by a comma. Within each pair, the parameter name and value is separated by an equals sign. This means that neither the parameter name nor value can contain "," or "=". To specify a `NULL` parameter value, do "@param1=null,@param2=param2". To specify an empty string as a value, do "@param1=,@param2=param2", i.e. do not put any text after the equals sign of the corresponding parameter name. This argument is auto-resolvable (see Query String examples). 
+- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/en-us/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0). 
+
+The following are valid binding types for the result of the query/stored procedure execution:
+- **IEnumerable<T>**:
+- **IAsyncEnumerable<T>**:
+- **String**:
+- **SqlCommand**:
+
+The repo contains examples of each of these binding types [here](https://github.com/Azure/azure-functions-sql-extension/tree/dev/samples/SqlExtensionSamples/InputBindingSamples). A few examples are also included below. 
+
+### Query String
+The input binding executes the "select * from Products where Cost = @Cost" query, returning the result as an `IEnumerable<Product>`, where Product is a user-defined POCO. The *Parameters* argument passes the `{cost}` specified in the URL that triggers the function, `getproducts/{cost}`, as the value of the `@Cost` parameter in the query. *CommandType* is set to `System.Data.CommandType.Text`, since the constructor argument of the binding is a raw query. 
+
+```csharp
+[FunctionName("GetProducts")]
+  public static IActionResult Run(
+      [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts/{cost}")]
+      HttpRequest req,
+      [Sql("select * from Products where Cost = @Cost",
+          CommandType = System.Data.CommandType.Text,
+          Parameters = "@Cost={cost}",
+          ConnectionStringSetting = "SqlConnectionString")]
+      IEnumerable<Product> products)
+  {
+      return (ActionResult)new OkObjectResult(products);
+  }
+```
+
+In this case, the parameter value of the `@Name` parameter is an empty string. 
+```csharp
+[FunctionName("GetProductsNameEmpty")]
+  public static IActionResult Run(
+      [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-nameempty/{cost}")]
+      HttpRequest req,
+      [Sql("select * from Products where Cost = @Cost and Name = @Name",
+          CommandType = System.Data.CommandType.Text,
+          Parameters = "@Cost={cost},@Name=",
+          ConnectionStringSetting = "SqlConnectionString")]
+      IEnumerable<Product> products)
+  {
+      return (ActionResult)new OkObjectResult(products);
+  }
+  ```
+  
+If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", the query returns all rows for which the Name column is `NULL`. Otherwise, it returns all rows for which the value of the Name column matches the string passed in `{name}`
+```csharp
+[FunctionName("GetProductsNameNull")]
+  public static IActionResult Run(
+      [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-namenull/{name}")]
+      HttpRequest req,
+      [Sql("if @Name is null select * from Products where Name is null else select * from Products where @Name = name",
+          CommandType = System.Data.CommandType.Text,
+          Parameters = "@Name={name}",
+          ConnectionStringSetting = "SqlConnectionString")]
+      IEnumerable<Product> products)
+  {
+      return (ActionResult)new OkObjectResult(products);
+  }
+```
+
+### Stored Procedure
+`SelectsProductCost` is the name of a procedure stored in the user's database. In this case, *CommandType* is `System.Data.CommandType.StoredProcedure`. The parameter value of the `@Cost` parameter in the procedure is once again the `{cost}` specified in the `getproducts-storedprocedure/{cost}` URL. 
+
+```csharp
+[FunctionName("GetProductsStoredProcedure")]
+  public static IActionResult Run(
+      [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-storedprocedure/{cost}")]
+      HttpRequest req,
+      [Sql("SelectProductsCost",
+          CommandType = System.Data.CommandType.StoredProcedure,
+          Parameters = "@Cost={cost}",
+          ConnectionStringSetting = "SqlConnectionString")]
+      IEnumerable<Product> products)
+  {
+      return (ActionResult)new OkObjectResult(products);
+  }
+```
+
+### IAsyncEnumerable
+
+
 
 # Contributing
 
