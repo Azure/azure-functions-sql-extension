@@ -48,14 +48,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </typeparam>
         /// <param name="rows">
         /// The list of rows that were changed. Each row is populated by its primary key values,
-        /// as well as all columns from both the worker table and change table (<see cref="ChangeTableData.workerTableRows"/>)
+        /// as well as all columns from both the worker table and change table (<see cref="ChangeTableData.WorkerTableRows"/>)
         /// </param>
         /// <param name="whereChecksOfRows">
-        /// Used to build up the query to read the associated row from the user table (<see cref="ChangeTableData.whereChecksOfRows"/>)
+        /// Used to build up the query to read the associated row from the user table (<see cref="ChangeTableData.WhereChecksOfRows"/>)
+        /// </param>
+        /// <param name="primaryKeys">
+        /// Used to determine which columns of each row in "rows" correspond to the primary keys of the user table (<see cref="ChangeTableData.PrimaryKeys"/>)
         /// </param>
         /// <returns></returns>
         public async Task<object> BuildSqlChangeTrackingEntries<T>(List<Dictionary<String, String>> rows, 
-            Dictionary<Dictionary<string, string>, string> whereChecksOfRows)
+            Dictionary<Dictionary<string, string>, string> whereChecksOfRows, Dictionary<string, string> primaryKeys)
         {
             var entries = new List<SqlChangeTrackingEntry<T>>();
             foreach (var row in rows)
@@ -65,7 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     ChangeType = changeType,
                     // Not great that we're doing a SqlCommand per row, should batch this
-                    Data = await GetRowData<T>(row, changeType, new List<string>(), whereChecksOfRows)
+                    Data = await GetRowData<T>(row, changeType, new List<string>(), whereChecksOfRows, primaryKeys)
                 };
                 entries.Add(entry);
             }
@@ -123,6 +126,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="whereChecksOfRows">
         /// Used to build up the query to read the associated row from the user table (<see cref="ChangeTableData.whereChecksOfRows"/>)
         /// </param>
+        /// <param name="primaryKeys">
+        /// Used to determine which columns of each row in "rows" correspond to the primary keys of the user table (<see cref="ChangeTableData.PrimaryKeys"/>)
+        /// </param>
         /// <returns>
         /// The row from the user table for an insert or update, or the default value of T for a delete
         /// The result could also be empty in the case that we are processing a change that does not reflect the current state of the user
@@ -130,28 +136,49 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// in which it was updated. In that case, attempting to get the data from the user table will also fail
         /// </returns>
         private async Task<T> GetRowData<T>(Dictionary<string, string> row, WatcherChangeTypes changeType, List<string> cols,
-            Dictionary<Dictionary<string, string>, string> whereChecksOfRows)
+            Dictionary<Dictionary<string, string>, string> whereChecksOfRows, Dictionary<string, string> primaryKeys)
         {
-            // Can't retrieve the data of a deleted row.
-            if (changeType != WatcherChangeTypes.Deleted)
+            // In the case that we can't read the data from the user table (for example, the change corresponds to a deleted row), 
+            // we just return a POCO whose primary key fields are populated but nothing else
+            var rowDictionary = BuildDefaultDictionary(row, primaryKeys);
+            using (var connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
             {
-                using (var connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
+                await connection.OpenAsync();
+                var getRowDataCommand = new SqlCommand(BuildAcquireRowDataString(row, whereChecksOfRows), connection);
+                using (var reader = await getRowDataCommand.ExecuteReaderAsync())
                 {
-                    await connection.OpenAsync();
-                    var getRowDataCommand = new SqlCommand(BuildAcquireRowDataString(row, whereChecksOfRows), connection);
-                    using (var reader = await getRowDataCommand.ExecuteReaderAsync())
+                    
+                    while (await reader.ReadAsync())
                     {
-                        while (await reader.ReadAsync())
-                        {
-                            var rowDictionary = SqlBindingUtilities.BuildDictionaryFromSqlRow(reader, cols);
-                            // Is there a better way to do this than first converting the dictionary to a JSON string, and
-                            // then the JSON string to T?
-                            return JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(rowDictionary));
-                        }
+                        // Is there a better way to do this than first converting the dictionary to a JSON string, and
+                        // then the JSON string to T?
+                        rowDictionary = SqlBindingUtilities.BuildDictionaryFromSqlRow(reader, cols);
                     }
                 }
             }
-            return default(T);
+            return JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(rowDictionary));
+        }
+
+        /// <summary>
+        /// Builds up a default POCO in which only the fields corresponding to the primary keys are populated
+        /// </summary>
+        /// <param name="row">
+        /// Contains the values of the primary keys that the POCO is populated with
+        /// </param>
+        /// <param name="primaryKeys">
+        /// Used to determine which columns in "row" correspond to the primary keys of the user's table (and thus of the POCO)
+        /// </param>
+        /// <returns>The default POCO</returns>
+        private static Dictionary<string, string> BuildDefaultDictionary(Dictionary<string, string> row, Dictionary<string, string> primaryKeys)
+        {
+            var defaultDictionary = new Dictionary<string, string>();
+            foreach (var primaryKey in primaryKeys.Keys)
+            {
+                string primaryKeyValue;
+                row.TryGetValue(primaryKey, out primaryKeyValue);
+                defaultDictionary.Add(primaryKey, primaryKeyValue);
+            }
+            return defaultDictionary;
         }
 
         /// <summary>

@@ -36,9 +36,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const int _maxDequeueCount = 5;
         // Unit of time is seconds
         private const string _leaseUnits = "s";
-        private const int _leaseTime = 30 * 1000;
+        private const int _leaseTime = 30;
         // The minimal possible retention period is 1 minute. Is 10 seconds an acceptable polling time given that?
-        private const int _pollingInterval = 10 * 1000;
+        private const int _pollingInterval = 10;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlTableWatcher"/> class.
@@ -89,8 +89,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             await CreateWorkerTableAsync();
             _state = State.CheckingForChanges;
-            _checkForChangesTimer.Change(0, _pollingInterval);
-            _renewLeasesTimer.Change(0, _leaseTime);
+            _checkForChangesTimer.Change(0, _pollingInterval * 1000);
+            _renewLeasesTimer.Change(0, _leaseTime * 1000);
         }
 
         /// <summary>
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             finally
             {
                 // Re-enable timer
-                _renewLeasesTimer.Change(0, _leaseTime);
+                _renewLeasesTimer.Change(0, _leaseTime * 1000);
                 _renewLeasesLock.Release();
             }
         }
@@ -151,8 +151,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         _state = State.ProcessingChanges;
                         var triggerValue = new ChangeTableData();
-                        triggerValue.workerTableRows = _rows;
-                        triggerValue.whereChecks = _whereChecksOfRows;
+                        triggerValue.WorkerTableRows = _rows;
+                        triggerValue.WhereChecks = _whereChecksOfRows;
+                        triggerValue.PrimaryKeys = _primaryKeys;
                         var result = await _executor.TryExecuteAsync(new TriggeredFunctionData() { TriggerValue = triggerValue }, _cancellationTokenSource.Token);
                         if (result.Succeeded)
                         {
@@ -170,7 +171,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             finally
             {
                 // Re-enable timer
-                _checkForChangesTimer.Change(0, _pollingInterval);
+                _checkForChangesTimer.Change(0, _pollingInterval * 1000);
                 _checkForChangesLock.Release();
             }   
         }
@@ -428,6 +429,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 string primaryKeyValue;
                 row.TryGetValue(key, out primaryKeyValue);
+                string type;
+                _primaryKeys.TryGetValue(key, out type);
+                // Is this robust/exhaustive enough? What's a better way to do this?
+                if (type.Contains("char") || type.Contains("text"))
+                {
+                    primaryKeyValue = "\'" + primaryKeyValue + "\'";
+                }
                 if (!first)
                 {
                     whereCheck += " AND ";

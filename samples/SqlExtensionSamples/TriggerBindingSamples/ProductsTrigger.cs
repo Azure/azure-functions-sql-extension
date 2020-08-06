@@ -1,6 +1,9 @@
-﻿using Microsoft.Azure.WebJobs;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Sql;
-using System;
+using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using static SqlExtensionSamples.ProductUtilities;
 
@@ -10,14 +13,14 @@ namespace SqlExtensionSamples.TriggerBindingSamples
     {
         [FunctionName("ProductsTrigger")]
         public static void Run(
-            [SqlTrigger("Products",
-            ConnectionStringSetting = "SQLServerAuthentication")] IEnumerable<SqlChangeTrackingEntry<Product>> changes)
+            [SqlTrigger("Products", ConnectionStringSetting = "SqlConnectionString")] IEnumerable<SqlChangeTrackingEntry<Product>> changes,
+            ILogger logger)
         {
-            var enumerator = changes.GetEnumerator();
-            while (enumerator.MoveNext())
+            foreach (var change in changes)
             {
-                var product = enumerator.Current.Data;
-                Console.WriteLine(String.Format("ProductID: {0}, Name: {1}, Price: {2}", product.ProductID, product.Name, product.Cost));
+                var product = change.Data;
+                logger.LogInformation($"Change occurred to Product table row: {change.ChangeType}");
+                logger.LogInformation($"ProductID: {product.ProductID}, Name: {product.Name}, Price: {product.Cost}");
             }
         }
     }

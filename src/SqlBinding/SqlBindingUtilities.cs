@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         /// <param name="attribute">The name of the app setting that stores the SQL connection string</param>
         /// <param name="configuration">Used to obtain the value of the app setting</param>
-        /// <exception cref="InvalidOperationException">
+        /// <exception cref="ArgumentException">
         /// Thrown if ConnectionStringSetting is empty or null
         /// </exception>
         /// <exception cref="ArgumentNullException">
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             if (string.IsNullOrEmpty(connectionStringSetting))
             {
-                throw new InvalidOperationException("Must specify ConnectionStringSetting, which should refer to the name of an app setting that " +
+                throw new ArgumentException("Must specify ConnectionStringSetting, which should refer to the name of an app setting that " +
                     "contains a SQL connection string");
             }
             if (configuration == null)

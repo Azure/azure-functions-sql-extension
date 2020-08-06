@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
@@ -12,7 +15,7 @@ namespace SqlExtensionSamples
         public static IActionResult Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproducts-array")]
             HttpRequest req,
-        [Sql("dbo.Products", ConnectionStringSetting = "SQLServerAuthentication")] out Product[] output)
+        [Sql("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] out Product[] output)
         {
             // Suppose that the ProductID column is the primary key in the Products table, and the 
             // table already contains a row with ProductID = 1. In that case, the row will be updated
