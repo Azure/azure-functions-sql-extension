@@ -13,10 +13,10 @@ The input binding takes four arguments
 - **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/en-us/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0). 
 
 The following are valid binding types for the result of the query/stored procedure execution:
-- **IEnumerable<T>**:
-- **IAsyncEnumerable<T>**:
-- **String**:
-- **SqlCommand**:
+- **IEnumerable<T>**: Each element is a row of the result represented by `T`, where `T` is a user-defined POCO, or Plain Old C# Object. `T` should follow the structure of a row in the queried table. See the [Query String](#query-string) section for an example of what `T` should look like.
+- **IAsyncEnumerable<T>**: Each element is again a row of the result represented by `T`, but the rows are retrieved "lazily". A row of the result is only retrieved when `MoveNextAsync` is called on the enumerator. This is useful in the case that the query can return a very large amount of rows.
+- **String**: A JSON string representation of the rows of the result (an example is provided [here](https://github.com/Azure/azure-functions-sql-extension/blob/dev/samples/SqlExtensionSamples/InputBindingSamples/GetProductsString.cs)).
+- **SqlCommand**: The SqlCommand is populated with the appropriate query and parameters, but the associated connection is not opened. It is the responsiblity of the user to execute the command and read in the results. This is useful in the case that the user wants more control over how the results are read in. An example is provided [here](https://github.com/Azure/azure-functions-sql-extension/blob/dev/samples/SqlExtensionSamples/InputBindingSamples/GetProductsSqlCommand.cs). 
 
 The repo contains examples of each of these binding types [here](https://github.com/Azure/azure-functions-sql-extension/tree/dev/samples/SqlExtensionSamples/InputBindingSamples). A few examples are also included below. 
 
@@ -38,7 +38,7 @@ The input binding executes the "select * from Products where Cost = @Cost" query
   }
 ```
 
-`Product` is a user-defined POCO that follows the structure of the Products table. It represents a row of the Products table, with field names and types copying those of the `Products` table schema. For example, if the Products table has three columns of the form
+`Product` is a user-defined POCO that follows the structure of the Products table. It represents a row of the Products table, with field names and types copying those of the Products table schema. For example, if the Products table has three columns of the form
 - **ProductID**: int
 - **Name**: varchar
 - **Cost**: int
@@ -129,6 +129,107 @@ public static async Task<IActionResult> Run(
     }
     await enumerator.DisposeAsync();
     return (ActionResult)new OkObjectResult(productList);
+}
+```
+
+## Output Binding Samples
+The output binding takes a list of rows to be upserted into a user table. If the primary key value of the row already exists in the table, the row is interpreted as an update, meaning that the values of the other columns in the table for that primary key are updated. If the primary key value does not exist in the table, the row is interpreted as an insert. The upserting of the rows is batched by the output binding code.
+
+The output binding takes two arguments
+- **CommandText**: Passed as a constructor argument to the binding. Represents the name of the table into which rows will be upserted. 
+- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/en-us/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0). 
+
+The following are valid binding types for the rows to be upserted into the table:
+- **ICollector<T>/IAsyncCollector<T>**: Each element is a row represented by `T`, where `T` is a user-defined POCO, or Plain Old C# Object. `T` should follow the structure of a row in the queried table. See the [Query String](#query-string) for an example of what `T` should look like.
+- **T**: Used when just one row is to be upserted into the table.
+- **T[]**: Each element is again a row of the result represented by `T`. This output binding type requires manual instantiation of the array in the function.
+
+The repo contains examples of each of these binding types [here](https://github.com/Azure/azure-functions-sql-extension/tree/dev/samples/SqlExtensionSamples/OutputBindingSamples). A few examples are also included below. 
+
+### ICollector<T>/IAsyncCollector<T>
+When using an `ICollector`, it is not necessary to instantiate it. The function can add rows to the `ICollector` directly, and its contents are automatically upserted once the function exits.
+ ```csharp
+[FunctionName("AddProductsCollector")]
+public static IActionResult Run(
+[HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproducts-collector")] HttpRequest req,
+[Sql("Products", ConnectionStringSetting = "SqlConnectionString")] ICollector<Product> products)
+{
+    var newProducts = GetNewProducts(5000);
+    foreach (var product in newProducts)
+    {
+        products.Add(product);
+    }
+    return new CreatedResult($"/api/addproducts-collector", "done");
+}
+```
+  
+It is also possible to force an upsert within the function by calling `FlushAsync()` on an `IAsyncCollector`
+```csharp
+[FunctionName("AddProductsAsyncCollector")]
+public static async Task<IActionResult> Run(
+[HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproducts-asynccollector")] HttpRequest req,
+[Sql("Products", ConnectionStringSetting = "SqlConnectionString")] IAsyncCollector<Product> products)
+{
+    var newProducts = GetNewProducts(5000);
+    foreach (var product in newProducts)
+    {
+        await products.AddAsync(product);
+    }
+    // Rows are upserted here
+    await products.FlushAsync();
+    
+    newProducts = GetNewProducts(5000);
+    foreach (var product in newProducts)
+    {
+        await products.AddAsync(product);
+    }
+    return new CreatedResult($"/api/addproducts-collector", "done");
+}
+```
+
+### T[]
+This output binding type requires explicit instantiation within the function body. Note also that the `Product[]` array must be prefixed by `out` when attached to the output binding
+``` csharp
+[FunctionName("AddProductsArray")]
+public static IActionResult Run(
+[HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproducts-array")]
+    HttpRequest req,
+[Sql("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] out Product[] output)
+{
+    // Suppose that the ProductID column is the primary key in the Products table, and the 
+    // table already contains a row with ProductID = 1. In that case, the row will be updated
+    // instead of inserted to have values Name = "Cup" and Cost = 2. 
+    output = new Product[2];
+    var product = new Product();
+    product.ProductID = 1;
+    product.Name = "Cup";
+    product.Cost = 2;
+    output[0] = product;
+    product = new Product();
+    product.ProductID = 2;
+    product.Name = "Glasses";
+    product.Cost = 12;
+    output[1] = product;
+    return new CreatedResult($"/api/addproducts-array", output);
+}
+```
+
+### T
+When binding to a single row, it is also necessary to prefix the row with `out`
+```csharp
+[FunctionName("AddProduct")]
+public static IActionResult Run(
+[HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct")]
+    HttpRequest req,
+[Sql("Products", ConnectionStringSetting = "SqlConnectionString")] out Product product)
+{
+    product = new Product
+    {
+        Name = req.Query["name"],
+        ProductID = int.Parse(req.Query["id"]),
+        Cost = int.Parse(req.Query["cost"])
+    };
+    return new CreatedResult($"/api/addproduct", product);
 }
 ```
 
