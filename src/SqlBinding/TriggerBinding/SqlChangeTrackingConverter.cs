@@ -57,19 +57,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Used to determine which columns of each row in "rows" correspond to the primary keys of the user table (<see cref="ChangeTableData.PrimaryKeys"/>)
         /// </param>
         /// <returns></returns>
-        public async Task<object> BuildSqlChangeTrackingEntries<T>(List<Dictionary<String, String>> rows, 
+        public async Task<object> BuildSqlChangeTrackingEntries<T>(List<Dictionary<string, string>> rows, 
             Dictionary<Dictionary<string, string>, string> whereChecksOfRows, Dictionary<string, string> primaryKeys)
         {
-            var entries = new List<SqlChangeTrackingEntry<T>>();
+            var entries = new List<SqlChangeTrackingEntry<T>>(capacity: rows.Count);
+            var cols = new List<string>();
             foreach (var row in rows)
             {
-                var changeType = GetChangeType(row);
-                var entry = new SqlChangeTrackingEntry<T>
-                {
-                    ChangeType = changeType,
-                    // Not great that we're doing a SqlCommand per row, should batch this
-                    Data = await GetRowData<T>(row, changeType, new List<string>(), whereChecksOfRows, primaryKeys)
-                };
+                // Not great that we're doing a SqlCommand per row, should batch this
+                var entry = new SqlChangeTrackingEntry<T>(GetChangeType(row), await GetRowData<T>(row, changeType, cols, whereChecksOfRows, primaryKeys));
                 entries.Add(entry);
             }
             return entries;
@@ -82,28 +78,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// The (combined) row from the change table and worker table
         /// </param>
         /// <returns>
-        /// WatcherChangeTypes.Created for an insert, WatcherChangeTypes.Changed for an update,
-        /// and WatcherChangeTypes.Deleted for a delete 
+        /// SqlChangeType.Created for an insert, SqlChangeType.Changed for an update,
+        /// and SqlChangeType.Deleted for a delete 
         /// </returns>
-        private WatcherChangeTypes GetChangeType(Dictionary<string, string> row)
+        private SqlChangeType GetChangeType(Dictionary<string, string> row)
         {
             string changeType;
             row.TryGetValue("SYS_CHANGE_OPERATION", out changeType);
             if (changeType.Equals("I"))
             {
-                return WatcherChangeTypes.Created;
+                return SqlChangeType.Inserted;
             }
             else if (changeType.Equals("U"))
             {
-                return WatcherChangeTypes.Changed;
+                return SqlChangeType.Updated;
             }
             else if (changeType.Equals("D"))
             {
-                return WatcherChangeTypes.Deleted;
+                return SqlChangeType.Deleted;
             }
             else
             {
-                throw new InvalidDataException(String.Format("Invalid change type encountered in change table row {0}", row));
+                throw new InvalidDataException($"Invalid change type encountered in change table row {row}");
             }
         }
 
@@ -135,24 +131,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// table. For example, the most recent change to the row could be that it was deleted, but the method is processing an older change
         /// in which it was updated. In that case, attempting to get the data from the user table will also fail
         /// </returns>
-        private async Task<T> GetRowData<T>(Dictionary<string, string> row, WatcherChangeTypes changeType, List<string> cols,
-            Dictionary<Dictionary<string, string>, string> whereChecksOfRows, Dictionary<string, string> primaryKeys)
+        private async Task<T> GetRowData<T>(
+            Dictionary<string, string> row, 
+            SqlChangeType changeType, 
+            List<string> cols,
+            Dictionary<Dictionary<string, string>, string> whereChecksOfRows, 
+            Dictionary<string, string> primaryKeys)
         {
             // In the case that we can't read the data from the user table (for example, the change corresponds to a deleted row), 
             // we just return a POCO whose primary key fields are populated but nothing else
-            var rowDictionary = BuildDefaultDictionary(row, primaryKeys);
-            using (var connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
+            Dictionary<string, string> rowDictionary = BuildDefaultDictionary(row, primaryKeys);
+            using (SqlConnection connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
             {
                 await connection.OpenAsync();
-                var getRowDataCommand = new SqlCommand(BuildAcquireRowDataString(row, whereChecksOfRows), connection);
-                using (var reader = await getRowDataCommand.ExecuteReaderAsync())
+                using (var getRowDataCommand = new SqlCommand(BuildAcquireRowDataString(row, whereChecksOfRows), connection))
                 {
-                    
-                    while (await reader.ReadAsync())
+                    using (SqlDataReader reader = await getRowDataCommand.ExecuteReaderAsync())
                     {
-                        // Is there a better way to do this than first converting the dictionary to a JSON string, and
-                        // then the JSON string to T?
-                        rowDictionary = SqlBindingUtilities.BuildDictionaryFromSqlRow(reader, cols);
+
+                        if (await reader.ReadAsync())
+                        {
+                            // Is there a better way to do this than first converting the dictionary to a JSON string, and
+                            // then the JSON string to T?
+                            rowDictionary = SqlBindingUtilities.BuildDictionaryFromSqlRow(reader, cols);
+                        }
                     }
                 }
             }
@@ -195,14 +197,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </returns>
         private string BuildAcquireRowDataString(Dictionary<string, string> row, Dictionary<Dictionary<string, string>, string> whereChecksOfRows)
         {
-            var acquireRowData =
-                "SELECT * FROM {0}\n" +
-                "WHERE {1};";
             string whereCheck;
             // Should maybe be throwing exceptions if these ever fail
             whereChecksOfRows.TryGetValue(row, out whereCheck);
+            var acquireRowData =
+                $"SELECT * FROM {_table}\n" +
+                $"WHERE {whereCheck};";
 
-            return String.Format(acquireRowData, _table, whereCheck);
+            return acquireRowData;
         }
     }
 }

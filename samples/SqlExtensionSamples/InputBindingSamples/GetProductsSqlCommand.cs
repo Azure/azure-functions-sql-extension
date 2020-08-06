@@ -31,7 +31,7 @@ namespace SqlExtensionSamples
                 {
                     while (reader.Read())
                     {
-                        result += String.Format("ProductID: {0}, Cost: {1}, Name: {2}\n", reader[0], reader[1], reader[2]);
+                        result += $"ProductID: {reader[0]}, Cost: {reader[1]}, Name: {reader[2]}\n";
                     }
                 }
             }

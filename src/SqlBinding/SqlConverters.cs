@@ -104,19 +104,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns></returns>
             public virtual async Task<string> BuildItemFromAttributeAsync(SqlAttribute attribute)
             {
-                using (var connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, _configuration))
+                using (SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, _configuration))
                 {
                     // Ideally, we would like to move away from using SqlDataAdapter both here and in the 
                     // SqlAsyncCollector since it does not support asynchronous operations. 
                     // There is a GitHub issue open to track this
                     using (SqlDataAdapter adapter = new SqlDataAdapter())
                     {
-                        SqlCommand command = SqlBindingUtilities.BuildCommand(attribute, connection);
-                        adapter.SelectCommand = command;
-                        await connection.OpenAsync();
-                        DataTable dataTable = new DataTable();
-                        adapter.Fill(dataTable);
-                        return JsonConvert.SerializeObject(dataTable);
+                        using (SqlCommand command = SqlBindingUtilities.BuildCommand(attribute, connection))
+                        {
+                            adapter.SelectCommand = command;
+                            await connection.OpenAsync();
+                            DataTable dataTable = new DataTable();
+                            adapter.Fill(dataTable);
+                            return JsonConvert.SerializeObject(dataTable);
+                        }
                     }
                 }
             }
