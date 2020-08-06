@@ -6,6 +6,7 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using static SqlExtensionSamples.ProductUtilities;
+using System.Collections.Generic;
 
 namespace SqlExtensionSamples
 {
@@ -16,7 +17,7 @@ namespace SqlExtensionSamples
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproducts-collector")] HttpRequest req,
         [Sql("Products", ConnectionStringSetting = "SqlConnectionString")] ICollector<Product> products)
         {
-            var newProducts = GetNewProducts(5000);
+            List<Product> newProducts = GetNewProducts(5000);
             foreach (var product in newProducts)
             {
                 products.Add(product);

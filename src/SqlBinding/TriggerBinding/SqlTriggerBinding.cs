@@ -184,11 +184,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 // This shouldn't fail because we already check for valid types in SqlTriggerAttributeBindingProvider
                 // This line extracts the type of the POCO
-                var type = _parameter.ParameterType.GetGenericArguments()[0].GetGenericArguments()[0];
-                var typeOfConverter = _converter.GetType();
-                var method = typeOfConverter.GetMethod("BuildSqlChangeTrackingEntries");
-                var genericMethod = method.MakeGenericMethod(type);
-                var task = (Task<object>) genericMethod.Invoke(_converter, new object[] { _changeData.WorkerTableRows, _changeData.WhereChecks, _changeData.PrimaryKeys});
+                Type type = _parameter.ParameterType.GetGenericArguments()[0].GetGenericArguments()[0];
+                Type typeOfConverter = _converter.GetType();
+                MethodInfo method = typeOfConverter.GetMethod("BuildSqlChangeTrackingEntries");
+                MethodInfo genericMethod = method.MakeGenericMethod(type);
+                Task<object> task = (Task<object>) genericMethod.Invoke(_converter, new object[] { _changeData.WorkerTableRows, _changeData.WhereChecks, _changeData.PrimaryKeys});
                 return await task;
             }
 

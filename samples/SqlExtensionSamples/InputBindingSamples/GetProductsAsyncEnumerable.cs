@@ -23,7 +23,7 @@ namespace SqlExtensionSamples
                  ConnectionStringSetting = "SqlConnectionString")]
              IAsyncEnumerable<Product> products)
         {
-            var enumerator = products.GetAsyncEnumerator();
+            IAsyncEnumerator<Product> enumerator = products.GetAsyncEnumerator();
             var productList = new List<Product>();
             while (await enumerator.MoveNextAsync())
             {
