@@ -105,9 +105,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 if (_reader == null)
                 {
-                    SqlCommand command = SqlBindingUtilities.BuildCommand(_attribute, _connection);
-                    await command.Connection.OpenAsync();
-                    _reader = await command.ExecuteReaderAsync();
+                    using (SqlCommand command = SqlBindingUtilities.BuildCommand(_attribute, _connection))
+                    {
+                        await command.Connection.OpenAsync();
+                        _reader = await command.ExecuteReaderAsync();
+                    }
                 }
                 if (await _reader.ReadAsync())
                 {
@@ -126,8 +128,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns>JSON string version of the SQL row</returns>
             private string SerializeRow()
             {
-                var result = SqlBindingUtilities.BuildDictionaryFromSqlRow(_reader, _cols);
-                return JsonConvert.SerializeObject(result);
+                return JsonConvert.SerializeObject(SqlBindingUtilities.BuildDictionaryFromSqlRow(_reader, _cols));
             }
         }
     }

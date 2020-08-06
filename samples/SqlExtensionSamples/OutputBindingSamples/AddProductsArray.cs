@@ -21,15 +21,20 @@ namespace SqlExtensionSamples
             // table already contains a row with ProductID = 1. In that case, the row will be updated
             // instead of inserted to have values Name = "Cup" and Cost = 2. 
             output = new Product[2];
-            var product = new Product();
-            product.ProductID = 1;
-            product.Name = "Cup";
-            product.Cost = 2;
+            var product = new Product
+            {
+                ProductID = 1,
+                Name = "Cup",
+                Cost = 2
+            };
             output[0] = product;
-            product = new Product();
-            product.ProductID = 2;
-            product.Name = "Glasses";
-            product.Cost = 12;
+
+            product = new Product
+            {
+                ProductID = 2,
+                Name = "Glasses",
+                Cost = 12
+            };
             output[1] = product;
             return new CreatedResult($"/api/addproducts-array", output);
         }

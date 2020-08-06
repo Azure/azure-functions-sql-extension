@@ -106,7 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// commands that refer to the name of a StoredProcedure (the StoredProcedure CommandType) or are themselves 
         /// raw queries (the Text CommandType).
         /// </exception>
-        /// <returns>The build SqlCommand</returns>
+        /// <returns>The built SqlCommand</returns>
         internal static SqlCommand BuildCommand(SqlAttribute attribute, SqlConnection connection)
         {
             SqlCommand command = new SqlCommand();
