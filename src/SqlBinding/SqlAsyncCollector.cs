@@ -91,14 +91,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="configuration"> Used to build up the connection </param>
         private async Task UpsertRowsAsync(string rows, SqlAttribute attribute, IConfiguration configuration)
         {
-            using (var connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, configuration))
+            using (SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
                 var tableName = attribute.CommandText;
                 // In the case that the user specified the table name as something like 'dbo.Products', we split this into
                 // 'dbo' and 'Products' to build the select query in the SqlDataAdapter. In that case, the length of the
                 // tableNameComponents array is 2. Otherwise, the user specified a table name without the prefix so we 
                 // just surround it by brackets
-                var tableNameComponents = tableName.Split(new[] { '.' }, 2);
+                string[] tableNameComponents = tableName.Split(new[] { '.' }, 2);
                 if (tableNameComponents.Length == 2)
                 {
                     tableName = $"[{tableNameComponents[0]}].[{tableNameComponents[1]}]";
@@ -137,11 +137,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     // Commands have already been generated, so we just need to attach them to the dataAdapter. No need to 
                     // discover the table schema
-                    var insertCommand = builder.GetInsertCommand();
+                    SqlCommand insertCommand = builder.GetInsertCommand();
                     insertCommand.Connection = connection;
                     insertCommand.Transaction = transaction;
                     dataAdapter.InsertCommand = insertCommand;
-                    var updateCommand = builder.GetUpdateCommand();
+                    SqlCommand updateCommand = builder.GetUpdateCommand();
                     updateCommand.Connection = connection;
                     updateCommand.Transaction = transaction;
                     dataAdapter.UpdateCommand = updateCommand;

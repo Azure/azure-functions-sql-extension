@@ -62,7 +62,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             if (!IsValidType(parameter.ParameterType))
             {
-                throw new InvalidOperationException(String.Format("Can't bind SqlTriggerAttribute to type {0}", parameter.ParameterType));
+                throw new InvalidOperationException($"Can't bind SqlTriggerAttribute to type {parameter.ParameterType}. Only IEnumerable<SqlChangeTrackingEntry<T>>" +
+                    $" is supported, where T is a user-defined POCO that matches the schema of the tracked table");
             }
 
             return Task.FromResult<ITriggerBinding>(new SqlTriggerBinding(attribute.TableName, attribute.ConnectionStringSetting, 
@@ -77,7 +78,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>True is type is a valid Type, otherwise false</returns>
         private static bool IsValidType(Type type)
         {
-            var genericArguments = type.GetGenericArguments();
+            Type[] genericArguments = type.GetGenericArguments();
             if (genericArguments.Length != 1)
             {
                 return false;
