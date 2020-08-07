@@ -188,7 +188,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 Type typeOfConverter = _converter.GetType();
                 MethodInfo method = typeOfConverter.GetMethod("BuildSqlChangeTrackingEntries");
                 MethodInfo genericMethod = method.MakeGenericMethod(type);
-                Task<object> task = (Task<object>) genericMethod.Invoke(_converter, new object[] { _changeData.WorkerTableRows, _changeData.WhereChecks, _changeData.PrimaryKeys});
+                Task<object> task = (Task<object>) genericMethod.Invoke(_converter, new object[] { _changeData.WorkerTableRows, _changeData.PrimaryKeys, _changeData.WhereCheck});
                 return await task;
             }
 

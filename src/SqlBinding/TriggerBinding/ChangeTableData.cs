@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using Microsoft.Data.SqlClient;
 using System.Collections.Generic;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
@@ -17,19 +18,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         /// <summary>
         /// Used to build up the queries to extract data from the user table
-        /// We want to read rows from the user table corresponding to the primary keys of each row in the workerTableRow
-        /// The whereChecks have the appropriate statements that we insert into the WHERE clause of the query
-        /// I.e. for an Employee row with primary key values EmployeeID = 3 and Company = 'Microsoft', the 
-        /// whereCheck would look like "EmployeeID = 3 AND Company = 'Microsoft'
-        /// The keys of the dictionary are the workerTableRows, and the values that row's where check
+        /// We want to read rows from the user table corresponding to the primary keys of each row in the WorkerTableRow
+        /// This maps from WorkerTableRow to a list of SqlParameters containing the primary key values of that row
         /// </summary>
-        public Dictionary<Dictionary<string, string>, string> WhereChecks { get; set; }
+        public Dictionary<Dictionary<string, string>, SqlParameter[]> PrimaryKeyValues { get; set; }
 
         /// <summary>
-        /// Used in the case that a row was deleted from the user table. In that case, we cannot read the 
-        /// row from the user table any longer, so the best we can do is return a row populated only with the
-        /// primary key values of the deleted row. This field is used to determine which columns are the primary keys
+        /// Used to build up the queries to extract data from the user table
+        /// Has the form "PrimaryKey1 = @PrimaryKey1, PrimaryKey2 = @PrimaryKey2" where PrimaryKey1 is a primary key column name
+        /// </summary>
+        public string WhereCheck { get; set; }
+
+        /// <summary>
+        /// Used to build up the queries to extract data from the user table
+        /// The key-set of this map lists all primary key columns of this table, which can be used to determine which columns 
+        /// in the WorkerTableRows are primary keys
         /// </summary>
         public Dictionary<string, string> PrimaryKeys { get; set; }
+
+        
     }
 }
