@@ -50,22 +50,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// The list of rows that were changed. Each row is populated by its primary key values,
         /// as well as all columns from both the worker table and change table (<see cref="ChangeTableData.WorkerTableRows"/>)
         /// </param>
-        /// <param name="whereChecksOfRows">
-        /// Used to build up the query to read the associated row from the user table (<see cref="ChangeTableData.WhereChecksOfRows"/>)
+        /// <param name="whereCheck">
+        /// Used to build up the query to read the associated row from the user table (<see cref="ChangeTableData.WhereCheck"/>)
         /// </param>
         /// <param name="primaryKeys">
         /// Used to determine which columns of each row in "rows" correspond to the primary keys of the user table (<see cref="ChangeTableData.PrimaryKeys"/>)
         /// </param>
         /// <returns></returns>
-        public async Task<object> BuildSqlChangeTrackingEntries<T>(List<Dictionary<string, string>> rows, 
-            Dictionary<Dictionary<string, string>, string> whereChecksOfRows, Dictionary<string, string> primaryKeys)
+        public async Task<object> BuildSqlChangeTrackingEntries<T>(
+            List<Dictionary<string, string>> rows,
+            Dictionary<string, string> primaryKeys,
+            string whereCheck)
         {
             var entries = new List<SqlChangeTrackingEntry<T>>(capacity: rows.Count);
             var cols = new List<string>();
             foreach (var row in rows)
             {
                 // Not great that we're doing a SqlCommand per row, should batch this
-                var entry = new SqlChangeTrackingEntry<T>(GetChangeType(row), await GetRowData<T>(row, changeType, cols, whereChecksOfRows, primaryKeys));
+                var entry = new SqlChangeTrackingEntry<T>(GetChangeType(row), await GetRowData<T>(row, cols, primaryKeys, whereCheck));
                 entries.Add(entry);
             }
             return entries;
@@ -113,14 +115,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="row">
         /// The row containing the primary key value used to retrieve the associated row from the user table
         /// </param>
-        /// <param name="changeType">
-        /// The type of change, used to determine if the associated row still exists in the user table
-        /// </param>
         /// <param name="cols">
         /// The columns of the user table (cached to improve performance)
         /// </param>
-        /// <param name="whereChecksOfRows">
-        /// Used to build up the query to read the associated row from the user table (<see cref="ChangeTableData.whereChecksOfRows"/>)
+        /// <param name="whereCheck">
+        /// Used to build up the query to read the associated row from the user table (<see cref="ChangeTableData.WhereCheck"/>)
         /// </param>
         /// <param name="primaryKeys">
         /// Used to determine which columns of each row in "rows" correspond to the primary keys of the user table (<see cref="ChangeTableData.PrimaryKeys"/>)
@@ -132,11 +131,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// in which it was updated. In that case, attempting to get the data from the user table will also fail
         /// </returns>
         private async Task<T> GetRowData<T>(
-            Dictionary<string, string> row, 
-            SqlChangeType changeType, 
+            Dictionary<string, string> row,
             List<string> cols,
-            Dictionary<Dictionary<string, string>, string> whereChecksOfRows, 
-            Dictionary<string, string> primaryKeys)
+            Dictionary<string, string> primaryKeys,
+            string whereCheck)
         {
             // In the case that we can't read the data from the user table (for example, the change corresponds to a deleted row), 
             // we just return a POCO whose primary key fields are populated but nothing else
@@ -144,7 +142,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             using (SqlConnection connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
             {
                 await connection.OpenAsync();
-                using (var getRowDataCommand = new SqlCommand(BuildAcquireRowDataString(row, whereChecksOfRows), connection))
+                using (SqlCommand getRowDataCommand = BuildAcquireRowDataCommand(row, primaryKeys, whereCheck, connection))
                 {
                     using (SqlDataReader reader = await getRowDataCommand.ExecuteReaderAsync())
                     {
@@ -184,27 +182,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Builds the string for the SQL query used to read the row with the same primary key values as "row" from the user table
+        /// Builds the SqlCommand for the SQL query used to read the row with the same primary key values as "row" from the user table
         /// </summary>
         /// <param name="row">
         /// The row from the change/worker tables containing the primary key values to match with row from the user table
         /// </param>
-        /// <param name="whereChecksOfRows">
-        /// Used to build up the query to read the associated row from the user table (<see cref="ChangeTableData.whereChecksOfRows"/>)
+        /// <param name="primaryKeys">
+        /// Used to build up the query to read the associated row from the user table (<see cref="ChangeTableData.PrimaryKeys"/>)
         /// </param>
-        /// <returns>
-        /// The SQL query
-        /// </returns>
-        private string BuildAcquireRowDataString(Dictionary<string, string> row, Dictionary<Dictionary<string, string>, string> whereChecksOfRows)
+        /// <param name="whereCheck">
+        /// Used to build up the query to read the associated row from the user table (<see cref="ChangeTableData.WhereCheck"/>)
+        /// </param>
+        /// <param name="connection">
+        /// The SqlConnection to attach to the returned command
+        /// </param>
+        /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
+        private SqlCommand BuildAcquireRowDataCommand(
+            Dictionary<string, string> row, 
+            Dictionary<string, string> primaryKeys,
+            string whereCheck,
+            SqlConnection connection)
         {
-            string whereCheck;
-            // Should maybe be throwing exceptions if these ever fail
-            whereChecksOfRows.TryGetValue(row, out whereCheck);
+            SqlCommand acquireDataCommand = new SqlCommand();
+
+            SqlTableWatcher.AddParametersToCommand(acquireDataCommand, row, primaryKeys);
+
             var acquireRowData =
                 $"SELECT * FROM {_table}\n" +
                 $"WHERE {whereCheck};";
 
-            return acquireRowData;
+            acquireDataCommand.CommandText = acquireRowData;
+            acquireDataCommand.Connection = connection;
+
+            return acquireDataCommand;
         }
     }
 }
