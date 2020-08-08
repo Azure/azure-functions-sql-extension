@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Thrown if configuration is null
         /// </exception>
         /// <returns>The built connection </returns>
-        internal static SqlConnection BuildConnection(string connectionStringSetting, IConfiguration configuration)
+        public static SqlConnection BuildConnection(string connectionStringSetting, IConfiguration configuration)
         {
             if (string.IsNullOrEmpty(connectionStringSetting))
             {
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <exception cref="ArgumentNullException">
         /// Thrown if command is null
         /// </exception>
-        internal static void ParseParameters(string parameters, SqlCommand command)
+        public static void ParseParameters(string parameters, SqlCommand command)
         {
             if (command == null)
             {
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// raw queries (the Text CommandType).
         /// </exception>
         /// <returns>The built SqlCommand</returns>
-        internal static SqlCommand BuildCommand(SqlAttribute attribute, SqlConnection connection)
+        public static SqlCommand BuildCommand(SqlAttribute attribute, SqlConnection connection)
         {
             SqlCommand command = new SqlCommand();
             command.Connection = connection;
@@ -125,7 +125,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             return command;
         }
 
-        internal static Dictionary<string, string> BuildDictionaryFromSqlRow(SqlDataReader reader, List<string> cols)
+        /// <summary>
+        /// Returns a dictionary where each key is a column name and each value is the SQL row's value for that column
+        /// </summary>
+        /// <param name="reader">
+        /// Used to determine the columns of the table as well as the next SQL row to process
+        /// </param>
+        /// <param name="cols">
+        /// Filled with the columns of the table if empty, otherwise assumed to be populated 
+        /// with their names already (used for cacheing so we don't retrieve the column names every time)
+        /// </param>
+        /// <returns>The built dictionary</returns>
+        public static Dictionary<string, string> BuildDictionaryFromSqlRow(SqlDataReader reader, List<string> cols)
         {
             if (cols.Count == 0)
             {
@@ -141,6 +152,57 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 result.Add(col, reader[col].ToString());
             }
             return result;
+        }
+
+        /// <summary>
+        /// Returns [tableName] if tableName is not prefixed by a schema, otherwise returns [schema].[table] in the case that
+        /// tableName = schema.table
+        /// </summary>
+        /// <param name="tableName">The name of the user's table</param>
+        /// <returns>The parsed table name</returns>
+        public static string ProcessTableName(string tableName)
+        {
+            // In the case that the user specified the table name as something like 'dbo.Products', we split this into
+            // 'dbo' and 'Products' to build the select query in the SqlDataAdapter. In that case, the length of the
+            // tableNameComponents array is 2. Otherwise, the user specified a table name without the prefix so we 
+            // just surround it by brackets
+            string[] tableNameComponents = tableName.Split(new[] { '.' }, 2);
+            if (tableNameComponents.Length == 2)
+            {
+                tableName = $"[{tableNameComponents[0]}].[{tableNameComponents[1]}]";
+            }
+            else
+            {
+                tableName = $"[{tableName}]";
+            }
+            return tableName;
+        }
+
+        /// <summary>
+        /// Attaches SqlParameters to "command". Each parameter follows the format (@PrimaryKey, PrimaryKeyValue), where @PrimaryKey is the
+        /// name of a primary key column, and PrimaryKeyValue is "row's" value for that column
+        /// </summary>
+        /// <param name="command">The command the parameters are attached to</param>
+        /// <param name="row">The row to which this command corresponds</param>
+        /// <param name="primaryKeys">
+        /// Maps from primary key column names to primary key column types. The former is used in building
+        /// up the SqlParameters
+        /// </param>
+        /// <remarks>
+        /// Ideally, we would have a map that maps from rows to a list of SqlCommands populated with their primary key values. The issue with
+        /// this is that SQL doesn't seem to allow adding parameters to one collection when they are part of another. So, for example, since
+        /// the SqlParameters are part of the list in the map, an exception is thrown if they are also added to the collection of a SqlCommand.
+        /// The expected behavior seems to be to rebuild the SqlParameters each time
+        /// </remarks>
+        public static void AddPrimaryKeyParametersToCommand(SqlCommand command, Dictionary<string, string> row, Dictionary<string, string> primaryKeys)
+        {
+            foreach (var key in primaryKeys.Keys)
+            {
+                var parameterName = "@" + key;
+                string primaryKeyValue;
+                row.TryGetValue(key, out primaryKeyValue);
+                command.Parameters.Add(new SqlParameter(parameterName, primaryKeyValue));
+            }
         }
     }
 }
