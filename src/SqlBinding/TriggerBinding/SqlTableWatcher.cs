@@ -142,6 +142,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     await RenewLeasesAsync();
                 }
             }
+            catch (Exception e)
+            {
+                // have a logger here
+            }
             finally
             {
                 // Re-enable timer
@@ -170,9 +174,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     await CheckForChangesAsync();
                     if (_rows.Count > 0)
                     {
-                        // Even if StopAsync has been called at this point, we want to finishing processing this set of
-                        // changes because we acquired leases on them in the CheckForChangesAsync call
-                        Interlocked.Exchange(ref _state, ProcessingChanges);
+                        // If StopAsync has been called, we don't want to change the state from Stopped. 
+                        // Rather, it makes sense to immediately release the leases we acquired and dispose the timers
+                        if (Interlocked.CompareExchange(ref _state, ProcessingChanges, CheckingForChanges) == Stopped)
+                        {
+                            await ReleaseLeasesAsync();
+                            // Go to the finally block
+                            return;
+                        }
                         var triggerValue = new ChangeTableData();
                         string whereCheck;
                         _queryStrings.TryGetValue(SqlTriggerConstants.WhereCheck, out whereCheck);
@@ -191,6 +200,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         }
                     }
                 }
+            }
+            catch (Exception e)
+            {
+                // have a logger here
             }
             finally
             {
