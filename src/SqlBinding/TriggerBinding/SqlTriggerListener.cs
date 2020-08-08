@@ -12,13 +12,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     internal class SqlTriggerListener : IListener
     {
+        // Can't use an enum for these because it doesn't work with the Interlocked class
+        private int _status;
         private const int ListenerNotRegistered = 0;
         private const int ListenerRegistering = 1;
         private const int ListenerRegistered = 2;
 
         private SqlTableWatcher _watcher;
-        private int _status;
-
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlTriggerListener"/> class.
         /// </summary>

@@ -6,7 +6,6 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,8 +22,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// </remarks>
     internal class SqlTableWatcher
     {
-        private readonly string _table;
         private readonly string _workerTable;
+        private readonly string _userTable;
         private readonly string _connectionStringSetting;
         private readonly IConfiguration _configuration;
         private readonly ITriggeredFunctionExecutor _executor;
@@ -38,7 +37,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly Timer _checkForChangesTimer;
         private readonly SemaphoreSlim _checkForChangesLock;
         private readonly SemaphoreSlim _renewLeasesLock;
-        private State _state;
+        private readonly EventWaitHandle _signalStopHandle;
+        private readonly EventWaitHandle _signalStoppedHandle;
+
+        // Can't use an enum for these because it doesn't work with the Interlocked class
+        private int _state;
+        private const int CheckingForChanges = 0;
+        private const int ProcessingChanges = 1;
+        private const int Stopped = 2;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlTableWatcher"/> class.
@@ -56,15 +62,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Used to execute the user's function when changes are detected on "table"
         /// </param>
         /// <exception cref="ArgumentNullException">
-        /// Thrown if any of the parameters are null
+        /// Thrown if any configuration, connectionStringSetting, or executor are null
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// Thrown if table is null or empty
         /// </exception>
         public SqlTableWatcher(string table, string connectionStringSetting, IConfiguration configuration, ITriggeredFunctionExecutor executor)
         {
-            _table = table ?? throw new ArgumentNullException(nameof(table));
+            if (string.IsNullOrEmpty(table))
+            {
+                throw new ArgumentException("User table name cannot be null or empty");
+            }
             _connectionStringSetting = connectionStringSetting ?? throw new ArgumentNullException(nameof(connectionStringSetting));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _executor = executor ?? throw new ArgumentNullException(nameof(executor));
-            _workerTable = "Worker_Table_" + _table;
+            _userTable = SqlBindingUtilities.ProcessTableName(table);
+            _workerTable = SqlBindingUtilities.ProcessTableName(BuildWorkerTableName(table));
 
             _cancellationTokenSource = new CancellationTokenSource();
             _rows = new List<Dictionary<string, string>>();
@@ -76,6 +89,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // Should these be just normal semaphores?
             _checkForChangesLock = new SemaphoreSlim(1);
             _renewLeasesLock = new SemaphoreSlim(1);
+            _signalStoppedHandle = new AutoResetEvent(false);
 
         }
 
@@ -86,9 +100,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public async Task StartAsync()
         {
             await CreateWorkerTableAsync();
-            _state = State.CheckingForChanges;
             _checkForChangesTimer.Change(0, SqlTriggerConstants.PollingInterval * 1000);
-            _renewLeasesTimer.Change(0, SqlTriggerConstants.LeaseTime * 1000);
+            // Want to renew the leases faster than the lease time expires
+            _renewLeasesTimer.Change(0, SqlTriggerConstants.LeaseTime * 1000 / 2);
         }
 
         /// <summary>
@@ -105,8 +119,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // the same steps will be follows as in 1
             // 3. We are currently processing changes. Once the CheckForChangesCallback finishes processing changes, it will reach the
             // finally clause, register the stopped state, and again dispose the timers
-            _state = State.Stopped;
-            // Is it okay that this method returns before the timers are disposed, though? Should we block until then?
+            Interlocked.Exchange(ref _state, Stopped);
+            // Block until the timers have been released
+            _signalStoppedHandle.WaitOne();
+            _signalStoppedHandle.Dispose();
         }
 
         /// <summary>
@@ -119,8 +135,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             await _renewLeasesLock.WaitAsync();
             try
             {
-                // Should I be using the state parameter instead? Is it unsafe otherwise because the other timer thread can modify this instance variable?
-                if (_state == State.ProcessingChanges)
+                if (_state == ProcessingChanges)
                 {
                     // To prevent useless reinvocation of the callback while it's executing
                     _renewLeasesTimer.Change(Timeout.Infinite, Timeout.Infinite);
@@ -130,7 +145,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             finally
             {
                 // Re-enable timer
-                _renewLeasesTimer.Change(0, SqlTriggerConstants.LeaseTime * 1000);
+                _renewLeasesTimer.Change(0, SqlTriggerConstants.LeaseTime * 1000  / 2);
                 _renewLeasesLock.Release();
             }
         }
@@ -148,14 +163,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             await _checkForChangesLock.WaitAsync();
             try
             {
-                if (_state == State.CheckingForChanges)
+                if (_state == CheckingForChanges)
                 {
                     // To prevent useless reinvocation of the callback while it's executing
                     _checkForChangesTimer.Change(Timeout.Infinite, Timeout.Infinite);
                     await CheckForChangesAsync();
                     if (_rows.Count > 0)
                     {
-                        _state = State.ProcessingChanges;
+                        // Even if StopAsync has been called at this point, we want to finishing processing this set of
+                        // changes because we acquired leases on them in the CheckForChangesAsync call
+                        Interlocked.Exchange(ref _state, ProcessingChanges);
                         var triggerValue = new ChangeTableData();
                         string whereCheck;
                         _queryStrings.TryGetValue(SqlTriggerConstants.WhereCheck, out whereCheck);
@@ -166,7 +183,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         if (result.Succeeded)
                         {
                             await ReleaseLeasesAsync();
-                            _state = State.CheckingForChanges;
                         }
                         else
                         {
@@ -178,10 +194,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             finally
             {
-                if (_state == State.Stopped)
+                if (_state == Stopped)
                 {
                     await _checkForChangesTimer.DisposeAsync();
                     await _renewLeasesTimer.DisposeAsync();
+                    // Signal that resources have been successfully released and timers stopped
+                    _signalStoppedHandle.Set();
                 }
                 else
                 {
@@ -224,7 +242,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 $"INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id\n" +
                 $"INNER JOIN sys.columns c ON ic.object_id = c.object_id AND c.column_id = ic.column_id\n" +
                 $"INNER JOIN sys.types t ON c.user_type_id = t.user_type_id\n" +
-                $"WHERE i.is_primary_key = 1 and i.object_id = OBJECT_ID(\'{_table}\');";
+                $"WHERE i.is_primary_key = 1 and i.object_id = OBJECT_ID(\'{_userTable}\');";
 
             using (SqlConnection connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
             {
@@ -252,7 +270,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 await connection.OpenAsync();
                 // TODO: Set up locks on transaction
-                SqlTransaction transaction = connection.BeginTransaction();
+                SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead);
 
                 using (SqlCommand getChangesCommand = BuildCheckForChangesCommand(connection, transaction))
                 {
@@ -289,18 +307,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             using (SqlConnection connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
             {
                 await connection.OpenAsync();
-                // TODO: Set up locks on transaction
-                SqlTransaction transaction = connection.BeginTransaction();
                 foreach (var row in _rows)
                 {
                     // Not great that we're doing a SqlCommand per row, should batch this
-                    using (SqlCommand renewLeaseCommand = BuildRenewLeaseOnRowCommand(row, connection, transaction))
+                    using (SqlCommand renewLeaseCommand = BuildRenewLeaseOnRowCommand(row, connection))
                     {
                         await renewLeaseCommand.ExecuteNonQueryAsync();
                         renewLeaseCommand.Parameters.Clear();
                     }
                 }
-                await transaction.CommitAsync();
             }
         }
 
@@ -317,8 +332,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 using (SqlConnection connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
                 {
                     await connection.OpenAsync();
-                    // TODO: Set up locks on transaction
-                    SqlTransaction transaction = connection.BeginTransaction();
+                    SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead);
                     foreach (var row in _rows)
                     {
                         // Not great that we're doing a SqlCommand per row, should batch this
@@ -334,6 +348,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             finally
             {
+                // Want to do this before releasing the lock in case the renew leases timer goes off. It will see that
+                // the state is checking for changes and not renew the (just released) leases
+                // Only want to change the state if it was previously ProcessingChanges though. If it is stopped, for example,
+                // we don't want to start polling for changes again
+                Interlocked.CompareExchange(ref _state, CheckingForChanges, ProcessingChanges);
                 _renewLeasesLock.Release();
             }
         }
@@ -415,12 +434,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             var getChangesQuery = 
                 $"DECLARE @version bigint;\n" +
-                $"SET @version = CHANGE_TRACKING_MIN_VALID_VERSION(OBJECT_ID(\'{_table}\'));\n" +
+                $"SET @version = CHANGE_TRACKING_MIN_VALID_VERSION(OBJECT_ID(\'{_userTable}\'));\n" +
                 $"SELECT TOP {SqlTriggerConstants.BatchSize} *\n" +
                 $"FROM\n" +
                 $"(SELECT {primaryKeysSelectList}c.SYS_CHANGE_VERSION, c.SYS_CHANGE_CREATION_VERSION, c.SYS_CHANGE_OPERATION, \n" +
                 $"c.SYS_CHANGE_COLUMNS, c.SYS_CHANGE_CONTEXT, w.LeaseExpirationTime, w.DequeueCount, w.VersionNumber\n" +
-                $"FROM CHANGETABLE (CHANGES {_table}, @version) AS c\n" +
+                $"FROM CHANGETABLE (CHANGES {_userTable}, @version) AS c\n" +
                 $"LEFT OUTER JOIN {_workerTable} AS w ON {primaryKeysInnerJoin}) AS Changes\n" +
                 $"WHERE (Changes.LeaseExpirationTime IS NULL AND\n" +
                 $"(Changes.VersionNumber IS NULL OR Changes.VersionNumber < Changes.SYS_CHANGE_VERSION)\n" +
@@ -492,15 +511,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         /// <param name="row">The row that the lease will be renewed on</param>
         /// <param name="connection">The connection to add to the returned SqlCommand</param>
-        /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-        private SqlCommand BuildRenewLeaseOnRowCommand(Dictionary<string, string> row, SqlConnection connection, SqlTransaction transaction)
+        private SqlCommand BuildRenewLeaseOnRowCommand(Dictionary<string, string> row, SqlConnection connection)
         {
             SqlCommand renewLeaseCommand = new SqlCommand();
 
             string whereCheck;
             _queryStrings.TryGetValue(SqlTriggerConstants.WhereCheck, out whereCheck);
-            AddParametersToCommand(renewLeaseCommand, row, _primaryKeys);
+            SqlBindingUtilities.AddPrimaryKeyParametersToCommand(renewLeaseCommand, row, _primaryKeys);
 
             var renewLeaseOnRow =
                 $"UPDATE {_workerTable}\n" +
@@ -509,7 +527,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             renewLeaseCommand.CommandText = renewLeaseOnRow;
             renewLeaseCommand.Connection = connection;
-            renewLeaseCommand.Transaction = transaction;
 
             return renewLeaseCommand;
         }
@@ -529,9 +546,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             _queryStrings.TryGetValue(SqlTriggerConstants.WhereCheck, out whereCheck);
             string versionNumber;
             row.TryGetValue("SYS_CHANGE_VERSION", out versionNumber);
-            AddParametersToCommand(releaseLeaseCommand, row, _primaryKeys);
+            SqlBindingUtilities.AddPrimaryKeyParametersToCommand(releaseLeaseCommand, row, _primaryKeys);
 
             var releaseLeaseOnRow =
+                $"DECLARE @current_version bigint;\n" +
+                $"SET @current_version = \n" + 
+                $"(SELECT VersionNumber\n" + 
+                $"FROM {_workerTable}\n" + 
+                $"WHERE {whereCheck});\n" +
+                $"IF {versionNumber} > @current_version\n" +
                 $"UPDATE {_workerTable}\n" +
                 $"SET LeaseExpirationTime = NULL, DequeueCount = 0, VersionNumber = {versionNumber}\n" +
                 $"WHERE {whereCheck};";
@@ -544,35 +567,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Attaches SqlParameters to "command". Each parameter follows the format @PrimaryKey, PrimaryKeyValue, where @PrimaryKey is the
-        /// name of a primary key column, and PrimaryKeyValue is "row's" value for that column
+        /// Returns the name of the worker table, removing the schema prefix from userTable if one exists
         /// </summary>
-        /// <param name="command">The command the parameters are attached to</param>
-        /// <param name="row">The row to which this command corresponds</param>
-        /// <param name="primaryKeys">
-        /// Maps from primary key column names to primary key column types. The former is used in building
-        /// up the SqlParameters
-        /// </param>
-        internal static void AddParametersToCommand(SqlCommand command, Dictionary<string, string> row, Dictionary<string, string> primaryKeys)
+        /// <param name="userTable">The user table name the worker table name is based on</param>
+        /// <returns>The worker table name</returns>
+        private static string BuildWorkerTableName(string userTable)
         {
-            foreach (var key in primaryKeys.Keys)
+            string[] tableNameComponents = userTable.Split(new[] { '.' }, 2);
+            // Don't want the schema name of the user table in the name of the worker table. If the user table is 
+            // specified with a schema prefix, the result of the Split call will have the user table name stored
+            // in the second index. If the result of the Split call doesn't have two elements, then the user table
+            // wasn't prefixed with a schema so we can just use it directly
+            if (tableNameComponents.Length == 2)
             {
-                var parameterName = "@" + key;
-                string primaryKeyValue;
-                row.TryGetValue(key, out primaryKeyValue);
-                command.Parameters.Add(new SqlParameter(parameterName, primaryKeyValue));
+                return SqlTriggerConstants.Schema + ".Worker_Table_" + tableNameComponents[1];
             }
-        }
-
-        /// <summary>
-        /// Represents the current state of the watcher, which is either that it is currently polling for new changes (CheckingForChanges),
-        /// currently processing new changes that it found (ProcessingChanges), or has stopped monitoring for changes (Stopped)
-        /// </summary>
-        enum State
-        {
-            CheckingForChanges,
-            ProcessingChanges,
-            Stopped
+            else
+            {
+                return SqlTriggerConstants.Schema + ".Worker_Table_" + userTable;
+            }
         }
     }
 }

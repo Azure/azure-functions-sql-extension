@@ -9,8 +9,6 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
@@ -49,6 +47,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             _parameter = parameter ?? throw new ArgumentNullException(nameof(parameter));
         }
 
+        /// <summary>
+        /// Gets the type of the value the Trigger receives from the Executor.
+        /// </summary>
         public Type TriggerValueType => typeof(ChangeTableData);
 
         /// <summary>
