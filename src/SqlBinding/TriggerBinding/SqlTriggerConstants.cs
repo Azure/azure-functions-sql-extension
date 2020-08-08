@@ -14,6 +14,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         // Unit of time is seconds
         public const string LeaseUnits = "s";
 
+        public const string Schema = "az_func";
+
         public const int BatchSize = 10;
 
         public const int MaxDequeueCount = 5;

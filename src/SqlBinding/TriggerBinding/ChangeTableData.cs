@@ -18,13 +18,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         /// <summary>
         /// Used to build up the queries to extract data from the user table
-        /// We want to read rows from the user table corresponding to the primary keys of each row in the WorkerTableRow
-        /// This maps from WorkerTableRow to a list of SqlParameters containing the primary key values of that row
-        /// </summary>
-        public Dictionary<Dictionary<string, string>, SqlParameter[]> PrimaryKeyValues { get; set; }
-
-        /// <summary>
-        /// Used to build up the queries to extract data from the user table
         /// Has the form "PrimaryKey1 = @PrimaryKey1, PrimaryKey2 = @PrimaryKey2" where PrimaryKey1 is a primary key column name
         /// </summary>
         public string WhereCheck { get; set; }
