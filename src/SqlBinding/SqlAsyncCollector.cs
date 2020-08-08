@@ -93,19 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             using (SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
-                var tableName = attribute.CommandText;
-                // In the case that the user specified the table name as something like 'dbo.Products', we split this into
-                // 'dbo' and 'Products' to build the select query in the SqlDataAdapter. In that case, the length of the
-                // tableNameComponents array is 2. Otherwise, the user specified a table name without the prefix so we 
-                // just surround it by brackets
-                string[] tableNameComponents = tableName.Split(new[] { '.' }, 2);
-                if (tableNameComponents.Length == 2)
-                {
-                    tableName = $"[{tableNameComponents[0]}].[{tableNameComponents[1]}]";
-                } else
-                {
-                    tableName = $"[{tableName}]";
-                }
+                string tableName = SqlBindingUtilities.ProcessTableName(attribute.CommandText);
 
                 DataSet dataSet = new DataSet();
                 DataTable newData = (DataTable)JsonConvert.DeserializeObject(rows, typeof(DataTable));

@@ -32,9 +32,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <exception cref="ArgumentNullException">
         /// Thrown if any of the parameters are null
         /// </exception>
+        /// <exception cref="ArgumentException">
+        /// Thrown if table is null or empty
+        /// </exception>
         public SqlChangeTrackingConverter(string table, string connectionStringSetting, IConfiguration configuration)
         {
-            _table = table ?? throw new ArgumentNullException(nameof(table));
+            if (string.IsNullOrEmpty(table))
+            {
+                throw new ArgumentException("User table name cannot be null or empty");
+            }
+            _table = SqlBindingUtilities.ProcessTableName(table);
             _connectionStringSetting = connectionStringSetting ?? throw new ArgumentNullException(nameof(connectionStringSetting));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
@@ -83,7 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// SqlChangeType.Created for an insert, SqlChangeType.Changed for an update,
         /// and SqlChangeType.Deleted for a delete 
         /// </returns>
-        private SqlChangeType GetChangeType(Dictionary<string, string> row)
+        private static SqlChangeType GetChangeType(Dictionary<string, string> row)
         {
             string changeType;
             row.TryGetValue("SYS_CHANGE_OPERATION", out changeType);
@@ -205,7 +212,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             SqlCommand acquireDataCommand = new SqlCommand();
 
-            SqlTableWatcher.AddParametersToCommand(acquireDataCommand, row, primaryKeys);
+            SqlBindingUtilities.AddPrimaryKeyParametersToCommand(acquireDataCommand, row, primaryKeys);
 
             var acquireRowData =
                 $"SELECT * FROM {_table}\n" +
