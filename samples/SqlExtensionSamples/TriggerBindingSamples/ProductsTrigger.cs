@@ -13,12 +13,13 @@ namespace SqlExtensionSamples.TriggerBindingSamples
     {
         [FunctionName("ProductsTrigger")]
         public static void Run(
-            [SqlTrigger("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] IEnumerable<SqlChangeTrackingEntry<Product>> changes,
+            [SqlTrigger("[dbo].[Products]", ConnectionStringSetting = "SqlConnectionString")]
+            IEnumerable<SqlChangeTrackingEntry<Product>> changes,
             ILogger logger)
         {
             foreach (var change in changes)
             {
-                var product = change.Data;
+                Product product = change.Data;
                 logger.LogInformation($"Change occurred to Product table row: {change.ChangeType}");
                 logger.LogInformation($"ProductID: {product.ProductID}, Name: {product.Name}, Price: {product.Cost}");
             }

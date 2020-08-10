@@ -41,7 +41,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 throw new ArgumentException("User table name cannot be null or empty");
             }
-            _table = SqlBindingUtilities.ProcessTableName(table);
+            _table = SqlBindingUtilities.NormalizeTableName(table);
             _connectionStringSetting = connectionStringSetting ?? throw new ArgumentNullException(nameof(connectionStringSetting));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns></returns>
         public async Task<object> BuildSqlChangeTrackingEntries<T>(
             List<Dictionary<string, string>> rows,
-            Dictionary<string, string> primaryKeys,
+            IEnumerable<string> primaryKeys,
             string whereCheck)
         {
             var entries = new List<SqlChangeTrackingEntry<T>>(capacity: rows.Count);
@@ -86,14 +86,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="row">
         /// The (combined) row from the change table and worker table
         /// </param>
+        /// <exception cref="ArgumentException">
+        /// Thrown if "row" does not contain the column "SYS_CHANGE_OPERATION"
+        /// </exception>
+        /// <exception cref="InvalidDataException">
+        /// Thrown if the value of the "SYS_CHANGE_OPERATION" column is none of "I", "U", or "D"
+        /// </exception>
         /// <returns>
         /// SqlChangeType.Created for an insert, SqlChangeType.Changed for an update,
         /// and SqlChangeType.Deleted for a delete 
         /// </returns>
         private static SqlChangeType GetChangeType(Dictionary<string, string> row)
         {
-            string changeType;
-            row.TryGetValue("SYS_CHANGE_OPERATION", out changeType);
+            if (!row.TryGetValue("SYS_CHANGE_OPERATION", out string changeType))
+            {
+                throw new ArgumentException($"Row does not contain the column SYS_CHANGE_OPERATION from SQL's change table: {row}");
+            }
             if (changeType.Equals("I"))
             {
                 return SqlChangeType.Inserted;
@@ -108,7 +116,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             else
             {
-                throw new InvalidDataException($"Invalid change type encountered in change table row {row}");
+                throw new InvalidDataException($"Invalid change type encountered in change table row: {row}");
             }
         }
 
@@ -140,7 +148,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private async Task<T> GetRowData<T>(
             Dictionary<string, string> row,
             List<string> cols,
-            Dictionary<string, string> primaryKeys,
+            IEnumerable<string> primaryKeys,
             string whereCheck)
         {
             // In the case that we can't read the data from the user table (for example, the change corresponds to a deleted row), 
@@ -176,13 +184,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Used to determine which columns in "row" correspond to the primary keys of the user's table (and thus of the POCO)
         /// </param>
         /// <returns>The default POCO</returns>
-        private static Dictionary<string, string> BuildDefaultDictionary(Dictionary<string, string> row, Dictionary<string, string> primaryKeys)
+        private static Dictionary<string, string> BuildDefaultDictionary(Dictionary<string, string> row, IEnumerable<string> primaryKeys)
         {
             var defaultDictionary = new Dictionary<string, string>();
-            foreach (var primaryKey in primaryKeys.Keys)
+            foreach (var primaryKey in primaryKeys)
             {
-                string primaryKeyValue;
-                row.TryGetValue(primaryKey, out primaryKeyValue);
+                row.TryGetValue(primaryKey, out string primaryKeyValue);
                 defaultDictionary.Add(primaryKey, primaryKeyValue);
             }
             return defaultDictionary;
@@ -206,7 +213,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
         private SqlCommand BuildAcquireRowDataCommand(
             Dictionary<string, string> row, 
-            Dictionary<string, string> primaryKeys,
+            IEnumerable<string> primaryKeys,
             string whereCheck,
             SqlConnection connection)
         {

@@ -13,29 +13,28 @@ namespace SqlExtensionSamples
     {
         [FunctionName("AddProductsArray")]
         public static IActionResult Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproducts-array")]
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproducts-array")]
             HttpRequest req,
-        [Sql("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] out Product[] output)
+            [Sql("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] out Product[] output)
         {
             // Suppose that the ProductID column is the primary key in the Products table, and the 
             // table already contains a row with ProductID = 1. In that case, the row will be updated
             // instead of inserted to have values Name = "Cup" and Cost = 2. 
-            output = new Product[2];
-            var product = new Product
+            output = new[]
             {
-                ProductID = 1,
-                Name = "Cup",
-                Cost = 2
+                new Product
+                {
+                    ProductID = 1,
+                    Name = "Cup",
+                    Cost = 2
+                },
+                new Product
+                {
+                    ProductID = 2,
+                    Name = "Glasses",
+                    Cost = 12
+                }
             };
-            output[0] = product;
-
-            product = new Product
-            {
-                ProductID = 2,
-                Name = "Glasses",
-                Cost = 12
-            };
-            output[1] = product;
             return new CreatedResult($"/api/addproducts-array", output);
         }
     }

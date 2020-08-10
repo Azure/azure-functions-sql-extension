@@ -18,7 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const int ListenerRegistering = 1;
         private const int ListenerRegistered = 2;
 
-        private SqlTableWatcher _watcher;
+        private readonly SqlTableWatcher _watcher;
         
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlTriggerListener"/> class.
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         public void Cancel()
         {
-            StopAsync(CancellationToken.None).Wait();
+            StopAsync(CancellationToken.None).GetAwaiter().GetResult();
         }
 
         /// <summary>

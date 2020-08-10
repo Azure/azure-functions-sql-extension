@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly string _table;
         private readonly IConfiguration _configuration;
         private readonly ParameterInfo _parameter;
-        private readonly IReadOnlyDictionary<string, Type> _emptyBindingContract = new Dictionary<string, Type>();
+        private static readonly IReadOnlyDictionary<string, Type> _emptyBindingContract = new Dictionary<string, Type>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlTriggerBinding"/> class.
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private class SqlValueBinder : IValueProvider
         {
             private readonly ParameterInfo _parameter;
-            private ChangeTableData _changeData;
+            private readonly ChangeTableData _changeData;
             private readonly SqlChangeTrackingConverter _converter;
             private readonly string _table;
 
@@ -189,7 +189,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 Type typeOfConverter = _converter.GetType();
                 MethodInfo method = typeOfConverter.GetMethod("BuildSqlChangeTrackingEntries");
                 MethodInfo genericMethod = method.MakeGenericMethod(type);
-                Task<object> task = (Task<object>) genericMethod.Invoke(_converter, new object[] { _changeData.WorkerTableRows, _changeData.PrimaryKeys, _changeData.WhereCheck});
+                Task<object> task = (Task<object>) genericMethod.Invoke(_converter, new object[] { _changeData.WorkerTableRows, 
+                    _changeData.PrimaryKeys, _changeData.WhereCheck});
                 return await task;
             }
 

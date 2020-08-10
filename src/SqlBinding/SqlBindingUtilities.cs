@@ -159,23 +159,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// tableName = schema.table
         /// </summary>
         /// <param name="tableName">The name of the user's table</param>
-        /// <returns>The parsed table name</returns>
-        public static string ProcessTableName(string tableName)
+        /// <returns>The normalized table name</returns>
+        public static string NormalizeTableName(string tableName)
         {
             // In the case that the user specified the table name as something like 'dbo.Products', we split this into
             // 'dbo' and 'Products' to build the select query in the SqlDataAdapter. In that case, the length of the
             // tableNameComponents array is 2. Otherwise, the user specified a table name without the prefix so we 
             // just surround it by brackets
             string[] tableNameComponents = tableName.Split(new[] { '.' }, 2);
+            var schema = string.Empty;
+            var table = string.Empty;
             if (tableNameComponents.Length == 2)
             {
-                tableName = $"[{tableNameComponents[0]}].[{tableNameComponents[1]}]";
+                schema = tableNameComponents[0];
+                table = tableNameComponents[1];
+                // User didn't already surround the schema name with brackets
+                if (!schema.StartsWith('[') && !schema.EndsWith(']'))
+                {
+                    schema = $"[{schema}]";
+                }
             }
             else
             {
-                tableName = $"[{tableName}]";
+                table = tableName;
             }
-            return tableName;
+
+            // User didn't already surround the table name with brackets
+            if (!table.StartsWith('[') && !table.EndsWith(']'))
+            {
+                table = $"[{table}]";
+            }
+
+            if (!String.IsNullOrEmpty(schema))
+            {
+                return $"{schema}.{table}";
+            }
+            else
+            {
+                return table;
+            }
         }
 
         /// <summary>
@@ -184,23 +206,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         /// <param name="command">The command the parameters are attached to</param>
         /// <param name="row">The row to which this command corresponds</param>
-        /// <param name="primaryKeys">
-        /// Maps from primary key column names to primary key column types. The former is used in building
-        /// up the SqlParameters
-        /// </param>
+        /// <param name="primaryKeys">List of primary key column names</param>
         /// <remarks>
         /// Ideally, we would have a map that maps from rows to a list of SqlCommands populated with their primary key values. The issue with
         /// this is that SQL doesn't seem to allow adding parameters to one collection when they are part of another. So, for example, since
         /// the SqlParameters are part of the list in the map, an exception is thrown if they are also added to the collection of a SqlCommand.
         /// The expected behavior seems to be to rebuild the SqlParameters each time
         /// </remarks>
-        public static void AddPrimaryKeyParametersToCommand(SqlCommand command, Dictionary<string, string> row, Dictionary<string, string> primaryKeys)
+        public static void AddPrimaryKeyParametersToCommand(SqlCommand command, Dictionary<string, string> row, IEnumerable<string> primaryKeys)
         {
-            foreach (var key in primaryKeys.Keys)
+            foreach (var key in primaryKeys)
             {
                 var parameterName = "@" + key;
-                string primaryKeyValue;
-                row.TryGetValue(key, out primaryKeyValue);
+                row.TryGetValue(key, out string primaryKeyValue);
                 command.Parameters.Add(new SqlParameter(parameterName, primaryKeyValue));
             }
         }
