@@ -14,9 +14,9 @@ namespace SqlExtensionSamples
     {
         [FunctionName("AddProduct")]
         public static IActionResult Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct")]
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct")]
             HttpRequest req,
-        [Sql("Products", ConnectionStringSetting = "SqlConnectionString")] out Product product)
+            [Sql("Products", ConnectionStringSetting = "SqlConnectionString")] out Product product)
         {
             product = new Product
             {
