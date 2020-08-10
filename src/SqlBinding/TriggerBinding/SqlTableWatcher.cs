@@ -6,6 +6,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -37,7 +38,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly Timer _checkForChangesTimer;
         private readonly SemaphoreSlim _checkForChangesLock;
         private readonly SemaphoreSlim _renewLeasesLock;
-        private readonly EventWaitHandle _signalStopHandle;
         private readonly EventWaitHandle _signalStoppedHandle;
 
         // Can't use an enum for these because it doesn't work with the Interlocked class
@@ -76,8 +76,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             _connectionStringSetting = connectionStringSetting ?? throw new ArgumentNullException(nameof(connectionStringSetting));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _executor = executor ?? throw new ArgumentNullException(nameof(executor));
-            _userTable = SqlBindingUtilities.ProcessTableName(table);
-            _workerTable = SqlBindingUtilities.ProcessTableName(BuildWorkerTableName(table));
+            _userTable = SqlBindingUtilities.NormalizeTableName(table);
+            _workerTable = SqlBindingUtilities.NormalizeTableName(BuildWorkerTableName(table));
 
             _cancellationTokenSource = new CancellationTokenSource();
             _rows = new List<Dictionary<string, string>>();
@@ -86,7 +86,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             _checkForChangesTimer = new Timer(CheckForChangesCallback);
             _renewLeasesTimer = new Timer(RenewLeasesCallback);
-            // Should these be just normal semaphores?
             _checkForChangesLock = new SemaphoreSlim(1);
             _renewLeasesLock = new SemaphoreSlim(1);
             _signalStoppedHandle = new AutoResetEvent(false);
@@ -126,7 +125,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Executed once every "_leastTime" period. If the state of the watcher is <see cref="State.ProcessingChanges"/>, then 
+        /// Executed once every "_leaseTime" period. If the state of the watcher is ProcessingChanges, then 
         /// we will renew the leases held by the watcher on "_rows"
         /// </summary>
         /// <param name="state">Unused</param>
@@ -155,10 +154,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Executed once every "_pollingInterval" period. If the state of the watcher is <see cref="State.CheckingForChanges"/>, then 
+        /// Executed once every "_pollingInterval" period. If the state of the watcher is CheckingForChanges, then 
         /// the method query the change/worker tables for changes on the user's table. If any are found, the state of the watcher is
-        /// transitioned to <see cref="State.ProcessingChanges"/> and the user's function is executed with the found changes. 
-        /// If execution is successful, the leases on "_rows" are released and the state transitions to <see cref="State.CheckingForChanges"/>
+        /// transitioned to ProcessingChanges and the user's function is executed with the found changes. 
+        /// If execution is successful, the leases on "_rows" are released and the state transitions to CheckingForChanges
         /// once more
         /// </summary>
         /// <param name="state"></param>
@@ -183,10 +182,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             return;
                         }
                         var triggerValue = new ChangeTableData();
-                        string whereCheck;
-                        _queryStrings.TryGetValue(SqlTriggerConstants.WhereCheck, out whereCheck);
+                        _queryStrings.TryGetValue(SqlTriggerConstants.WhereCheck, out string whereCheck);
                         triggerValue.WorkerTableRows = _rows;
-                        triggerValue.PrimaryKeys = _primaryKeys;
+                        triggerValue.PrimaryKeys = _primaryKeys.Keys;
                         triggerValue.WhereCheck = whereCheck;
                         FunctionResult result = await _executor.TryExecuteAsync(new TriggeredFunctionData() { TriggerValue = triggerValue }, _cancellationTokenSource.Token);
                         if (result.Succeeded)
@@ -282,32 +280,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             using (SqlConnection connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
             {
                 await connection.OpenAsync();
-                // TODO: Set up locks on transaction
-                SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead);
-
-                using (SqlCommand getChangesCommand = BuildCheckForChangesCommand(connection, transaction))
+                using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
                 {
-                    using (SqlDataReader reader = await getChangesCommand.ExecuteReaderAsync())
+
+                    using (SqlCommand getChangesCommand = BuildCheckForChangesCommand(connection, transaction))
                     {
-                        List<string> cols = new List<string>();
-                        while (await reader.ReadAsync())
+                        using (SqlDataReader reader = await getChangesCommand.ExecuteReaderAsync())
                         {
-                            _rows.Add(SqlBindingUtilities.BuildDictionaryFromSqlRow(reader, cols));
+                            List<string> cols = new List<string>();
+                            while (await reader.ReadAsync())
+                            {
+                                _rows.Add(SqlBindingUtilities.BuildDictionaryFromSqlRow(reader, cols));
+                            }
                         }
                     }
-                }
 
-                foreach (var row in _rows)
-                {
-                    // Not great that we're doing a SqlCommand per row, should batch this
-                    using (SqlCommand acquireLeaseCommand = BuildAcquireLeaseOnRowCommand(row, connection, transaction))
+                    foreach (var row in _rows)
                     {
-                        await acquireLeaseCommand.ExecuteNonQueryAsync();
-                        // Necessary so that other commands can re-use the parameters in the _primaryKeyValuesOfRows map
-                        acquireLeaseCommand.Parameters.Clear();
+                        // Not great that we're doing a SqlCommand per row, should batch this
+                        using (SqlCommand acquireLeaseCommand = BuildAcquireLeaseOnRowCommand(row, connection, transaction))
+                        {
+                            await acquireLeaseCommand.ExecuteNonQueryAsync();
+                        }
                     }
+                    await transaction.CommitAsync();
                 }
-                await transaction.CommitAsync();
             }
         }
 
@@ -326,7 +323,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     using (SqlCommand renewLeaseCommand = BuildRenewLeaseOnRowCommand(row, connection))
                     {
                         await renewLeaseCommand.ExecuteNonQueryAsync();
-                        renewLeaseCommand.Parameters.Clear();
                     }
                 }
             }
@@ -345,17 +341,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 using (SqlConnection connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
                 {
                     await connection.OpenAsync();
-                    SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead);
-                    foreach (var row in _rows)
+                    using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
                     {
-                        // Not great that we're doing a SqlCommand per row, should batch this
-                        using (SqlCommand releaseLeaseCommand = BuildReleaseLeaseOnRowCommand(row, connection, transaction))
+                        foreach (var row in _rows)
                         {
-                            await releaseLeaseCommand.ExecuteNonQueryAsync();
-                            releaseLeaseCommand.Parameters.Clear();
+                            // Not great that we're doing a SqlCommand per row, should batch this
+                            using (SqlCommand releaseLeaseCommand = BuildReleaseLeaseOnRowCommand(row, connection, transaction))
+                            {
+                                await releaseLeaseCommand.ExecuteNonQueryAsync();
+                            }
                         }
+                        await transaction.CommitAsync();
                     }
-                    await transaction.CommitAsync();
                 }
                 _rows.Clear();
             }
@@ -379,23 +376,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             await GetPrimaryKeysAsync();
 
-            var primaryKeysWithTypes = string.Empty;
-            var primaryKeysList = string.Empty;
-            foreach (var primaryKey in _primaryKeys.Keys)
-            {
-                string type;
-                _primaryKeys.TryGetValue(primaryKey, out type);
-                primaryKeysWithTypes += primaryKey + " " + type + ",\n";
-                primaryKeysList += primaryKey + ", ";
-            }
-            // Remove the trailing ", "
-            primaryKeysList = primaryKeysList.Substring(0, primaryKeysList.Length - 2);
+            string primaryKeysWithTypes = string.Join(",\n", _primaryKeys.Select(pair => $"{pair.Key} {pair.Value}"));
+            string primaryKeysList = string.Join(", ", _primaryKeys.Keys);
 
             var createTableString = 
                 $"IF OBJECT_ID(N\'{_workerTable}\', \'U\') IS NULL\n" +
                 $"BEGIN\n" +
                 $"CREATE TABLE {_workerTable} (\n" +
-                $"{primaryKeysWithTypes}" +
+                $"{primaryKeysWithTypes},\n" +
                 $"LeaseExpirationTime datetime2,\n" +
                 $"DequeueCount int,\n" +
                 $"VersionNumber bigint\n" +
@@ -413,29 +401,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
         private SqlCommand BuildCheckForChangesCommand(SqlConnection connection, SqlTransaction transaction)
         {
-            string primaryKeysSelectList;
             string primaryKeysInnerJoin;
-
-            if (!_queryStrings.TryGetValue(SqlTriggerConstants.PrimaryKeysSelectList, out primaryKeysSelectList))
+            // If one isn't in the map, neither is
+            if (!_queryStrings.TryGetValue(SqlTriggerConstants.PrimaryKeysSelectList, out string primaryKeysSelectList))
             {
-                // If one isn't in the dictionary, neither is
-                primaryKeysInnerJoin = string.Empty;
-                primaryKeysSelectList = string.Empty;
-                bool first = true;
-
-                foreach (var key in _primaryKeys.Keys)
-                {
-                    primaryKeysSelectList += "c." + key + ", ";
-                    if (!first)
-                    {
-                        primaryKeysInnerJoin += " AND ";
-                    }
-                    else
-                    {
-                        first = false;
-                    }
-                    primaryKeysInnerJoin += "c." + key + " = w." + key;
-                }
+                primaryKeysSelectList = string.Join(", ", _primaryKeys.Keys.Select(key => $"c.{key}"));
+                primaryKeysInnerJoin = string.Join(" AND ", _primaryKeys.Keys.Select(key => $"c.{key} = w.{key}"));
 
                 _queryStrings.Add(SqlTriggerConstants.PrimaryKeysSelectList, primaryKeysSelectList);
                 _queryStrings.Add(SqlTriggerConstants.PrimaryKeysInnerJoin, primaryKeysInnerJoin);
@@ -450,7 +421,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 $"SET @version = CHANGE_TRACKING_MIN_VALID_VERSION(OBJECT_ID(\'{_userTable}\'));\n" +
                 $"SELECT TOP {SqlTriggerConstants.BatchSize} *\n" +
                 $"FROM\n" +
-                $"(SELECT {primaryKeysSelectList}c.SYS_CHANGE_VERSION, c.SYS_CHANGE_CREATION_VERSION, c.SYS_CHANGE_OPERATION, \n" +
+                $"(SELECT {primaryKeysSelectList}, c.SYS_CHANGE_VERSION, c.SYS_CHANGE_CREATION_VERSION, c.SYS_CHANGE_OPERATION, \n" +
                 $"c.SYS_CHANGE_COLUMNS, c.SYS_CHANGE_CONTEXT, w.LeaseExpirationTime, w.DequeueCount, w.VersionNumber\n" +
                 $"FROM CHANGETABLE (CHANGES {_userTable}, @version) AS c\n" +
                 $"LEFT OUTER JOIN {_workerTable} AS w ON {primaryKeysInnerJoin}) AS Changes\n" +
@@ -473,40 +444,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private SqlCommand BuildAcquireLeaseOnRowCommand(Dictionary<string, string> row, SqlConnection connection, SqlTransaction transaction)
         {
             var acquireLeaseCommand = new SqlCommand();
-            var whereCheck = string.Empty;
-            var valuesList = string.Empty;
-            bool first = true;
+            SqlBindingUtilities.AddPrimaryKeyParametersToCommand(acquireLeaseCommand, row, _primaryKeys.Keys);
 
-            foreach (var key in _primaryKeys.Keys)
+            string valuesList;
+            // If one isn't in the map, neither is
+            if (!_queryStrings.TryGetValue(SqlTriggerConstants.WhereCheck, out string whereCheck))
             {
-                string primaryKeyValue;
-                row.TryGetValue(key, out primaryKeyValue);
-                string parameterName = "@" + key;
-                acquireLeaseCommand.Parameters.Add(new SqlParameter(parameterName, primaryKeyValue));
-
-                if (!first)
-                {
-                    whereCheck += " AND ";
-                }
-                else
-                {
-                    first = false;
-                }
-                whereCheck += key + " = " + parameterName;
-                valuesList += parameterName + ", ";
+                whereCheck = string.Join(" AND ", _primaryKeys.Keys.Select(key => $"{key} = @{key}"));
+                valuesList = string.Join(", ", _primaryKeys.Keys.Select(key => $"@{key}"));
+                _queryStrings.Add(SqlTriggerConstants.WhereCheck, whereCheck);
+                _queryStrings.Add(SqlTriggerConstants.PrimaryKeyValues, valuesList);
+            }
+            else
+            {
+                _queryStrings.TryGetValue(SqlTriggerConstants.PrimaryKeyValues, out valuesList);
             }
 
-            // Will already exist in the map after the first call to this method, i.e. after a row
-            // already has a lease acquired on it
-            _queryStrings.TryAdd(SqlTriggerConstants.WhereCheck, whereCheck);
-
-            string versionNumber;
-            row.TryGetValue("SYS_CHANGE_VERSION", out versionNumber);
+            row.TryGetValue("SYS_CHANGE_VERSION", out string versionNumber);
 
             var acquireLeaseOnRow =
                 $"IF NOT EXISTS (SELECT * FROM {_workerTable} WHERE {whereCheck})\n" +
                 $"INSERT INTO {_workerTable}\n" +
-                $"VALUES ({valuesList}DATEADD({SqlTriggerConstants.LeaseUnits}, {SqlTriggerConstants.LeaseTime}, SYSDATETIME()), 0, {versionNumber})\n" +
+                $"VALUES ({valuesList}, DATEADD({SqlTriggerConstants.LeaseUnits}, {SqlTriggerConstants.LeaseTime}, SYSDATETIME()), 0, {versionNumber})\n" +
                 $"ELSE\n" +
                 $"UPDATE {_workerTable}\n" +
                 $"SET LeaseExpirationTime = DATEADD({SqlTriggerConstants.LeaseUnits}, {SqlTriggerConstants.LeaseTime}, SYSDATETIME()), DequeueCount = DequeueCount + 1, " +
@@ -529,9 +488,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             SqlCommand renewLeaseCommand = new SqlCommand();
 
-            string whereCheck;
-            _queryStrings.TryGetValue(SqlTriggerConstants.WhereCheck, out whereCheck);
-            SqlBindingUtilities.AddPrimaryKeyParametersToCommand(renewLeaseCommand, row, _primaryKeys);
+            _queryStrings.TryGetValue(SqlTriggerConstants.WhereCheck, out string whereCheck);
+            SqlBindingUtilities.AddPrimaryKeyParametersToCommand(renewLeaseCommand, row, _primaryKeys.Keys);
 
             var renewLeaseOnRow =
                 $"UPDATE {_workerTable}\n" +
@@ -555,11 +513,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             SqlCommand releaseLeaseCommand = new SqlCommand();
 
-            string whereCheck;
-            _queryStrings.TryGetValue(SqlTriggerConstants.WhereCheck, out whereCheck);
+            _queryStrings.TryGetValue(SqlTriggerConstants.WhereCheck, out string whereCheck);
             string versionNumber;
             row.TryGetValue("SYS_CHANGE_VERSION", out versionNumber);
-            SqlBindingUtilities.AddPrimaryKeyParametersToCommand(releaseLeaseCommand, row, _primaryKeys);
+            SqlBindingUtilities.AddPrimaryKeyParametersToCommand(releaseLeaseCommand, row, _primaryKeys.Keys);
 
             var releaseLeaseOnRow =
                 $"DECLARE @current_version bigint;\n" +
@@ -567,7 +524,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 $"(SELECT VersionNumber\n" + 
                 $"FROM {_workerTable}\n" + 
                 $"WHERE {whereCheck});\n" +
-                $"IF {versionNumber} > @current_version\n" +
+                $"IF {versionNumber} >= @current_version\n" +
                 $"UPDATE {_workerTable}\n" +
                 $"SET LeaseExpirationTime = NULL, DequeueCount = 0, VersionNumber = {versionNumber}\n" +
                 $"WHERE {whereCheck};";
@@ -587,18 +544,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private static string BuildWorkerTableName(string userTable)
         {
             string[] tableNameComponents = userTable.Split(new[] { '.' }, 2);
+            string tableName;
             // Don't want the schema name of the user table in the name of the worker table. If the user table is 
             // specified with a schema prefix, the result of the Split call will have the user table name stored
             // in the second index. If the result of the Split call doesn't have two elements, then the user table
             // wasn't prefixed with a schema so we can just use it directly
             if (tableNameComponents.Length == 2)
             {
-                return SqlTriggerConstants.Schema + ".Worker_Table_" + tableNameComponents[1];
+                tableName = tableNameComponents[1];
             }
             else
             {
-                return SqlTriggerConstants.Schema + ".Worker_Table_" + userTable;
+                tableName = userTable;
             }
+
+            // Don't want to include brackets if the user specified the table name with them
+            if (tableName.StartsWith('[') && tableName.EndsWith(']'))
+            {
+                tableName = tableName.Substring(1, tableName.Length - 2);
+            }
+
+            return SqlTriggerConstants.Schema + ".Worker_Table_" + tableName;
         }
     }
 }

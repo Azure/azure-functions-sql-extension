@@ -1,8 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using System.IO;
-
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     /// <summary>
@@ -40,14 +38,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <see cref="SqlChangeType.Inserted"/> corresponds to an insert, 
         /// <see cref="SqlChangeType.Deleted"/> corresponds to a delete
         /// </summary>
-        public SqlChangeType ChangeType { get; private set; }
+        public SqlChangeType ChangeType { get; }
 
         /// <summary>
         /// A copy of the row that was updated/inserted in the user's table.
         /// In the case that the row no longer exists in the user's table, Data is only populated with the primary key values
         /// of the deleted row.
         /// </summary>
-        public T Data { get; private set; }
+        public T Data { get; }
     }
 
     public enum SqlChangeType

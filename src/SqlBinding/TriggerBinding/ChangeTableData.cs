@@ -1,7 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using Microsoft.Data.SqlClient;
 using System.Collections.Generic;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
@@ -24,11 +23,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         /// <summary>
         /// Used to build up the queries to extract data from the user table
-        /// The key-set of this map lists all primary key columns of this table, which can be used to determine which columns 
+        /// Lists all primary key columns of this table, which can be used to determine which columns 
         /// in the WorkerTableRows are primary keys
         /// </summary>
-        public Dictionary<string, string> PrimaryKeys { get; set; }
-
-        
+        public IEnumerable<string> PrimaryKeys { get; set; }
     }
 }

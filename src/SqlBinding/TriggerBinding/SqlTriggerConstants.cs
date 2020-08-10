@@ -11,6 +11,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public const string PrimaryKeysInnerJoin = "primaryKeysInnerJoin";
 
+        public const string PrimaryKeyValues = "primaryKeyValues";
+
         // Unit of time is seconds
         public const string LeaseUnits = "s";
 
