@@ -31,7 +31,7 @@ namespace SqlExtensionSamples
                 {
                     while (reader.Read())
                     {
-                        result += $"ProductID: {reader[0]}, Cost: {reader[1]}, Name: {reader[2]}\n";
+                        result += $"ProductID: {reader["ProductID"]},  Name: {reader["Name"]}, Cost: {reader["Cost"]}\n";
                     }
                 }
             }
