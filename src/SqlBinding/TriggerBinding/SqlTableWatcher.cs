@@ -28,23 +28,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly string _connectionStringSetting;
         private readonly IConfiguration _configuration;
         private readonly ITriggeredFunctionExecutor _executor;
-        private readonly CancellationTokenSource _cancellationTokenSource;
+        private readonly CancellationTokenSource _cancellationTokenSourceExecutor;
+        private readonly CancellationTokenSource _cancellationTokenSourceCheckForChanges;
+        private readonly CancellationTokenSource _cancellationTokenSourceRenewLeases;
 
         // It should be impossible for multiple threads to access these at the same time because of the semaphores we use
         private readonly Dictionary<string, string> _primaryKeys;
         private readonly List<Dictionary<string, string>> _rows;
         private readonly Dictionary<string, string> _queryStrings;
-        private readonly Timer _renewLeasesTimer;
-        private readonly Timer _checkForChangesTimer;
-        private readonly SemaphoreSlim _checkForChangesLock;
-        private readonly SemaphoreSlim _renewLeasesLock;
-        private readonly EventWaitHandle _signalStoppedHandle;
-
-        // Can't use an enum for these because it doesn't work with the Interlocked class
-        private int _state;
-        private const int CheckingForChanges = 0;
-        private const int ProcessingChanges = 1;
-        private const int Stopped = 2;
+        private readonly SemaphoreSlim _leasesLock;
+        private State _state;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlTableWatcher"/> class.
@@ -79,17 +72,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             _userTable = SqlBindingUtilities.NormalizeTableName(table);
             _workerTable = SqlBindingUtilities.NormalizeTableName(BuildWorkerTableName(table));
 
-            _cancellationTokenSource = new CancellationTokenSource();
+            _cancellationTokenSourceExecutor = new CancellationTokenSource();
+            _cancellationTokenSourceCheckForChanges = new CancellationTokenSource();
+            _cancellationTokenSourceRenewLeases = new CancellationTokenSource();
+            _leasesLock = new SemaphoreSlim(1);
+
             _rows = new List<Dictionary<string, string>>();
             _queryStrings = new Dictionary<string, string>();
             _primaryKeys = new Dictionary<string, string>();
-
-            _checkForChangesTimer = new Timer(CheckForChangesCallback);
-            _renewLeasesTimer = new Timer(RenewLeasesCallback);
-            _checkForChangesLock = new SemaphoreSlim(1);
-            _renewLeasesLock = new SemaphoreSlim(1);
-            _signalStoppedHandle = new AutoResetEvent(false);
-
         }
 
         /// <summary>
@@ -99,9 +89,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public async Task StartAsync()
         {
             await CreateWorkerTableAsync();
-            _checkForChangesTimer.Change(0, SqlTriggerConstants.PollingInterval * 1000);
-            // Want to renew the leases faster than the lease time expires
-            _renewLeasesTimer.Change(0, SqlTriggerConstants.LeaseTime * 1000 / 2);
+            Task.Run(() =>
+            {
+                CheckForChangesAsync(_cancellationTokenSourceCheckForChanges.Token);
+                RenewLeases(_cancellationTokenSourceRenewLeases.Token);
+            });
         }
 
         /// <summary>
@@ -110,115 +102,106 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns></returns>
         public async Task StopAsync()
         {
-            // There are three possibilities:
-            // 1. We haven't started polling for changes yet. In that case, the first time the CheckForChangesCallback executes, the 
-            // "_state == State.CheckingForChanges" if check will fail, and the method will skip directly to the finally clause, where it
-            // registers the stopped state and disposes the timers
-            // 2. We have started polling for changes, but are not processing any. The next time the CheckForChangesCallback executes,
-            // the same steps will be follows as in 1
-            // 3. We are currently processing changes. Once the CheckForChangesCallback finishes processing changes, it will reach the
-            // finally clause, register the stopped state, and again dispose the timers
-            Interlocked.Exchange(ref _state, Stopped);
-            // Block until the timers have been released
-            _signalStoppedHandle.WaitOne();
-            _signalStoppedHandle.Dispose();
+            _cancellationTokenSourceCheckForChanges.Cancel();
         }
 
         /// <summary>
-        /// Executed once every "_leaseTime" period. If the state of the watcher is ProcessingChanges, then 
+        /// Executed once every <see cref="SqlTriggerConstants.LeaseTime"/> period. 
+        /// If the state of the watcher is <see cref="State.ProcessingChanges"/>, then 
         /// we will renew the leases held by the watcher on "_rows"
         /// </summary>
-        /// <param name="state">Unused</param>
-        private async void RenewLeasesCallback(object state)
+        /// <param name="token">
+        /// If the token is cancelled, leases are no longer renewed
+        /// </param>
+        private async void RenewLeases(CancellationToken token)
         {
-            await _renewLeasesLock.WaitAsync();
             try
             {
-                if (_state == ProcessingChanges)
+                while (!token.IsCancellationRequested)
                 {
-                    // To prevent useless reinvocation of the callback while it's executing
-                    _renewLeasesTimer.Change(Timeout.Infinite, Timeout.Infinite);
-                    await RenewLeasesAsync();
+                    await _leasesLock.WaitAsync();
+                    try
+                    {
+                        if (_state == State.ProcessingChanges)
+                        {
+                            await RenewLeasesAsync();
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        // logger here
+                    }
+                    finally
+                    {
+                        // Want to always release the lock at the end, even if renewing the leases failed
+                        _leasesLock.Release();
+                    }
+                    // Want to make sure to renew the leases before they expire, so we renew them twice per 
+                    // lease period
+                    await Task.Delay(SqlTriggerConstants.LeaseTime / 2 * 1000, token);
                 }
             }
             catch (Exception e)
             {
-                // have a logger here
-            }
-            finally
-            {
-                // Re-enable timer
-                _renewLeasesTimer.Change(0, SqlTriggerConstants.LeaseTime * 1000  / 2);
-                _renewLeasesLock.Release();
+                // have a logger here. could also be triggered by a TaskCancelledException
             }
         }
 
         /// <summary>
-        /// Executed once every "_pollingInterval" period. If the state of the watcher is CheckingForChanges, then 
+        /// Executed once every <see cref="SqlTriggerConstants.PollingInterval"/> period. If the state of the watcher is <see cref="State.CheckingForChanges"/>, then 
         /// the method query the change/worker tables for changes on the user's table. If any are found, the state of the watcher is
-        /// transitioned to ProcessingChanges and the user's function is executed with the found changes. 
-        /// If execution is successful, the leases on "_rows" are released and the state transitions to CheckingForChanges
+        /// transitioned to <see cref="State.ProcessingChanges"/> and the user's function is executed with the found changes. 
+        /// If execution is successful, the leases on "_rows" are released and the state transitions to <see cref="State.CheckingForChanges"/>
         /// once more
         /// </summary>
-        /// <param name="state"></param>
-        private async void CheckForChangesCallback(object state)
+        /// <param name="token">
+        /// If the token is cancelled, the thread stops polling for changes
+        /// </param>
+        private async Task CheckForChangesAsync(CancellationToken token)
         {
-            await _checkForChangesLock.WaitAsync();
-            try
-            {
-                if (_state == CheckingForChanges)
+            try {
+                while (!token.IsCancellationRequested)
                 {
-                    // To prevent useless reinvocation of the callback while it's executing
-                    _checkForChangesTimer.Change(Timeout.Infinite, Timeout.Infinite);
-                    await CheckForChangesAsync();
-                    if (_rows.Count > 0)
+                    if (_state == State.CheckingForChanges)
                     {
-                        // If StopAsync has been called, we don't want to change the state from Stopped. 
-                        // Rather, it makes sense to immediately release the leases we acquired and dispose the timers
-                        if (Interlocked.CompareExchange(ref _state, ProcessingChanges, CheckingForChanges) == Stopped)
+                        await CheckForChangesAsync();
+                        if (_rows.Count > 0)
                         {
-                            await ReleaseLeasesAsync();
-                            // Go to the finally block
-                            return;
+                            var triggerValue = new ChangeTableData();
+                            _queryStrings.TryGetValue(SqlTriggerConstants.WhereCheck, out string whereCheck);
+                            triggerValue.WorkerTableRows = _rows;
+                            triggerValue.PrimaryKeys = _primaryKeys.Keys;
+                            triggerValue.WhereCheck = whereCheck;
+                            // Should we cancel executing the function if StopAsync is called, or let it finish?
+                            // In other words, should _cancellationTokenSourceCheckingForChanges and _cancellationTokenSourceExecutor
+                            // be one token source?
+                            FunctionResult result = await _executor.TryExecuteAsync(new TriggeredFunctionData() { TriggerValue = triggerValue }, 
+                                _cancellationTokenSourceExecutor.Token);
+                            if (result.Succeeded)
+                            {
+                                await ReleaseLeasesAsync();
+                            }
+                            else
+                            {
+                                // Should probably have some count for how many times we tried to execute the function. After a certain amount of times
+                                // we should give up
+                            }
+                            if (token.IsCancellationRequested)
+                            {
+                                // Only want to cancel renewing leases after we finish processing the changes
+                                _cancellationTokenSourceRenewLeases.Cancel();
+                                // Might as well skip delaying the task and immediately break out of the while loop
+                                break;
+                            }
                         }
-                        var triggerValue = new ChangeTableData();
-                        _queryStrings.TryGetValue(SqlTriggerConstants.WhereCheck, out string whereCheck);
-                        triggerValue.WorkerTableRows = _rows;
-                        triggerValue.PrimaryKeys = _primaryKeys.Keys;
-                        triggerValue.WhereCheck = whereCheck;
-                        FunctionResult result = await _executor.TryExecuteAsync(new TriggeredFunctionData() { TriggerValue = triggerValue }, _cancellationTokenSource.Token);
-                        if (result.Succeeded)
-                        {
-                            await ReleaseLeasesAsync();
-                        }
-                        else
-                        {
-                            //Should probably have some count for how many times we tried to execute the function. After a certain amount of times
-                            // we should give up
-                        }
+                        await Task.Delay(SqlTriggerConstants.PollingInterval * 1000, token);
                     }
                 }
             }
             catch (Exception e)
             {
                 // have a logger here
-            }
-            finally
-            {
-                if (_state == Stopped)
-                {
-                    await _checkForChangesTimer.DisposeAsync();
-                    await _renewLeasesTimer.DisposeAsync();
-                    // Signal that resources have been successfully released and timers stopped
-                    _signalStoppedHandle.Set();
-                }
-                else
-                {
-                    // Re-enable timer
-                    _checkForChangesTimer.Change(0, SqlTriggerConstants.PollingInterval * 1000);
-                    _checkForChangesLock.Release();
-                }
-            }   
+            } 
         }
 
         /// <summary>
@@ -335,7 +318,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private async Task ReleaseLeasesAsync()
         {
             // Don't want to change the _rows while another thread is attempting to renew leases on them
-            await _renewLeasesLock.WaitAsync();
+            await _leasesLock.WaitAsync();
             try
             {
                 using (SqlConnection connection = SqlBindingUtilities.BuildConnection(_connectionStringSetting, _configuration))
@@ -356,14 +339,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 _rows.Clear();
             }
+            catch (Exception e)
+            {
+                // What should we do if releasing the leases fails? We could try to release them again or just wait,
+                // since eventually the lease time will expire. Then another thread will re-process the same changes though,
+                // so less than ideal
+            }
             finally
             {
-                // Want to do this before releasing the lock in case the renew leases timer goes off. It will see that
+                // Want to do this before releasing the lock in case the renew leases thread wakes up. It will see that
                 // the state is checking for changes and not renew the (just released) leases
                 // Only want to change the state if it was previously ProcessingChanges though. If it is stopped, for example,
                 // we don't want to start polling for changes again
-                Interlocked.CompareExchange(ref _state, CheckingForChanges, ProcessingChanges);
-                _renewLeasesLock.Release();
+                _state = State.CheckingForChanges;
+                _leasesLock.Release();
             }
         }
 
@@ -512,18 +501,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private SqlCommand BuildReleaseLeaseOnRowCommand(Dictionary<string, string> row, SqlConnection connection, SqlTransaction transaction)
         {
             SqlCommand releaseLeaseCommand = new SqlCommand();
-
             _queryStrings.TryGetValue(SqlTriggerConstants.WhereCheck, out string whereCheck);
-            string versionNumber;
-            row.TryGetValue("SYS_CHANGE_VERSION", out versionNumber);
+            row.TryGetValue("SYS_CHANGE_VERSION", out string versionNumber);
             SqlBindingUtilities.AddPrimaryKeyParametersToCommand(releaseLeaseCommand, row, _primaryKeys.Keys);
 
             var releaseLeaseOnRow =
                 $"DECLARE @current_version bigint;\n" +
-                $"SET @current_version = \n" + 
-                $"(SELECT VersionNumber\n" + 
+                $"SELECT @current_version = VersionNumber\n" +
                 $"FROM {_workerTable}\n" + 
-                $"WHERE {whereCheck});\n" +
+                $"WHERE {whereCheck};\n" +
                 $"IF {versionNumber} >= @current_version\n" +
                 $"UPDATE {_workerTable}\n" +
                 $"SET LeaseExpirationTime = NULL, DequeueCount = 0, VersionNumber = {versionNumber}\n" +
@@ -565,6 +551,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             return SqlTriggerConstants.Schema + ".Worker_Table_" + tableName;
+        }
+
+        enum State
+        {
+            CheckingForChanges,
+            ProcessingChanges
         }
     }
 }
