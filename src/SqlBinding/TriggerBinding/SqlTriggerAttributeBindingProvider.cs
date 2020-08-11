@@ -35,15 +35,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Contains the SqlTriggerAttribute used to build up a SqlTriggerBinding
         /// </param>
         /// <exception cref="ArgumentNullException">
-        /// Thrown if conctext is null
+        /// Thrown if context is null
         /// </exception>
         /// <exception cref="InvalidOperationException">
         /// If the SqlTriggerAttribute is bound to an invalid Type. Currently only IEnumerable<SqlChangeTrackingEntry<T>> 
         /// is supported, where T is a user-defined POCO representing a row of their table
         /// </exception>
         /// <returns>
-        /// Null if "context" does not contain a SqlTriggerAttribute. Otherwise returns a SqlTriggerBinding associated
-        /// with the SqlTriggerAttribute in "context"
+        /// Null if "context" does not contain a SqlTriggerAttribute. Otherwise returns a SqlTriggerBinding{T} associated
+        /// with the SqlTriggerAttribute in "context", where T is the user-defined POCO
         /// </returns>
         public Task<ITriggerBinding> TryCreateAsync(TriggerBindingProviderContext context)
         {
@@ -66,8 +66,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     $" is supported, where T is a user-defined POCO that matches the schema of the tracked table");
             }
 
-            return Task.FromResult<ITriggerBinding>(new SqlTriggerBinding(attribute.TableName, attribute.ConnectionStringSetting, 
-                _configuration, parameter));
+            Type type = parameter.ParameterType.GetGenericArguments()[0].GetGenericArguments()[0];
+            Type typeOfTriggerBinding = typeof(SqlTriggerBinding<>).MakeGenericType(type);
+            ConstructorInfo constructor = typeOfTriggerBinding.GetConstructor(new Type[] { typeof(string), typeof(string), typeof(ParameterInfo) });
+            return Task.FromResult<ITriggerBinding>((ITriggerBinding)constructor.Invoke(new object[] {attribute.TableName, 
+                SqlBindingUtilities.GetConnectionString(attribute.ConnectionStringSetting, _configuration), parameter }));
         }
 
         /// <summary>

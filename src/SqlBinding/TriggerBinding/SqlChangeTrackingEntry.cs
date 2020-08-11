@@ -4,15 +4,8 @@
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     /// <summary>
-    /// Represents a row that was changed in the user's table as well as metadata related to that change
-    /// </summary>
-    /// <remarks>
-    /// Note that there is a chance the <see cref="Data"/> field does not reflect the most recent version of the row in the user's table.
-    /// There is also a chance that the data does not accurately reflect <see cref="ChangeType"/>. For example,
-    /// say that a row was updated and then deleted, and this SqlChangeTrackingEntry corresponds to the first change, the update.
-    /// In that case, ChangeType will be <see cref="SqlChangeType.Updated"/>, but by the time the user table is queried
-    /// for the row, the row has been deleted, so Data will only be populated with the primary key values of the deleted row.
-    /// </remarks>
+    /// Represents a row that was changed in the user's table as well as metadata related to that change.
+    /// If the row was deleted, then <see cref="Data"/> is populated only with the primary key values of the deleted row
     /// <typeparam name="T">A user-defined POCO that represents a row of the table</typeparam>
     public class SqlChangeTrackingEntry<T>
     {
@@ -23,8 +16,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// The type of change this entry corresponds to
         /// </param>
         /// <param name="data">
-        /// The current data in the user's table corresponding to the change. 
-        /// Note that there is a chance changeType and data are not synchronized (see "remarks" section in the class comment)
+        /// The current data in the user's table corresponding to the change (and only the primary key values 
+        /// of the row in the case that it was deleted)
         /// </param>
         public SqlChangeTrackingEntry(SqlChangeType changeType, T data)
         {
