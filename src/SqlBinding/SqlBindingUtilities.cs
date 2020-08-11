@@ -25,6 +25,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The built connection </returns>
         public static SqlConnection BuildConnection(string connectionStringSetting, IConfiguration configuration)
         {
+            return new SqlConnection(GetConnectionString(connectionStringSetting, configuration));
+        }
+
+        public static string GetConnectionString(string connectionStringSetting, IConfiguration configuration)
+        {
             if (string.IsNullOrEmpty(connectionStringSetting))
             {
                 throw new ArgumentException("Must specify ConnectionStringSetting, which should refer to the name of an app setting that " +
@@ -34,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
-            return new SqlConnection(configuration.GetConnectionStringOrSetting(connectionStringSetting));
+            return configuration.GetConnectionStringOrSetting(connectionStringSetting);
         }
 
         /// <summary>

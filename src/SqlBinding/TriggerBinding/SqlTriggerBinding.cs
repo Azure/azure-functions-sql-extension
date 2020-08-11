@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using Microsoft.Azure.WebJobs.Host.Bindings;
+using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 using Microsoft.Azure.WebJobs.Host.Protocols;
 using Microsoft.Azure.WebJobs.Host.Triggers;
@@ -13,25 +14,25 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
-    internal class SqlTriggerBinding : ITriggerBinding
+    /// <summary>
+    /// Represents the SQL trigger binding for a given user table being monitored for changes
+    /// </summary>
+    /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
+    internal class SqlTriggerBinding<T> : ITriggerBinding
     {
-        private readonly string _connectionStringSetting;
+        private readonly string _connectionString;
         private readonly string _table;
-        private readonly IConfiguration _configuration;
         private readonly ParameterInfo _parameter;
         private static readonly IReadOnlyDictionary<string, Type> _emptyBindingContract = new Dictionary<string, Type>();
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SqlTriggerBinding"/> class.
+        /// Initializes a new instance of the <see cref="SqlTriggerBinding<typeparamref name="T"/>"/> class.
         /// </summary>
-        /// <param name="connectionStringSetting"> 
-        /// The name of the app setting that stores the SQL connection string
+        /// <param name="connectionString">
+        /// The SQL connection string used to connect to the user's database
         /// </param>
         /// <param name="table"> 
         /// The name of the user table that changes are being tracked on
-        /// </param>
-        /// <param name="configuration">
-        /// Used to extract the connection string from connectionStringSetting
         /// </param>
         /// <param name="parameter">
         /// The parameter that contains the SqlTriggerAttribute of the user's function
@@ -39,18 +40,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <exception cref="ArgumentNullException">
         /// Thrown if any of the parameters are null
         /// </exception>
-        public SqlTriggerBinding(string table, string connectionStringSetting, IConfiguration configuration, ParameterInfo parameter)
+        public SqlTriggerBinding(string table, string connectionString, ParameterInfo parameter)
         {
             _table = table ?? throw new ArgumentNullException(nameof(table));
-            _connectionStringSetting = connectionStringSetting ?? throw new ArgumentNullException(nameof(connectionStringSetting));
-            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
             _parameter = parameter ?? throw new ArgumentNullException(nameof(parameter));
         }
 
         /// <summary>
         /// Gets the type of the value the Trigger receives from the Executor.
         /// </summary>
-        public Type TriggerValueType => typeof(ChangeTableData);
+        public Type TriggerValueType => typeof(IEnumerable<SqlChangeTrackingEntry<T>>);
 
         /// <summary>
         /// Returns an empty binding contract. The type that SqlTriggerAttribute is bound to is checked in 
@@ -62,34 +62,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Binds the <see cref="ChangeTableData"/> represented by "value" with a <see cref="SqlValueBinder"/> which converts it to an IEnumerable<SqlChangeTrackingEntry<T>>
-        /// </summary>
+        /// Binds the list of <see cref="SqlChangeTrackingEntry<typeparamref name="T"/>"/> represented by "value" with a <see cref="SimpleValueProvider"/>
+        /// which (as the name suggests) simply returns "value" 
         /// <param name="value">
-        /// The <see cref="ChangeTableData"/> data, which contains a list of rows from the worker/change tables as well as information used to build up queries to
-        /// get the associated information from the user table
+        /// The list of <see cref="SqlChangeTrackingEntry<typeparamref name="T"/>"/> data
         /// </param>
         /// <param name="context">
         /// Unused
         /// </param>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if "value" is not of type ChangeTableData
+        /// Thrown if "value" is not of type IEnumerable<SqlChangeTrackingEntry<typeparamref name="T"/>>
         /// </exception>
         /// <returns>
-        /// The ITriggerData which stores the ChangeTableData as well as the SqlValueBinder which converts it to the form eventually passed to the user's function
+        /// The ITriggerData which stores the list of change tracking entries as well as the SimpleValueBinder
         /// </returns>
         public Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
         {
-            var changeData = value as ChangeTableData;
+            var changeData = value as IEnumerable<SqlChangeTrackingEntry<T>>;
 
-            if (changeData ==  null)
+            if (changeData == null)
             {
-                throw new InvalidOperationException("The value passed to the SqlTrigger BindAsync must be of type ChangeTableData");
+                throw new InvalidOperationException("The value passed to the SqlTrigger BindAsync must be of type IEnumerable<SqlChangeTrackingEntry<T>>");
             }
 
             var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
             bindingData.Add("SqlTrigger", changeData);
 
-            return Task.FromResult<ITriggerData>(new TriggerData(new SqlValueBinder(_parameter, changeData, _table, _connectionStringSetting, _configuration), bindingData));
+            return Task.FromResult<ITriggerData>(new TriggerData(new SimpleValueProvider(_parameter.ParameterType, changeData, _table), bindingData));
         }
 
         /// <summary>
@@ -110,8 +109,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 throw new ArgumentNullException("context", "Missing listener context");
             }
-
-            return Task.FromResult<IListener>(new SqlTriggerListener(_table, _connectionStringSetting, _configuration, context.Executor));
+            return Task.FromResult<IListener>(new SqlTriggerListener<T>(_table, _connectionString, context.Executor));
         }
 
         /// <returns> A description of the SqlTriggerParameter (<see cref="SqlTriggerParameterDescriptor"/> </returns>
@@ -126,78 +124,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Responsible for converting the ChangeTableData passed by the function executor into an IEnumerable<SqlChangeTrackingEntry<T>>,
-        /// where T is a user-specified POCO representing rows from the monitored table
+        /// Simply returns whatever value was passed to it in the constructor without modifying it
         /// </summary>
-        private class SqlValueBinder : IValueProvider
+        internal class SimpleValueProvider : IValueProvider
         {
-            private readonly ParameterInfo _parameter;
-            private readonly ChangeTableData _changeData;
-            private readonly SqlChangeTrackingConverter _converter;
-            private readonly string _table;
+            private readonly Type _type;
+            private readonly object _value;
+            private readonly string _invokeString;
 
-            /// <summary>
-            /// Initializes a new instance of the <see cref="SqlValueBinder"/> class.
-            /// </summary>
-            /// <param name="connectionStringSetting"> 
-            /// The name of the app setting that stores the SQL connection string
-            /// </param>
-            /// <param name="table"> 
-            /// The name of the user table that changes are being tracked on
-            /// </param>
-            /// <param name="configuration">
-            /// Used to extract the connection string from connectionStringSetting
-            /// </param>
-            /// <param name="parameter">
-            /// The parameter that contains the SqlTriggerAttribute of the user's function
-            /// </param>
-            /// <param name="changeData">
-            /// The <see cref="ChangeTableData"/> which contains rows from the worker/change tables which store information
-            /// about changes to "table"
-            /// </param>
-            /// <exception cref="ArgumentNullException">
-            /// Thrown if any of the parameters are null
-            /// </exception>
-            public SqlValueBinder(ParameterInfo parameter, ChangeTableData changeData, string table, string connectionStringSetting, 
-                IConfiguration configuration)
+            public SimpleValueProvider(Type type, object value, string invokeString)
             {
-                _table = table ?? throw new ArgumentNullException(nameof(table));
-                _parameter = parameter ?? throw new ArgumentNullException(nameof(parameter));
-                _changeData = changeData ?? throw new ArgumentNullException(nameof(changeData));
-                // Will throw null exceptions if connectionStringSetting/configuration are null
-                _converter = new SqlChangeTrackingConverter(table, connectionStringSetting, configuration);
+                _type = type;
+                _value = value;
+                _invokeString = invokeString;
             }
 
-            public Type Type => _parameter.ParameterType;
-
             /// <summary>
-            /// Converts the ChangeTableData passed to the constructor into an IEnumerable<SqlChangeTrackingEntry<T>> using the
-            /// type information stored in "parameter"
+            /// Returns the type that the trigger binding is bound to (IEnumerable<SqlChangeTrackingEntry<typeparamref name="T"/>>)
             /// </summary>
-            /// <exception cref="InvalidOperationException">
-            /// If the type of the trigger binding data stored in parameter is not composed of three types, as IEnumerable<SqlChangeTrackingEntry<T>> is,
-            /// although we do not check that the first type is IEnumerable, the second is SqlChangeTrackingEntry, etc.
-            /// </exception>
-            /// <returns>
-            /// The IEnumerable<SqlChangeTrackingEntry<T>> which is eventually passed as the trigger data to the user's function
-            /// </returns>
-            public async Task<object> GetValueAsync()
+            public Type Type => _type;
+
+            public Task<object> GetValueAsync()
             {
-                // This shouldn't fail because we already check for valid types in SqlTriggerAttributeBindingProvider
-                // This line extracts the type of the POCO
-                Type type = _parameter.ParameterType.GetGenericArguments()[0].GetGenericArguments()[0];
-                Type typeOfConverter = _converter.GetType();
-                MethodInfo method = typeOfConverter.GetMethod("BuildSqlChangeTrackingEntries");
-                MethodInfo genericMethod = method.MakeGenericMethod(type);
-                Task<object> task = (Task<object>) genericMethod.Invoke(_converter, new object[] { _changeData.WorkerTableRows, 
-                    _changeData.PrimaryKeys, _changeData.WhereCheck});
-                return await task;
+                return Task.FromResult(_value);
             }
 
-            /// <returns>The name of the table for which changes are being tracked</returns>
+            /// <summary>
+            /// Returns the table name that changes are being tracked on
+            /// </summary>
+            /// <returns></returns>
             public string ToInvokeString()
             {
-                return _table;
+                return _invokeString;
             }
         }
     }

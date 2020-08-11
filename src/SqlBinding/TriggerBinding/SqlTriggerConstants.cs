@@ -9,7 +9,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public const string PrimaryKeysSelectList = "primaryKeysSelectList";
 
-        public const string PrimaryKeysInnerJoin = "primaryKeysInnerJoin";
+        public const string UserTableColumnsSelectList = "userTableColumnsSelectList";
+
+        public const string LeftOuterJoinUserTable = "leftOuterJoinUserTable";
+
+        public const string LeftOuterJoinWorkerTable = "leftOuterJoinWorkerTable";
 
         public const string PrimaryKeyValues = "primaryKeyValues";
 

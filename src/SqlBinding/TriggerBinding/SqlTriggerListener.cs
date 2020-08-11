@@ -5,12 +5,14 @@ using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
-    internal class SqlTriggerListener : IListener
+    /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
+    internal class SqlTriggerListener<T> : IListener
     {
         // Can't use an enum for these because it doesn't work with the Interlocked class
         private int _status;
@@ -18,27 +20,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const int ListenerRegistering = 1;
         private const int ListenerRegistered = 2;
 
-        private readonly SqlTableWatcher _watcher;
-        
+        private readonly SqlTableWatcher<T> _watcher;
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="SqlTriggerListener"/> class.
+        /// Initializes a new instance of the <see cref="SqlTriggerListener<typeparamref name="T"/>>
         /// </summary>
-        /// <param name="connectionStringSetting"> 
-        /// The name of the app setting that stores the SQL connection string
+        /// <param name="connectionString">
+        /// The SQL connection string used to connect to the user's database
         /// </param>
         /// <param name="table"> 
         /// The name of the user table that changes are being tracked on
         /// </param>
-        /// <param name="configuration">
-        /// Used to extract the connection string from connectionStringSetting
-        /// </param>
         /// <param name="executor">
         /// Used to execute the user's function when changes are detected on "table"
         /// </param>
-        public SqlTriggerListener(string table, string connectionStringSetting, IConfiguration configuration, ITriggeredFunctionExecutor executor)
+        public SqlTriggerListener(string table, string connectionString, ITriggeredFunctionExecutor executor)
         {
             _status = ListenerNotRegistered;
-            _watcher = new SqlTableWatcher(table, connectionStringSetting, configuration, executor);
+            _watcher = new SqlTableWatcher<T>(table, connectionString, executor);
         }
 
         /// <summary>

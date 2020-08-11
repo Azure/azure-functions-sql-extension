@@ -13,6 +13,7 @@ using System.Collections.Concurrent;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
+    /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
     internal class SqlAsyncCollector<T> : IAsyncCollector<T>
     {
         private readonly IConfiguration _configuration;
