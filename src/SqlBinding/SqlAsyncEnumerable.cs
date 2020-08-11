@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
+    /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
     internal class SqlAsyncEnumerable<T> : IAsyncEnumerable<T>
     {
         private readonly SqlConnection _connection;
