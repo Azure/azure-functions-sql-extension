@@ -46,6 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         }
 
+        /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
         internal class SqlGenericsConverter<T> : IAsyncConverter<SqlAttribute, IEnumerable<T>>, IConverter<SqlAttribute, IAsyncEnumerable<T>>,
             IAsyncConverter<SqlAttribute, string>
         {
