@@ -26,5 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public const int PollingInterval = 10;
 
+        public const int MaxLeaseRenewalCount = 5;
+
     }
 }
