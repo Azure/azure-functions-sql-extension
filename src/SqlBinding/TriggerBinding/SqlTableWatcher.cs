@@ -25,26 +25,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// All other parameters are generated exclusively using information about the user table's schema (such as primary key column names),
     /// data stored in SQL's internal change table, or data stored in our own worker table.
     /// </remarks>
+    /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
     internal class SqlTableWatcher<T>
     {
         private readonly string _workerTable;
         private readonly string _userTable;
         private readonly string _connectionString;
         private readonly ITriggeredFunctionExecutor _executor;
+        private readonly ILogger _logger;
         private readonly CancellationTokenSource _cancellationTokenSourceExecutor;
         private readonly CancellationTokenSource _cancellationTokenSourceCheckForChanges;
         private readonly CancellationTokenSource _cancellationTokenSourceRenewLeases;
 
         // It should be impossible for multiple threads to access these at the same time because of the semaphores we use
         private readonly List<Dictionary<string, string>> _rows;
-        private readonly List<String> _userTableColumns;
+        private readonly List<string> _userTableColumns;
+        private readonly List<string> _whereChecks;
         private readonly Dictionary<string, string> _primaryKeys;
         private readonly Dictionary<string, string> _queryStrings;
         private readonly SemaphoreSlim _leasesLock;
         private State _state;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SqlTableWatcher{T}"> class
+        /// Initializes a new instance of the <see cref="SqlTableWatcher<typeparamref name="T"/>> class
         /// </summary>
         /// <param name="connectionString">
         /// The SQL connection string used to connect to the user's database
@@ -61,7 +64,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <exception cref="ArgumentException">
         /// Thrown if table or connectionString are null or empty
         /// </exception>
-        public SqlTableWatcher(string table, string connectionString, ITriggeredFunctionExecutor executor)
+        public SqlTableWatcher(string table, string connectionString, ITriggeredFunctionExecutor executor, ILogger logger)
         {
             if (string.IsNullOrEmpty(table))
             {
@@ -74,6 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             _connectionString = connectionString;
             _executor = executor ?? throw new ArgumentNullException(nameof(executor));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _userTable = SqlBindingUtilities.NormalizeTableName(table);
             _workerTable = SqlBindingUtilities.NormalizeTableName(BuildWorkerTableName(table));
 
@@ -84,6 +88,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             _rows = new List<Dictionary<string, string>>();
             _userTableColumns = new List<string>();
+            _whereChecks = new List<string>();
             _queryStrings = new Dictionary<string, string>();
             _primaryKeys = new Dictionary<string, string>();
         }
@@ -138,7 +143,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     }
                     catch (Exception e)
                     {
-                        // logger here
+                        // This catch block is necessary so that the finally block is executed even in the case of an exception
+                        // (see https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/try-finally, third paragraph)
+                        _logger.LogError(e.Message);
                     }
                     finally
                     {
@@ -152,7 +159,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             catch (Exception e)
             {
-                // have a logger here. could also be triggered by a TaskCancelledException
+                // Only want to log the exception if it wasn't caused by StopAsync being called, since Task.Delay throws an exception
+                // if it's cancelled
+                if (e.GetType() != typeof(TaskCanceledException))
+                {
+                    _logger.LogError(e.Message);
+                }
             }
         }
 
@@ -205,7 +217,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             catch (Exception e)
             {
-                // have a logger here
+                // Only want to log the exception if it wasn't caused by StopAsync being called, since Task.Delay throws an exception
+                // if it's cancelled
+                if (e.GetType() != typeof(TaskCanceledException))
+                {
+                    _logger.LogError(e.Message);
+                }
             } 
         }
 
@@ -299,10 +316,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             }
                         }
                     }
-                    foreach (var row in _rows)
-                    {   
-                        // Not great that we're doing a SqlCommand per row, should batch this
-                        using (SqlCommand acquireLeaseCommand = BuildAcquireLeaseOnRowCommand(row, connection, transaction))
+                    if (_rows.Count != 0)
+                    {
+                        using (SqlCommand acquireLeaseCommand = BuildAcquireLeasesCommand(connection, transaction))
                         {
                             await acquireLeaseCommand.ExecuteNonQueryAsync();
                         }
@@ -321,14 +337,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             using (var connection = new SqlConnection(_connectionString))
             {
                 await connection.OpenAsync();
-                foreach (var row in _rows)
+                using (SqlCommand renewLeaseCommand = BuildRenewLeasesCommand(connection))
                 {
-                    // Not great that we're doing a SqlCommand per row, should batch this
-                    using (SqlCommand renewLeaseCommand = BuildRenewLeaseOnRowCommand(row, connection))
-                    {
-                        await renewLeaseCommand.ExecuteNonQueryAsync();
-                    }
-                }
+                    await renewLeaseCommand.ExecuteNonQueryAsync();
+                }   
             }
         }
 
@@ -347,18 +359,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     await connection.OpenAsync();
                     using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
                     {
-                        foreach (var row in _rows)
+                        using (SqlCommand releaseLeaseCommand = BuildReleaseLeasesCommand(connection, transaction))
                         {
-                            // Not great that we're doing a SqlCommand per row, should batch this
-                            using (SqlCommand releaseLeaseCommand = BuildReleaseLeaseOnRowCommand(row, connection, transaction))
-                            {
-                                await releaseLeaseCommand.ExecuteNonQueryAsync();
-                            }
+                            await releaseLeaseCommand.ExecuteNonQueryAsync();
                         }
                         await transaction.CommitAsync();
                     }
                 }
                 _rows.Clear();
+                _whereChecks.Clear();
             }
             catch (Exception e)
             {
@@ -465,100 +474,101 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Builds the query to acquire leases on the rows in "_rows" if changes are detected in the user's table (<see cref="CheckForChangesAsync"/>)
         /// </summary>
-        /// <param name="row">The row that the lease will be acquired on</param>
         /// <param name="connection">The connection to add to the returned SqlCommand</param>
         /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-        private SqlCommand BuildAcquireLeaseOnRowCommand(Dictionary<string, string> row, SqlConnection connection, SqlTransaction transaction)
+        private SqlCommand BuildAcquireLeasesCommand(SqlConnection connection, SqlTransaction transaction)
         {
-            var acquireLeaseCommand = new SqlCommand();
-            SqlBindingUtilities.AddPrimaryKeyParametersToCommand(acquireLeaseCommand, row, _primaryKeys.Keys);
+            var acquireLeasesCommand = new SqlCommand();
+            SqlBindingUtilities.AddPrimaryKeyParametersToCommand(acquireLeasesCommand, _rows, _primaryKeys.Keys);
+            var acquireLeaseOnRows = string.Empty;
+            var index = 0;
 
-            string valuesList;
-            // If one isn't in the map, neither is
-            if (!_queryStrings.TryGetValue(SqlTriggerConstants.WhereCheck, out string whereCheck))
+            foreach (var row in _rows)
             {
-                whereCheck = string.Join(" AND ", _primaryKeys.Keys.Select(key => $"{key} = @{key}"));
-                valuesList = string.Join(", ", _primaryKeys.Keys.Select(key => $"@{key}"));
-                _queryStrings.Add(SqlTriggerConstants.WhereCheck, whereCheck);
-                _queryStrings.Add(SqlTriggerConstants.PrimaryKeyValues, valuesList);
+                var whereCheck = string.Join(" AND ", _primaryKeys.Keys.Select(key => $"{key} = @{key}_{index}"));
+                var valuesList = string.Join(", ", _primaryKeys.Keys.Select(key => $"@{key}_{index}"));
+                _whereChecks.Add(whereCheck);
+            
+                row.TryGetValue("SYS_CHANGE_VERSION", out string versionNumber);
+                acquireLeaseOnRows +=
+                    $"IF NOT EXISTS (SELECT * FROM {_workerTable} WHERE {whereCheck})\n" +
+                    $"INSERT INTO {_workerTable}\n" +
+                    $"VALUES ({valuesList}, DATEADD({SqlTriggerConstants.LeaseUnits}, {SqlTriggerConstants.LeaseTime}, SYSDATETIME()), 0, {versionNumber})\n" +
+                    $"ELSE\n" +
+                    $"UPDATE {_workerTable}\n" +
+                    $"SET LeaseExpirationTime = DATEADD({SqlTriggerConstants.LeaseUnits}, {SqlTriggerConstants.LeaseTime}, SYSDATETIME()), DequeueCount = DequeueCount + 1, " +
+                    $"VersionNumber = {versionNumber}\n" +
+                    $"WHERE {whereCheck};\n";
+
+                index++;
             }
-            else
-            {
-                _queryStrings.TryGetValue(SqlTriggerConstants.PrimaryKeyValues, out valuesList);
-            }
 
-            row.TryGetValue("SYS_CHANGE_VERSION", out string versionNumber);
-
-            var acquireLeaseOnRow =
-                $"IF NOT EXISTS (SELECT * FROM {_workerTable} WHERE {whereCheck})\n" +
-                $"INSERT INTO {_workerTable}\n" +
-                $"VALUES ({valuesList}, DATEADD({SqlTriggerConstants.LeaseUnits}, {SqlTriggerConstants.LeaseTime}, SYSDATETIME()), 0, {versionNumber})\n" +
-                $"ELSE\n" +
-                $"UPDATE {_workerTable}\n" +
-                $"SET LeaseExpirationTime = DATEADD({SqlTriggerConstants.LeaseUnits}, {SqlTriggerConstants.LeaseTime}, SYSDATETIME()), DequeueCount = DequeueCount + 1, " +
-                $"VersionNumber = {versionNumber}\n" +
-                $"WHERE {whereCheck};";
-
-            acquireLeaseCommand.CommandText = acquireLeaseOnRow;
-            acquireLeaseCommand.Connection = connection;
-            acquireLeaseCommand.Transaction = transaction;
-            return acquireLeaseCommand;
+            acquireLeasesCommand.CommandText = acquireLeaseOnRows;
+            acquireLeasesCommand.Connection = connection;
+            acquireLeasesCommand.Transaction = transaction;
+            return acquireLeasesCommand;
         }
 
         /// <summary>
         /// Builds the query to renew leases on the rows in "_rows" (<see cref="RenewLeasesAsync(CancellationToken)"/>)
         /// </summary>
-        /// <param name="row">The row that the lease will be renewed on</param>
         /// <param name="connection">The connection to add to the returned SqlCommand</param>
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-        private SqlCommand BuildRenewLeaseOnRowCommand(Dictionary<string, string> row, SqlConnection connection)
+        private SqlCommand BuildRenewLeasesCommand(SqlConnection connection)
         {
-            SqlCommand renewLeaseCommand = new SqlCommand();
+            SqlCommand renewLeasesCommand = new SqlCommand();
+            SqlBindingUtilities.AddPrimaryKeyParametersToCommand(renewLeasesCommand, _rows, _primaryKeys.Keys);
+            var renewLeaseOnRows = string.Empty;
+            var index = 0;
 
-            _queryStrings.TryGetValue(SqlTriggerConstants.WhereCheck, out string whereCheck);
-            SqlBindingUtilities.AddPrimaryKeyParametersToCommand(renewLeaseCommand, row, _primaryKeys.Keys);
-
-            var renewLeaseOnRow =
+            foreach (var row in _rows)
+            {
+                renewLeaseOnRows +=
                 $"UPDATE {_workerTable}\n" +
                 $"SET LeaseExpirationTime = DATEADD({SqlTriggerConstants.LeaseUnits}, {SqlTriggerConstants.LeaseTime}, SYSDATETIME())\n" +
-                $"WHERE {whereCheck};";
+                $"WHERE {_whereChecks.ElementAt(index++)};\n";
+            }
 
-            renewLeaseCommand.CommandText = renewLeaseOnRow;
-            renewLeaseCommand.Connection = connection;
+            renewLeasesCommand.CommandText = renewLeaseOnRows;
+            renewLeasesCommand.Connection = connection;
 
-            return renewLeaseCommand;
+            return renewLeasesCommand;
         }
 
         /// <summary>
         /// Builds the query to release leases on the rows in "_rows" after successful invocation of the user's function (<see cref="CheckForChangesAsync"/>)
         /// </summary>
-        /// <param name="row">The row that the lease will be released on</param>
         /// <param name="connection">The connection to add to the returned SqlCommand</param>
         /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-        private SqlCommand BuildReleaseLeaseOnRowCommand(Dictionary<string, string> row, SqlConnection connection, SqlTransaction transaction)
+        private SqlCommand BuildReleaseLeasesCommand(SqlConnection connection, SqlTransaction transaction)
         {
-            SqlCommand releaseLeaseCommand = new SqlCommand();
-            _queryStrings.TryGetValue(SqlTriggerConstants.WhereCheck, out string whereCheck);
-            row.TryGetValue("SYS_CHANGE_VERSION", out string versionNumber);
-            SqlBindingUtilities.AddPrimaryKeyParametersToCommand(releaseLeaseCommand, row, _primaryKeys.Keys);
+            SqlCommand releaseLeasesCommand = new SqlCommand();
+            var releaseLeasesOnRows = $"DECLARE @current_version bigint;\n";
+            SqlBindingUtilities.AddPrimaryKeyParametersToCommand(releaseLeasesCommand, _rows, _primaryKeys.Keys);
+            var index = 0;
 
-            var releaseLeaseOnRow =
-                $"DECLARE @current_version bigint;\n" +
-                $"SELECT @current_version = VersionNumber\n" +
-                $"FROM {_workerTable}\n" + 
-                $"WHERE {whereCheck};\n" +
-                $"IF {versionNumber} >= @current_version\n" +
-                $"UPDATE {_workerTable}\n" +
-                $"SET LeaseExpirationTime = NULL, DequeueCount = 0, VersionNumber = {versionNumber}\n" +
-                $"WHERE {whereCheck};";
+            foreach (var row in _rows)
+            {
+                var whereCheck = _whereChecks.ElementAt(index++);
+                row.TryGetValue("SYS_CHANGE_VERSION", out string versionNumber);
 
-            releaseLeaseCommand.CommandText = releaseLeaseOnRow;
-            releaseLeaseCommand.Connection = connection;
-            releaseLeaseCommand.Transaction = transaction;
+                releaseLeasesOnRows +=
+                    $"SELECT @current_version = VersionNumber\n" +
+                    $"FROM {_workerTable}\n" +
+                    $"WHERE {whereCheck};\n" +
+                    $"IF {versionNumber} >= @current_version\n" +
+                    $"UPDATE {_workerTable}\n" +
+                    $"SET LeaseExpirationTime = NULL, DequeueCount = 0, VersionNumber = {versionNumber}\n" +
+                    $"WHERE {whereCheck};\n";
+            }
 
-            return releaseLeaseCommand;
+            releaseLeasesCommand.CommandText = releaseLeasesOnRows;
+            releaseLeasesCommand.Connection = connection;
+            releaseLeasesCommand.Transaction = transaction;
+
+            return releaseLeasesCommand;
         }
 
         /// <summary>
@@ -596,7 +606,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Builds up the list of SqlChangeTrackingEntries passed to the user's triggered function based on the data
         /// stored in "_rows"
-        /// If any of the entries correspond to a deleted row, then the <see cref="SqlChangeTrackingEntry{T}.Data"/> is populated
+        /// If any of the entries correspond to a deleted row, then the <see cref="SqlChangeTrackingEntry.Data"> will be populated
         /// with only the primary key values of the deleted row.
         /// </summary>
         /// <returns>The list of entries</returns>

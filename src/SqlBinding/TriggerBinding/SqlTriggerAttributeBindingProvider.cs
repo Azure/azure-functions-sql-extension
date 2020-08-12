@@ -2,7 +2,9 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using Microsoft.Azure.WebJobs.Host.Triggers;
+using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections;
 using System.Reflection;
@@ -13,6 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     internal class SqlTriggerAttributeBindingProvider : ITriggerBindingProvider
     {
         private readonly IConfiguration _configuration;
+        private readonly ILogger _logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlTriggerAttributeBindingProvider"/> class.
@@ -20,12 +23,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="configuration">
         /// Used to extract the connection string from connectionStringSetting
         /// </param>
+        /// <param name="loggerFactory">
+        /// Used to create a logger for the SQL trigger binding
+        /// </param>
         /// <exception cref="ArgumentNullException">
-        /// Thrown if configuration is null
+        /// Thrown if either parameter is null
         /// </exception>
-        public SqlTriggerAttributeBindingProvider(IConfiguration configuration)
+        public SqlTriggerAttributeBindingProvider(IConfiguration configuration, ILoggerFactory loggerFactory)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            if (loggerFactory == null)
+            {
+                throw new ArgumentNullException(nameof(loggerFactory));
+            }
+            _logger = loggerFactory.CreateLogger(LogCategories.CreateTriggerCategory("Sql"));
         }
 
         /// <summary>
@@ -68,9 +79,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             Type type = parameter.ParameterType.GetGenericArguments()[0].GetGenericArguments()[0];
             Type typeOfTriggerBinding = typeof(SqlTriggerBinding<>).MakeGenericType(type);
-            ConstructorInfo constructor = typeOfTriggerBinding.GetConstructor(new Type[] { typeof(string), typeof(string), typeof(ParameterInfo) });
+            ConstructorInfo constructor = typeOfTriggerBinding.GetConstructor(new Type[] { typeof(string), typeof(string), typeof(ParameterInfo), typeof(ILogger) });
             return Task.FromResult<ITriggerBinding>((ITriggerBinding)constructor.Invoke(new object[] {attribute.TableName, 
-                SqlBindingUtilities.GetConnectionString(attribute.ConnectionStringSetting, _configuration), parameter }));
+                SqlBindingUtilities.GetConnectionString(attribute.ConnectionStringSetting, _configuration), parameter, _logger }));
         }
 
         /// <summary>
