@@ -4,6 +4,7 @@
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Reflection;
 using System.Threading;
@@ -21,6 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const int ListenerRegistered = 2;
 
         private readonly SqlTableWatcher<T> _watcher;
+        private readonly ILogger logger;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlTriggerListener<typeparamref name="T"/>>
@@ -34,10 +36,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="executor">
         /// Used to execute the user's function when changes are detected on "table"
         /// </param>
-        public SqlTriggerListener(string table, string connectionString, ITriggeredFunctionExecutor executor)
+        public SqlTriggerListener(string table, string connectionString, ITriggeredFunctionExecutor executor, ILogger logger)
         {
             _status = ListenerNotRegistered;
-            _watcher = new SqlTableWatcher<T>(table, connectionString, executor);
+            _watcher = new SqlTableWatcher<T>(table, connectionString, executor, logger);
         }
 
         /// <summary>
