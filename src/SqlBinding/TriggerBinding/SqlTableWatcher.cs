@@ -33,7 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly string _connectionString;
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly ILogger _logger;
-        private readonly CancellationTokenSource _cancellationTokenSourceExecutor;
+        private CancellationTokenSource _cancellationTokenSourceExecutor;
         private readonly CancellationTokenSource _cancellationTokenSourceCheckForChanges;
         private readonly CancellationTokenSource _cancellationTokenSourceRenewLeases;
 
@@ -43,8 +43,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly List<string> _whereChecks;
         private readonly Dictionary<string, string> _primaryKeys;
         private readonly Dictionary<string, string> _queryStrings;
-        private readonly SemaphoreSlim _leasesLock;
+
+        private readonly SemaphoreSlim _rowsLock;
         private State _state;
+        private int _leaseRenewalCount;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlTableWatcher<typeparamref name="T"/>> class
@@ -84,7 +86,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             _cancellationTokenSourceExecutor = new CancellationTokenSource();
             _cancellationTokenSourceCheckForChanges = new CancellationTokenSource();
             _cancellationTokenSourceRenewLeases = new CancellationTokenSource();
-            _leasesLock = new SemaphoreSlim(1);
+            _rowsLock = new SemaphoreSlim(1);
 
             _rows = new List<Dictionary<string, string>>();
             _userTableColumns = new List<string>();
@@ -133,28 +135,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 while (!token.IsCancellationRequested)
                 {
-                    await _leasesLock.WaitAsync();
-                    try
+                    await _rowsLock.WaitAsync();
+                    // Could have been cancelled by ClearRows while it had the _rowsLock
+                    if (!token.IsCancellationRequested)
                     {
-                        if (_state == State.ProcessingChanges)
+                        try
                         {
-                            await RenewLeasesAsync();
+                            if (_state == State.ProcessingChanges && _leaseRenewalCount < SqlTriggerConstants.MaxLeaseRenewalCount)
+                            {
+                                await RenewLeasesAsync();
+                            }
                         }
+                        catch (Exception e)
+                        {
+                            // This catch block is necessary so that the finally block is executed even in the case of an exception
+                            // (see https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/try-finally, third paragraph)
+                            // If we fail to renew the leases, multiple workers could be processing the same change data, but we have functionality
+                            // in place to deal with this (see design doc)
+                            _logger.LogError($"Failed to renew leases due to error: {e.Message}");
+                        }
+                        finally
+                        {
+                            if (_state == State.ProcessingChanges)
+                            {
+                                // Do we want to update this count even in the case of a failure to renew the leases? Probably, because
+                                // the count is simply meant to indicate how much time the other thread has spent processing changes essentially
+                                _leaseRenewalCount++;
+                                if (_leaseRenewalCount == SqlTriggerConstants.MaxLeaseRenewalCount)
+                                {
+                                    // If we keep renewing the leases, the thread responsible for processing the changes is stuck
+                                    // If it's stuck, it has to be stuck in the function execution call (I think), so we should cancel the call
+                                    _logger.LogWarning($"Call to execute the function (TryExecuteAsync) seems to be stuck, so it is being cancelled");
+                                    _cancellationTokenSourceExecutor.Cancel();
+                                    // Need a new source after the token is cancelled?
+                                    _cancellationTokenSourceExecutor = new CancellationTokenSource();
+                                }
+                            }
+                            // Want to always release the lock at the end, even if renewing the leases failed
+                            _rowsLock.Release();
+                        }
+                        // Want to make sure to renew the leases before they expire, so we renew them twice per lease period
+                        await Task.Delay(SqlTriggerConstants.LeaseTime / 2 * 1000, token);
                     }
-                    catch (Exception e)
-                    {
-                        // This catch block is necessary so that the finally block is executed even in the case of an exception
-                        // (see https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/try-finally, third paragraph)
-                        _logger.LogError(e.Message);
-                    }
-                    finally
-                    {
-                        // Want to always release the lock at the end, even if renewing the leases failed
-                        _leasesLock.Release();
-                    }
-                    // Want to make sure to renew the leases before they expire, so we renew them twice per 
-                    // lease period
-                    await Task.Delay(SqlTriggerConstants.LeaseTime / 2 * 1000, token);
                 }
             }
             catch (Exception e)
@@ -165,6 +187,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     _logger.LogError(e.Message);
                 }
+            }
+            finally
+            {
+                _cancellationTokenSourceRenewLeases.Dispose();
             }
         }
 
@@ -185,28 +211,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     if (_state == State.CheckingForChanges)
                     {
+                        // What should we do if this call gets stuck?
                         await CheckForChangesAsync();
                         if (_rows.Count > 0)
                         {
-                            IEnumerable<SqlChangeTrackingEntry<T>> entries = GetSqlChangeTrackingEntries();
-                            // Should we cancel executing the function if StopAsync is called, or let it finish?
-                            // In other words, should _cancellationTokenSourceCheckingForChanges and _cancellationTokenSourceExecutor
-                            // be one token source?
-                            FunctionResult result = await _executor.TryExecuteAsync(new TriggeredFunctionData() { TriggerValue = entries }, 
-                                _cancellationTokenSourceExecutor.Token);
-                            if (result.Succeeded)
+                            _state = State.ProcessingChanges;
+                            IEnumerable<SqlChangeTrackingEntry<T>> entries = null;
+
+                            try
                             {
-                                await ReleaseLeasesAsync();
+                                // What should we do if this fails? It doesn't make sense to retry since it's not a connection based thing
+                                // We could still try to trigger on the correctly processed entries, but that adds additional complication because
+                                // we don't want to release the leases on the incorrectly processed entries
+                                // For now, just give up I guess?
+                                entries = GetSqlChangeTrackingEntries();
                             }
-                            else
+                            catch (Exception e)
                             {
-                                // Should probably have some count for how many times we tried to execute the function. After a certain amount of times
-                                // we should give up
+                                await ClearRows($"Failed to extract user table data from table {_userTable} associated with change metadata due to error: {e.Message}");
                             }
+
+                            if (entries != null)
+                            {
+                                // Should we cancel executing the function if StopAsync is called, or let it finish?
+                                // In other words, should _cancellationTokenSourceCheckingForChanges and _cancellationTokenSourceExecutor
+                                // be one token source?
+                                FunctionResult result = await _executor.TryExecuteAsync(new TriggeredFunctionData() { TriggerValue = entries },
+                                    _cancellationTokenSourceExecutor.Token);
+                                if (result.Succeeded)
+                                {
+                                    await ReleaseLeasesAsync();
+                                }
+                                else
+                                {
+                                    // In the future might make sense to retry executing the function, but for now we just let another worker try
+                                    await ClearRows($"Failed to trigger user's function for table {_userTable} due to error: {result.Exception.Message}");
+                                }
+                            }
+
                             if (token.IsCancellationRequested)
                             {
-                                // Only want to cancel renewing leases after we finish processing the changes
-                                _cancellationTokenSourceRenewLeases.Cancel();
                                 // Might as well skip delaying the task and immediately break out of the while loop
                                 break;
                             }
@@ -223,7 +267,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     _logger.LogError(e.Message);
                 }
-            } 
+            }
+            finally
+            {
+                // If this thread exits due to any reason, then the lease renewal thread should exit as well. Otherwise, it will keep looping
+                // perpetually. Though could have been already cancelled by ClearRows
+                if (!_cancellationTokenSourceRenewLeases.IsCancellationRequested)
+                {
+                    _cancellationTokenSourceRenewLeases.Cancel();
+                    _cancellationTokenSourceExecutor.Dispose();
+                    _cancellationTokenSourceCheckForChanges.Dispose();
+                }
+            }
         }
 
         /// <summary>
@@ -299,32 +354,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns></returns>
         private async Task CheckForChangesAsync()
         {
-            using (var connection = new SqlConnection(_connectionString))
+            try
             {
-                await connection.OpenAsync();
-                using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
+                using (var connection = new SqlConnection(_connectionString))
                 {
-                    
-                    using (SqlCommand getChangesCommand = BuildCheckForChangesCommand(connection, transaction))
+                    await connection.OpenAsync();
+                    using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
                     {
-                        using (SqlDataReader reader = await getChangesCommand.ExecuteReaderAsync())
+
+                        using (SqlCommand getChangesCommand = BuildCheckForChangesCommand(connection, transaction))
                         {
-                            var cols = new List<string>();
-                            while (await reader.ReadAsync())
+                            using (SqlDataReader reader = await getChangesCommand.ExecuteReaderAsync())
                             {
-                                _rows.Add(SqlBindingUtilities.BuildDictionaryFromSqlRow(reader, cols));
+                                var cols = new List<string>();
+                                while (await reader.ReadAsync())
+                                {
+                                    _rows.Add(SqlBindingUtilities.BuildDictionaryFromSqlRow(reader, cols));
+                                }
                             }
                         }
-                    }
-                    if (_rows.Count != 0)
-                    {
-                        using (SqlCommand acquireLeaseCommand = BuildAcquireLeasesCommand(connection, transaction))
+                        if (_rows.Count != 0)
                         {
-                            await acquireLeaseCommand.ExecuteNonQueryAsync();
+                            using (SqlCommand acquireLeaseCommand = BuildAcquireLeasesCommand(connection, transaction))
+                            {
+                                await acquireLeaseCommand.ExecuteNonQueryAsync();
+                            }
                         }
+                        await transaction.CommitAsync();
                     }
-                    await transaction.CommitAsync();
                 }
+            }
+            catch (Exception e)
+            {
+                // If there's an exception in any part of the process, we want to clear all of our data in memory and retry
+                // checking for changes again
+                _rows.Clear();
+                _whereChecks.Clear();
+                _logger.LogWarning($"Failed to check {_userTable} for new changes due to error: {e.Message}");
             }
         }
 
@@ -345,13 +411,49 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
+        /// Resets the in-memory state of the watcher and sets it to start polling for changes again.
+        /// Used in the case of some sort of failure during execution, in which case we do not release the leases
+        /// since the rows were not successfully processed. Eventually, another worker will pick up these changes
+        /// and try to process them. 
+        /// </summary>
+        /// <param name="error">
+        /// The error messages the logger will report describing the reason of the failued execution
+        /// </param>
+        /// <returns></returns>
+        private async Task ClearRows(string error)
+        {
+            _logger.LogError(error);
+            await _rowsLock.WaitAsync();
+            // No idea how this could fail, but just in case
+            try 
+            {
+                _leaseRenewalCount = 0;
+                _rows.Clear();
+                _whereChecks.Clear();
+                _state = State.CheckingForChanges;
+                
+            } 
+            catch (Exception e)
+            {
+                // If we somehow failed to clear memory, we are in an unacceptable state. The watcher should immediately be cancelled
+                _logger.LogError($"Failed to clear in-memory state due to error: {e.Message}. All threads being immediately cancelled and watcher being stopped.");
+                _cancellationTokenSourceCheckForChanges.Cancel();
+                _cancellationTokenSourceRenewLeases.Cancel();
+            }
+            finally
+            {
+                _rowsLock.Release();
+            }
+        }
+
+        /// <summary>
         /// Releases the leases held on _rows
         /// </summary>
         /// <returns></returns>
         private async Task ReleaseLeasesAsync()
         {
             // Don't want to change the _rows while another thread is attempting to renew leases on them
-            await _leasesLock.WaitAsync();
+            await _rowsLock.WaitAsync();
             try
             {
                 using (var connection = new SqlConnection(_connectionString))
@@ -366,23 +468,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         await transaction.CommitAsync();
                     }
                 }
-                _rows.Clear();
-                _whereChecks.Clear();
+                
             }
             catch (Exception e)
             {
                 // What should we do if releasing the leases fails? We could try to release them again or just wait,
                 // since eventually the lease time will expire. Then another thread will re-process the same changes though,
-                // so less than ideal
+                // so less than ideal. But for now that's the functionality
+                _logger.LogError($"Failed to release leases for user table {_userTable} due to error: {e.Message}");
             }
             finally
             {
                 // Want to do this before releasing the lock in case the renew leases thread wakes up. It will see that
                 // the state is checking for changes and not renew the (just released) leases
-                // Only want to change the state if it was previously ProcessingChanges though. If it is stopped, for example,
-                // we don't want to start polling for changes again
+                _rows.Clear();
+                _whereChecks.Clear();
+                _leaseRenewalCount = 0;
                 _state = State.CheckingForChanges;
-                _leasesLock.Release();
+                _rowsLock.Release();
             }
         }
 
@@ -612,7 +715,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The list of entries</returns>
         private IEnumerable<SqlChangeTrackingEntry<T>> GetSqlChangeTrackingEntries()
         {
-
             var entries = new List<SqlChangeTrackingEntry<T>>();
             foreach (var row in _rows)
             {
