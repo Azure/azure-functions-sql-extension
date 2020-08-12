@@ -5,8 +5,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     internal static class SqlTriggerConstants
     {
-        public const string WhereCheck = "whereCheck";
-
         public const string PrimaryKeysSelectList = "primaryKeysSelectList";
 
         public const string UserTableColumnsSelectList = "userTableColumnsSelectList";
@@ -14,8 +12,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public const string LeftOuterJoinUserTable = "leftOuterJoinUserTable";
 
         public const string LeftOuterJoinWorkerTable = "leftOuterJoinWorkerTable";
-
-        public const string PrimaryKeyValues = "primaryKeyValues";
 
         // Unit of time is seconds
         public const string LeaseUnits = "s";

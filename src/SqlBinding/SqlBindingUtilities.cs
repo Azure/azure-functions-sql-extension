@@ -206,11 +206,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Attaches SqlParameters to "command". Each parameter follows the format (@PrimaryKey, PrimaryKeyValue), where @PrimaryKey is the
-        /// name of a primary key column, and PrimaryKeyValue is "row's" value for that column
+        /// Attaches SqlParameters to "command". Each parameter follows the format (@PrimaryKey_i, PrimaryKeyValue), where @PrimaryKey is the
+        /// name of a primary key column, and PrimaryKeyValue is one of the row's value for that column. To distinguish between the parameters
+        /// of different rows, each row will have a distinct value of i.
         /// </summary>
         /// <param name="command">The command the parameters are attached to</param>
-        /// <param name="row">The row to which this command corresponds</param>
+        /// <param name="rows">The rows to which this command corresponds to</param>
         /// <param name="primaryKeys">List of primary key column names</param>
         /// <remarks>
         /// Ideally, we would have a map that maps from rows to a list of SqlCommands populated with their primary key values. The issue with
@@ -218,13 +219,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// the SqlParameters are part of the list in the map, an exception is thrown if they are also added to the collection of a SqlCommand.
         /// The expected behavior seems to be to rebuild the SqlParameters each time
         /// </remarks>
-        public static void AddPrimaryKeyParametersToCommand(SqlCommand command, Dictionary<string, string> row, IEnumerable<string> primaryKeys)
+        public static void AddPrimaryKeyParametersToCommand(SqlCommand command, List<Dictionary<string, string>> rows, IEnumerable<string> primaryKeys)
         {
-            foreach (var key in primaryKeys)
+            var index = 0;
+            foreach (var row in rows)
             {
-                var parameterName = "@" + key;
-                row.TryGetValue(key, out string primaryKeyValue);
-                command.Parameters.Add(new SqlParameter(parameterName, primaryKeyValue));
+                foreach (var key in primaryKeys)
+                {
+                    row.TryGetValue(key, out string primaryKeyValue);
+                    command.Parameters.Add(new SqlParameter($"@{key}_{index}", primaryKeyValue));
+                }
+                index++;
             }
         }
     }
