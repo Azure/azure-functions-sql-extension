@@ -2,9 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using Microsoft.Azure.WebJobs.Host.Executors;
-using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
@@ -167,7 +165,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                                     // If it's stuck, it has to be stuck in the function execution call (I think), so we should cancel the call
                                     _logger.LogWarning($"Call to execute the function (TryExecuteAsync) seems to be stuck, so it is being cancelled");
                                     _cancellationTokenSourceExecutor.Cancel();
-                                    // Need a new source after the token is cancelled?
+                                    _cancellationTokenSourceExecutor.Dispose();
                                     _cancellationTokenSourceExecutor = new CancellationTokenSource();
                                 }
                             }
