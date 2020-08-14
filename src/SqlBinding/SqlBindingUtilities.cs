@@ -4,6 +4,7 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Collections.Generic;
 using System.Data;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
@@ -11,34 +12,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     internal static class SqlBindingUtilities
     {
         /// <summary>
-        /// Builds a connection using the connection information specified in "attribute"
+        /// Builds a connection using the connection string attached to the app setting with name ConnectionStringSetting
         /// </summary>
-        /// <param name="attribute">Contains the name of the app setting where the SQL connection string is stored</param>
-        /// <param name="configuration">Used to extract the SQL connection string from the app setting</param>
-        /// <exception cref="InvalidOperationException">
-        /// Thrown if ConnectionStringSetting in attribute is null
+        /// <param name="attribute">The name of the app setting that stores the SQL connection string</param>
+        /// <param name="configuration">Used to obtain the value of the app setting</param>
+        /// <exception cref="ArgumentException">
+        /// Thrown if ConnectionStringSetting is empty or null
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        /// Thrown if configuration or attribute is null
+        /// Thrown if configuration is null
         /// </exception>
         /// <returns>The built connection </returns>
-        internal static SqlConnection BuildConnection(SqlAttribute attribute, IConfiguration configuration)
+        public static SqlConnection BuildConnection(string connectionStringSetting, IConfiguration configuration)
         {
-            if (attribute == null)
+            return new SqlConnection(GetConnectionString(connectionStringSetting, configuration));
+        }
+
+        public static string GetConnectionString(string connectionStringSetting, IConfiguration configuration)
+        {
+            if (string.IsNullOrEmpty(connectionStringSetting))
             {
-                throw new ArgumentNullException(nameof(attribute));
+                throw new ArgumentException("Must specify ConnectionStringSetting, which should refer to the name of an app setting that " +
+                    "contains a SQL connection string");
             }
             if (configuration == null)
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
-            if (attribute.ConnectionStringSetting == null)
-            {
-                throw new InvalidOperationException("Must specify ConnectionStringSetting, which should refer to the name of an app setting that " +
-                    "contains a SQL connection string");
-            }
-            
-            return new SqlConnection(configuration.GetConnectionStringOrSetting(attribute.ConnectionStringSetting));
+            return configuration.GetConnectionStringOrSetting(connectionStringSetting);
         }
 
         /// <summary>
@@ -55,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <exception cref="ArgumentNullException">
         /// Thrown if command is null
         /// </exception>
-        internal static void ParseParameters(string parameters, SqlCommand command)
+        public static void ParseParameters(string parameters, SqlCommand command)
         {
             if (command == null)
             {
@@ -110,8 +111,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// commands that refer to the name of a StoredProcedure (the StoredProcedure CommandType) or are themselves 
         /// raw queries (the Text CommandType).
         /// </exception>
-        /// <returns>The build SqlCommand</returns>
-        internal static SqlCommand BuildCommand(SqlAttribute attribute, SqlConnection connection)
+        /// <returns>The built SqlCommand</returns>
+        public static SqlCommand BuildCommand(SqlAttribute attribute, SqlConnection connection)
         {
             SqlCommand command = new SqlCommand();
             command.Connection = connection;
@@ -127,6 +128,109 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             SqlBindingUtilities.ParseParameters(attribute.Parameters, command);
             return command;
+        }
+
+        /// <summary>
+        /// Returns a dictionary where each key is a column name and each value is the SQL row's value for that column
+        /// </summary>
+        /// <param name="reader">
+        /// Used to determine the columns of the table as well as the next SQL row to process
+        /// </param>
+        /// <param name="cols">
+        /// Filled with the columns of the table if empty, otherwise assumed to be populated 
+        /// with their names already (used for cacheing so we don't retrieve the column names every time)
+        /// </param>
+        /// <returns>The built dictionary</returns>
+        public static Dictionary<string, string> BuildDictionaryFromSqlRow(SqlDataReader reader, List<string> cols)
+        {
+            if (cols.Count == 0)
+            {
+                for (var i = 0; i < reader.FieldCount; i++)
+                {
+                    cols.Add(reader.GetName(i));
+                }
+            }
+
+            var result = new Dictionary<string, string>();
+            foreach (var col in cols)
+            {
+                result.Add(col, reader[col].ToString());
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Returns [tableName] if tableName is not prefixed by a schema, otherwise returns [schema].[table] in the case that
+        /// tableName = schema.table
+        /// </summary>
+        /// <param name="tableName">The name of the user's table</param>
+        /// <returns>The normalized table name</returns>
+        public static string NormalizeTableName(string tableName)
+        {
+            // In the case that the user specified the table name as something like 'dbo.Products', we split this into
+            // 'dbo' and 'Products' to build the select query in the SqlDataAdapter. In that case, the length of the
+            // tableNameComponents array is 2. Otherwise, the user specified a table name without the prefix so we 
+            // just surround it by brackets
+            string[] tableNameComponents = tableName.Split(new[] { '.' }, 2);
+            var schema = string.Empty;
+            var table = string.Empty;
+            if (tableNameComponents.Length == 2)
+            {
+                schema = tableNameComponents[0];
+                table = tableNameComponents[1];
+                // User didn't already surround the schema name with brackets
+                if (!schema.StartsWith('[') && !schema.EndsWith(']'))
+                {
+                    schema = $"[{schema}]";
+                }
+            }
+            else
+            {
+                table = tableName;
+            }
+
+            // User didn't already surround the table name with brackets
+            if (!table.StartsWith('[') && !table.EndsWith(']'))
+            {
+                table = $"[{table}]";
+            }
+
+            if (!String.IsNullOrEmpty(schema))
+            {
+                return $"{schema}.{table}";
+            }
+            else
+            {
+                return table;
+            }
+        }
+
+        /// <summary>
+        /// Attaches SqlParameters to "command". Each parameter follows the format (@PrimaryKey_i, PrimaryKeyValue), where @PrimaryKey is the
+        /// name of a primary key column, and PrimaryKeyValue is one of the row's value for that column. To distinguish between the parameters
+        /// of different rows, each row will have a distinct value of i.
+        /// </summary>
+        /// <param name="command">The command the parameters are attached to</param>
+        /// <param name="rows">The rows to which this command corresponds to</param>
+        /// <param name="primaryKeys">List of primary key column names</param>
+        /// <remarks>
+        /// Ideally, we would have a map that maps from rows to a list of SqlCommands populated with their primary key values. The issue with
+        /// this is that SQL doesn't seem to allow adding parameters to one collection when they are part of another. So, for example, since
+        /// the SqlParameters are part of the list in the map, an exception is thrown if they are also added to the collection of a SqlCommand.
+        /// The expected behavior seems to be to rebuild the SqlParameters each time
+        /// </remarks>
+        public static void AddPrimaryKeyParametersToCommand(SqlCommand command, List<Dictionary<string, string>> rows, IEnumerable<string> primaryKeys)
+        {
+            var index = 0;
+            foreach (var row in rows)
+            {
+                foreach (var key in primaryKeys)
+                {
+                    row.TryGetValue(key, out string primaryKeyValue);
+                    command.Parameters.Add(new SqlParameter($"@{key}_{index}", primaryKeyValue));
+                }
+                index++;
+            }
         }
     }
 }

@@ -10,10 +10,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Concurrent;
-using System.IO;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
+    /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
     internal class SqlAsyncCollector<T> : IAsyncCollector<T>
     {
         private readonly IConfiguration _configuration;
@@ -91,65 +91,53 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="configuration"> Used to build up the connection </param>
         private async Task UpsertRowsAsync(string rows, SqlAttribute attribute, IConfiguration configuration)
         {
-
-            using (var connection = SqlBindingUtilities.BuildConnection(attribute, configuration))
+            using (SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
-                var tableName = attribute.CommandText;
-                // In the case that the user specified the table name as something like 'dbo.Products', we split this into
-                // 'dbo' and 'Products' to build the select query in the SqlDataAdapter. In that case, the length of the
-                // tableNameComponents array is 2. Otherwise, the user specified a table name without the prefix so we 
-                // just surround it by brackets
-                var tableNameComponents = tableName.Split(new[] { '.' }, 2);
-                if (tableNameComponents.Length == 2)
-                {
-                    tableName = $"[{tableNameComponents[0]}].[{tableNameComponents[1]}]";
-                } else
-                {
-                    tableName = $"[{tableName}]";
-                }
+                string tableName = SqlBindingUtilities.NormalizeTableName(attribute.CommandText);
 
                 DataSet dataSet = new DataSet();
                 DataTable newData = (DataTable)JsonConvert.DeserializeObject(rows, typeof(DataTable));
 
                 await connection.OpenAsync();
-                SqlTransaction transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead);
-                SqlDataAdapter dataAdapter = new SqlDataAdapter(new SqlCommand($"SELECT * FROM {tableName};", connection, transaction));
-                // Specifies which column should be intepreted as the primary key
-                dataAdapter.FillSchema(newData, SchemaType.Source);
-                newData.TableName = tableName;
-                DataTable originalData = newData.Clone();
-                // Get the rows currently stored in table
-                dataAdapter.Fill(originalData);
-                // Merge them with the new data. This will mark a row as "modified" if both originalData and newData have
-                // the same primary key. If newData has new primary keys, those rows as marked as "inserted"
-                originalData.Merge(newData);
-                dataSet.Tables.Add(originalData);
+                using (SqlTransaction transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead))
+                {
+                    SqlDataAdapter dataAdapter = new SqlDataAdapter(new SqlCommand($"SELECT * FROM {tableName};", connection, transaction));
+                    // Specifies which column should be intepreted as the primary key
+                    dataAdapter.FillSchema(newData, SchemaType.Source);
+                    newData.TableName = tableName;
+                    DataTable originalData = newData.Clone();
+                    // Get the rows currently stored in table
+                    dataAdapter.Fill(originalData);
+                    // Merge them with the new data. This will mark a row as "modified" if both originalData and newData have
+                    // the same primary key. If newData has new primary keys, those rows as marked as "inserted"
+                    originalData.Merge(newData);
+                    dataSet.Tables.Add(originalData);
 
-                var key = connection.Database + tableName;
-                SqlCommandBuilder builder;
-                // First time we've encountered this table, meaning we should create the command builder that uses the SelectCommand 
-                // of the dataAdapter to discover the table schema and generate other commands
-                if (!_commandBuilders.TryGetValue(key, out builder))
-                {
-                    builder = new SqlCommandBuilder(dataAdapter);
-                    _commandBuilders.TryAdd(key, builder);
+                    var key = connection.Database + tableName;
+                    // First time we've encountered this table, meaning we should create the command builder that uses the SelectCommand 
+                    // of the dataAdapter to discover the table schema and generate other commands
+                    if (!_commandBuilders.TryGetValue(key, out SqlCommandBuilder builder))
+                    {
+                        builder = new SqlCommandBuilder(dataAdapter);
+                        _commandBuilders.TryAdd(key, builder);
+                    }
+                    else
+                    {
+                        // Commands have already been generated, so we just need to attach them to the dataAdapter. No need to 
+                        // discover the table schema
+                        SqlCommand insertCommand = builder.GetInsertCommand();
+                        insertCommand.Connection = connection;
+                        insertCommand.Transaction = transaction;
+                        dataAdapter.InsertCommand = insertCommand;
+                        SqlCommand updateCommand = builder.GetUpdateCommand();
+                        updateCommand.Connection = connection;
+                        updateCommand.Transaction = transaction;
+                        dataAdapter.UpdateCommand = updateCommand;
+                    }
+                    dataAdapter.UpdateBatchSize = 1000;
+                    dataAdapter.Update(dataSet, tableName);
+                    await transaction.CommitAsync();
                 }
-                else
-                {
-                    // Commands have already been generated, so we just need to attach them to the dataAdapter. No need to 
-                    // discover the table schema
-                    var insertCommand = builder.GetInsertCommand();
-                    insertCommand.Connection = connection;
-                    insertCommand.Transaction = transaction;
-                    dataAdapter.InsertCommand = insertCommand;
-                    var updateCommand = builder.GetUpdateCommand();
-                    updateCommand.Connection = connection;
-                    updateCommand.Transaction = transaction;
-                    dataAdapter.UpdateCommand = updateCommand;
-                }
-                dataAdapter.UpdateBatchSize = 1000;
-                dataAdapter.Update(dataSet, tableName);
-                await transaction.CommitAsync();
             }
         }
     }

@@ -8,6 +8,7 @@ using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Extensions.Configuration;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlConverters;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -18,17 +19,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     internal class SqlBindingConfigProvider : IExtensionConfigProvider
     {
         private readonly IConfiguration _configuration;
+        private readonly ILoggerFactory _loggerFactory;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlBindingConfigProvider/>"/> class.
         /// </summary>
-        /// <param name="configuration"></param>
         /// <exception cref="ArgumentNullException">
-        /// Thrown if the configuration is null
+        /// Thrown if either parameter is null
         /// </exception>
-        public SqlBindingConfigProvider(IConfiguration configuration)
+        public SqlBindingConfigProvider(IConfiguration configuration, ILoggerFactory loggerFactory)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
         /// <summary>
@@ -44,12 +46,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 throw new ArgumentNullException(nameof(context));
             }
-            var rule = context.AddBindingRule<SqlAttribute>();
+            var inputOutputRule = context.AddBindingRule<SqlAttribute>();
             var converter = new SqlConverter(_configuration);
-            rule.BindToInput<SqlCommand>(converter);
-            rule.BindToInput<string>(typeof(SqlGenericsConverter<string>), _configuration);
-            rule.BindToCollector<OpenType>(typeof(SqlAsyncCollectorBuilder<>), _configuration);
-            rule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), _configuration);
+            inputOutputRule.BindToInput<SqlCommand>(converter);
+            inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), _configuration);
+            inputOutputRule.BindToCollector<OpenType>(typeof(SqlAsyncCollectorBuilder<>), _configuration);
+            inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), _configuration);
+
+            var triggerRule = context.AddBindingRule<SqlTriggerAttribute>();
+            triggerRule.BindToTrigger(new SqlTriggerAttributeBindingProvider(_configuration, _loggerFactory));
         }
     }
 }
