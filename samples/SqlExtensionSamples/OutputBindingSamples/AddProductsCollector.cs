@@ -1,8 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using static SqlExtensionSamples.ProductUtilities;
+using System.Collections.Generic;
 
 namespace SqlExtensionSamples
 {
@@ -10,10 +14,11 @@ namespace SqlExtensionSamples
     {
         [FunctionName("AddProductsCollector")]
         public static IActionResult Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproducts-collector")] HttpRequest req,
-        [Sql("Products", ConnectionStringSetting = "SQLServerAuthentication")] ICollector<Product> products)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproducts-collector")] 
+            HttpRequest req,
+            [Sql("Products", ConnectionStringSetting = "SqlConnectionString")] ICollector<Product> products)
         {
-            var newProducts = GetNewProducts(5000);
+            List<Product> newProducts = GetNewProducts(5000);
             foreach (var product in newProducts)
             {
                 products.Add(product);

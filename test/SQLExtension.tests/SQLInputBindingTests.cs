@@ -75,12 +75,11 @@ namespace SqlExtension.Tests
         public void TestInvalidArgumentsBuildConnection()
         {
             var attribute = new SqlAttribute("");
-            Assert.Throws<InvalidOperationException>(() => SqlBindingUtilities.BuildConnection(attribute, config.Object));
-            Assert.Throws<ArgumentNullException>(() => SqlBindingUtilities.BuildConnection(null, config.Object));
+            Assert.Throws<InvalidOperationException>(() => SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, config.Object));
 
             attribute = new SqlAttribute("");
             attribute.ConnectionStringSetting = "ConnectionStringSetting";
-            Assert.Throws<ArgumentNullException>(() => SqlBindingUtilities.BuildConnection(attribute, null));
+            Assert.Throws<ArgumentNullException>(() => SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, null));
         }
 
         [Fact]

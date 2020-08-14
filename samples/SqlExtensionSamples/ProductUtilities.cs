@@ -29,5 +29,21 @@ namespace SqlExtensionSamples
             }
             return products;
         }
+
+        public static List<Product> GetNewProducts(int num, int cost)
+        {
+            var products = new List<Product>();
+            for (int i = 0; i < num; i++)
+            {
+                var product = new Product
+                {
+                    ProductID = i,
+                    Cost = cost,
+                    Name = "test"
+                };
+                products.Add(product);
+            }
+            return products;
+        }
     }
 }

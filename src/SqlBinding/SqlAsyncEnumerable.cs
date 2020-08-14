@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
+    /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
     internal class SqlAsyncEnumerable<T> : IAsyncEnumerable<T>
     {
         private readonly SqlConnection _connection;
@@ -47,7 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             private readonly SqlAttribute _attribute;
             private T _currentRow;
             private SqlDataReader _reader;
-            private List<string> _cols;
+            private readonly List<string> _cols;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="SqlAsyncEnumerator<typeparamref name="T"/>"/> class.
@@ -61,6 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 _connection = connection ?? throw new ArgumentNullException(nameof(connection));
                 _attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
+                _cols = new List<string>();
             }
 
             /// <summary>
@@ -104,9 +106,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 if (_reader == null)
                 {
-                    SqlCommand command = SqlBindingUtilities.BuildCommand(_attribute, _connection);
-                    await command.Connection.OpenAsync();
-                    _reader = await command.ExecuteReaderAsync();
+                    using (SqlCommand command = SqlBindingUtilities.BuildCommand(_attribute, _connection))
+                    {
+                        await command.Connection.OpenAsync();
+                        _reader = await command.ExecuteReaderAsync();
+                    }
                 }
                 if (await _reader.ReadAsync())
                 {
@@ -125,21 +129,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns>JSON string version of the SQL row</returns>
             private string SerializeRow()
             {
-                if (_cols == null)
-                {
-                    _cols = new List<string>(_reader.FieldCount);
-                    for (var i = 0; i < _reader.FieldCount; i++)
-                    {
-                        _cols.Add(_reader.GetName(i));
-                    }
-                }
-
-                var result = new Dictionary<string, object>();
-                foreach (var col in _cols)
-                {
-                    result.Add(col, _reader[col]);
-                }
-                return JsonConvert.SerializeObject(result);
+                return JsonConvert.SerializeObject(SqlBindingUtilities.BuildDictionaryFromSqlRow(_reader, _cols));
             }
         }
     }

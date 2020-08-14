@@ -1,3 +1,6 @@
+// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
@@ -11,9 +14,9 @@ namespace SqlExtensionSamples
     {
         [FunctionName("AddProduct")]
         public static IActionResult Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct")]
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct")]
             HttpRequest req,
-        [Sql("Products", ConnectionStringSetting = "SQLServerAuthentication")] out Product product)
+            [Sql("Products", ConnectionStringSetting = "SqlConnectionString")] out Product product)
         {
             product = new Product
             {
