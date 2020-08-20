@@ -3,10 +3,7 @@
 
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Listeners;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,14 +12,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
     internal class SqlTriggerListener<T> : IListener
     {
-        // Can't use an enum for these because it doesn't work with the Interlocked class
-        private int _status;
-        private const int ListenerNotRegistered = 0;
-        private const int ListenerRegistering = 1;
-        private const int ListenerRegistered = 2;
 
-        private readonly SqlTableWatcher<T> _watcher;
-        private readonly ILogger logger;
+        private readonly SqlTableWatchers.SqlTableChangeMonitor<T> _watcher;
+        private State _state;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlTriggerListener<typeparamref name="T"/>>
@@ -38,8 +30,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </param>
         public SqlTriggerListener(string table, string connectionString, ITriggeredFunctionExecutor executor, ILogger logger)
         {
-            _status = ListenerNotRegistered;
-            _watcher = new SqlTableWatcher<T>(table, connectionString, executor, logger);
+            _watcher = new SqlTableWatchers.SqlTableChangeMonitor<T>(table, connectionString, executor, logger);
+            _state = State.NotRegistered;
         }
 
         /// <summary>
@@ -47,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         public void Cancel()
         {
-            StopAsync(CancellationToken.None).GetAwaiter().GetResult();
+            StopAsync(CancellationToken.None).Wait();
         }
 
         /// <summary>
@@ -59,45 +51,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Starts the listener, which starts polling for changes on the user's table
+        /// Starts the listener if it has not yet been started, which starts polling for changes on the user's table
         /// </summary>
         /// <param name="cancellationToken">Unused</param>
-        /// <exception cref="InvalidOperationException">
-        /// Thrown if StartAsync is called more than once
-        /// </exception>
-        /// <returns></returns>
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            int previousStatus = Interlocked.CompareExchange(ref _status, ListenerRegistering, ListenerNotRegistered);
-
-            if (previousStatus == ListenerRegistering)
-            {
-                throw new InvalidOperationException("The listener is already starting.");
-            }
-            else if (previousStatus == ListenerRegistered)
-            {
-                throw new InvalidOperationException("The listener has already started.");
-            }
-            try
+            if (_state == State.NotRegistered)
             {
                 await _watcher.StartAsync();
-                Interlocked.CompareExchange(ref _status, ListenerRegistered, ListenerRegistering);
+                _state = State.Registered;
             }
-            catch (Exception ex)
-            {
-                _status = ListenerNotRegistered;
-                throw ex;
-            }
-
         }
 
         /// <summary>
-        /// Stops the listener which stops checking for changes on the user's table
+        /// Stops the listener (if it was started), which stops checking for changes on the user's table
         /// </summary>
-        public async Task StopAsync(CancellationToken cancellationToken)
+        /// <param name="cancellationToken">Unused</param>
+        public Task StopAsync(CancellationToken cancellationToken)
         {
-            await _watcher.StopAsync();
-            _status = ListenerNotRegistered;
+            // Nothing to stop if the watcher has either already been stopped or hasn't been started
+            if (_state == State.Registered)
+            {
+                _watcher.Stop();
+                _state = State.Stopped;
+            }
+            return Task.CompletedTask;
+        }
+
+        enum State
+        {
+            Registered,
+            NotRegistered,
+            Stopped
         }
     }
 }
