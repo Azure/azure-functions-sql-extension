@@ -21,6 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public class SqlPerformanceMonitor
         {
             private readonly string _workerTable;
+            private readonly string _globalStateTable;
             private readonly string _userTable;
             private readonly string _connectionString;
 
@@ -56,7 +57,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 _connectionString = connectionString;
                 _userTable = SqlBindingUtilities.NormalizeTableName(table);
-                _workerTable = SqlBindingUtilities.NormalizeTableName(BuildWorkerTableName(table));
+                _workerTable = SqlBindingUtilities.NormalizeTableName(BuildWorkerTableNames(table, "Worker_Table_"));
+                _globalStateTable = SqlBindingUtilities.NormalizeTableName(BuildWorkerTableNames(table, "Global_State_Table_"));
                 _primaryKeys = new Dictionary<string, string>();
             }
 
@@ -66,7 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns></returns>
             public async Task StartAsync()
             {
-                await CreateWorkerTableAsync(_connectionString, _primaryKeys, null, _userTable, _workerTable);
+                await CreateWorkerTablesAsync(_connectionString, _primaryKeys, null, _userTable, _workerTable, _globalStateTable);
             }
 
             /// <summary>
@@ -123,6 +125,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     // We would get less accurate results, but we wouldn't be competing for table locks with other workers
                     using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
                     {
+                        // Update the version number stored in the global state table if necessary before using it 
+                        using (SqlCommand updateGlobalStateTableCommand = BuildUpdateGlobalStateTableCommand(connection, transaction, _userTable, _globalStateTable))
+                        {
+                            await updateGlobalStateTableCommand.ExecuteNonQueryAsync();
+                        }
+
+                        // Use the version number to query for unprocessed changes
                         using (SqlCommand getChangesCommand = BuildGetUnprocessedChangesCommand(connection, transaction))
                         {
                             using (SqlDataReader reader = await getChangesCommand.ExecuteReaderAsync())
@@ -184,6 +193,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public class SqlTableChangeMonitor<T>
         {
             private readonly string _workerTable;
+            private readonly string _globalStateTable;
             private readonly string _userTable;
             private readonly string _connectionString;
             private readonly ITriggeredFunctionExecutor _executor;
@@ -239,7 +249,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 _executor = executor ?? throw new ArgumentNullException(nameof(executor));
                 _logger = logger ?? throw new ArgumentNullException(nameof(logger));
                 _userTable = SqlBindingUtilities.NormalizeTableName(table);
-                _workerTable = SqlBindingUtilities.NormalizeTableName(BuildWorkerTableName(table));
+                _workerTable = SqlBindingUtilities.NormalizeTableName(BuildWorkerTableNames(table, "Worker_Table_"));
+                _globalStateTable = SqlBindingUtilities.NormalizeTableName(BuildWorkerTableNames(table, "Global_State_Table_"));
 
                 _cancellationTokenSourceExecutor = new CancellationTokenSource();
                 _cancellationTokenSourceCheckForChanges = new CancellationTokenSource();
@@ -263,7 +274,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns></returns>
             public async Task StartAsync()
             {
-                await CreateWorkerTableAsync(_connectionString, _primaryKeys, _userTableColumns, _userTable, _workerTable);
+                await CreateWorkerTablesAsync(_connectionString, _primaryKeys, _userTableColumns, _userTable, _workerTable, _globalStateTable);
                 await SetRetentionPeriodAsync();
                 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 Task.Run(() =>
@@ -575,7 +586,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         await connection.OpenAsync();
                         using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
                         {
+                            // Update the version number stored in the global state table if necessary before using it 
+                            using (SqlCommand updateGlobalStateTableCommand = BuildUpdateGlobalStateTableCommand(connection, transaction, _userTable, _globalStateTable))
+                            {
+                                await updateGlobalStateTableCommand.ExecuteNonQueryAsync();
+                            }
 
+                            // Use the version number to query for new changes
                             using (SqlCommand getChangesCommand = BuildCheckForChangesCommand(connection, transaction))
                             {
                                 using (SqlDataReader reader = await getChangesCommand.ExecuteReaderAsync())
@@ -587,27 +604,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                                     }
                                 }
                             }
+
+                            // If changes were found, acquire leases on them
                             if (_rows.Count != 0)
                             {
-                                // When we query the change table to get a batch of changes, we use the minimum valid version number, which means
-                                // that for rows that were inserted and then updated, we would think the most recent change type is an insert
-                                // To remedy this, we try to use the more recent VersionNumber stored for that row in the worker table (if it exists in
-                                // the worker table. Otherwise, we have to use the minimum valid version number anyway)
-                                using (SqlCommand getMostRecentChangeTypeCommand = BuildGetMostRecentChangeTypesCommand(connection, transaction))
-                                {
-                                    using (SqlDataReader reader = await getMostRecentChangeTypeCommand.ExecuteReaderAsync())
-                                    {
-                                        for (int i = 0; i < _rows.Count; i++)
-                                        {
-                                            if (await reader.ReadAsync() && !string.IsNullOrEmpty(reader.GetString(0)))
-                                            {
-                                                // Overwrite existing value of SYS_CHANGE_OPERATION
-                                                _rows.ElementAt(i)["SYS_CHANGE_OPERATION"] = reader.GetString(0);
-                                            }
-                                            await reader.NextResultAsync();
-                                        }
-                                    }
-                                }
                                 using (SqlCommand acquireLeaseCommand = BuildAcquireLeasesCommand(connection, transaction))
                                 {
                                     await acquireLeaseCommand.ExecuteNonQueryAsync();
@@ -675,6 +675,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 // Don't want to change the _rows while another thread is attempting to renew leases on them
                 await _rowsLock.WaitAsync();
+                long newVersionNumber = CalculateNewVersionNumber();
                 try
                 {
                     using (var connection = new SqlConnection(_connectionString))
@@ -685,6 +686,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             using (SqlCommand releaseLeaseCommand = BuildReleaseLeasesCommand(connection, transaction))
                             {
                                 await releaseLeaseCommand.ExecuteNonQueryAsync();
+                            }
+                            await transaction.CommitAsync();
+                        }
+                        // Need a separate transaction for this because need the leases the worker held on its rows released for the update
+                        // version number command to recognize that all rows with VersionNumber <= newVersionNumber have been successfully processed
+                        using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
+                        {
+                            using (SqlCommand updateGlobalVersionNumberCommand = BuildUpdateGlobalVersionNumberCommand(connection, transaction, newVersionNumber))
+                            {
+                                await updateGlobalVersionNumberCommand.ExecuteNonQueryAsync();
                             }
                             await transaction.CommitAsync();
                         }
@@ -703,6 +714,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     // Want to do this before releasing the lock in case the renew leases thread wakes up. It will see that
                     // the state is checking for changes and not renew the (just released) leases
                     await ClearRows(string.Empty, false);
+                }
+            }
+
+            private long CalculateNewVersionNumber()
+            {
+                var versionNumbers = new SortedSet<long>();
+                foreach (var row in _rows)
+                {
+                    row.TryGetValue("SYS_CHANGE_VERSION", out string versionNumberString);
+                    versionNumbers.Add(long.Parse(versionNumberString));
+                }
+
+                // If there are at least two version numbers in this set, return the second highest one
+                if (versionNumbers.Count > 1)
+                {
+                    return versionNumbers.ElementAt(versionNumbers.Count - 2);
+                }
+                // Otherwise, return the only version number in the set
+                else
+                {
+                    return versionNumbers.ElementAt(0);
                 }
             }
 
@@ -765,7 +797,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 var getChangesQuery =
                     $"DECLARE @version bigint;\n" +
-                    $"SET @version = CHANGE_TRACKING_MIN_VALID_VERSION(OBJECT_ID(\'{_userTable}\'));\n" +
+                    $"SELECT @version = GlobalVersionNumber FROM {_globalStateTable};\n" +
                     $"SELECT TOP {SqlTriggerConstants.BatchSize} *\n" +
                     $"FROM\n" +
                     $"(SELECT {primaryKeysSelectList}, {userTableColumnsSelectList}, c.SYS_CHANGE_VERSION, c.SYS_CHANGE_CREATION_VERSION, c.SYS_CHANGE_OPERATION, \n" +
@@ -783,45 +815,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             /// <summary>
-            /// Builds the query to determine the most recent type of change that occurred to each row in "_rows"
-            /// </summary>
-            /// <param name="connection">The connection to add to the returned SqlCommand</param>
-            /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
-            /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-            private SqlCommand BuildGetMostRecentChangeTypesCommand(SqlConnection connection, SqlTransaction transaction)
-            {
-                var getMostRecentChangeTypesCommand = new SqlCommand();
-                SqlBindingUtilities.AddPrimaryKeyParametersToCommand(getMostRecentChangeTypesCommand, _rows, _primaryKeys.Keys);
-                var getMostRecentChangeTypes = $"DECLARE @current_version bigint;\n";
-                var index = 0;
-
-                foreach (var row in _rows)
-                {
-                    var whereCheckWorkerTable = string.Join(" AND ", _primaryKeys.Keys.Select(key => $"{key} = @{key}_{index}"));
-                    var whereCheckChangeTable = string.Join(" AND ", _primaryKeys.Keys.Select(key => $"c.{key} = @{key}_{index}"));
-                    _whereChecks.Add(whereCheckWorkerTable);
-
-                    getMostRecentChangeTypes +=
-                        $"SELECT @current_version = VersionNumber\n" +
-                        $"FROM {_workerTable}\n" +
-                        $"WHERE {whereCheckWorkerTable};\n" +
-                        $"IF @current_version IS NOT NULL\n" +
-                        $"SELECT SYS_CHANGE_OPERATION\n" +
-                        $"FROM CHANGETABLE(CHANGES {_userTable}, @current_version) AS c\n" +
-                        $"WHERE {whereCheckChangeTable};\n" +
-                        $"ELSE\n" +
-                        $"SELECT \'\';\n";
-
-                    index++;
-                }
-
-                getMostRecentChangeTypesCommand.CommandText = getMostRecentChangeTypes;
-                getMostRecentChangeTypesCommand.Connection = connection;
-                getMostRecentChangeTypesCommand.Transaction = transaction;
-                return getMostRecentChangeTypesCommand;
-            }
-
-            /// <summary>
             /// Builds the query to acquire leases on the rows in "_rows" if changes are detected in the user's table (<see cref="CheckForChangesAsync"/>)
             /// </summary>
             /// <param name="connection">The connection to add to the returned SqlCommand</param>
@@ -836,8 +829,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 foreach (var row in _rows)
                 {
-                    var whereCheck = _whereChecks.ElementAt(index);
+                    var whereCheck = string.Join(" AND ", _primaryKeys.Keys.Select(key => $"{key} = @{key}_{index}"));
                     var valuesList = string.Join(", ", _primaryKeys.Keys.Select(key => $"@{key}_{index}"));
+                    _whereChecks.Add(whereCheck);
 
                     row.TryGetValue("SYS_CHANGE_VERSION", out string versionNumber);
                     acquireLeaseOnRows +=
@@ -918,6 +912,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 releaseLeasesCommand.Transaction = transaction;
 
                 return releaseLeasesCommand;
+            }
+
+            /// <summary>
+            /// Builds the query to update the global version number in _globalStateTable after successful invocation of the user's function (<see cref="CheckForChangesAsync"/>)
+            /// </summary>
+            /// <param name="connection">The connection to add to the returned SqlCommand</param>
+            /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
+            /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
+            private SqlCommand BuildUpdateGlobalVersionNumberCommand(SqlConnection connection, SqlTransaction transaction, long newVersionNumber)
+            {
+                _queryStrings.TryGetValue(SqlTriggerConstants.LeftOuterJoinWorkerTable, out string leftOuterJoin);
+                var updateVersionNumber =
+                    $"DECLARE @current_version bigint;\n" +
+                    $"DECLARE @new_version bigint;\n" +
+                    $"DECLARE @unprocessed_changes bigint;\n" +
+                    $"SELECT @current_version = GlobalVersionNumber FROM {_globalStateTable};\n" +
+                    $"SET @new_version = {newVersionNumber};\n" +
+                    $"SELECT @unprocessed_changes = \n" +
+                    $"COUNT(*)\n" +
+                    $"FROM\n" +
+                    $"(SELECT c.SYS_CHANGE_VERSION FROM CHANGETABLE(CHANGES {_userTable}, @current_version) AS c\n" +
+                    $"LEFT OUTER JOIN {_workerTable} AS w ON {leftOuterJoin}\n" +
+                    $"WHERE c.SYS_CHANGE_VERSION <= @new_version AND\n" +
+                    $"((w.VersionNumber != c.SYS_CHANGE_VERSION OR w.LeaseExpirationTime IS NOT NULL)\n" +
+                    $"AND w.DequeueCount < {SqlTriggerConstants.MaxDequeueCount})) AS Changes;\n" +
+                    $"IF @unprocessed_changes = 0 AND @new_version > @current_version\n" +
+                    $"UPDATE {_globalStateTable}\n" +
+                    $"SET GlobalVersionNumber = @new_version;";
+
+                return new SqlCommand(updateVersionNumber, connection, transaction);
             }
 
             /// <summary>
@@ -1024,7 +1048,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         /// <param name="userTable">The user table name the worker table name is based on</param>
         /// <returns>The worker table name</returns>
-        private static string BuildWorkerTableName(string userTable)
+        private static string BuildWorkerTableNames(string userTable, string prefix)
         {
             string[] tableNameComponents = userTable.Split(new[] { '.' }, 2);
             string tableName;
@@ -1047,7 +1071,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 tableName = tableName.Substring(1, tableName.Length - 2);
             }
 
-            return SqlTriggerConstants.Schema + ".Worker_Table_" + tableName;
+            return SqlTriggerConstants.Schema + "." + prefix + tableName;
         }
 
         /// <summary>
@@ -1058,26 +1082,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="userTableColumns">An empty list of user table column names that will be populated</param>
         /// <param name="userTable">The (sanitized) name of the user table</param>
         /// <param name="workerTable">The (sanitized) name of the worker table</param>
-        private static async Task CreateWorkerTableAsync(
+        /// <param name="globalStateTable">The (sanitized) name of the global state table</param>
+        private static async Task CreateWorkerTablesAsync(
             string connectionString, 
             Dictionary<string, string> primaryKeys,
             List<string> userTableColumns,
             string userTable,
-            string workerTable)
+            string workerTable,
+            string globalStateTable)
         {
+            // Do I need a transaction for this?
             using (var connection = new SqlConnection(connectionString))
             {
-                using (SqlCommand createTableCommand = await BuildCreateTableCommandAsync(connection, connectionString, primaryKeys, 
+                await connection.OpenAsync();
+                using (SqlCommand createWorkerTableCommand = await BuildCreateWorkerTableCommandAsync(connection, connectionString, primaryKeys, 
                     userTableColumns, workerTable, userTable))
                 {
-                    await connection.OpenAsync();
-                    await createTableCommand.ExecuteNonQueryAsync();
+                    await createWorkerTableCommand.ExecuteNonQueryAsync();
+                }
+                using (SqlCommand createGlobalStateTableCommand = BuildCreateGlobalStateTableCommandAsync(connection, globalStateTable, userTable))
+                {
+                    await createGlobalStateTableCommand.ExecuteNonQueryAsync();
                 }
             }
         }
 
         /// <summary>
-        /// Builds the query to create the worker table if one does not already exist (<see cref="CreateWorkerTableAsync"/>)
+        /// Builds the command to create the worker table if one does not already exist (<see cref="CreateWorkerTablesAsync"/>)
         /// </summary>
         /// <param name="connection">The connection to attach to the returned SqlCommand</param>
         /// <param name="connectionString">The SQL connection string used to connect to the user database</param>
@@ -1086,7 +1117,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="userTable">The (sanitized) name of the user table</param>
         /// <param name="workerTable">The (sanitized) name of the worker table</param>
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-        private static async Task<SqlCommand> BuildCreateTableCommandAsync(
+        private static async Task<SqlCommand> BuildCreateWorkerTableCommandAsync(
             SqlConnection connection,
             string connectionString,
             Dictionary<string, string> primaryKeys,
@@ -1111,6 +1142,60 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 $");\n" +
                 $"END";
             return new SqlCommand(createTableString, connection);
+        }
+
+        /// <summary>
+        /// Builds the command to create the global state table if one does not already exist (<see cref="CreateWorkerTablesAsync"/>)
+        /// </summary>
+        /// <param name="connection">The connection to attach to the returned SqlCommand</param>
+        /// <param name="userTable">The (sanitized) name of the user table</param>
+        /// <param name="globalStateTable">The (sanitized) name of the global state table</param>
+        /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
+        private static SqlCommand BuildCreateGlobalStateTableCommandAsync(
+            SqlConnection connection,
+            string globalStateTable,
+            string userTable)
+        {
+
+            var createTableString =
+                $"IF OBJECT_ID(N\'{globalStateTable}\', \'U\') IS NULL\n" +
+                $"BEGIN\n" +
+                $"CREATE TABLE {globalStateTable} (\n" +
+                $"GlobalVersionNumber bigint,\n" +
+                $"DatabaseID int\n" +
+                $");\n" +
+                $"INSERT INTO {globalStateTable}\n" +
+                $"VALUES (CHANGE_TRACKING_MIN_VALID_VERSION(OBJECT_ID(\'{userTable}\')), DB_ID());\n" +
+                $"END";
+            return new SqlCommand(createTableString, connection);
+        }
+
+        /// <summary>
+        /// Builds the command to update the global state table in the case of data loss or a new minimum valid version number
+        /// </summary>
+        /// <param name="connection">The connection to add to the returned SqlCommand</param>
+        /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
+        ///  <param name="userTable">The (sanitized) name of the user table</param>
+        /// <param name="globalStateTable">The (sanitized) name of the global state table</param>
+        /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
+        private static SqlCommand BuildUpdateGlobalStateTableCommand(
+            SqlConnection connection, 
+            SqlTransaction transaction, 
+            string userTable, 
+            string globalStateTable)
+        {
+            var updateGlobalStateTable =
+                $"DECLARE @min_version bigint;\n" +
+                $"DECLARE @current_version bigint;\n" +
+                $"DECLARE @db_id int;\n" +
+                $"SET @min_version = CHANGE_TRACKING_MIN_VALID_VERSION(OBJECT_ID(\'{userTable}\'));\n" +
+                $"SELECT @current_version = GlobalVersionNumber FROM {globalStateTable};\n" +
+                $"SELECT @db_id = DatabaseID FROM {globalStateTable};\n" +
+                $"IF @current_version < @min_version OR @db_id != DB_ID()\n" +
+                $"UPDATE {globalStateTable}\n" +
+                $"SET GlobalVersionNumber = @min_version, DatabaseID = DB_ID();";
+
+            return new SqlCommand(updateGlobalStateTable, connection, transaction);
         }
 
         /// <summary>
