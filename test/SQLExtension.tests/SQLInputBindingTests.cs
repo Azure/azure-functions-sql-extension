@@ -9,6 +9,7 @@ using System.Linq;
 using Microsoft.Azure.WebJobs.Extensions.Sql;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlConverters;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Data.SqlClient;
 using Microsoft.Azure.WebJobs;
 using System.Threading;
@@ -23,7 +24,7 @@ namespace SqlExtension.Tests
         [Fact]
         public void TestNullConfiguration()
         {
-            Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(null));
+            Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(null, NullLoggerFactory.Instance));
             IConfiguration config = null;
             Assert.Throws<ArgumentNullException>(() => new SqlConverter(config));
             Assert.Throws<ArgumentNullException>(() => new SqlGenericsConverter<string>(config));
@@ -38,7 +39,7 @@ namespace SqlExtension.Tests
         [Fact]
         public void TestNullContext()
         {
-            var configProvider = new SqlBindingConfigProvider(config.Object);
+            var configProvider = new SqlBindingConfigProvider(config.Object, NullLoggerFactory.Instance);
             Assert.Throws<ArgumentNullException>(() => configProvider.Initialize(null));
         }
 
