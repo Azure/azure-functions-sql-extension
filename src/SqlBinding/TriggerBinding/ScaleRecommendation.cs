@@ -6,7 +6,7 @@ using System;
 namespace SqlBinding.TriggerBinding
 {
     /// <summary>
-    /// Represents a scale recommendation for the task hub given the current performance metrics.
+    /// Represents a scale recommendation given the current metrics for changes occurring to a SQL table
     /// </summary>
     public class ScaleRecommendation : EventArgs
     {
@@ -18,12 +18,12 @@ namespace SqlBinding.TriggerBinding
         }
 
         /// <summary>
-        /// Gets the recommended scale action for the current task hub.
+        /// Gets the recommended scale action 
         /// </summary>
         public ScaleAction Action { get; }
 
         /// <summary>
-        /// Gets a recommendation about whether to keep existing task hub workers alive.
+        /// Gets a recommendation about whether to keep existing workers alive
         /// </summary>
         public bool KeepWorkersAlive { get; }
 
@@ -42,7 +42,7 @@ namespace SqlBinding.TriggerBinding
         }
 
         /// <summary>
-        /// Possible scale actions for durable task hub.
+        /// Possible scale actions
         /// </summary>
         public enum ScaleAction
         {

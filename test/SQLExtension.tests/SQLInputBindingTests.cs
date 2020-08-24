@@ -12,21 +12,23 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Data.SqlClient;
 using Microsoft.Azure.WebJobs;
 using System.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace SqlExtension.Tests
 {
     public class SqlInputBindingTests
     {
         private static Mock<IConfiguration> config = new Mock<IConfiguration>();
+        private static Mock<ILoggerFactory> loggerFactory = new Mock<ILoggerFactory>();
         private static SqlConnection connection = new SqlConnection();
 
         [Fact]
         public void TestNullConfiguration()
         {
-            Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(null));
-            IConfiguration config = null;
-            Assert.Throws<ArgumentNullException>(() => new SqlConverter(config));
-            Assert.Throws<ArgumentNullException>(() => new SqlGenericsConverter<string>(config));
+            Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(null, loggerFactory.Object));
+            Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(config.Object, null));
+            Assert.Throws<ArgumentNullException>(() => new SqlConverter(null));
+            Assert.Throws<ArgumentNullException>(() => new SqlGenericsConverter<string>(null));
         }
 
         [Fact]
@@ -38,7 +40,7 @@ namespace SqlExtension.Tests
         [Fact]
         public void TestNullContext()
         {
-            var configProvider = new SqlBindingConfigProvider(config.Object);
+            var configProvider = new SqlBindingConfigProvider(config.Object, loggerFactory.Object);
             Assert.Throws<ArgumentNullException>(() => configProvider.Initialize(null));
         }
 
@@ -75,7 +77,7 @@ namespace SqlExtension.Tests
         public void TestInvalidArgumentsBuildConnection()
         {
             var attribute = new SqlAttribute("");
-            Assert.Throws<InvalidOperationException>(() => SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, config.Object));
+            Assert.Throws<ArgumentException>(() => SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, config.Object));
 
             attribute = new SqlAttribute("");
             attribute.ConnectionStringSetting = "ConnectionStringSetting";
