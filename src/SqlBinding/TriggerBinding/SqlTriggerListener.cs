@@ -1,11 +1,11 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 using Microsoft.Extensions.Logging;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public SqlTriggerListener(string table, string connectionString, ITriggeredFunctionExecutor executor, ILogger logger)
         {
             _watcher = new SqlTableWatchers.SqlTableChangeMonitor<T>(table, connectionString, executor, logger);
-            _state = State.NotRegistered;
+            _state = State.NotInitialized;
         }
 
         /// <summary>
@@ -56,10 +56,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="cancellationToken">Unused</param>
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            if (_state == State.NotRegistered)
+            if (_state == State.NotInitialized)
             {
                 await _watcher.StartAsync();
-                _state = State.Registered;
+                _state = State.Running;
             }
         }
 
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public Task StopAsync(CancellationToken cancellationToken)
         {
             // Nothing to stop if the watcher has either already been stopped or hasn't been started
-            if (_state == State.Registered)
+            if (_state == State.Running)
             {
                 _watcher.Stop();
                 _state = State.Stopped;
@@ -80,8 +80,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         enum State
         {
-            Registered,
-            NotRegistered,
+            Running,
+            NotInitialized,
             Stopped
         }
     }

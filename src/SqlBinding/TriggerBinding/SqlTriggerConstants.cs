@@ -18,6 +18,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public const string Schema = "az_func";
 
+        public const string GlobalStateTable = "Global_State_Table";
+
+        public const string WorkerBatchSizesTable = "Worker_Batch_Sizes";
+
         public const int BatchSize = 10;
 
         public const int MaxDequeueCount = 5;

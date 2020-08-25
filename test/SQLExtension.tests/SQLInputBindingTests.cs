@@ -1,18 +1,18 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using Moq;
 using System;
-using Xunit;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Sql;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlConverters;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Data.SqlClient;
-using Microsoft.Azure.WebJobs;
-using System.Threading;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Moq;
+using Xunit;
 
 namespace SqlExtension.Tests
 {
