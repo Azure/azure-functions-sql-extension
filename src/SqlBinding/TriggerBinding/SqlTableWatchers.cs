@@ -71,13 +71,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             /// <summary>
-            /// Starts the watcher which creates the necessary tables to determine metrics for the changes occurring to the user table
+            /// Starts the performance monitor
             /// </summary>
             /// <returns></returns>
             public async Task StartAsync()
             {
-                _userTableID = await CreateWorkerTablesAsync(_connectionString, _primaryKeys, null, _userTable, _globalStateTable, _workerBatchSizesTable,
-                    Environment.MachineName, false, _logger);
+                _userTableID = await GetUserTableID(_connectionString, _userTable);
                 _workerTable = $"[{SqlTriggerConstants.Schema}].[Worker_Table_{_userTableID}]";
             }
 
@@ -180,6 +179,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             private async Task<List<long>> GetWorkerBatchSizes(string granularity, int pollingInterval)
             {
                 var getWorkerBatchSizesQuery =
+                    $"IF OBJECT_ID(N\'{_workerBatchSizesTable}\', \'U\') IS NOT NULL\n" +
                     $"SELECT BatchSize\n" +
                     $"FROM {_workerBatchSizesTable}\n" +
                     $"WHERE UserTableID = {_userTableID} AND DATEADD({granularity}, -{pollingInterval}, SYSDATETIME()) <= Timestamp;";
@@ -215,9 +215,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             private SqlCommand BuildGetUnprocessedChangesCommand(SqlConnection connection, SqlTransaction transaction)
             {
                 // COUNT_BIG returns a bigint, which is composed of 8 bytes, not 4, in the case that there are a lot of unprocessed changes
+                // The worker table is created after the global state table is created/populated, so if it exists, so too does info. in the global state table
                 var getChangesQuery =
                     $"DECLARE @version bigint;\n" +
+                    $"IF OBJECT_ID(N\'{_workerTable}\', \'U\') IS NULL\n" +
+                    $"BEGIN\n" +
                     $"SET @version = CHANGE_TRACKING_MIN_VALID_VERSION({_userTableID});\n" +
+                    $"SELECT COUNT_BIG(*)\n" +
+                    $"FROM CHANGETABLE (CHANGES {_userTable}, @version) AS c\n" +
+                    $"END\n" +
+                    $"ELSE\n" +
+                    $"BEGIN\n" +
+                    $"SELECT @version = GlobalVersionNumber FROM {_globalStateTable} WHERE UserTableID = {_userTableID}\n" +
                     $"SELECT COUNT_BIG(*)\n" +
                     $"FROM\n" +
                     $"(SELECT c.SYS_CHANGE_VERSION, w.LeaseExpirationTime, w.DequeueCount, w.VersionNumber\n" +
@@ -226,7 +235,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     $"WHERE (Changes.LeaseExpirationTime IS NULL AND\n" +
                     $"(Changes.VersionNumber IS NULL OR Changes.VersionNumber < Changes.SYS_CHANGE_VERSION)\n" +
                     $"OR Changes.LeaseExpirationTime < SYSDATETIME())\n" +
-                    $"AND (Changes.DequeueCount IS NULL OR Changes.DequeueCount < {SqlTriggerConstants.MaxDequeueCount})";
+                    $"AND (Changes.DequeueCount IS NULL OR Changes.DequeueCount < {SqlTriggerConstants.MaxDequeueCount})\n" +
+                    $"END";
 
                 return new SqlCommand(getChangesQuery, connection, transaction);
             }
@@ -326,9 +336,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns></returns>
             public async Task StartAsync()
             {
-                _userTableID = await CreateWorkerTablesAsync(_connectionString, _primaryKeys, _userTableColumns, _userTable,
-                    _globalStateTable, _workerBatchSizesTable, _workerID, true,_logger);
-                _workerTable = $"[{SqlTriggerConstants.Schema}].[Worker_Table_{_userTableID}]";
+                await CreateWorkerTablesAsync();
 
                 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 Task.Run(() =>
@@ -463,9 +471,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                                 if (entries != null)
                                 {
-                                    // Should we cancel executing the function if StopAsync is called, or let it finish?
-                                    // In other words, should _cancellationTokenSourceCheckingForChanges and _cancellationTokenSourceExecutor
-                                    // be one token source?
                                     FunctionResult result = await _executor.TryExecuteAsync(new TriggeredFunctionData() { TriggerValue = entries },
                                         _cancellationTokenSourceExecutor.Token);
                                     if (result.Succeeded)
@@ -620,8 +625,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                                 await releaseLeaseCommand.ExecuteNonQueryAsync();
                             }
                             // Update the batch size of this worker and _userTable to be the most recently processed batch size
-                            using (SqlCommand upsertRowWorkerBatchSizesTableCommand = BuildUpsertRowWorkerBatchSizesTableCommand(connection, transaction, _workerBatchSizesTable, 
-                                _userTable, _userTableID, _workerID, _rows.Count))
+                            using (SqlCommand upsertRowWorkerBatchSizesTableCommand = BuildUpsertRowWorkerBatchSizesTableCommand(connection, transaction, _rows.Count))
                             {
                                 await upsertRowWorkerBatchSizesTableCommand.ExecuteNonQueryAsync();
                             }
@@ -1039,6 +1043,273 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 _queryStrings.Add(SqlTriggerConstants.LeftOuterJoinUserTable, leftOuterJoinUserTable);
             }
 
+            /// <summary>
+            /// Creates the worker table associated with the user's table, if one does not already exist
+            /// </summary>
+            /// <param name="connectionString">The SQL connection string used to connect to the user database</param>
+            /// <param name="primaryKeys">An empty map from primary key name to primary key type that will be populated</param>
+            /// <param name="userTableColumns">An empty list of user table column names that will be populated</param>
+            /// <param name="userTable">The (sanitized) name of the user table</param>
+            /// <param name="globalStateTable">The (sanitized) name of the global state table</param>
+            /// <param name="workerBatchSizesTable">The (sanitized) name of the worker batch size table</param>
+            /// <param name="workerID">The ID of this worker</param>
+            /// <param name="processingChanges">
+            /// Whether or not this worker is responsible for processing changes to userTable. Used to determine
+            /// whether or not a row should be inserted into the worker batch size table for this worker, if one does not already exist
+            /// </param>
+            /// <exception cref="InvalidOperationException">
+            /// Thrown if any part of the process failed, so the worker table name was not generated correctly
+            /// </exception>
+            /// <returns>
+            /// The (sanitized) name of the worker table, which follows the format [az_func].[Worker_Table_UserTableID], where
+            /// UserTableID is the result of a call to OBJECT_ID('userTable')
+            /// </returns>
+            private async Task CreateWorkerTablesAsync()
+            {
+                // Do I need a transaction for this?
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    await connection.OpenAsync();
+
+                    await GetUserTableSchemaAsync();
+                    _workerTable = $"[{SqlTriggerConstants.Schema}].[Worker_Table_{_userTableID}]";
+
+                    // Create the global state table, if one doesn't already exist for this database
+                    using (SqlCommand createGlobalStateTableCommand = BuildCreateGlobalStateTableCommand(connection))
+                    {
+                        await createGlobalStateTableCommand.ExecuteNonQueryAsync();
+                    }
+                    // Insert a row into the global state table for this user table, if one doesn't already exist
+                    using (SqlCommand insertRowGlobalStateTableCommand = BuildInsertRowGlobalStateTableCommand(connection))
+                    {
+                        try
+                        {
+                            await insertRowGlobalStateTableCommand.ExecuteNonQueryAsync();
+                        }
+                        // Could fail if we try to insert a NULL value into the GlobalVersionNumber, which happens when CHANGE_TRACKING_MIN_VALID_VERSION 
+                        // returns NULL for the user table, meaning that change tracking is not enabled for either the database or table (or both)
+                        catch (Exception e)
+                        {
+                            var errorMessage = $"Failed to start processing changes to table {_userTable}, potentially because change tracking was not " +
+                                $"enabled for the table or database {connection.Database}.";
+                            _logger.LogWarning(errorMessage + $" Exact exception thrown is {e.Message}");
+                            throw new InvalidOperationException(errorMessage);
+                        }
+                    }
+                    // Create the worker table, if one doesn't already exist for this user table
+                    using (SqlCommand createWorkerTableCommand = BuildCreateWorkerTableCommand(connection))
+                    {
+                        await createWorkerTableCommand.ExecuteNonQueryAsync();
+                    }
+                    // Create the worker batch size table, if one doesn't already exist for this user table
+                    using (SqlCommand createWorkerBatchSizeTableCommand = BuildCreateWorkerBatchSizesTableCommand(connection))
+                    {
+                        await createWorkerBatchSizeTableCommand.ExecuteNonQueryAsync();
+                    }
+                    // Upsert a row for this worker/user table with a batch size of 0 to indicate that this worker is now live and able to process changes
+                    using (SqlCommand upsertRowWorkerBatchSizeTableCommand = BuildUpsertRowWorkerBatchSizesTableCommand(connection, null, 0))
+                    {
+                        await upsertRowWorkerBatchSizeTableCommand.ExecuteNonQueryAsync();
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Builds the command to create the worker table if one does not already exist (<see cref="CreateWorkerTablesAsync"/>)
+            /// </summary>
+            /// <param name="connection">The connection to attach to the returned SqlCommand</param>
+            /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
+            private SqlCommand BuildCreateWorkerTableCommand(SqlConnection connection)
+            {
+
+                string primaryKeysWithTypes = string.Join(",\n", _primaryKeys.Select(pair => $"{pair.Key} {pair.Value}"));
+                string primaryKeysList = string.Join(", ", _primaryKeys.Keys);
+
+                var createWorkerTableCommand =
+                    $"IF OBJECT_ID(N\'{_workerTable}\', \'U\') IS NULL\n" +
+                    $"CREATE TABLE {_workerTable} (\n" +
+                    $"{primaryKeysWithTypes},\n" +
+                    $"LeaseExpirationTime datetime2,\n" +
+                    $"DequeueCount int,\n" +
+                    $"VersionNumber bigint\n" +
+                    $"PRIMARY KEY({primaryKeysList})\n" +
+                    $");\n";
+
+                return new SqlCommand(createWorkerTableCommand, connection);
+            }
+
+            /// <summary>
+            /// Builds the command to create the worker batch size table if one does not already exist
+            /// </summary>
+            /// <param name="connection">The connection to attach to the returned SqlCommand</param>
+            /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
+            private SqlCommand BuildCreateWorkerBatchSizesTableCommand(SqlConnection connection)
+            {
+                var createWorkerBatchSizeTableCommand =
+                    $"IF OBJECT_ID(N\'{_workerBatchSizesTable}\', \'U\') IS NULL\n" +
+                    $"CREATE TABLE {_workerBatchSizesTable} (\n" +
+                    $"UserTableID int,\n" +
+                    $"WorkerID varchar(100),\n" +
+                    $"BatchSize bigint,\n" +
+                    $"Timestamp datetime2\n" +
+                    $"PRIMARY KEY(UserTableID, WorkerID)\n" +
+                    $");";
+                return new SqlCommand(createWorkerBatchSizeTableCommand, connection);
+            }
+
+            /// <summary>
+            /// Builds the command to upsert a row into the worker batch sizes table (insert one if one does not already exist for this user table/workerID,
+            /// otherwise update the existing row to have BatchSize = batchSize)
+            /// </summary>
+            /// <param name="connection">The connection to attach to the returned SqlCommand</param>
+            /// <param name="transaction">The transaction to attached to the returned SqlCommand, if non-null</param>
+            /// <param name="batchSize">The most recently processed batch size of this worker</param>
+            /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
+            private SqlCommand BuildUpsertRowWorkerBatchSizesTableCommand(SqlConnection connection, SqlTransaction transaction, long batchSize)
+            {
+                var insertRowWorkerBatchSizeTableCommand =
+                    $"IF NOT EXISTS (SELECT * FROM {_workerBatchSizesTable} WHERE UserTableID = {_userTableID} AND WorkerID = \'{_workerID}\')\n" +
+                    $"INSERT INTO {_workerBatchSizesTable}\n" +
+                    $"VALUES ({_userTableID}, \'{_workerID}\', {batchSize}, SYSDATETIME());\n" +
+                    $"ELSE\n" +
+                    $"UPDATE {_workerBatchSizesTable}\n" +
+                    $"SET BatchSize = {batchSize}, Timestamp = SYSDATETIME()\n" +
+                    $"WHERE UserTableID = {_userTableID} AND WorkerID = \'{_workerID}\';";
+
+                if (transaction == null)
+                {
+                    return new SqlCommand(insertRowWorkerBatchSizeTableCommand, connection);
+                }
+                return new SqlCommand(insertRowWorkerBatchSizeTableCommand, connection, transaction);
+            }
+
+            /// <summary>
+            /// Builds the command to create the global state table if one does not already exist (<see cref="CreateWorkerTablesAsync"/>)
+            /// </summary>
+            /// <param name="connection">The connection to attach to the returned SqlCommand</param>
+            /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
+            private SqlCommand BuildCreateGlobalStateTableCommand(SqlConnection connection)
+            {
+                var createGlobalStateTableCommand =
+                    $"IF OBJECT_ID(N\'{_globalStateTable}\', \'U\') IS NULL\n" +
+                    $"CREATE TABLE {_globalStateTable} (\n" +
+                    $"UserTableID int PRIMARY KEY,\n" +
+                    $"GlobalVersionNumber bigint NOT NULL,\n" +
+                    $"DatabaseID int NOT NULL\n" +
+                    $");";
+                return new SqlCommand(createGlobalStateTableCommand, connection);
+            }
+
+            /// <summary>
+            /// Builds the command to insert a row into the global state table for this user table, if such a row doesn't already exist
+            /// </summary>
+            /// <param name="connection">The connection to attach to the returned SqlCommand</param>
+            /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
+            private SqlCommand BuildInsertRowGlobalStateTableCommand(SqlConnection connection)
+            {
+                var insertRowGlobalStateTableCommand =
+                    $"IF NOT EXISTS (SELECT * FROM {_globalStateTable} WHERE UserTableID = {_userTableID})\n" +
+                    $"INSERT INTO {_globalStateTable}\n" +
+                    $"VALUES ({_userTableID}, CHANGE_TRACKING_MIN_VALID_VERSION({_userTableID}), DB_ID());\n";
+
+                return new SqlCommand(insertRowGlobalStateTableCommand, connection);
+            }
+
+            /// <summary>
+            /// Retrieves the primary keys of the user's table and stores them in the _primaryKeys dictionary,
+            /// which maps from primary key name to primary key type
+            /// Also retrieves the column names of the user's table and stores them in _userTableColumns,
+            /// as well as the user table's OBJECT_ID which it stores to _userTableID
+            /// </summary>
+            /// <exception cref="InvalidOperationException">
+            /// Thrown if the query to retrieve the OBJECT_ID of the user table fails to correctly execute
+            /// This can happen if the OBJECT_ID call returns NULL, meaning that the user table might not exist in the database
+            /// </exception>
+            private async Task GetUserTableSchemaAsync()
+            {
+                var getPrimaryKeysQuery =
+                    $"SELECT c.name, t.name, c.max_length, c.precision, c.scale\n" +
+                    $"FROM sys.indexes i\n" +
+                    $"INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id\n" +
+                    $"INNER JOIN sys.columns c ON ic.object_id = c.object_id AND c.column_id = ic.column_id\n" +
+                    $"INNER JOIN sys.types t ON c.user_type_id = t.user_type_id\n" +
+                    $"WHERE i.is_primary_key = 1 and i.object_id = OBJECT_ID(\'{_userTable}\');";
+
+                var getColumnNamesQuery =
+                    $"SELECT name\n" +
+                    $"FROM sys.columns\n" +
+                    $"WHERE object_id = OBJECT_ID(\'{_userTable}\');";
+
+                // Necessary in the case that a prior attempt to start the SqlTableWatcher failed.
+                // Could be the case that these were partially populated, so should clear and repopulate them
+                _primaryKeys.Clear();
+
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    await connection.OpenAsync();
+                    // Determine the primary keys of the user table
+                    using (var getPrimaryKeysCommand = new SqlCommand(getPrimaryKeysQuery, connection))
+                    {
+                        using (SqlDataReader reader = await getPrimaryKeysCommand.ExecuteReaderAsync())
+                        {
+                            await DeterminePrimaryKeyTypes(reader, _primaryKeys);
+                        }
+                    }
+
+                    _userTableColumns.Clear();
+                    // Determine the names of the user table columns
+                    using (var getColumnNamesCommand = new SqlCommand(getColumnNamesQuery, connection))
+                    {
+                        using (SqlDataReader reader = await getColumnNamesCommand.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                _userTableColumns.Add(reader.GetString(0));
+                            }
+                        }
+                    }
+                }
+                _userTableID = await GetUserTableID(_connectionString, _userTable);
+            }
+
+            /// <summary>
+            /// Adds the primary key name (first column returned by the reader) and type to the primaryKeys dictionary.
+            /// Adds length arguments if the type of any of those listed in variableLengthTypes, and precision and 
+            /// scale arguments if it is any of those listed in variablePrecisionTypes
+            /// Otherwise, if the type accepts arguments (like datetime2), just uses the default which is the highest
+            /// precision for all other types
+            /// </summary>
+            /// <param name="reader">Contains each primary key name and corresponding type information</param>
+            /// <param name="primaryKeys">The (empty) dictionary to populate</param>
+            private static async Task DeterminePrimaryKeyTypes(SqlDataReader reader, Dictionary<string, string> primaryKeys)
+            {
+                while (await reader.ReadAsync())
+                {
+                    var type = reader.GetString(1);
+                    if (variableLengthTypes.Contains(type))
+                    {
+                        var length = reader.GetInt16(2);
+                        // Special "max" case. I'm actually not sure it's valid to have varchar(max) as a primary key because
+                        // it exceeds the byte limit of an index field (900 bytes), but just in case
+                        if (length == -1)
+                        {
+                            type += "(max)";
+                        }
+                        else
+                        {
+                            type += "(" + length + ")";
+                        }
+                    }
+                    else if (variablePrecisionTypes.Contains(type))
+                    {
+                        int precision = (int)reader.GetByte(3);
+                        int scale = (int)reader.GetByte(4);
+                        type += "(" + precision + "," + scale + ")";
+                    }
+                    primaryKeys.Add(reader.GetString(0), type);
+                }
+            }
+
             enum State
             {
                 CheckingForChanges,
@@ -1047,290 +1318,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Creates the worker table associated with the user's table, if one does not already exist
+        /// Returns the OBJECT_ID of userTable
         /// </summary>
-        /// <param name="connectionString">The SQL connection string used to connect to the user database</param>
-        /// <param name="primaryKeys">An empty map from primary key name to primary key type that will be populated</param>
-        /// <param name="userTableColumns">An empty list of user table column names that will be populated</param>
-        /// <param name="userTable">The (sanitized) name of the user table</param>
-        /// <param name="globalStateTable">The (sanitized) name of the global state table</param>
-        /// <param name="workerBatchSizesTable">The (sanitized) name of the worker batch size table</param>
-        /// <param name="workerID">The ID of this worker</param>
-        /// <param name="processingChanges">
-        /// Whether or not this worker is responsible for processing changes to userTable. Used to determine
-        /// whether or not a row should be inserted into the worker batch size table for this worker, if one does not already exist
-        /// </param>
-        /// <exception cref="InvalidOperationException">
-        /// Thrown if any part of the process failed, so the worker table name was not generated correctly
-        /// </exception>
-        /// <returns>
-        /// The (sanitized) name of the worker table, which follows the format [az_func].[Worker_Table_UserTableID], where
-        /// UserTableID is the result of a call to OBJECT_ID('userTable')
-        /// </returns>
-        private static async Task<int> CreateWorkerTablesAsync(
-            string connectionString, 
-            Dictionary<string, string> primaryKeys,
-            List<string> userTableColumns,
-            string userTable,
-            string globalStateTable,
-            string workerBatchSizesTable,
-            string workerID,
-            bool processingChanges,
-            ILogger logger)
-        {
-            int userTableID;
-            // Do I need a transaction for this?
-            using (var connection = new SqlConnection(connectionString))
-            {
-                await connection.OpenAsync();
-
-                userTableID = await GetUserTableSchemaAsync(connectionString, userTable, primaryKeys, userTableColumns);
-                var workerTable = $"[{SqlTriggerConstants.Schema}].[Worker_Table_{userTableID}]";
-
-                // Create the global state table, if one doesn't already exist for this database
-                using (SqlCommand createGlobalStateTableCommand = BuildCreateGlobalStateTableCommand(connection, globalStateTable))
-                {
-                    await createGlobalStateTableCommand.ExecuteNonQueryAsync();
-                }
-                // Insert a row into the global state table for this user table, if one doesn't already exist
-                using (SqlCommand insertRowGlobalStateTableCommand = BuildInsertRowGlobalStateTableCommand(connection, globalStateTable, userTable, userTableID))
-                {
-                    try
-                    {
-                        await insertRowGlobalStateTableCommand.ExecuteNonQueryAsync();
-                    }
-                    // Could fail if we try to insert a NULL value into the GlobalVersionNumber, which happens when CHANGE_TRACKING_MIN_VALID_VERSION 
-                    // returns NULL for the user table, meaning that change tracking is not enabled for either the database or table (or both)
-                    catch (Exception e)
-                    {
-                        var errorMessage = $"Failed to start processing changes to table {userTable}, potentially because change tracking was not " +
-                            $"enabled for the table or database {connection.Database}.";
-                        logger.LogWarning(errorMessage + $" Exact exception thrown is {e.Message}");
-                        throw new InvalidOperationException(errorMessage);
-                    }
-                }
-                // Create the worker table, if one doesn't already exist for this user table
-                using (SqlCommand createWorkerTableCommand = BuildCreateWorkerTableCommand(connection, primaryKeys, workerTable))
-                {
-                    await createWorkerTableCommand.ExecuteNonQueryAsync();
-                }
-                // Create the worker batch size table, if one doesn't already exist for this user table
-                using (SqlCommand createWorkerBatchSizeTableCommand = BuildCreateWorkerBatchSizesTableCommand(connection, workerBatchSizesTable))
-                {
-                    await createWorkerBatchSizeTableCommand.ExecuteNonQueryAsync();
-                }
-                // If this worker is responsible for processing changes, we want to insert a row for it into the worker batch size table
-                if (processingChanges)
-                {
-                    using (SqlCommand insertRowWorkerBatchSizeTableCommand = BuildUpsertRowWorkerBatchSizesTableCommand(connection, null,
-                        workerBatchSizesTable, userTable, userTableID, workerID, 0))
-                    {
-                        await insertRowWorkerBatchSizeTableCommand.ExecuteNonQueryAsync();
-                    }
-                }
-            }
-
-            return userTableID;
-        }
-
-        /// <summary>
-        /// Builds the command to create the worker table if one does not already exist (<see cref="CreateWorkerTablesAsync"/>)
-        /// </summary>
-        /// <param name="connection">The connection to attach to the returned SqlCommand</param>
-        /// <param name="primaryKeys">An empty map from primary key name to primary key type that will be populated</param>
-        /// <param name="workerTable">The (sanitized) name of the worker table</param>
-        /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-        private static SqlCommand BuildCreateWorkerTableCommand(
-            SqlConnection connection,
-            Dictionary<string, string> primaryKeys,
-            string workerTable)
-        {
-
-            string primaryKeysWithTypes = string.Join(",\n", primaryKeys.Select(pair => $"{pair.Key} {pair.Value}"));
-            string primaryKeysList = string.Join(", ", primaryKeys.Keys);
-
-            var createWorkerTableCommand =
-                $"IF OBJECT_ID(N\'{workerTable}\', \'U\') IS NULL\n" +
-                $"CREATE TABLE {workerTable} (\n" +
-                $"{primaryKeysWithTypes},\n" +
-                $"LeaseExpirationTime datetime2,\n" +
-                $"DequeueCount int,\n" +
-                $"VersionNumber bigint\n" +
-                $"PRIMARY KEY({primaryKeysList})\n" +
-                $");\n";
-
-            return new SqlCommand(createWorkerTableCommand, connection);
-        }
-
-        /// <summary>
-        /// Builds the command to create the worker batch size table if one does not already exist (<see cref="CreateWorkerTablesAsync"/>)
-        /// </summary>
-        /// <param name="connection">The connection to attach to the returned SqlCommand</param>
-        /// <param name="workerBatchSizeTable">The (sanitized) name of the worker batch size table</param>
-        /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-        private static SqlCommand BuildCreateWorkerBatchSizesTableCommand(
-            SqlConnection connection,
-            string workerBatchSizesTable)
-        {
-            var createWorkerBatchSizeTableCommand =
-                $"IF OBJECT_ID(N\'{workerBatchSizesTable}\', \'U\') IS NULL\n" +
-                $"CREATE TABLE {workerBatchSizesTable} (\n" +
-                $"UserTableID int,\n" +
-                $"WorkerID varchar(100),\n" +
-                $"BatchSize bigint,\n" +
-                $"Timestamp datetime2\n" +
-                $"PRIMARY KEY(UserTableID, WorkerID)\n" +
-                $");";
-            return new SqlCommand(createWorkerBatchSizeTableCommand, connection);
-        }
-
-        /// <summary>
-        /// Builds the command to upsert a row into the worker batch sizes table (insert one if one does not already exist for this user table/workerID,
-        /// otherwise update the existing row to have BatchSize = batchSize)
-        /// </summary>
-        /// <param name="connection">The connection to attach to the returned SqlCommand</param>
-        /// <param name="transaction">The transaction to attached to the returned SqlCommand, if non-null</param>
-        /// <param name="userTable">The (sanitized) name of the user table</param>
-        /// <param name="workerBatchSizeTable">The (sanitized) name of the worker batch size table</param>
-        /// <param name="workerID">The ID of this worker</param>
-        /// <param name="batchSize">The most recently processed batch size of this worker</param>
-        /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-        private static SqlCommand BuildUpsertRowWorkerBatchSizesTableCommand(
-            SqlConnection connection,
-            SqlTransaction transaction,
-            string workerBatchSizeTable,
-            string userTable,
-            int userTableID,
-            string workerID,
-            long batchSize)
-        {
-            var insertRowWorkerBatchSizeTableCommand =
-                $"IF NOT EXISTS (SELECT * FROM {workerBatchSizeTable} WHERE UserTableID = {userTableID} AND WorkerID = \'{workerID}\')\n" +
-                $"INSERT INTO {workerBatchSizeTable}\n" +
-                $"VALUES ({userTableID}, \'{workerID}\', {batchSize}, SYSDATETIME());\n" +
-                $"ELSE\n" +
-                $"UPDATE {workerBatchSizeTable}\n" +
-                $"SET BatchSize = {batchSize}, Timestamp = SYSDATETIME()\n" +
-                $"WHERE UserTableID = {userTableID} AND WorkerID = \'{workerID}\';";
-
-            if (transaction == null)
-            {
-                return new SqlCommand(insertRowWorkerBatchSizeTableCommand, connection);
-            }
-            return new SqlCommand(insertRowWorkerBatchSizeTableCommand, connection, transaction);
-        }
-
-        /// <summary>
-        /// Builds the command to create the global state table if one does not already exist (<see cref="CreateWorkerTablesAsync"/>)
-        /// </summary>
-        /// <param name="connection">The connection to attach to the returned SqlCommand</param>
-        /// <param name="globalStateTable">The (sanitized) name of the global state table</param>
-        /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-        private static SqlCommand BuildCreateGlobalStateTableCommand(
-            SqlConnection connection,
-            string globalStateTable)
-        {
-            var createGlobalStateTableCommand =
-                $"IF OBJECT_ID(N\'{globalStateTable}\', \'U\') IS NULL\n" +
-                $"CREATE TABLE {globalStateTable} (\n" +
-                $"UserTableID int PRIMARY KEY,\n" +
-                $"GlobalVersionNumber bigint NOT NULL,\n" +
-                $"DatabaseID int NOT NULL\n" +
-                $");";
-            return new SqlCommand(createGlobalStateTableCommand, connection);
-        }
-
-        /// <summary>
-        /// Builds the command to insert a row into the global state table for this user table, if such a row doesn't already exist
-        /// </summary>
-        /// <param name="connection">The connection to attach to the returned SqlCommand</param>
-        /// <param name="userTable">The (sanitized) name of the user table</param>
-        /// <param name="globalStateTable">The (sanitized) name of the global state table</param>
-        /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-        private static SqlCommand BuildInsertRowGlobalStateTableCommand(
-            SqlConnection connection,
-            string globalStateTable,
-            string userTable,
-            int userTableID)
-        {
-            var insertRowGlobalStateTableCommand =
-                $"IF NOT EXISTS (SELECT * FROM {globalStateTable} WHERE UserTableID = {userTableID})\n" +
-                $"INSERT INTO {globalStateTable}\n" +
-                $"VALUES ({userTableID}, CHANGE_TRACKING_MIN_VALID_VERSION({userTableID}), DB_ID());\n";
-
-            return new SqlCommand(insertRowGlobalStateTableCommand, connection);
-        }
-
-        /// <summary>
-        /// Retrieves the primary keys of the user's table and stores them in the "_primaryKeys" dictionary,
-        /// which maps from primary key name to primary key type
-        /// Also retrieves the column names of the user's table and stores them in "_userTableColumns", as well 
-        /// as the user table's OBJECT_ID which it returns as an int
-        /// </summary>
-        /// <param name="connectionString">The SQL connection string used to connect to the user database</param>
-        /// <param name="primaryKeys">An empty map from primary key name to primary key type that will be populated</param>
-        /// <param name="userTableColumns">An empty list of user table column names that will be populated</param>
+        /// <param name="connectionString">The SQL connection string used to establish a connection to the user's database</param>
         /// <param name="userTable">The (sanitized) name of the user table</param>
         /// <exception cref="InvalidOperationException">
         /// Thrown if the query to retrieve the OBJECT_ID of the user table fails to correctly execute
         /// This can happen if the OBJECT_ID call returns NULL, meaning that the user table might not exist in the database
         /// </exception>
-        /// <returns>The OBJECT_ID of userTable</returns>
-        private static async Task<int> GetUserTableSchemaAsync(
-            string connectionString,
-            string userTable,
-            Dictionary<string, string> primaryKeys,
-            List<string> userTableColumns)
+        private static async Task<int> GetUserTableID(string connectionString, string userTable)
         {
-            var getPrimaryKeysQuery =
-                $"SELECT c.name, t.name, c.max_length, c.precision, c.scale\n" +
-                $"FROM sys.indexes i\n" +
-                $"INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id\n" +
-                $"INNER JOIN sys.columns c ON ic.object_id = c.object_id AND c.column_id = ic.column_id\n" +
-                $"INNER JOIN sys.types t ON c.user_type_id = t.user_type_id\n" +
-                $"WHERE i.is_primary_key = 1 and i.object_id = OBJECT_ID(\'{userTable}\');";
-
-            var getColumnNamesQuery =
-                $"SELECT name\n" +
-                $"FROM sys.columns\n" +
-                $"WHERE object_id = OBJECT_ID(\'{userTable}\');";
-
-            var getObjectIDQuery =
-                $"SELECT OBJECT_ID(\'{userTable}\');";
-
-            // Necessary in the case that a prior attempt to start the SqlTableWatcher failed.
-            // Could be the case that these were partially populated, so should clear and repopulate them
-            primaryKeys.Clear();
+            var getObjectIDQuery = $"SELECT OBJECT_ID(\'{userTable}\');";
 
             using (var connection = new SqlConnection(connectionString))
             {
                 await connection.OpenAsync();
-                // Determine the primary keys of the user table
-                using (var getPrimaryKeysCommand = new SqlCommand(getPrimaryKeysQuery, connection))
-                {
-                    using (SqlDataReader reader = await getPrimaryKeysCommand.ExecuteReaderAsync())
-                    {
-                        await DeterminePrimaryKeyTypes(reader, primaryKeys);
-                    }
-                }
-                
-                // Determine the user table column names, if necessary
-                if (userTableColumns != null)
-                {
-                    userTableColumns.Clear();
-                    using (var getColumnNamesCommand = new SqlCommand(getColumnNamesQuery, connection))
-                    {
-                        using (SqlDataReader reader = await getColumnNamesCommand.ExecuteReaderAsync())
-                        {
-                            while (await reader.ReadAsync())
-                            {
-                                userTableColumns.Add(reader.GetString(0));
-                            }
-                        }
-                    }
-                }
-                
-                // Determine the OBJECT_ID of the user table and return it
                 using (var getObjectIDCommand = new SqlCommand(getObjectIDQuery, connection))
                 {
                     using (SqlDataReader reader = await getObjectIDCommand.ExecuteReaderAsync())
@@ -1353,44 +1355,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
             }
             throw new InvalidOperationException($"Failed to determine the OBJECT_ID of the user table {userTable}");
-        }
-
-        /// <summary>
-        /// Adds the primary key name (first column returned by the reader) and type to the primaryKeys dictionary.
-        /// Adds length arguments if the type of any of those listed in variableLengthTypes, and precision and 
-        /// scale arguments if it is any of those listed in variablePrecisionTypes
-        /// Otherwise, if the type accepts arguments (like datetime2), just uses the default which is the highest
-        /// precision for all other types
-        /// </summary>
-        /// <param name="reader">Contains each primary key name and corresponding type information</param>
-        /// <param name="primaryKeys">The (empty) dictionary to populate</param>
-        private static async Task DeterminePrimaryKeyTypes(SqlDataReader reader, Dictionary<string, string> primaryKeys)
-        {
-            while (await reader.ReadAsync())
-            {
-                var type = reader.GetString(1);
-                if (variableLengthTypes.Contains(type))
-                {
-                    var length = reader.GetInt16(2);
-                    // Special "max" case. I'm actually not sure it's valid to have varchar(max) as a primary key because
-                    // it exceeds the byte limit of an index field (900 bytes), but just in case
-                    if (length == -1)
-                    {
-                        type += "(max)";
-                    }
-                    else
-                    {
-                        type += "(" + length + ")";
-                    }
-                }
-                else if (variablePrecisionTypes.Contains(type))
-                {
-                    int precision = (int)reader.GetByte(3);
-                    int scale = (int)reader.GetByte(4);
-                    type += "(" + precision + "," + scale + ")";
-                }
-                primaryKeys.Add(reader.GetString(0), type);
-            }
         }
     }
 }
