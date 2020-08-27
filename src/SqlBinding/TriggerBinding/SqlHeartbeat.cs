@@ -5,13 +5,16 @@ namespace SqlBinding.TriggerBinding
 {
     public class SqlHeartbeat
     {
-        internal SqlHeartbeat(long unprocessedChanges, ScaleRecommendation scaleRecommendation)
+        internal SqlHeartbeat(long newChanges, long processedChanges, ScaleRecommendation scaleRecommendation)
         {
-            this.UnprocessedChanges = unprocessedChanges;
+            this.NewChanges = newChanges;
+            this.ProcessedChanges = processedChanges;
             this.ScaleRecommendation = scaleRecommendation;
         }
 
-        public long UnprocessedChanges { get; }
+        public long ProcessedChanges { get; }
+
+        public long NewChanges { get; }
 
         public ScaleRecommendation ScaleRecommendation { get; }
     }

@@ -16,19 +16,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         // Unit of time is seconds
         public const string LeaseUnits = "s";
 
+        public const string ScaleControllerPollingUnits = "s";
+
         public const string Schema = "az_func";
 
         public const string GlobalStateTable = "Global_State_Table";
 
         public const string WorkerBatchSizesTable = "Worker_Batch_Sizes";
 
+        public const long LastChangesDefaultValue = -1;
+
         public const int BatchSize = 10;
 
         public const int MaxDequeueCount = 5;
 
-        public const int LeaseTime = 30;
+        public const int LeaseInterval = 30;
 
         public const int PollingInterval = 10;
+
+        public const int CleanupInterval = 300;
+
+        // Unit of time is seconds
+        public const string CleanupUnits = "s";
 
         public const int MaxLeaseRenewalCount = 5;
 
