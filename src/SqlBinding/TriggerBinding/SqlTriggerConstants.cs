@@ -3,7 +3,7 @@
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
-    internal static class SqlTriggerConstants
+    public static class SqlTriggerConstants
     {
         public const string PrimaryKeysSelectList = "primaryKeysSelectList";
 
@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         // Unit of time is seconds
         public const string LeaseUnits = "s";
 
-        public const string ScaleControllerPollingUnits = "s";
+        public const string ScaleControllerPollingIntervalUnits = "s";
 
         public const string Schema = "az_func";
 
@@ -24,7 +24,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public const string WorkerBatchSizesTable = "Worker_Batch_Sizes";
 
-        public const long LastChangesDefaultValue = -1;
+        public const long MinimumNumberOfSamples = 5;
+
+        public const long MinimumPercentIncrease = 25;
+
+        public const long MinimumPercentDecrease = 25;
 
         public const int BatchSize = 10;
 

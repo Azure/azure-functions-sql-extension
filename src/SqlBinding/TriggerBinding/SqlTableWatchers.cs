@@ -27,8 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             private readonly string _userTable;
             private readonly string _workerBatchSizesTable;
             private readonly string _connectionString;
-            private long _lastChanges;
-            private long _lastRowsProcessed;
+            private Queue<long> _lastUnprocessedChanges;
             
             private readonly Dictionary<string, string> _primaryKeys;
             private readonly Lazy<string> _leftOuterJoinWorkerTable;
@@ -63,8 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 _primaryKeys = new Dictionary<string, string>();
                 // We only want the string initialized after _primaryKeys has been populated
                 _leftOuterJoinWorkerTable = new Lazy<string>(() => string.Join(" AND ", _primaryKeys.Keys.Select(key => $"c.{key} = w.{key}")));
-                _lastChanges = SqlTriggerConstants.LastChangesDefaultValue;
-                _lastRowsProcessed = 0;
+                _lastUnprocessedChanges = new Queue<long>();
             }
 
             /// <summary>
@@ -78,113 +76,227 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             /// <summary>
-            /// Makes a scale recommendation based on the current number of unprocessed changes for the user table and the current 
-            /// worker count
+            /// Makes a scale recommendation based on the current number of unprocessed changes for the user table and worker count
             /// </summary>
+            /// <param name="workerCount">The current number of workers processing changes for this user table</param>
+            /// <param name="granularity">
+            /// The granularity of the polling interval ("s" for seconds, "mi" for minutes, etc. <see cref="SqlTriggerConstants.ScaleControllerPollingIntervalUnits"/>)
+            /// </param>
             /// <param name="pollingInterval">How often the this method is being called</param>
-            /// <param name="granularity">The granularity of the polling interval ("s" for seconds, "mi" for minutes, etc.)</param>
             /// <returns>
             /// A <see cref="SqlHeartbeat"/> containing the scale recommendation as well as additional metrics for this table
             /// </returns>
-            public async Task<SqlHeartbeat> MakeScaleRecommendation(int pollingInterval, string granularity)
+            public async Task<SqlHeartbeat> MakeScaleRecommendation(int workerCount, string granularity, long pollingInterval)
             {
-                SqlHeartbeat heartbeat;
-                // For now, setting the "onlyUnprocessedChanges" parameter to false, meaning that we will always wait
-                // at least one polling interval upon startup to start accumulating metrics. In the future we could 
-                // change this to be true so that on startup we query for unprocessed changes, and if any exist, we can scale out
-                long currentChanges = await GetCurrentChanges(false);
-                long rowsProcessed = await GetRowsProcessed();
-
-                // Query to retrieve the changes somehow didn't return any results (no idea how this would happen, but just in case)
-                if (currentChanges == -1)
+                try
                 {
-                    heartbeat = new SqlHeartbeat(-1, -1,
-                            new ScaleRecommendation(ScaleAction.None, keepWorkersAlive: true, reason: $"Unable to query for the metrics necessary to make a scale decision." +
-                            $" Query to determine number of new changes in the past polling interval failed to return results."));
-                }
-                // Just started, need to wait for another polling interval to accumulate data
-                else if (_lastChanges == SqlTriggerConstants.LastChangesDefaultValue)
-                {
-                    heartbeat = new SqlHeartbeat(-1, -1,
-                            new ScaleRecommendation(ScaleAction.None, keepWorkersAlive: true, reason: $"Need to wait at least one more polling interval to accumulate" +
-                            $" sufficient metrics to make scale decisions."));
-                }
-                else
-                {
-                    List<long> workerBatchSizes = await GetWorkerBatchSizes(granularity, pollingInterval);
-                    var newChanges = currentChanges - _lastChanges;
-                    var newRowsProcessed = rowsProcessed - _lastRowsProcessed;
-
-                    // The RowsProcessed value was reset due to integer overflow
-                    // Could also happen if rowsProcessed is 0 whereas _lastRowsProcessed was non-zero, but that scenario shouldn't be possible.
-                    // rowsProcessed should only return 0 if the global state table doesn't exist/a row doesn't exist in it for the user table, but once
-                    // either of those are true, they stay true forever. So rowsProcessed shouldn't return 0 after returning its first non-zero value
-                    if (newRowsProcessed < 0)
+                    SqlHeartbeat heartbeat;
+                    long currentUnprocessedChanges = await GetCurrentUnprocessedChanges();
+                    // Query to retrieve the changes somehow didn't return any results (no idea how this would happen, but just in case)
+                    if (currentUnprocessedChanges == -1)
                     {
-                        newRowsProcessed = long.MaxValue - _lastRowsProcessed + rowsProcessed;
+                        // Don't want to add this spurious value to _lastUnprocessedChanges, so immediately return
+                        return new SqlHeartbeat(currentUnprocessedChanges,
+                                new ScaleRecommendation(ScaleAction.None, keepWorkersAlive: true, reason: $"Unable to query for the metrics necessary to make a scale decision " +
+                                $"for user table {_userTable}. Query to determine number of new changes in the past polling interval failed to return results."));
                     }
 
-                    // Cleanup of the change table has occurred, meaning that rows were removed and so currentChanges < _lastChanges
-                    // We have to wait another polling interval to get metrics now
-                    if (newChanges < 0)
+                    _lastUnprocessedChanges.Enqueue(currentUnprocessedChanges);
+                    // There are unprocessed changes but no workers active to process them
+                    if (workerCount == 0 && currentUnprocessedChanges > 0)
                     {
-                        heartbeat = new SqlHeartbeat(newChanges, newRowsProcessed,
-                            new ScaleRecommendation(ScaleAction.None, keepWorkersAlive: true, reason: "Cleanup of the change table occurred. We must wait another polling" +
-                            " interval to obtain new metrics"));
+                        heartbeat = new SqlHeartbeat(currentUnprocessedChanges,
+                            new ScaleRecommendation(ScaleAction.AddWorker, keepWorkersAlive: true, reason: $"There exist unprocessed changes for the user table {_userTable} but no " +
+                            $" workers to process them. Adding a worker to start processing."));
                     }
-                    // The rate at which changes are being processed is less than the rate at which new changes are being added
-                    else if (newRowsProcessed < newChanges)
+                    // Just started gathering metrics, need to wait for more polling intervals to accumulate data
+                    else if (_lastUnprocessedChanges.Count < SqlTriggerConstants.MinimumNumberOfSamples)
                     {
-                        heartbeat = new SqlHeartbeat(newChanges, newRowsProcessed, 
-                            new ScaleRecommendation(ScaleAction.AddWorker, keepWorkersAlive: true, reason: $"Number of new changes is {newChanges} but workers only processed" +
-                            $" {newRowsProcessed} rows in the last polling interval"));
+                        heartbeat = new SqlHeartbeat(currentUnprocessedChanges,
+                                new ScaleRecommendation(ScaleAction.None, keepWorkersAlive: true, reason: $"Need to wait for " +
+                                $" {SqlTriggerConstants.MinimumNumberOfSamples - _lastUnprocessedChanges.Count} more polling interval(s) to accumulate" +
+                                $" sufficient metrics to make scale decisions for user table {_userTable}."));
                     }
-                    // If newRowsProcessed = newChanges, then the rate at which changes are being processed is equal to the rate at which they're added
-                    // However, it could be the case that we could reach equilibrium with less workers - if not every worker is processing a full batch of
-                    // changes everytime it queries for new changes, we might be able to scale down. 
-                    // Note that newRowsProcessed does not necessarily reflect the number of rows processed in this past polling interval. It could be the case
-                    // that a worker started processing rows corresponding to the polling interval before it, and only finished in this past polling interval. In
-                    // that case, the rows it processed were not actually part of the newChanges set. Not totally sure how to get around this issue right now
                     else
                     {
-                        var unusedCapacity = workerBatchSizes.Count * SqlTriggerConstants.BatchSize - newRowsProcessed;
-                        var scaleRecommendationMessage = $"Number of new changes is {newChanges} and workers processed {newRowsProcessed} in the last polling interval";
-
-                        // We can remove at least one worker and still process the same amount of changes
-                        if (unusedCapacity >= SqlTriggerConstants.BatchSize)
+                        // Remove the earliest samples if we have reached MinimumNumberOfSamples
+                        while (_lastUnprocessedChanges.Count > SqlTriggerConstants.MinimumNumberOfSamples)
                         {
-                            scaleRecommendationMessage += $"Workers could have processed {unusedCapacity} more changes, which is more than the " +
-                                    $" worker batch size of {SqlTriggerConstants.BatchSize}, so the same number of changes could have been processed with less workers.";
-                            heartbeat = new SqlHeartbeat(newChanges, newRowsProcessed,
-                                new ScaleRecommendation(ScaleAction.RemoveWorker, keepWorkersAlive: false, reason: scaleRecommendationMessage));
+                            _lastUnprocessedChanges.Dequeue();
                         }
-                        // Not every worker is necessarily at capacity, but if we were to remove a worker we could not keep up with the number of new changes, so
-                        // we should do nothing
+
+                        var pattern = GetPatternOfChange();
+                        // The rate at which changes are being created is apparently starting to grow
+                        if (pattern > 0)
+                        {
+                            var percentIncrease = (double) currentUnprocessedChanges / _lastUnprocessedChanges.Peek() * 100 - 100;
+                            var scaleRecommendationReason = $"The rate at which changes are being created has apparently increased by {percentIncrease}% for user table {_userTable}.";
+                            if (percentIncrease >= SqlTriggerConstants.MinimumPercentIncrease)
+                            {
+                                scaleRecommendationReason += $" Since this is greater than or equal to the minimum of {SqlTriggerConstants.MinimumPercentIncrease}% required to add a worker, " +
+                                    $"add a worker.";
+                                heartbeat = new SqlHeartbeat(currentUnprocessedChanges,
+                                    new ScaleRecommendation(ScaleAction.AddWorker, keepWorkersAlive: true, reason: scaleRecommendationReason));
+                            }
+                            else
+                            {
+                                scaleRecommendationReason += $" Since this is less than the minimum of {SqlTriggerConstants.MinimumPercentIncrease}% required to add a worker, do nothing.";
+                                heartbeat = new SqlHeartbeat(currentUnprocessedChanges,
+                                    new ScaleRecommendation(ScaleAction.None, keepWorkersAlive: true, reason: scaleRecommendationReason));
+                            }
+                        }
+                        // The rate is neither strictly increasing or decreasing
+                        else if (pattern == 0)
+                        {
+                            var scaleRecommendationReason = $"The rate at which changes are being created is neither strictly increasing or decreasing for user table {_userTable}.";
+                            ScaleAction scaleAction = ScaleAction.None;
+                            bool keepAlive = true;
+                            // The number of unprocessed changes has been 0 for all past samples in the queue
+                            if (_lastUnprocessedChanges.All(sample => sample == 0))
+                            {
+                                List<long> workerBatchSizes = await GetWorkerBatchSizes(granularity, pollingInterval);
+                                // If the returned list contains -1, the worker batch sizes table hasn't been created yet, which presumably means
+                                // no workers are alive and changes have yet to occur to the user's table. Do nothing in this case since there are no workers processing changes anyways
+                                if (!workerBatchSizes.Contains(-1))
+                                {
+                                    scaleRecommendationReason += $" All past {SqlTriggerConstants.MinimumNumberOfSamples} samples have shown 0 unprocessed changes.";
+                                    // There are less workers processing changes than there are workers alive
+                                    if (workerBatchSizes.Count < workerCount)
+                                    {
+                                        scaleRecommendationReason += $" The number of workers processing changes is {workerBatchSizes.Count} but {workerCount} are alive. We can " +
+                                             $"afford to remove at least one worker.";
+                                        scaleAction = ScaleAction.RemoveWorker;
+                                        // There is just one worker left and it didn't process any changes in the last polling interval, so we can afford not to keep it alive
+                                        if (workerCount == 1)
+                                        {
+                                            keepAlive = false;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        var maxCapacity = workerBatchSizes.Count * SqlTriggerConstants.BatchSize;
+                                        var sumBatchSizes = workerBatchSizes.Sum();
+                                        scaleRecommendationReason += $" The average number of changes processed by workers is {sumBatchSizes} while the maximum capacity is {maxCapacity}.";
+                                        // Workers are not processing full batch sizes of changes, and there is enough "wiggle room" to remove a worker
+                                        if (maxCapacity - sumBatchSizes >= SqlTriggerConstants.BatchSize)
+                                        {
+                                            scaleRecommendationReason += $" Since the difference is at least the batch size of a worker, we can afford to remove a worker.";
+                                            scaleAction = ScaleAction.RemoveWorker;
+                                        }
+                                        // Workers aren't processing full batch sizes of changes, but there isn't enough "wiggle room" to remove one
+                                        else
+                                        {
+                                            scaleRecommendationReason += $" Since the difference is not at least the batch size of a worker, we cannot afford to remove a worker, " +
+                                                $"so do nothing.";
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    scaleRecommendationReason += " No changes have occurred to the user's table and there are no workers alive. Do nothing";
+                                }
+                            }
+                            
+                            heartbeat = new SqlHeartbeat(currentUnprocessedChanges,
+                                new ScaleRecommendation(scaleAction, keepWorkersAlive: keepAlive, reason: scaleRecommendationReason));
+                        }
+                        // The rate is decreasing
                         else
                         {
-                            scaleRecommendationMessage += $"Workers could have processed {unusedCapacity} more changes, which is less than the " +
-                                    $" worker batch size of {SqlTriggerConstants.BatchSize}, so the same number of changes could not have been processed with less workers.";
-                            heartbeat = new SqlHeartbeat(newChanges, newRowsProcessed,
-                                new ScaleRecommendation(ScaleAction.None, keepWorkersAlive: true, reason: scaleRecommendationMessage));
+                            var percentDecrease = 100 - (double)currentUnprocessedChanges / _lastUnprocessedChanges.Peek() * 100;
+                            var scaleRecommendationReason = $"The rate at which changes are being created has apparently decreased by {percentDecrease}% for the user table {_userTable}.";
+                            if (percentDecrease >= SqlTriggerConstants.MinimumPercentDecrease)
+                            {
+                                scaleRecommendationReason += $" Since this is greater than or equal to the minimum of {SqlTriggerConstants.MinimumPercentDecrease}% required to remove a worker, " +
+                                    $"remove a worker.";
+                                heartbeat = new SqlHeartbeat(currentUnprocessedChanges,
+                                    new ScaleRecommendation(ScaleAction.RemoveWorker, keepWorkersAlive: true, reason: scaleRecommendationReason));
+                            }
+                            else
+                            {
+                                scaleRecommendationReason += $" Since this is less than the minimum of {SqlTriggerConstants.MinimumPercentIncrease}% required to remove a worker, do nothing.";
+                                heartbeat = new SqlHeartbeat(currentUnprocessedChanges,
+                                    new ScaleRecommendation(ScaleAction.None, keepWorkersAlive: true, reason: scaleRecommendationReason));
+                            }
                         }
                     }
+                    return heartbeat;
                 }
-                _lastRowsProcessed = rowsProcessed;
-                _lastChanges = currentChanges;
-                return heartbeat;
+                catch (Exception e)
+                {
+                    return new SqlHeartbeat(-1,
+                        new ScaleRecommendation(ScaleAction.None, keepWorkersAlive: true, reason: $"Unable to query for the metrics necessary to make a scale decision for user table {_userTable}." +
+                        $" Query to determine number of new changes in the past polling interval failed to return results with exception {e.Message}."));
+                }
             }
 
             /// <summary>
-            /// Returns either all changes stored in the change table for this user table, or only the unprocessed changes
+            /// Returns 1 if the numbers in _lastUnprocessedChanges are strictly increasing, -1 if they're strictly decreasing, and 0 if neither is true
             /// </summary>
-            /// <param name="onlyUnprocessedChanges">
-            /// If true, returns the count of only the unprocessed changes that currently exist for the user table.
-            /// Otherwise, returns all changes in the change table corresponding to the user table
-            /// </param>
+            private int GetPatternOfChange()
+            {
+                bool first = true;
+                long lastSample = 0;
+                var diffs = new List<long>();
+                // Get the difference between sample i + 1 and i and store in diffs
+                foreach (var sample in _lastUnprocessedChanges)
+                {
+                    if (first)
+                    {
+                        lastSample = sample;
+                        first = false;
+                    }
+                    else
+                    {
+                        diffs.Add(sample - lastSample);
+                    }
+                }
+
+                int pattern = 0;
+                foreach (var diff in diffs)
+                {
+                    // Neither strictly increasing or decreasing, return 0
+                    if (diff == 0)
+                    {
+                        return 0;
+                    }
+                    // Decreasing
+                    else if (diff < 0)
+                    {
+                        // Was previously increasing, return 0
+                        if (pattern > 0)
+                        {
+                            return 0;
+                        }
+                        else
+                        {
+                            pattern = -1;
+                        }
+                    }
+                    // Increasing
+                    else
+                    {
+                        // Was previously decreasing, return 0
+                        if (pattern < 0)
+                        {
+                            return 0;
+                        }
+                        else
+                        {
+                            pattern = 1;
+                        }
+                    }
+                }
+                return pattern;
+            }
+
+            /// <summary>
+            /// Returns the number of changes that have yet to be processed for this user table
+            /// </summary>
             /// <returns>
             /// The number of changes, or -1 if the query to get the changes fails
             /// </returns>
-            private async Task<long> GetCurrentChanges(bool onlyUnprocessedChanges)
+            private async Task<long> GetCurrentUnprocessedChanges()
             {
                 using (var connection = new SqlConnection(_connectionString))
                 {
@@ -193,18 +305,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     // We would get less accurate results, but we wouldn't be competing for table locks with other workers.
                     using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
                     {
-                        SqlCommand getCurrentChangesCommand;
-                        if (onlyUnprocessedChanges)
+                        using (SqlCommand getUnprocessedChangesCommand = BuildGetUnprocessedChangesCommand(connection, transaction))
                         {
-                            getCurrentChangesCommand = BuildGetUnprocessedChangesCommand(connection, transaction);
-                        }
-                        else
-                        {
-                            getCurrentChangesCommand = BuildGetAllChangesCommand(connection, transaction);
-                        }
-                        using (getCurrentChangesCommand)
-                        {
-                            using (SqlDataReader reader = await getCurrentChangesCommand.ExecuteReaderAsync())
+                            using (SqlDataReader reader = await getUnprocessedChangesCommand.ExecuteReaderAsync())
                             {
                                 if (await reader.ReadAsync())
                                 {
@@ -220,11 +323,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             /// <summary>
             /// Returns a list of batch sizes for workers that have processed changes to this user table sometime in the
-            /// last polling interval
+            /// last polling interval. If the worker batch sizes table hasn't been created yet, the list contains just the one 
+            /// value -1
             /// </summary>
             /// <param name="granularity">The granularity of the polling interval ("s" for seconds, "mi" for minutes, etc.)</param>
             /// <param name="pollingInterval">How often the this method is being called</param>
-            private async Task<List<long>> GetWorkerBatchSizes(string granularity, int pollingInterval)
+            private async Task<List<long>> GetWorkerBatchSizes(string granularity, long pollingInterval)
             {
                 var workerBatchSizes = new List<long>();
                 using (var connection = new SqlConnection(_connectionString))
@@ -287,13 +391,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <param name="granularity">The granularity of the polling interval ("s" for seconds, "mi" for minutes, etc.)</param>
             /// <param name="pollingInterval">How often the this method is being called</param>
             /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-            private SqlCommand BuildGetWorkerBatchSizesCommand(SqlConnection connection, SqlTransaction transaction, string granularity, int pollingInterval)
+            private SqlCommand BuildGetWorkerBatchSizesCommand(SqlConnection connection, SqlTransaction transaction, string granularity, long pollingInterval)
             {
                 var getWorkerBatchSizesQuery =
                     $"IF OBJECT_ID(N\'{_workerBatchSizesTable}\', \'U\') IS NOT NULL\n" +
                     $"SELECT BatchSize\n" +
                     $"FROM {_workerBatchSizesTable}\n" +
-                    $"WHERE UserTableID = {_userTableID} AND DATEADD({granularity}, -{pollingInterval}, SYSDATETIME()) <= Timestamp;";
+                    $"WHERE UserTableID = {_userTableID} AND DATEADD({granularity}, -{pollingInterval}, SYSDATETIME()) <= Timestamp;\n" +
+                    $"ELSE\n" +
+                    $"SELECT -1;";
 
                 return new SqlCommand(getWorkerBatchSizesQuery, connection, transaction);
             }
@@ -313,22 +419,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     $"WHERE UserTableID = {_userTableID};";
 
                 return new SqlCommand(getRowsProcessedQuery, connection, transaction);
-            }
-
-            /// <summary>
-            /// Builds the query to get the total number of changes stored in the change table for this user table
-            /// </summary>
-            /// <param name="connection">The connection to add to the returned SqlCommand</param>
-            /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
-            /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-            private SqlCommand BuildGetAllChangesCommand(SqlConnection connection, SqlTransaction transaction)
-            {
-                // COUNT_BIG returns a bigint, which is composed of 8 bytes, not 4, in the case that there are a lot of unprocessed changes
-                var getChangesQuery =
-                    $"SELECT COUNT_BIG(*)\n" +
-                    $"FROM CHANGETABLE (CHANGES {_userTable}, CHANGE_TRACKING_MIN_VALID_VERSION({_userTableID})) AS C;";
-
-                return new SqlCommand(getChangesQuery, connection, transaction);
             }
 
             /// <summary>
@@ -900,9 +990,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             /// <summary>
-            /// Builds the command to update the global state table in the case of data loss or a new minimum valid version number
-            /// In either case sets the GlobalVersionNumber to be the new minimum valid version number
-            /// Also updates the DatabaseID in the case of data loss
+            /// Builds the command to update the global state table in the case of a new minimum valid version number
+            /// Sets the GlobalVersionNumber for this _userTable to be the new minimum valid version number
             /// </summary>
             /// <param name="connection">The connection to add to the returned SqlCommand</param>
             /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
@@ -914,15 +1003,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var updateGlobalStateTableCommand =
                     $"DECLARE @min_version bigint;\n" +
                     $"DECLARE @current_version bigint;\n" +
-                    $"DECLARE @db_id int;\n" +
                     $"SET @min_version = CHANGE_TRACKING_MIN_VALID_VERSION({_userTableID});\n" +
                     $"SELECT @current_version = GlobalVersionNumber FROM {_globalStateTable} WHERE UserTableID = {_userTableID};\n" +
-                    $"SELECT @db_id = DatabaseID FROM {_globalStateTable} WHERE UserTableID = {_userTableID};\n" +
-                    $"IF @db_id != DB_ID()\n" +
-                    $"TRUNCATE TABLE {_workerTable};\n" +
-                    $"IF @current_version < @min_version OR @db_id != DB_ID()\n" +
+                    $"IF @current_version < @min_version\n" +
                     $"UPDATE {_globalStateTable}\n" +
-                    $"SET GlobalVersionNumber = @min_version, DatabaseID = DB_ID()\n" +
+                    $"SET GlobalVersionNumber = @min_version\n" +
                     $"WHERE UserTableID = {_userTableID};";
 
                 return new SqlCommand(updateGlobalStateTableCommand, connection, transaction);
@@ -1402,7 +1487,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     $"CREATE TABLE {_globalStateTable} (\n" +
                     $"UserTableID int PRIMARY KEY,\n" +
                     $"GlobalVersionNumber bigint NOT NULL,\n" +
-                    $"DatabaseID int NOT NULL,\n" +
                     $"RowsProcessed bigint\n" +
                     $");";
                 return new SqlCommand(createGlobalStateTableCommand, connection);
@@ -1418,7 +1502,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var insertRowGlobalStateTableCommand =
                     $"IF NOT EXISTS (SELECT * FROM {_globalStateTable} WHERE UserTableID = {_userTableID})\n" +
                     $"INSERT INTO {_globalStateTable}\n" +
-                    $"VALUES ({_userTableID}, CHANGE_TRACKING_MIN_VALID_VERSION({_userTableID}), DB_ID(), 0);\n";
+                    $"VALUES ({_userTableID}, CHANGE_TRACKING_MIN_VALID_VERSION({_userTableID}), 0);\n";
 
                 return new SqlCommand(insertRowGlobalStateTableCommand, connection);
             }
