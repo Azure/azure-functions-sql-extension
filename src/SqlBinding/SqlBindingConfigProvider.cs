@@ -2,12 +2,12 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using Microsoft.Data.SqlClient;
 using Microsoft.Azure.WebJobs.Description;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlConverters;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Config;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
-using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlConverters;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql

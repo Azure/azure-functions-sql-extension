@@ -1,11 +1,11 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Sql;
 using Microsoft.Extensions.Configuration;
 using Moq;
-using System;
 using Xunit;
 
 namespace SqlExtension.Tests

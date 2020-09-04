@@ -1,12 +1,12 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using Microsoft.Data.SqlClient;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Data.SqlClient;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -38,11 +38,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The enumerator</returns>
         public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
         {
-            return new SqlAsyncEnumerator<T>(_connection, _attribute);
+            return new SqlAsyncEnumerator(_connection, _attribute);
         }
 
 
-        private class SqlAsyncEnumerator<T> : IAsyncEnumerator<T>
+        private class SqlAsyncEnumerator : IAsyncEnumerator<T>
         {
             private readonly SqlConnection _connection;
             private readonly SqlAttribute _attribute;
