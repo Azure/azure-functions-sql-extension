@@ -204,7 +204,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                                         if (workerCount == 1)
                                         {
                                             keepAlive = false;
-                                            scaleRecommendationReason += " keepAlive is false.";
                                         }
                                     }
                                     else
