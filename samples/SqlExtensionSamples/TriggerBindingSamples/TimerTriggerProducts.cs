@@ -6,10 +6,10 @@ using static SqlExtensionSamples.ProductUtilities;
 
 namespace SqlExtensionSamples.TriggerBindingSamples
 {
-    public static class TimerTrigger
+    public static class TimerTriggerProducts
     {
         private static int _executionNumber = 0;
-        [FunctionName("TimerTrigger")]
+        [FunctionName("TimerTriggerProducts")]
         public static void Run(
             [TimerTrigger("0 */3 * * * *")]TimerInfo myTimer, ILogger log,
             [Sql("Products", ConnectionStringSetting = "SqlConnectionString")] ICollector<Product> products)
