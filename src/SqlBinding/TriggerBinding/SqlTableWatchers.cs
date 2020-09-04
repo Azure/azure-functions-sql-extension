@@ -139,7 +139,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             else
                             {
                                 percentIncrease = (currentUnprocessedChanges - firstSample) / firstSample * 100;
-                                scaleRecommendationReason += $" The rate at which changes are being created has apparently increased by {percentIncrease,2}% for " +
+                                scaleRecommendationReason += $" The rate at which changes are being created has apparently increased by {percentIncrease:0.##}% for " +
                                     $"user table {_userTable}.";
                             }
                             if (percentIncrease >= SqlTriggerConstants.MinimumPercentIncrease)
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         {
                             double firstSample = _lastUnprocessedChanges.Peek();
                             var percentDecrease = (firstSample - currentUnprocessedChanges) / firstSample * 100;
-                            scaleRecommendationReason += $" The rate at which changes are being created has apparently decreased by {percentDecrease,2}% for " +
+                            scaleRecommendationReason += $" The rate at which changes are being created has apparently decreased by {percentDecrease:0.##}% for " +
                                 $"the user table {_userTable}.";
                             if (percentDecrease >= SqlTriggerConstants.MinimumPercentDecrease)
                             {
