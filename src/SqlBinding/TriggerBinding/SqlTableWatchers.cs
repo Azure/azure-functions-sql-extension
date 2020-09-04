@@ -1380,7 +1380,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var insertRowWorkerBatchSizeTableCommand =
                     $"IF NOT EXISTS (SELECT * FROM {_workerBatchSizesTable} WHERE UserTableID = {_userTableID} AND WorkerID = \'{_workerID}\')\n" +
                     $"INSERT INTO {_workerBatchSizesTable}\n" +
-                    $"VALUES ({_userTableID}, \'{_workerID}\', {batchSize}, SYSDATETIME());\n" +
+                    $"VALUES ({_userTableID}, \'{_workerID}\', 0, SYSDATETIME());\n" +
                     $"ELSE\n" +
                     $"UPDATE {_workerBatchSizesTable}\n" +
                     $"SET BatchSize = {batchSize}, Timestamp = SYSDATETIME()\n" +
