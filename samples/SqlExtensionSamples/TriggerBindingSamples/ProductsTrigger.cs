@@ -21,7 +21,7 @@ namespace SqlExtensionSamples.TriggerBindingSamples
             {
                 Product product = change.Data;
                 logger.LogInformation($"Change occurred to Products table row: {change.ChangeType}");
-                logger.LogInformation($"ProductID: {product.ProductID}, Name: {product.Name}, Price: {product.Cost}");
+                logger.LogInformation($"ProductID: {product.ProductID}, Name: {product.Name}, Cost: {product.Cost}");
             }
         }
     }

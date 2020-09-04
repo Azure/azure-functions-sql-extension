@@ -27,8 +27,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             private readonly string _workerBatchSizesTable;
             private readonly string _connectionString;
             private Queue<long> _lastUnprocessedChanges;
-            
-            private readonly Dictionary<string, string> _primaryKeys;
             private string _leftOuterJoinWorkerTable;
 
             /// <summary>
@@ -58,7 +56,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 _userTable = SqlBindingUtilities.NormalizeTableName(table);
                 _globalStateTable = $"[{SqlTriggerConstants.Schema}].[{SqlTriggerConstants.GlobalStateTable}]";
                 _workerBatchSizesTable = $"[{SqlTriggerConstants.Schema}].[{SqlTriggerConstants.WorkerBatchSizesTable}]";
-                _primaryKeys = new Dictionary<string, string>();
                 _lastUnprocessedChanges = new Queue<long>();
             }
 
@@ -111,7 +108,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     else if (_lastUnprocessedChanges.Count < SqlTriggerConstants.MinimumNumberOfSamples)
                     {
                         heartbeat = new SqlHeartbeat(currentUnprocessedChanges,
-                                new ScaleRecommendation(ScaleAction.None, keepWorkersAlive: true, reason: $"Need to wait for " +
+                                new ScaleRecommendation(ScaleAction.None, keepWorkersAlive: true, reason: $"Need to wait for" +
                                 $" {SqlTriggerConstants.MinimumNumberOfSamples - _lastUnprocessedChanges.Count} more polling interval(s) to accumulate" +
                                 $" sufficient metrics to make scale decisions for user table {_userTable}."));
                     }
@@ -122,32 +119,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         {
                             _lastUnprocessedChanges.Dequeue();
                         }
-                        var lastUnprocessedChangesString = string.Empty;
-                        bool first = true;
-                        foreach (var change in _lastUnprocessedChanges)
-                        {
-                            if (first)
-                            {
-                                first = false;
-                            }
-                            else
-                            {
-                                lastUnprocessedChangesString += ", ";
-                            }
-                            lastUnprocessedChangesString += change;
-                        }
+
+                        string lastUnprocessedChangesString = GenerateSamplesString();
                         var scaleRecommendationReason = $"The past {SqlTriggerConstants.MinimumNumberOfSamples} samples for the number of unprocessed changes are" +
-                            $" {lastUnprocessedChangesString}";
+                            $" {lastUnprocessedChangesString}.";
                         var pattern = GetPatternOfChange();
+
                         // The rate at which changes are being created is apparently starting to grow
                         if (pattern > 0)
                         {
-                            var percentIncrease = (double)currentUnprocessedChanges / _lastUnprocessedChanges.Peek() * 100 - 100;
-                            scaleRecommendationReason += $" The rate at which changes are being created has apparently increased by {percentIncrease}% for user table {_userTable}.";
+                            double firstSample = _lastUnprocessedChanges.Peek();
+                            double percentIncrease;
+                            if (firstSample == 0)
+                            {
+                                // So the next if check passes
+                                percentIncrease = SqlTriggerConstants.MinimumPercentIncrease;
+                                scaleRecommendationReason += $" The number of unprocessed changes has gone from zero to the non-zero value {currentUnprocessedChanges}.";
+                            }
+                            else
+                            {
+                                percentIncrease = (currentUnprocessedChanges - firstSample) / firstSample * 100;
+                                scaleRecommendationReason += $" The rate at which changes are being created has apparently increased by {percentIncrease,2}% for " +
+                                    $"user table {_userTable}.";
+                            }
                             if (percentIncrease >= SqlTriggerConstants.MinimumPercentIncrease)
                             {
-                                scaleRecommendationReason += $" Since this is greater than or equal to the minimum of {SqlTriggerConstants.MinimumPercentIncrease}% required to add a worker, " +
-                                    $"add a worker.";
+                                scaleRecommendationReason += $" Since this represents an increase that is greater than or equal to the minimum of " +
+                                    $"{SqlTriggerConstants.MinimumPercentIncrease}% required to add a worker, add a worker.";
                                 heartbeat = new SqlHeartbeat(currentUnprocessedChanges,
                                     new ScaleRecommendation(ScaleAction.AddWorker, keepWorkersAlive: true, reason: scaleRecommendationReason));
                             }
@@ -158,8 +156,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                                     new ScaleRecommendation(ScaleAction.None, keepWorkersAlive: true, reason: scaleRecommendationReason));
                             }
                         }
+
+                        // The rate is decreasing
+                        else if (pattern < 0)
+                        {
+                            double firstSample = _lastUnprocessedChanges.Peek();
+                            var percentDecrease = (firstSample - currentUnprocessedChanges) / firstSample * 100;
+                            scaleRecommendationReason += $" The rate at which changes are being created has apparently decreased by {percentDecrease,2}% for " +
+                                $"the user table {_userTable}.";
+                            if (percentDecrease >= SqlTriggerConstants.MinimumPercentDecrease)
+                            {
+                                scaleRecommendationReason += $" Since this represents a decrease that is greater than or equal to the minimum of " +
+                                    $"{SqlTriggerConstants.MinimumPercentDecrease}% required to remove a worker, remove a worker.";
+                                heartbeat = new SqlHeartbeat(currentUnprocessedChanges,
+                                    new ScaleRecommendation(ScaleAction.RemoveWorker, keepWorkersAlive: true, reason: scaleRecommendationReason));
+                            }
+                            else
+                            {
+                                scaleRecommendationReason += $" Since this is less than the minimum of {SqlTriggerConstants.MinimumPercentIncrease}% required to remove a worker, do nothing.";
+                                heartbeat = new SqlHeartbeat(currentUnprocessedChanges,
+                                    new ScaleRecommendation(ScaleAction.None, keepWorkersAlive: true, reason: scaleRecommendationReason));
+                            }
+                        }
+
                         // The rate is neither strictly increasing or decreasing
-                        else if (pattern == 0)
+                        else
                         {
                             scaleRecommendationReason += $" The rate at which changes are being created is neither strictly increasing or decreasing for user table {_userTable}.";
                             ScaleAction scaleAction = ScaleAction.None;
@@ -207,31 +228,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                                 }
                                 else
                                 {
-                                    scaleRecommendationReason += " No changes have occurred to the user's table and there are no workers alive. Do nothing";
+                                    scaleRecommendationReason += " Changes have yet to start occurring to the user's table and there are no workers alive. Do nothing";
                                 }
                             }
 
                             heartbeat = new SqlHeartbeat(currentUnprocessedChanges,
                                 new ScaleRecommendation(scaleAction, keepWorkersAlive: keepAlive, reason: scaleRecommendationReason));
-                        }
-                        // The rate is decreasing
-                        else
-                        {
-                            var percentDecrease = 100 - (double)currentUnprocessedChanges / _lastUnprocessedChanges.Peek() * 100;
-                            scaleRecommendationReason += $" The rate at which changes are being created has apparently decreased by {percentDecrease}% for the user table {_userTable}.";
-                            if (percentDecrease >= SqlTriggerConstants.MinimumPercentDecrease)
-                            {
-                                scaleRecommendationReason += $" Since this is greater than or equal to the minimum of {SqlTriggerConstants.MinimumPercentDecrease}% required to remove a worker, " +
-                                    $"remove a worker.";
-                                heartbeat = new SqlHeartbeat(currentUnprocessedChanges,
-                                    new ScaleRecommendation(ScaleAction.RemoveWorker, keepWorkersAlive: true, reason: scaleRecommendationReason));
-                            }
-                            else
-                            {
-                                scaleRecommendationReason += $" Since this is less than the minimum of {SqlTriggerConstants.MinimumPercentIncrease}% required to remove a worker, do nothing.";
-                                heartbeat = new SqlHeartbeat(currentUnprocessedChanges,
-                                    new ScaleRecommendation(ScaleAction.None, keepWorkersAlive: true, reason: scaleRecommendationReason));
-                            }
                         }
                     }
                     return heartbeat;
@@ -242,6 +244,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         new ScaleRecommendation(ScaleAction.None, keepWorkersAlive: true, reason: $"Unable to query for the metrics necessary to make a scale decision for user table {_userTable}." +
                         $" Query to determine number of new changes in the past polling interval failed to return results with exception {e.Message}. {_leftOuterJoinWorkerTable}"));
                 }
+            }
+
+            /// <summary>
+            /// Returns a string representation of _lastUnprocessedChanges. The list of samples shows the oldest samples first, 
+            /// newest samples last. 
+            /// </summary>
+            private string GenerateSamplesString()
+            {
+                var lastUnprocessedChangesString = string.Empty;
+                bool first = true;
+                foreach (var change in _lastUnprocessedChanges)
+                {
+                    if (first)
+                    {
+                        first = false;
+                    }
+                    else
+                    {
+                        lastUnprocessedChangesString += ", ";
+                    }
+                    lastUnprocessedChangesString += change;
+                }
+                return lastUnprocessedChangesString;
             }
 
             /// <summary>
@@ -269,13 +294,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 int pattern = 0;
                 foreach (var diff in diffs)
                 {
-                    // Neither strictly increasing or decreasing, return 0
-                    if (diff == 0)
-                    {
-                        return 0;
-                    }
                     // Decreasing
-                    else if (diff < 0)
+                    if (diff < 0)
                     {
                         // Was previously increasing, return 0
                         if (pattern > 0)
@@ -288,7 +308,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         }
                     }
                     // Increasing
-                    else
+                    else if (diff > 0)
                     {
                         // Was previously decreasing, return 0
                         if (pattern < 0)
@@ -350,20 +370,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     await connection.OpenAsync();
                     // If we want to avoid deadlocks, perhaps it's okay to make the transaction level ReadUncommitted
                     // We would get less accurate results, but we wouldn't be competing for table locks with other workers.
-                    using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
+                    // Right now don't include a transaction since this command just involves reading data
+                    using (SqlCommand getUnprocessedChangesCommand = BuildGetUnprocessedChangesCommand(connection))
                     {
-                        using (SqlCommand getUnprocessedChangesCommand = BuildGetUnprocessedChangesCommand(connection, transaction))
+                        using (SqlDataReader reader = await getUnprocessedChangesCommand.ExecuteReaderAsync())
                         {
-                            using (SqlDataReader reader = await getUnprocessedChangesCommand.ExecuteReaderAsync())
+                            if (await reader.ReadAsync())
                             {
-                                if (await reader.ReadAsync())
-                                {
-                                    return reader.GetInt64(0);
-                                }
+                                return reader.GetInt64(0);
                             }
                         }
-                        await transaction.CommitAsync();
-                    }
+                    }   
                 }
                 return -1;
             }
@@ -381,53 +398,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 using (var connection = new SqlConnection(_connectionString))
                 {
                     await connection.OpenAsync();
-                    using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
+                    // If we want to avoid deadlocks, perhaps it's okay to make the transaction level ReadUncommitted
+                    // We would get less accurate results, but we wouldn't be competing for table locks with other workers.
+                    // Right now don't include a transaction since this command just involves reading data
+                    using (SqlCommand getWorkerBatchSizesCommand = BuildGetWorkerBatchSizesCommand(connection, granularity, pollingInterval))
                     {
-                        // If we want to avoid deadlocks, perhaps it's okay to make the transaction level ReadUncommitted
-                        // We would get less accurate results, but we wouldn't be competing for table locks with other workers.
-                        using (SqlCommand getWorkerBatchSizesCommand = BuildGetWorkerBatchSizesCommand(connection, transaction, granularity, pollingInterval))
+                        using (SqlDataReader reader = await getWorkerBatchSizesCommand.ExecuteReaderAsync())
                         {
-                            using (SqlDataReader reader = await getWorkerBatchSizesCommand.ExecuteReaderAsync())
+                            while (await reader.ReadAsync())
                             {
-                                while (await reader.ReadAsync())
-                                {
-                                    workerBatchSizes.Add(reader.GetInt64(0));
-                                }
+                                workerBatchSizes.Add(reader.GetInt64(0));
                             }
                         }
-                        await transaction.CommitAsync();
                     }
                 }
                 return workerBatchSizes;
-            }
-
-            /// <summary>
-            /// Returns the total number of rows processed for this user table
-            /// </summary>
-            private async Task<long> GetRowsProcessed()
-            {
-                using (var connection = new SqlConnection(_connectionString))
-                {
-                    await connection.OpenAsync();
-                    using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
-                    {
-                        // If we want to avoid deadlocks, perhaps it's okay to make the transaction level ReadUncommitted
-                        // We would get less accurate results, but we wouldn't be competing for table locks with other workers.
-                        using (SqlCommand getRowsProcessedCommand = BuildGetRowsProcessedCommand(connection, transaction))
-                        {
-                            using (SqlDataReader reader = await getRowsProcessedCommand.ExecuteReaderAsync())
-                            {
-                                if (await reader.ReadAsync())
-                                {
-                                    return reader.GetInt64(0);
-                                }
-                            }
-                        }
-                        await transaction.CommitAsync();
-                    }
-                }
-                // If global state table hasn't been created yet so the query doesn't return any values, no rows have been processed yet so return 0
-                return 0;
             }
 
             /// <summary>
@@ -442,7 +427,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     $"FROM sys.indexes i\n" +
                     $"INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id\n" +
                     $"INNER JOIN sys.columns c ON ic.object_id = c.object_id AND c.column_id = ic.column_id\n" +
-                    $"WHERE i.is_primary_key = 1 and i.object_id = OBJECT_ID(\'{_userTable}\', \'U\');";
+                    $"WHERE i.is_primary_key = 1 and i.object_id = OBJECT_ID(N\'{_userTable}\', \'U\');";
 
                 return new SqlCommand(getUserTablePrimaryKeysQuery, connection);
             }
@@ -455,7 +440,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <param name="granularity">The granularity of the polling interval ("s" for seconds, "mi" for minutes, etc.)</param>
             /// <param name="pollingInterval">How often the this method is being called</param>
             /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-            private SqlCommand BuildGetWorkerBatchSizesCommand(SqlConnection connection, SqlTransaction transaction, string granularity, long pollingInterval)
+            private SqlCommand BuildGetWorkerBatchSizesCommand(SqlConnection connection, string granularity, long pollingInterval)
             {
                 var getWorkerBatchSizesQuery =
                     $"IF OBJECT_ID(N\'{_workerBatchSizesTable}\', \'U\') IS NOT NULL\n" +
@@ -465,24 +450,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     $"ELSE\n" +
                     $"SELECT -1;";
 
-                return new SqlCommand(getWorkerBatchSizesQuery, connection, transaction);
-            }
-
-            /// <summary>
-            /// Builds the query to get the total number of rows processed for this user table
-            /// </summary>
-            /// <param name="connection">The connection to add to the returned SqlCommand</param>
-            /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
-            /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-            private SqlCommand BuildGetRowsProcessedCommand(SqlConnection connection, SqlTransaction transaction)
-            {
-                var getRowsProcessedQuery =
-                    $"IF OBJECT_ID(N\'{_globalStateTable}\', \'U\') IS NOT NULL\n" +
-                    $"SELECT RowsProcessed\n" +
-                    $"FROM {_globalStateTable}\n" +
-                    $"WHERE UserTableID = {_userTableID};";
-
-                return new SqlCommand(getRowsProcessedQuery, connection, transaction);
+                return new SqlCommand(getWorkerBatchSizesQuery, connection);
             }
 
             /// <summary>
@@ -492,9 +460,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// first worker to start processing changes would have to do anyway)
             /// </summary>
             /// <param name="connection">The connection to add to the returned SqlCommand</param>
-            /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
             /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-            private SqlCommand BuildGetUnprocessedChangesCommand(SqlConnection connection, SqlTransaction transaction)
+            private SqlCommand BuildGetUnprocessedChangesCommand(SqlConnection connection)
             {
                 // COUNT_BIG returns a bigint, which is composed of 8 bytes, not 4, in the case that there are a lot of unprocessed changes
                 // The worker table is created after the global state table is created/populated, so if it exists, so too does info. in the global state table
@@ -520,7 +487,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     $"AND (Changes.DequeueCount IS NULL OR Changes.DequeueCount < {SqlTriggerConstants.MaxDequeueCount})\n" +
                     $"END";
 
-                return new SqlCommand(getChangesQuery, connection, transaction);
+                return new SqlCommand(getChangesQuery, connection);
             }
         }
 
@@ -853,18 +820,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 await GetUserTableSchemaAsync();
                 _workerTable = $"[{SqlTriggerConstants.Schema}].[Worker_Table_{_userTableID}]";
 
-                // Do I need a transaction for this? I think so, seems like should be repeatable read
                 using (var connection = new SqlConnection(_connectionString))
                 {
                     await connection.OpenAsync();
                     using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
                     {
+                        // Create the schema where the worker tables will be located if it does not already exist
+                        using (SqlCommand createSchemaCommand = BuildCreateSchemaCommand(connection, transaction))
+                        {
+                            await createSchemaCommand.ExecuteNonQueryAsync();
+                        }
 
                         // Create the global state table, if one doesn't already exist for this database
                         using (SqlCommand createGlobalStateTableCommand = BuildCreateGlobalStateTableCommand(connection, transaction))
                         {
                             await createGlobalStateTableCommand.ExecuteNonQueryAsync();
                         }
+
                         // Insert a row into the global state table for this user table, if one doesn't already exist
                         using (SqlCommand insertRowGlobalStateTableCommand = BuildInsertRowGlobalStateTableCommand(connection, transaction))
                         {
@@ -882,21 +854,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                                 throw new InvalidOperationException(errorMessage);
                             }
                         }
+
                         // Create the worker table, if one doesn't already exist for this user table
                         using (SqlCommand createWorkerTableCommand = BuildCreateWorkerTableCommand(connection, transaction))
                         {
                             await createWorkerTableCommand.ExecuteNonQueryAsync();
                         }
+
                         // Create the worker batch size table, if one doesn't already exist for this user table
                         using (SqlCommand createWorkerBatchSizeTableCommand = BuildCreateWorkerBatchSizesTableCommand(connection, transaction))
                         {
                             await createWorkerBatchSizeTableCommand.ExecuteNonQueryAsync();
                         }
+
                         // Upsert a row for this worker/user table with a batch size of 0 to indicate that this worker is now live and able to process changes
                         using (SqlCommand upsertRowWorkerBatchSizeTableCommand = BuildUpsertRowWorkerBatchSizesTableCommand(connection, transaction, 0))
                         {
                             await upsertRowWorkerBatchSizeTableCommand.ExecuteNonQueryAsync();
                         }
+
+                        await transaction.CommitAsync();
                     }
                 }
             }
@@ -919,28 +896,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 using (var connection = new SqlConnection(_connectionString))
                 {
+                    // I don't think I need a transaction for this since the command just reads data
                     await connection.OpenAsync();
-                    using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
+                    // Determine the primary keys of the user table
+                    using (var getPrimaryKeysCommand = BuildGetUserTablePrimaryKeysCommand(connection))
                     {
-                        // Determine the primary keys of the user table
-                        using (var getPrimaryKeysCommand = BuildGetUserTablePrimaryKeysCommand(connection, transaction))
+                        using (SqlDataReader reader = await getPrimaryKeysCommand.ExecuteReaderAsync())
                         {
-                            using (SqlDataReader reader = await getPrimaryKeysCommand.ExecuteReaderAsync())
-                            {
-                                await DeterminePrimaryKeyTypesAsync(reader);
-                            }
+                            await DeterminePrimaryKeyTypesAsync(reader);
                         }
+                    }
 
-                        _userTableColumns.Clear();
-                        // Determine the names of the user table columns
-                        using (var getColumnNamesCommand = BuildGetUserTableColumnNamesCommand(connection, transaction))
+                    _userTableColumns.Clear();
+                    // Determine the names of the user table columns
+                    using (var getColumnNamesCommand = BuildGetUserTableColumnNamesCommand(connection))
+                    {
+                        using (SqlDataReader reader = await getColumnNamesCommand.ExecuteReaderAsync())
                         {
-                            using (SqlDataReader reader = await getColumnNamesCommand.ExecuteReaderAsync())
+                            while (await reader.ReadAsync())
                             {
-                                while (await reader.ReadAsync())
-                                {
-                                    _userTableColumns.Add(reader.GetString(0));
-                                }
+                                _userTableColumns.Add(reader.GetString(0));
                             }
                         }
                     }
@@ -1012,13 +987,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 using (var connection = new SqlConnection(_connectionString))
                 {
                     await connection.OpenAsync();
-                    using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
+                    // I don't think I need a transaction for just deleting rows from the worker batch sizes table
+                    // Even if we read the timestamp of a row, determine its stale, then another worker actually updates the timestamp,
+                    // but we delete the row anyway, there's functionality in place to deal with that
+                    using (SqlCommand cleanUpWorkerBatchSizesTable = BuildCleanUpWorkerBatchSizesTableCommand(connection))
                     {
-                        using (SqlCommand cleanUpWorkerBatchSizesTable = BuildCleanUpWorkerBatchSizesTableCommand(connection, transaction))
-                        {
-                            await cleanUpWorkerBatchSizesTable.ExecuteNonQueryAsync();
-                        }
-                        await transaction.CommitAsync();
+                        await cleanUpWorkerBatchSizesTable.ExecuteNonQueryAsync();
                     }
                 }
             }
@@ -1031,13 +1005,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 using (var connection = new SqlConnection(_connectionString))
                 {
                     await connection.OpenAsync();
-                    using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
+                    // I don't think I need a transaction for deleting the row corresponding to this worker from the batch sizes table either
+                    using (SqlCommand deleteRowFromWorkerBatchSizesTable = BuildDeleteRowFromWorkerBatchSizesTableCommand(connection))
                     {
-                        using (SqlCommand deleteRowFromWorkerBatchSizesTable = BuildDeleteRowFromWorkerBatchSizesTableCommand(connection, transaction))
-                        {
-                            await deleteRowFromWorkerBatchSizesTable.ExecuteNonQueryAsync();
-                        }
-                        await transaction.CommitAsync();
+                        await deleteRowFromWorkerBatchSizesTable.ExecuteNonQueryAsync();
                     }
                 }
             }
@@ -1050,12 +1021,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 using (var connection = new SqlConnection(_connectionString))
                 {
                     await connection.OpenAsync();
-                    using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
+                    // I don't think I need a transaction for renewing leases. If this worker reads in a row from the worker table
+                    // and determines that it corresponds to its batch of changes, but then that row gets deleted by a cleanup task,
+                    // it shouldn't renew its lease on it anyways
+                    using (SqlCommand renewLeaseCommand = BuildRenewLeasesCommand(connection))
                     {
-                        using (SqlCommand renewLeaseCommand = BuildRenewLeasesCommand(connection, transaction))
-                        {
-                            await renewLeaseCommand.ExecuteNonQueryAsync();
-                        }
+                        await renewLeaseCommand.ExecuteNonQueryAsync();
                     }
                 }
             }
@@ -1110,14 +1081,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             {
                                 await upsertRowWorkerBatchSizesTableCommand.ExecuteNonQueryAsync();
                             }
-                            await transaction.CommitAsync();
-                        }
-
-                        // Need a separate transaction for this because need the leases the worker held on its rows released for the update
-                        // version number command to recognize that all rows with VersionNumber <= newVersionNumber have been successfully processed
-                        // Update the GlobalVersionNumber if possible and clean worker table
-                        using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
-                        {
+                            // Update the global state table if we have processed all changes with version number <= newVersionNumber, and clean up the worker table
+                            // to remove all rows with VersionNumber <= newVersionNumber
                             using (SqlCommand updateGlobalStateTableCommand = BuildUpdateGlobalStateTableCommand(connection, transaction, newVersionNumber, _rows.Count))
                             {
                                 await updateGlobalStateTableCommand.ExecuteNonQueryAsync();
@@ -1146,9 +1111,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// Builds the command to determine the primary key column names and types of the user table
             /// </summary>
             /// <param name="connection">The connection to add to the returned SqlCommand</param>
-            /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
             /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-            private SqlCommand BuildGetUserTablePrimaryKeysCommand(SqlConnection connection, SqlTransaction transaction)
+            private SqlCommand BuildGetUserTablePrimaryKeysCommand(SqlConnection connection)
             {
                 var getUserTablePrimaryKeysQuery =
                     $"SELECT c.name, t.name, c.max_length, c.precision, c.scale\n" +
@@ -1156,25 +1120,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     $"INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id\n" +
                     $"INNER JOIN sys.columns c ON ic.object_id = c.object_id AND c.column_id = ic.column_id\n" +
                     $"INNER JOIN sys.types t ON c.user_type_id = t.user_type_id\n" +
-                    $"WHERE i.is_primary_key = 1 and i.object_id = OBJECT_ID(\'{_userTable}\', \'U\');";
+                    $"WHERE i.is_primary_key = 1 and i.object_id = OBJECT_ID(N\'{_userTable}\', \'U\');";
 
-                return new SqlCommand(getUserTablePrimaryKeysQuery, connection, transaction);
+                return new SqlCommand(getUserTablePrimaryKeysQuery, connection);
             }
 
             /// <summary>
             /// Builds the command to determine the names of the user table columns
             /// </summary>
             /// <param name="connection">The connection to add to the returned SqlCommand</param>
-            /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
             /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-            private SqlCommand BuildGetUserTableColumnNamesCommand(SqlConnection connection, SqlTransaction transaction)
+            private SqlCommand BuildGetUserTableColumnNamesCommand(SqlConnection connection)
             {
                 var getUserTableColumnNamesQuery =
                     $"SELECT name\n" +
                     $"FROM sys.columns\n" +
                     $"WHERE object_id = OBJECT_ID(\'{_userTable}\');";
 
-                return new SqlCommand(getUserTableColumnNamesQuery, connection, transaction);
+                return new SqlCommand(getUserTableColumnNamesQuery, connection);
             }
 
             /// <summary>
@@ -1236,30 +1199,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// Builds the command to delete stale rows from the _workerBatchSizesTable (<see cref="CleanUpWorkerBatchSizesTableAsync"/>)
             /// </summary>
             /// <param name="connection">The connection to add to the returned SqlCommand</param>
-            /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
             /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-            private SqlCommand BuildCleanUpWorkerBatchSizesTableCommand(SqlConnection connection, SqlTransaction transaction)
+            private SqlCommand BuildCleanUpWorkerBatchSizesTableCommand(SqlConnection connection)
             {
                 var cleanUpWorkerBatchSizesTableCommand =
                     $"DELETE FROM {_workerBatchSizesTable}\n" +
                     $"WHERE DATEADD({SqlTriggerConstants.CleanupUnits}, {SqlTriggerConstants.CleanupInterval}, Timestamp) < SYSDATETIME();";
 
-                return new SqlCommand(cleanUpWorkerBatchSizesTableCommand, connection, transaction);
+                return new SqlCommand(cleanUpWorkerBatchSizesTableCommand, connection);
             }
 
             /// <summary>
             /// Builds the command to delete this worker's row from the worker batch sizes table (<see cref="DeleteRowFromWorkerBatchSizesTableAsync"/>)
             /// </summary>
             /// <param name="connection">The connection to add to the returned SqlCommand</param>
-            /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
             /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-            private SqlCommand BuildDeleteRowFromWorkerBatchSizesTableCommand(SqlConnection connection, SqlTransaction transaction)
+            private SqlCommand BuildDeleteRowFromWorkerBatchSizesTableCommand(SqlConnection connection)
             {
                 var cleanUpWorkerBatchSizesTableCommand =
                     $"DELETE FROM {_workerBatchSizesTable}\n" +
                     $"WHERE UserTableID = {_userTableID} AND WorkerID = \'{_workerID}\'";
 
-                return new SqlCommand(cleanUpWorkerBatchSizesTableCommand, connection, transaction);
+                return new SqlCommand(cleanUpWorkerBatchSizesTableCommand, connection);
             }
 
             /// <summary>
@@ -1305,9 +1266,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// Builds the query to renew leases on the rows in "_rows" (<see cref="RenewLeasesAsync(CancellationToken)"/>)
             /// </summary>
             /// <param name="connection">The connection to add to the returned SqlCommand</param>
-            /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
             /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-            private SqlCommand BuildRenewLeasesCommand(SqlConnection connection, SqlTransaction transaction)
+            private SqlCommand BuildRenewLeasesCommand(SqlConnection connection)
             {
                 SqlCommand renewLeasesCommand = new SqlCommand();
                 SqlBindingUtilities.AddPrimaryKeyParametersToCommand(renewLeasesCommand, _rows, _primaryKeys.Keys);
@@ -1324,7 +1284,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 renewLeasesCommand.CommandText = renewLeasesCommandString;
                 renewLeasesCommand.Connection = connection;
-                renewLeasesCommand.Transaction = transaction;
 
                 return renewLeasesCommand;
             }
@@ -1432,6 +1391,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             /// <summary>
+            /// Builds the command to create the schema where the worker tables are located if it does not already exist (<see cref="CreateWorkerTablesAsync"/>)
+            /// </summary>
+            /// <param name="connection">The connection to attach to the returned SqlCommand</param>
+            /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
+            /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
+            private SqlCommand BuildCreateSchemaCommand(SqlConnection connection, SqlTransaction transaction)
+            {
+                var createSchemaCommand =
+                    $"IF SCHEMA_ID(N\'{SqlTriggerConstants.Schema}\') IS NULL\n" +
+                    $"EXEC (\'CREATE SCHEMA {SqlTriggerConstants.Schema}\')";
+
+                return new SqlCommand(createSchemaCommand, connection, transaction);
+            }
+
+            /// <summary>
             /// Builds the command to create the global state table if one does not already exist (<see cref="CreateWorkerTablesAsync"/>)
             /// </summary>
             /// <param name="connection">The connection to attach to the returned SqlCommand</param>
@@ -1443,8 +1417,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     $"IF OBJECT_ID(N\'{_globalStateTable}\', \'U\') IS NULL\n" +
                     $"CREATE TABLE {_globalStateTable} (\n" +
                     $"UserTableID int PRIMARY KEY,\n" +
-                    $"GlobalVersionNumber bigint NOT NULL,\n" +
-                    $"RowsProcessed bigint\n" +
+                    $"GlobalVersionNumber bigint NOT NULL\n" +
                     $");";
                 return new SqlCommand(createGlobalStateTableCommand, connection, transaction);
             }
@@ -1460,7 +1433,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var insertRowGlobalStateTableCommand =
                     $"IF NOT EXISTS (SELECT * FROM {_globalStateTable} WHERE UserTableID = {_userTableID})\n" +
                     $"INSERT INTO {_globalStateTable}\n" +
-                    $"VALUES ({_userTableID}, CHANGE_TRACKING_MIN_VALID_VERSION({_userTableID}), 0);\n";
+                    $"VALUES ({_userTableID}, CHANGE_TRACKING_MIN_VALID_VERSION({_userTableID}));\n";
 
                 return new SqlCommand(insertRowGlobalStateTableCommand, connection, transaction);
             }
@@ -1480,11 +1453,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var updateGlobalStateTableCommand =
                     $"DECLARE @current_version bigint;\n" +
                     $"DECLARE @unprocessed_changes bigint;\n" +
-                    $"DECLARE @current_rows_processed bigint;\n" +
-                    $"DECLARE @max_int bigint;\n" +
-                    $"SELECT @current_rows_processed = RowsProcessed FROM {_globalStateTable} WHERE UserTableID = {_userTableID};\n" +
                     $"SELECT @current_version = GlobalVersionNumber FROM {_globalStateTable} WHERE UserTableID = {_userTableID};\n" +
-                    $"SET @max_int = 9223372036854775807;\n" +
                     $"SELECT @unprocessed_changes = \n" +
                     $"COUNT(*)\n" +
                     $"FROM\n" +
@@ -1500,15 +1469,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     $"WHERE UserTableID = {_userTableID};\n" +
                     $"DELETE FROM {_workerTable}\n" +
                     $"WHERE VersionNumber <= {newVersionNumber};\n" +
-                    $"END\n" +
-                    $"IF @max_int - @current_rows_processed < {rowsProcessed}\n" +
-                    $"UPDATE {_globalStateTable}\n" +
-                    $"SET RowsProcessed = {rowsProcessed} - (@max_int - @current_rows_processed)\n" +
-                    $"WHERE UserTableID = {_userTableID}\n" +
-                    $"ELSE\n" +
-                    $"UPDATE {_globalStateTable}\n" +
-                    $"SET RowsProcessed = @current_rows_processed + {rowsProcessed}\n" +
-                    $"WHERE UserTableID = {_userTableID};";
+                    $"END\n";
 
                 return new SqlCommand(updateGlobalStateTableCommand, connection, transaction);
             }
@@ -1730,12 +1691,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </exception>
         private static async Task<int> GetUserTableIDAsync(string connectionString, string userTable)
         {
-            var getObjectIDQuery = $"SELECT OBJECT_ID(\'{userTable}\', \'U\');";
+            var getObjectIDQuery = $"SELECT OBJECT_ID(N\'{userTable}\', \'U\');";
 
             using (var connection = new SqlConnection(connectionString))
             {
                 await connection.OpenAsync();
-                // Don't think I need a transaction for this system-defined function
+                // Don't think I need a transaction for this since I'm just reading data
                 using (var getObjectIDCommand = new SqlCommand(getObjectIDQuery, connection))
                 {
                     using (SqlDataReader reader = await getObjectIDCommand.ExecuteReaderAsync())

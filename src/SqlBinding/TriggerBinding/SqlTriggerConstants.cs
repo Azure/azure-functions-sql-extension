@@ -36,7 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public const int LeaseInterval = 30;
 
-        public const int PollingInterval = 10;
+        public const int PollingInterval = 5;
 
         public const int CleanupInterval = 300;
 

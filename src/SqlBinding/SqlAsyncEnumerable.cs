@@ -38,11 +38,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The enumerator</returns>
         public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
         {
-            return new SqlAsyncEnumerator<T>(_connection, _attribute);
+            return new SqlAsyncEnumerator(_connection, _attribute);
         }
 
 
-        private class SqlAsyncEnumerator<T> : IAsyncEnumerator<T>
+        private class SqlAsyncEnumerator : IAsyncEnumerator<T>
         {
             private readonly SqlConnection _connection;
             private readonly SqlAttribute _attribute;
