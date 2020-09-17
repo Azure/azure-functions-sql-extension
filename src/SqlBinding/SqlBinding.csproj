@@ -8,19 +8,19 @@
     <Product>SQL Binding Extension</Product>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-	<DebugSymbols>true</DebugSymbols>
+    <DebugSymbols>true</DebugSymbols>
     <IncludeSymbols>false</IncludeSymbols>
     <DebugType>embedded</DebugType>
     <PackageId>Microsoft.Azure.WebJobs.Extensions.Sql</PackageId>
-	<PublishRepositoryUrl>true</PublishRepositoryUrl>
-	<EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <Version>1.0.0-preview2</Version>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.*" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="2.0.*" />
-	<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.*" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.*" PrivateAssets="All" />
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>SqlExtension.Tests</_Parameter1>
     </AssemblyAttribute>
