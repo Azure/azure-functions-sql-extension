@@ -2,19 +2,17 @@
 
 ## Introduction ##
 
-This repository contains extension code for SQL Server input, output, and trigger bindings as well as a getting started guide and samples of how to use them. The getting started guide details how to setup your environment and provides a basic tutorial. A high level explanation of each binding is provided below. More in depth descriptions of each binding are in their respective sample sections.
+This repository contains extension code for SQL Server input and output bindings as well as a getting started guide and samples of how to use them. The getting started guide details how to setup your environment and provides a basic tutorial. A high level explanation of each binding is provided below. More in depth descriptions of each binding are in their respective sample sections.
 
 - **input binding**: takes a SQL query to run on a provided table and returns the output of the query.
 - **output binding**: takes a list of rows, and the binding upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
-- **trigger binding**: requires the user specify the name of a table, and in the event a change occurs (i.e. the row is updated, deleted, or inserted), the binding will return the updated rows and values along with any associated metadata.
 
 ## Table of Contents ##
 
-***Quickstart:** refer to 'Enable Change Tracking' and 'Set Up Local .NET Function App.'*
+***Quickstart:** refer to 'Set Up Local .NET Function App.'*
 
 - [Getting Started](#Getting-Started)
   - [Create Azure SQL Database](#Create-Azure-SQL-Database)
-  - [Enable Change Tracking](#Enable-Change-Tracking)
   - [Set Up Local .NET Function App](###Set-Up-Local-.NET-Function-App)
   - [Input Binding Tutorial](#Input-Binding-Tutorial)
   - [Output Binding Tutorial](#Output-Binding-Tutorial)
@@ -22,7 +20,6 @@ This repository contains extension code for SQL Server input, output, and trigge
 - [Samples](#Samples)
   - [Input Binding Samples](#Input-Binding-Samples)
   - [Output Binding Samples](#Output-Binding-Samples)
-  - [Input Binding Samples](#Input-Binding-Samples)
 
 ## Getting Started ##
 
@@ -69,36 +66,9 @@ We will create a simple Azure SQL Database here. For additional reference on Azu
 
 - Keep this window open as we will need it to enable change tracking. Congratulations! You have successfully setup an Azure SQL Database and are now ready to create your first SQL input and output bindings!
 
-### Enable Change Tracking ###
-
-The trigger binding uses SQL's [change tracking functionality](https://docs.microsoft.com/en-us/sql/relational-databases/track-changes/about-change-tracking-sql-server?view=sql-server-ver15) to monitor a user table for changes. As such, it is necessary to enable change tracking on the database and table before using the trigger binding.
-
-1. To enable change tracking on the database, run
-
-    ```sql
-        ALTER DATABASE  [Your database's name]
-        SET CHANGE_TRACKING = ON  
-        (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON)
-    ```
-
-1. Before enabling change tracking on the table, we need make sure table has a primary key. To do this run the below SQL command in the SQL query editor. A primary key column can't be null, so we added the first line to ensure no null values before setting the primary key.
-
-    ```sql
-        ALTER TABLE [dbo].[Employees] alter column EmployeeId int NOT NULL
-        ALTER TABLE [dbo].[Employees] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED (EmployeeId);
-    ```
-
-1. To enable change tracking on the table, run
-
-    ```sql
-        ALTER TABLE [dbo].[Employees]
-        ENABLE CHANGE_TRACKING  
-        WITH (TRACK_COLUMNS_UPDATED = ON)
-    ```
-
 ### Set Up Local .NET Function App ###
 
-Completing this section will allow you to begin using the input and output bindings. If you want to use the trigger binding, you will have needed to enable change tracking as outlined in the previous section.
+Completing this section will allow you to begin using the input and output bindings.
 
 1. Add MyGet package feed.
 
@@ -166,7 +136,7 @@ Note: The values in sample code assume that the SQL database is setup as shown i
 
 - Navigate back to your HttpTrigger file. We can ignore the 'Run' warning for now.
 - Open the local.settings.json file, and in the brackets for "Values," add the SqlConnectionString
-- Hit 'F5' to run your code. Both an HttpTrigger and SQLTrigger will run. Click the link that appears in your terminal, and you should see your database output in the browser window
+- Hit 'F5' to run your code. Both an HttpTrigger and SQLBinding will run. Click the link that appears in your terminal, and you should see your database output in the browser window
 Congratulations! You have successfully created your first SQL input binding!
 
 ### Output Binding Tutorial ###
@@ -453,70 +423,6 @@ public static IActionResult Run(
         Cost = int.Parse(req.Query["cost"])
     };
     return new CreatedResult($"/api/addproduct", product);
-}
-```
-
-### Trigger Binding ###
-
-**NOTE: THE MYGET PACKAGE DOES NOT CURRENTLY CONTAIN TRIGGER BINDING FUNCTIONALITY**
-
-#### SQL Setup ####
-
-The trigger binding uses SQL's [change tracking functionality](https://docs.microsoft.com/en-us/sql/relational-databases/track-changes/about-change-tracking-sql-server?view=sql-server-ver15) to monitor a user table for changes. As such, it is necessary to enable change tracking on the database and table before using the trigger binding.
-
-To enable change tracking on the database, run
-
-```sql
-ALTER DATABASE AdventureWorks2012  
-SET CHANGE_TRACKING = ON  
-(CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON)
-```
-
-The `CHANGE_RETENTION` parameter specifies for how long changes are kept in the change tracking table. In this case, if a row in a user table hasn't experienced any new changes for two days, it will be removed from the associated change tracking table. The `AUTO_CLEANUP` parameter is used to enable or disable the clean-up task that removes stale data. More information about this command is provided [here](https://docs.microsoft.com/en-us/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server?view=sql-server-ver15#enable-change-tracking-for-a-database).
-
-Before enabling change tracking on the table, we need make sure table has a primary key. To do this run the below SQL command in the SQL query editor. A primary key column can't be null, so we added the first line to ensure no null values before setting the primary key.
-
-```sql
-    ALTER TABLE [dbo].[Employees] alter column EmployeeId int NOT NULL
-    ALTER TABLE [dbo].[Employees] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED (EmployeeId);
-```
-
-To enable change tracking on the table, run
-
-```sql
-ALTER TABLE Person.Contact  
-ENABLE CHANGE_TRACKING  
-WITH (TRACK_COLUMNS_UPDATED = ON)
-```
-
-The `TRACK_COLUMNS_UPDATED` feature being enabled means that the change tracking table also stores information about what columns where updated in the case of an `UPDATE`. Currently, the trigger binding does not make use of this additional metadata, though that functionality could be added in the future. More information about this command is provided [here](https://docs.microsoft.com/en-us/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server?view=sql-server-ver15#enable-change-tracking-for-a-table).
-
-The trigger binding needs to have read access to the table being monitored for changes as well as to the change tracking system tables. It also needs write access to an `az_func` schema within the database, where it will create additional worker tables to process the changes. Each user table will thus have an associated change tracking table and worker table. The worker table will contain roughly as many rows as the change tracking table, and will be cleaned up approximately as often as the change table.
-
-#### Trigger Binding Samples ####
-
-The trigger binding takes two arguments
-- **TableName**: Passed as a constructor argument to the binding. Represents the name of the table to be monitored for changes.
-- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/en-us/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
-
-The following are valid binding types for trigger binding
-- **IEnumerable<SqlChangeTrackingEntry\<T\>>**: Each element is a `SqlChangeTrackingEntry`, which stores change metadata about a modified row in the user table as well as the row itself. In the case that the row was deleted, only the primary key values of the row are populated. The user table row is represented by `T`, where `T` is a user-defined POCO, or Plain Old C# Object. `T` should follow the structure of a row in the queried table. See the [Query String](#query-string) section for an example of what `T` should look like. The two fields of a `SqlChangeTrackingEntry` are the `Data` field of type `T` which stores the row, and the `ChangeType` field of type `SqlChangeType` which indicates the type of operaton done to the row (either an insert, update, or delete).
-
-Any time changes happen to the "Products" table, the function is triggered with a list of changes that occurred. The changes are processed sequentially, so the function will be triggered by the earliest changes first.
-
-```csharp
-[FunctionName("ProductsTrigger")]
-public static void Run(
-    [SqlTrigger("Products", ConnectionStringSetting = "SqlConnectionString")]
-    IEnumerable<SqlChangeTrackingEntry<Product>> changes,
-    ILogger logger)
-{
-    foreach (var change in changes)
-    {
-        Product product = change.Data;
-        logger.LogInformation($"Change occurred to Products table row: {change.ChangeType}");
-        logger.LogInformation($"ProductID: {product.ProductID}, Name: {product.Name}, Price: {product.Cost}");
-    }
 }
 ```
 
