@@ -25,10 +25,10 @@ This repository contains extension code for SQL Server input and output bindings
 
 ### Create Azure SQL Database ###
 
-We will create a simple Azure SQL Database here. For additional reference on Azure SQL Databases, go here
+We will create a simple Azure SQL Database. For additional reference on Azure SQL Databases, go [here](https://docs.microsoft.com/en-us/azure/azure-sql/database/single-database-create-quickstart?tabs=azure-portal).
 
 - Create a SQL Database
-  - Navigate to your Azure Subscription. If you don't already have an Azure Subscription, go here
+  - Navigate to your Azure Subscription. If you don't already have an Azure Subscription, go [here](https://azure.microsoft.com/en-us/free/search/?&OCID=AID2100131_SEM_XzK4bAAAAJBpCjfl:20200918000154:s&msclkid=f33d47a9a4ec1c1b6ced18cd9bd2923f&ef_id=XzK4bAAAAJBpCjfl:20200918000154:s&dclid=CKLQqbL28esCFUrBfgod4BIBMA).
   - In your Azure Subscription, click resource groups on the left sidebar.
   - Click 'Add' to create a new resource group
   - Fill in the 'Resource group' field with what you would like to call your resource group
