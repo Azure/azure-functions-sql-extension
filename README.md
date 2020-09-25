@@ -103,7 +103,7 @@ Note: The values in sample code assume that the SQL database is setup as shown i
 
     ```csharp
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "employees/{id})] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "employees/{id}")] HttpRequest req,
             ILogger log,
             [Sql("select from Employees where EmployeeId = @EmployeeId",
             CommandType = System.Data.CommandType.Text,
@@ -164,7 +164,7 @@ Note: The values in sample code assume that the SQL database is setup as shown i
                 Company = "Microsoft",
                 Team = "Functions"
             };
-            people.Add(employee);
+            employees.Add(employee);
             return new OkResult();
         }
 ```
