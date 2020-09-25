@@ -64,7 +64,7 @@ We will create a simple Azure SQL Database. For additional reference on Azure SQ
     INSERT INTO [dbo].[Employees] values (1, 'Hello', 'World', 'Microsoft', 'Functions')
     ```
 
-- Keep this window open as we will need it to enable change tracking. Congratulations! You have successfully setup an Azure SQL Database and are now ready to create your first SQL input and output bindings!
+- Congratulations! You have successfully setup an Azure SQL Database and are now ready to create your first SQL input and output bindings!
 
 ### Set Up Local .NET Function App ###
 
@@ -105,7 +105,7 @@ Note: The values in sample code assume that the SQL database is setup as shown i
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "employees/{id}")] HttpRequest req,
             ILogger log,
-            [Sql("select from Employees where EmployeeId = @EmployeeId",
+            [Sql("select * from Employees where EmployeeId = @EmployeeId",
             CommandType = System.Data.CommandType.Text,
             Parameters = "@EmployeeId = {id}",
             ConnectionStringSetting = "SqlConnectionString")]
