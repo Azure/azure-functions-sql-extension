@@ -148,7 +148,7 @@ This tutorial assumes that you have completed all steps from the Input/Output Bi
                 {
                     Employee employee = change.Data;
                     logger.LogInformation($"Change occurred to Employee table row: {change.ChangeType}");
-                    logger.LogInformation($"EmployeeID: {employee.EmployeeId}, FirstName: {employee.FirstName}, LastName: {employee.FirstName}, Company: {employee.Company}, Team: {employee.Team}");
+                    logger.LogInformation($"EmployeeID: {employee.EmployeeId}, FirstName: {employee.FirstName}, LastName: {employee.LastName}, Company: {employee.Company}, Team: {employee.Team}");
                 }
             }
         }
