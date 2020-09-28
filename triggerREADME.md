@@ -59,7 +59,7 @@ The trigger binding uses SQL's [change tracking functionality](https://docs.micr
 - Choose SqlBinding -> C# -> HttpTrigger ->  (Provide a function name) -> Company.namespace -> anonymous
 - Replace SqlBinding.csproj with the following
 
-    ```csproj
+    ```csharp
     <Project Sdk="Microsoft.NET.Sdk">
       <PropertyGroup>
         <TargetFramework>netcoreapp3.1</TargetFramework>

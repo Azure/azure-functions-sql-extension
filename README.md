@@ -5,7 +5,7 @@
 This repository contains extension code for SQL Server input and output bindings as well as a getting started guide and samples of how to use them. The getting started guide details how to setup your environment and provides a basic tutorial. A high level explanation of each binding is provided below. More in depth descriptions of each binding are in their respective sample sections. The trigger binding is currently not complete. However, if you would like to try it out and learn more about its current state, feel free to do so in the TriggerREADME.
 
 - **input binding**: takes a SQL query to run on a provided table and returns the output of the query.
-- **output binding**: takes a list of rows, and the binding upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
+- **output binding**: takes a list of rows and upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
 
 ## Table of Contents ##
 
