@@ -195,7 +195,7 @@ Note: The values in sample code assume that the SQL database is setup as shown i
     }
     ```
 
-    In the above, "dbo.Employees" is the name of the database our output binding is upserting into. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [Output Binding Samples](#Output-Binding-Samples) section*
+    *In the above, "dbo.Employees" is the name of the database our output binding is upserting into. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [Output Binding Samples](#Output-Binding-Samples) section*
 
 - Hit 'F5' to run your code. Click the second link to insert a value in you SQL table, and then, click the first link to view your table with the upserted rows in the browser.
 - Congratulations! You have now successfully used both the SQL input and output bindings. Checkout the samples section for more information on how to use them and explore on your own!
