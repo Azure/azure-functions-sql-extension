@@ -19,7 +19,7 @@ At a high level, the trigger binding requires the user specify the name of a tab
 
 ## State of Trigger Bindings ##
 
-Currently, the SQL trigger binding makes use of SQL Change Tracking in order to determine which rows have been changed. However, SQL Change Tracking only provides the primary keys of changed rows. It doesn't return any additional data about the rows. In order to get the additional row data, worker tables are created which find the changed rows and copy over all data associated with the row. However, in order to scale and allow multiple workers to work on the same table, additional internal tables are created to keep track of what worker tables are working on. In short, all of these additional tables are created in the SQL database and provide significant overhead which affects the amount of storage needed for the trigger binding as well as performance. Additional optimization work needs to be done before the SQL trigger can be considered complete.
+Currently, the SQL trigger binding makes use of SQL Change Tracking in order to determine which rows have been changed. However, SQL Change Tracking only provides the primary keys of changed rows. It doesn't return any additional data about the rows. In order to get the additional row data, worker tables are created which find the changed rows and copy over all data associated with the row. However, to scale and allow multiple workers to work on the same table, additional internal tables are created to keep track of what worker tables are working on. All of these additional tables are created in the SQL database and provide significant overhead which affects the amount of storage needed for the trigger binding as well as performance. Additional optimization work needs to be done before the SQL trigger is complete.
 
 ## Getting Started ##
 
@@ -155,7 +155,7 @@ This tutorial assumes that you have completed all steps from the Input/Output Bi
     }
     ```
 
-- Open your output binding and modify some of the values (e.g. Change Team from 'Functions' to 'Azure SQL'). This will update the row when the code is run.
+- Open your output binding file and modify some of the values (e.g. Change Team from 'Functions' to 'Azure SQL'). This will update the row when the code is run.
 - Hit 'F5' to run your code. Click the second link to the values in your SQL table. You should see the log update and tell you which row changed and what the data in the row is now.
 - Congratulations! You have now successfully used all the SQL bindings!
 
