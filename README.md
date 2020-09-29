@@ -2,7 +2,7 @@
 
 ## Introduction ##
 
-This repository contains extension code for SQL Server input and output bindings as well as a getting started guide and samples of how to use them. The getting started guide details how to setup your environment and provides a basic tutorial. A high level explanation of each binding is provided below. More in depth descriptions of each binding are in their respective sample sections. The trigger binding is currently not complete. However, if you would like to try it out and learn more about its current state, feel free to do so in the TriggerREADME.
+This repository contains extension code for SQL Server input and output bindings as well as a getting started guide and samples of how to use them. The getting started guide details how to setup your environment and provides a basic tutorial. A high level explanation of each binding is provided below. More in depth descriptions of each binding are in their respective sample sections. The trigger binding is currently not complete. However, if you would like to try it out and learn more about its current state, feel free to do so in the triggerREADME.
 
 - **input binding**: takes a SQL query to run on a provided table and returns the output of the query.
 - **output binding**: takes a list of rows and upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
@@ -81,9 +81,7 @@ A primary key must be set in your SQL table before using the bindings. To do thi
 
 ### Set Up Local .NET Function App ###
 
-**NOTE: THE MYGET PACKAGE DOES NOT CURRENTLY CONTAIN TRIGGER BINDING FUNCTIONALITY**
-
-Completing this section will allow you to begin using the input and output bindings.
+Completing this section will allow you to begin using the input, output, and trigger bindings.
 
 1. Add MyGet package feed.
 
@@ -102,7 +100,7 @@ Completing this section will allow you to begin using the input and output bindi
 1. Install the extension.
 
     ```bash
-    dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql --version 1.0.0-preview1
+    dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql --version 1.0.0-preview2
     ```
 
 1. Ensure you have Azure Storage Emulator running. For information on the Azure Storage Emulator, refer [here](https://docs.microsoft.com/en-us/azure/storage/common/storage-use-emulator#get-the-storage-emulator)
@@ -132,7 +130,7 @@ Note: The tutorial assumes that the SQL database is setup as shown in 'Create Az
     }
     ```
 
-    *In the above, "select from Employees where EmployeeId = @EmployeeId" is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query (System.Data.CommandType.Text) or a stored procedure (System.Data.CommandType.StoredProcedure). The line below that figures out how we want to implement parameters in this flow. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [Input Binding Samples](#Input-Binding-Samples) section*
+    *In the above, "select from Employees where EmployeeId = @EmployeeId" is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. The line below that determines the parameters. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [Input Binding Samples](#Input-Binding-Samples) section*
 
 - Add 'using System.Collections.Generic;' to the namespaces list at the top of the page.
 - Currently, there is an error for the Ienumerable. We'll fix this by creating an Employee class.

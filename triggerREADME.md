@@ -2,7 +2,7 @@
 
 ## Introduction ##
 
-**Please note, the SQL trigger binding is still in a developmental state and has not been optimized and thoroughly tested.** This document outlines the current state of the trigger binding as well as a getting started guide and samples of how to use it. The getting started guide details additional setup needed to use trigger bindings and provides a basic tutorial.
+**Please note, the SQL trigger binding is still in a development state and has not been fully optimized and tested.** This document outlines the current state of the trigger binding as well as a getting started guide and samples of how to use it. The getting started guide details additional setup needed to use trigger bindings and provides a basic tutorial.
 
 At a high level, the trigger binding requires the user specify the name of a table, and in the event a change occurs (i.e. the row is updated, deleted, or inserted), the binding will return the updated rows and values along with any associated metadata.
 
@@ -19,7 +19,7 @@ At a high level, the trigger binding requires the user specify the name of a tab
 
 ## State of Trigger Bindings ##
 
-Currently, the SQL trigger binding makes use of SQL Change Tracking in order to determine which rows have been changed. However, SQL Change Tracking only provides the primary keys of changed rows. It doesn't return any additional data about the rows. In order to get the additional row data, worker tables are created which find the changed rows and copy over all data associated with the row. However, to scale and allow multiple workers to work on the same table, additional internal tables are created to keep track of what worker tables are working on. All of these additional tables are created in the SQL database and provide significant overhead which affects the amount of storage needed for the trigger binding as well as performance. Additional optimization work needs to be done before the SQL trigger is complete.
+Currently, the SQL trigger binding makes use of SQL Change Tracking in order to determine which rows have been changed. However, SQL Change Tracking provides the primary keys of changed rows. It doesn't return all the additional data from the rows. In order to get the additional row data, worker tables are created which find the changed rows and copy over all data associated with the row. However, to scale and allow multiple workers to work on the same table, additional internal tables are created to keep track of what worker tables are working on. All of these additional tables are created in the SQL database and provide significant overhead which affects the amount of storage needed for the trigger binding as well as performance. Additional optimization work needs to be done before the SQL trigger is complete.
 
 ## Getting Started ##
 
@@ -51,60 +51,7 @@ The trigger binding uses SQL's [change tracking functionality](https://docs.micr
 
 ### Local .NET Function App ###
 
-**NOTE: THE MYGET PACKAGE IN THE README DOES NOT CURRENTLY CONTAIN TRIGGER BINDING FUNCTIONALITY**
-
-- Clone the SQL trigger/binding github repo to your local machine
-- Open the SQL Binding folder in the src folder in VSCode
-- Press 'F1' and search for 'Azure Functions: Create New Project'
-- Choose SqlBinding -> C# -> HttpTrigger ->  (Provide a function name) -> Company.namespace -> anonymous
-- Replace SqlBinding.csproj with the following
-
-    ```csharp
-    <Project Sdk="Microsoft.NET.Sdk">
-      <PropertyGroup>
-        <TargetFramework>netcoreapp3.1</TargetFramework>
-        <AzureFunctionsVersion>v3</AzureFunctionsVersion>
-        <Description>SQL binding extension for Azure Functions</Description>
-        <Company>Microsoft</Company>
-        <Authors>Microsoft</Authors>
-        <Product>SQL Binding Extension</Product>
-        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-        <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-        <DebugSymbols>true</DebugSymbols>
-        <IncludeSymbols>false</IncludeSymbols>
-        <DebugType>embedded</DebugType>
-        <PackageId>Microsoft.Azure.WebJobs.Extensions.Sql</PackageId>
-        <PublishRepositoryUrl>true</PublishRepositoryUrl>
-        <EmbedUntrackedSources>true</EmbedUntrackedSources>
-        <Version>1.0.0-preview2</Version>
-      </PropertyGroup>
-
-      <ItemGroup>
-        <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.7" />
-      </ItemGroup>
-      <ItemGroup>
-        <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.*" />
-        <PackageReference Include="Microsoft.Data.SqlClient" Version="2.0.*" />
-        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.*" PrivateAssets="All" />
-        <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-          <_Parameter1>SqlExtension.Tests</_Parameter1>
-        </AssemblyAttribute>
-        <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-          <_Parameter1>DynamicProxyGenAssembly2</_Parameter1>
-        </AssemblyAttribute>
-      </ItemGroup>
-      <ItemGroup>
-        <None Update="host.json">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-        <None Update="local.settings.json">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-          <CopyToPublishDirectory>Never</CopyToPublishDirectory>
-        </None>
-      </ItemGroup>
-    </Project>
-    ```
-
+- Make sure you have completed the 'Set Primary Key' and 'Set Up Local .NET Function App' sections of the README
 - Add the below to 'local.settings.json' in "Values"
 
     ```csharp
@@ -112,15 +59,12 @@ The trigger binding uses SQL's [change tracking functionality](https://docs.micr
     "AzureWebJobsDashboard": "UseDevelopmentStorage=true"
     ```
 
-- Add your connection string to 'local.settings.json' in "Values"
+- Make sure you have your connection string set in 'local.settings.json' in "Values"
 
 ### Trigger Binding Tutorial ###
 
 This tutorial assumes that you have completed all steps from the Input/Output Binding tutorials.
 
-- Move your input/output binding .cs files to SQLBinding
-- Move your 'Employee.cs' file to SQLBinding
-- Open your app in VSCode
 - Create a new file
 - Add the following namespaces
 
