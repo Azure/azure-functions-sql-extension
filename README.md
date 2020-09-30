@@ -31,7 +31,7 @@ This requires already having a SQL database. If you need to create a SQL databas
 
 A primary key must be set in your SQL table before using the bindings. To do this, you can run the below SQL commands in the SQL query editor.
 
-1. Ensure no NULL values in primary key column. The primary key will usually be an ID column.
+1. Ensure there are no NULL values in the primary key column. The primary key will usually be an ID column.
 
     ```sql
     ALTER TABLE ['your table name'] alter column ['column to be primary key'] int NOT NULL
@@ -65,7 +65,7 @@ A primary key must be set in your SQL table before using the bindings. To do thi
 
 These steps can be done in the VS Code terminal or Powershell. Completing this section will allow you to begin using the input, output, and trigger bindings.
 
-1. Add MyGet package feed.
+1. Add MyGet package feed. If you are running into errors, make sure you have the [.NET sdk](https://dotnet.microsoft.com/download) installed and in your system PATHS.
 
     ```bash
     dotnet nuget add source https://www.myget.org/F/azure-appservice/api/v3/index.json
@@ -87,9 +87,9 @@ These steps can be done in the VS Code terminal or Powershell. Completing this s
 
 1. Ensure you have Azure Storage Emulator running. For information on the Azure Storage Emulator, refer [here](https://docs.microsoft.com/en-us/azure/storage/common/storage-use-emulator#get-the-storage-emulator)
 
-1. Make sure you have SqlConnectionString set. Your connection string can be found in your SQL database resource by going to the left blade and clicking 'Connection strings'. Copy the text in the gray box to 'local.settings.json', so '"SqlConnectionString": [ConnectionString from gray box]' is in 'Values:'.
+1. Set the SqlConnectionString. Your connection string can be found in your SQL database resource by going to the left blade and clicking 'Connection strings'. Copy the Connection String to 'local.settings.json', so '"SqlConnectionString": [Connection String]' is in 'Values:'.
 
-1. You have setup your local environment and are now ready to create your first SQL bindings! See [Samples](#Samples) for information on how to use the bindings or continue to the [input](#Input-Binding-Tutorial), [output](#Output-Binding-Tutorial), and [trigger](#Trigger-Binding-Tutorial) binding tutorials.
+1. You have setup your local environment and are now ready to create your first SQL bindings! Continue to the [input](#Input-Binding-Tutorial), [output](#Output-Binding-Tutorial), and [trigger](#Trigger-Binding-Tutorial) binding tutorials, or refer to [Samples](#Samples) for information on how to use the bindings and explore on your own.
 
 ## Tutorials ##
 
@@ -138,7 +138,7 @@ Note: This tutorial assumes that the SQL database is setup as shown in 'Create A
 - Open your app that you created in 'Set Up Your Local Environment' in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger ->  (Provide a function name) -> Company.namespace -> anonymous
-- In the file which opens, replace the 'public static async Task<IActionResult> Run' block with the below code.
+- In the file that opens, replace the 'public static async Task<IActionResult> Run' block with the below code.
 
     ```csharp
     public static async Task<IActionResult> Run(
@@ -182,7 +182,7 @@ Note: This tutorial assumes that the SQL database is setup as shown in 'Create A
 
 ### Output Binding Tutorial ###
 
-Note: This tutorial assumes that the SQL database is setup as shown in 'Create Azure SQL Database.'
+Note: This tutorial assumes that the SQL database is setup as shown in 'Create Azure SQL Database,' and that you have the 'Employee.cs' class from the [Input Binding Tutorial](#Input-Binding-Tutorial).
 
 - Open your app in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
@@ -224,7 +224,7 @@ Note: This tutorial assumes that the SQL database is setup as shown in 'Create A
 
 ### Trigger Binding Tutorial ###
 
-This tutorial assumes that you have completed all steps from the Input/Output Binding tutorials.
+This tutorial assumes that you have completed all steps from the Input/Output Binding tutorials, and that the SQL database is setup as shown in 'Create Azure SQL Database.'
 
 - Create a new file
 - Add the following namespaces
@@ -267,8 +267,8 @@ This tutorial assumes that you have completed all steps from the Input/Output Bi
     ```
 
 - Open your output binding file and modify some of the values (e.g. Change Team from 'Functions' to 'Azure SQL'). This will update the row when the code is run.
-- Hit 'F5' to run your code. Click the second link to the values in your SQL table. You should see the log update and tell you which row changed and what the data in the row is now.
-- Congratulations! You have now successfully used the SQL trigger binding! Checkout [Trigger Binding Samples](#Trigger-Binding-Samples) for more information on how to use it and explore on your own!
+- Hit 'F5' to run your code. Click the link for the http trigger to the output binding. You should see the log update and tell you which row changed and what the data in the row is now.
+- Congratulations! You have now successfully used all the bindings! Checkout [Trigger Binding Samples](#Trigger-Binding-Samples) for more information on how to use the trigger binding and explore on your own!
 
 ## Samples ##
 
