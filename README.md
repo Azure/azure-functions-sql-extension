@@ -12,7 +12,7 @@ This repository contains extension code for SQL Server input and output bindings
 
 - [Quick Start](#Quick-Start)
   - [SQL Setup](#SQL-Setup)
-  - [Set Up Local .NET Function App](###Set-Up-Local-.NET-Function-App)
+  - [Set Up Local .NET Function App](#Set-Up-Local-.NET-Function-App)
 - [Tutorials](#Tutorials)
   - [Create Azure SQL Database](#Create-Azure-SQL-Database)
   - [Input Binding Tutorial](#Input-Binding-Tutorial)
