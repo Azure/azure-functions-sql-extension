@@ -2,86 +2,68 @@
 
 ## Introduction ##
 
-This repository contains extension code for SQL Server input and output bindings as well as a getting started guide and samples of how to use them. The getting started guide details how to setup your environment and provides a basic tutorial. A high level explanation of each binding is provided below. More in depth descriptions of each binding are in their respective sample sections. The trigger binding is currently not complete. However, if you would like to try it out and learn more about its current state, feel free to do so in the triggerREADME.
+This repository contains extension code for SQL Server input and output bindings as well as a quick start, tutorial, and samples of how to use them. A high level explanation of each binding is provided below. More in depth descriptions of each binding are in their respective sample sections.
 
 - **input binding**: takes a SQL query to run on a provided table and returns the output of the query.
 - **output binding**: takes a list of rows and upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
+- **trigger binding** requires the user to specify the name of a table, and in the event a change occurs (i.e. the row is updated, deleted, or inserted), the binding will return the updated rows and values along with any associated metadata.
 
 ## Table of Contents ##
 
-***Quickstart:** refer to 'Set Primary Key' and 'Set Up Local .NET Function App'*
-
-- [Getting Started](#Getting-Started)
-  - [Create Azure SQL Database](#Create-Azure-SQL-Database)
-  - [Set Primary Key](#Set-Primary-Key)
+- [Quick Start](#Quick-Start)
+  - [SQL Setup](#SQL-Setup)
   - [Set Up Local .NET Function App](###Set-Up-Local-.NET-Function-App)
+- [Tutorials](#Tutorials)
+  - [Create Azure SQL Database](#Create-Azure-SQL-Database)
   - [Input Binding Tutorial](#Input-Binding-Tutorial)
   - [Output Binding Tutorial](#Output-Binding-Tutorial)
-
+  - [Trigger Binding Tutorial](#Trigger-Binding-Tutorial)
 - [Samples](#Samples)
-  - [Input Binding Samples](#Input-Binding-Samples)
-  - [Output Binding Samples](#Output-Binding-Samples)
+  - [Input Binding](#Input-Binding)
+  - [Output Binding](#Output-Binding)
+  - [Trigger Binding](#Trigger-Binding)
 
-## Getting Started ##
+## Quick Start ##
 
-### Create Azure SQL Database ###
+### SQL Setup ###
 
-We will create a simple Azure SQL Database. For additional reference on Azure SQL Databases, go [here](https://docs.microsoft.com/en-us/azure/azure-sql/database/single-database-create-quickstart?tabs=azure-portal).
+This requires already having a SQL database. If you need to create a SQL database, please refer to [Create Azure SQL Database](#Create-Azure-SQL-Database) in the tutorials section.
 
-- Create a SQL Database
-  - Make sure you have an Azure subscription. If you don't already have an Azure Subscription, go [here](https://azure.microsoft.com/en-us/free/search/?&OCID=AID2100131_SEM_XzK4bAAAAJBpCjfl:20200918000154:s&msclkid=f33d47a9a4ec1c1b6ced18cd9bd2923f&ef_id=XzK4bAAAAJBpCjfl:20200918000154:s&dclid=CKLQqbL28esCFUrBfgod4BIBMA).
-  - Navigate to the [Azure portal](https://ms.portal.azure.com/)
-  - Click 'Create a resource', then search the marketplace for 'SQL Database' and select it. Provide a 'Subscription', 'Resource Group', and 'Database name.' Under the 'Server' field, click 'Create New'
-<kbd>![alt text](/Images/dbSetup.png)</kbd>
-  - Fill in the fields of the 'New server' panel. Make sure you know your 'Server admin login' and 'Password' as you will need them later. Click 'OK' at the bottom of the panel.
-  - Click 'Review and Create' at the bottom of the page. Then press 'Create.' While you are waiting for your resource to be created, feel free to do the "Set Up Your Local Environment" step and return here when completed.
-- Once created, navigate to the SQL Database resource. In the left panel, click 'Query editor'
-- Enter your login from when you created the SQL Database.
-  - If an error pops up for not being able to open the server, copy the Client IP address in the second sentence of the error message, and click 'set server firewall' at the bottom
-  - In the new window, click 'Add Client IP.' This will create an entry
-  - In the section with Rule Name, Start IP, and End IP, paste the IP address you just copied into the Start and End IP fields for the entry created in the previous step.
-  - Hit 'Save' in the top left and navigate back into the SQL Database login page.
-  - Enter your login. You should now be in the Query editor view
-- If you plan on skipping the tutorial, go to 'Set Primary Key.' Continue if you are doing the tutorial.
-- Enter the below script and hit run to create a table. Once created, if you expand the Tables section by clicking the arrow, you should see a table
+A primary key must be set in your SQL table before using the bindings. To do this, you can run the below SQL commands in the SQL query editor.
+
+1. Ensure no NULL values in primary key column. The primary key will usually be an ID column.
 
     ```sql
-    CREATE TABLE Employees (
-          EmployeeID int,
-          FirstName varchar(255),
-          LastName varchar(255),
-          Company varchar(255),
-          Team varchar(255)
-    );
+    ALTER TABLE ['your table name'] alter column ['column to be primary key'] int NOT NULL
     ```
 
-- Enter the blow script and hit run to create an entry in the table. Once created, if you right click your table name and click 'Select Top 1000 Rows', you'll be able to see your entry present.
+1. Set primary key column.
 
     ```sql
-    INSERT INTO [dbo].[Employees] values (1, 'Hello', 'World', 'Microsoft', 'Functions')
+    ALTER TABLE ['your table name'] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED (['column to be primary key']);
     ```
 
-- Congratulations! You have successfully setup an Azure SQL Database!
-
-### Set Primary Key ###
-
-A primary key must be set in your SQL table before using the bindings. To do this run the below SQL commands in the SQL query editor.
-
-1. Ensure no NULL values in primary key column
+1. Change tracking must be enabled to use the trigger binding. If you do not plan on using the trigger binding, you can skip this step. To enable change tracking on the database, run:
 
     ```sql
-    ALTER TABLE [dbo].[Employees] alter column EmployeeId int NOT NULL
+    ALTER DATABASE ['your database name']
+    SET CHANGE_TRACKING = ON  
+    (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON)
     ```
 
-1. Set primary key column
+1. Change tracking must be enabled to use the trigger binding. If you do not plan on using the trigger binding, you can skip this step. To enable change tracking on the table, run:
 
     ```sql
-    ALTER TABLE [dbo].[Employees] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED (EmployeeId);
+    ALTER TABLE ['your table name']
+    ENABLE CHANGE_TRACKING  
+    WITH (TRACK_COLUMNS_UPDATED = ON)
     ```
+
+1. Congrats on setting up your SQL database! Now continue to set up your local environment and complete the quick start. For more information on what change tracking does for the bindings, go to the [Trigger Binding](#Trigger-Binding) section.
 
 ### Set Up Local .NET Function App ###
 
-Completing this section will allow you to begin using the input, output, and trigger bindings.
+These steps can be done in the VS Code terminal or Powershell. Completing this section will allow you to begin using the input, output, and trigger bindings.
 
 1. Add MyGet package feed.
 
@@ -105,11 +87,53 @@ Completing this section will allow you to begin using the input, output, and tri
 
 1. Ensure you have Azure Storage Emulator running. For information on the Azure Storage Emulator, refer [here](https://docs.microsoft.com/en-us/azure/storage/common/storage-use-emulator#get-the-storage-emulator)
 
-1. You have setup your local environment and are now ready to create your first SQL input and output bindings! See samples below for information on how to use the binding or continue the tutorial.
+1. Make sure you have SqlConnectionString set. Your connection string can be found in your SQL database resource by going to the left blade and clicking 'Connection strings'. Copy the text in the gray box to 'local.settings.json', so '"SqlConnectionString": [ConnectionString from gray box]' is in 'Values:'.
+
+1. You have setup your local environment and are now ready to create your first SQL bindings! See [Samples](#Samples) for information on how to use the bindings or continue to the [input](#Input-Binding-Tutorial), [output](#Output-Binding-Tutorial), and [trigger](#Trigger-Binding-Tutorial) binding tutorials.
+
+## Tutorials ##
+
+### Create Azure SQL Database ###
+
+We will create a simple Azure SQL Database. For additional reference on Azure SQL Databases, go [here](https://docs.microsoft.com/en-us/azure/azure-sql/database/single-database-create-quickstart?tabs=azure-portal).
+
+- Create a SQL Database
+  - Make sure you have an Azure subscription. If you don't already have an Azure Subscription, go [here](https://azure.microsoft.com/en-us/free/search/?&OCID=AID2100131_SEM_XzK4bAAAAJBpCjfl:20200918000154:s&msclkid=f33d47a9a4ec1c1b6ced18cd9bd2923f&ef_id=XzK4bAAAAJBpCjfl:20200918000154:s&dclid=CKLQqbL28esCFUrBfgod4BIBMA).
+  - Navigate to the [Azure portal](https://ms.portal.azure.com/)
+  - Click 'Create a resource', then search the marketplace for 'SQL Database' and select it. Provide a 'Subscription', 'Resource Group', and 'Database name.' Under the 'Server' field, click 'Create New'
+<kbd>![alt text](/Images/dbSetup.png)</kbd>
+  - Fill in the fields of the 'New server' panel. Make sure you know your 'Server admin login' and 'Password' as you will need them later. Click 'OK' at the bottom of the panel.
+  - Click 'Review and Create' at the bottom of the page. Then press 'Create.' While you are waiting for your resource to be created, feel free to do the "Set Up Your Local Environment" step and return here when completed.
+- Once created, navigate to the SQL Database resource. In the left panel, click 'Query editor'
+- Enter your SQL Server login from when you created the SQL Database.
+  - If an error pops up for not being able to open the server, copy the Client IP address in the second sentence of the error message, and click 'set server firewall' at the bottom
+  - In the new window, click 'Add Client IP.' This will create an entry
+  - In the section with Rule Name, Start IP, and End IP, paste the IP address you just copied into the Start and End IP fields for the entry created in the previous step.
+  - Hit 'Save' in the top left and navigate back into the SQL Database login page.
+  - Enter your login. You should now be in the Query editor view
+- Enter the below script and hit run to create a table. Once created, if you expand the Tables section by clicking the arrow, you should see a table
+
+    ```sql
+    CREATE TABLE Employees (
+          EmployeeID int,
+          FirstName varchar(255),
+          LastName varchar(255),
+          Company varchar(255),
+          Team varchar(255)
+    );
+    ```
+
+- Enter the blow script and hit run to create an entry in the table. Once created, if you right click your table name and click 'Select Top 1000 Rows', you'll be able to see your entry present.
+
+    ```sql
+    INSERT INTO [dbo].[Employees] values (1, 'Hello', 'World', 'Microsoft', 'Functions')
+    ```
+
+- Congratulations! You have successfully created an Azure SQL Database! Make sure you complete [SQL Setup](#SQL-Setup) before continuing to the rest of the tutorial.
 
 ### Input Binding Tutorial ###
 
-Note: The tutorial assumes that the SQL database is setup as shown in 'Create Azure SQL Database.'
+Note: This tutorial assumes that the SQL database is setup as shown in 'Create Azure SQL Database.'
 
 - Open your app that you created in 'Set Up Your Local Environment' in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
@@ -154,11 +178,11 @@ Note: The tutorial assumes that the SQL database is setup as shown in 'Create Az
 - Hit 'F5' to run your code. Both an HttpTrigger and SQLBinding will run.
 - Click the link that appears in your terminal. If you get a 'HTTP ERROR 500' message, replace the browser url after the last '/' with 1. The url should look like 'localhost:7071/api/employees/1'
 - You should see your database output in the browser window.
-Congratulations! You have successfully created your first SQL input binding!
+- Congratulations! You have successfully created your first SQL input binding! Checkout [Input Binding Samples](#Input-Binding-Samples) for more information on how to use it and explore on your own!
 
 ### Output Binding Tutorial ###
 
-Note: The values in sample code assume that the SQL database is setup as shown in 'Create Azure SQL Database.'
+Note: This tutorial assumes that the SQL database is setup as shown in 'Create Azure SQL Database.'
 
 - Open your app in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
@@ -195,12 +219,60 @@ Note: The values in sample code assume that the SQL database is setup as shown i
 
     *In the above, "dbo.Employees" is the name of the database our output binding is upserting into. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [Output Binding Samples](#Output-Binding-Samples) section*
 
-- Hit 'F5' to run your code. Click the second link to insert a value in you SQL table, and then, click the first link to view your table with the upserted rows in the browser.
-- Congratulations! You have now successfully used both the SQL input and output bindings. Checkout the samples section for more information on how to use them and explore on your own!
+- Hit 'F5' to run your code. Click the link to upsert the output array values in your SQL table. Your values should launch in the browser.
+- Congratulations! You have successfully created your first SQL input binding! Checkout [Output Binding Samples](#Output-Binding-Samples) for more information on how to use it and explore on your own!
+
+### Trigger Binding Tutorial ###
+
+This tutorial assumes that you have completed all steps from the Input/Output Binding tutorials.
+
+- Create a new file
+- Add the following namespaces
+
+    ```csharp
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Extensions.Logging;
+    using System.Collections.Generic;
+    using Microsoft.Azure.WebJobs.Extensions.Sql;
+    ```
+
+- Below, add the SQL trigger
+
+    ```csharp
+    namespace Company.Function
+    {
+        public static class EmployeeTrigger
+        {
+            [FunctionName("EmployeeTrigger")]
+            public static void Run(
+                [SqlTrigger("[dbo].[Employees]", ConnectionStringSetting = "SqlConnectionString")]
+                IEnumerable<SqlChangeTrackingEntry<Employee>> changes,
+                ILogger logger)
+            {
+                foreach (var change in changes)
+                {
+                    Employee employee = change.Data;
+                    logger.LogInformation($"Change occurred to Employee table row: {change.ChangeType}");
+                    logger.LogInformation($"EmployeeID: {employee.EmployeeId}, FirstName: {employee.FirstName}, LastName: {employee.LastName}, Company: {employee.Company}, Team: {employee.Team}");
+                }
+            }
+        }
+    }
+    ```
+
+- Add the below to 'local.settings.json' in "Values"
+
+    ```json
+    "AzureWebJobsDashboard": "UseDevelopmentStorage=true"
+    ```
+
+- Open your output binding file and modify some of the values (e.g. Change Team from 'Functions' to 'Azure SQL'). This will update the row when the code is run.
+- Hit 'F5' to run your code. Click the second link to the values in your SQL table. You should see the log update and tell you which row changed and what the data in the row is now.
+- Congratulations! You have now successfully used the SQL trigger binding! Checkout [Trigger Binding Samples](#Trigger-Binding-Samples) for more information on how to use it and explore on your own!
 
 ## Samples ##
 
-### Input Binding Samples ###
+### Input Binding ###
 
 The input binding takes four arguments
 
@@ -339,7 +411,7 @@ public static async Task<IActionResult> Run(
 }
 ```
 
-### Output Binding Samples ###
+### Output Binding ###
 
 The output binding takes a list of rows to be upserted into a user table. If the primary key value of the row already exists in the table, the row is interpreted as an update, meaning that the values of the other columns in the table for that primary key are updated. If the primary key value does not exist in the table, the row is interpreted as an insert. The upserting of the rows is batched by the output binding code.
 
@@ -447,6 +519,62 @@ public static IActionResult Run(
         Cost = int.Parse(req.Query["cost"])
     };
     return new CreatedResult($"/api/addproduct", product);
+}
+```
+
+### Trigger Binding ###
+
+#### Change Tracking ####
+
+The trigger binding uses SQL's [change tracking functionality](https://docs.microsoft.com/en-us/sql/relational-databases/track-changes/about-change-tracking-sql-server?view=sql-server-ver15) to monitor a user table for changes. As such, it is necessary to enable change tracking on the database and table before using the trigger binding. This can be done in the query editor in the portal. If you need help navigating to it, visit the [Create Azure SQL Database](#Create-Azure-SQL-Database) section in the README.
+
+1. To enable change tracking on the database, run
+
+    ```sql
+    ALTER DATABASE ['your database name']
+    SET CHANGE_TRACKING = ON  
+    (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON)
+    ```
+
+    The `CHANGE_RETENTION` parameter specifies for how long changes are kept in the change tracking table. In this case, if a row in a user table hasn't experienced any new changes for two days, it will be removed from the associated change tracking table. The `AUTO_CLEANUP` parameter is used to enable or disable the clean-up task that removes stale data. More information about this command is provided [here](https://docs.microsoft.com/en-us/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server?view=sql-server-ver15#enable-change-tracking-for-a-database).
+
+1. To enable change tracking on the table, run
+
+    ```sql
+    ALTER TABLE dbo.Employees
+    ENABLE CHANGE_TRACKING  
+    WITH (TRACK_COLUMNS_UPDATED = ON)
+    ```
+
+    The `TRACK_COLUMNS_UPDATED` feature being enabled means that the change tracking table also stores information about what columns where updated in the case of an `UPDATE`. Currently, the trigger binding does not make use of this additional metadata, though that functionality could be added in the future. More information about this command is provided [here](https://docs.microsoft.com/en-us/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server?view=sql-server-ver15#enable-change-tracking-for-a-table).
+
+    The trigger binding needs to have read access to the table being monitored for changes as well as to the change tracking system tables. It also needs write access to an `az_func` schema within the database, where it will create additional worker tables to process the changes. Each user table will thus have an associated change tracking table and worker table. The worker table will contain roughly as many rows as the change tracking table, and will be cleaned up approximately as often as the change table.
+
+#### Trigger Binding Samples ####
+The trigger binding takes two arguments
+
+- **TableName**: Passed as a constructor argument to the binding. Represents the name of the table to be monitored for changes.
+- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/en-us/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
+
+The following are valid binding types for trigger binding
+
+- **IEnumerable<SqlChangeTrackingEntry\<T\>>**: Each element is a `SqlChangeTrackingEntry`, which stores change metadata about a modified row in the user table as well as the row itself. In the case that the row was deleted, only the primary key values of the row are populated. The user table row is represented by `T`, where `T` is a user-defined POCO, or Plain Old C# Object. `T` should follow the structure of a row in the queried table. See the [Query String](#query-string) section for an example of what `T` should look like. The two fields of a `SqlChangeTrackingEntry` are the `Data` field of type `T` which stores the row, and the `ChangeType` field of type `SqlChangeType` which indicates the type of operaton done to the row (either an insert, update, or delete).
+
+Any time changes happen to the "Products" table, the function is triggered with a list of changes that occurred. The changes are processed sequentially, so the function will be triggered by the earliest changes first.
+
+```csharp
+[FunctionName("ProductsTrigger")]
+public static void Run(
+    [SqlTrigger("Products", ConnectionStringSetting = "SqlConnectionString")]
+    IEnumerable<SqlChangeTrackingEntry<Product>> changes,
+    ILogger logger)
+{
+    foreach (var change in changes)
+    {
+        Product product = change.Data;
+        logger.LogInformation($"Change occurred to Products table row: {change.ChangeType}");
+        logger.LogInformation($"ProductID: {product.ProductID}, Name: {product.Name}, Price: {product.Cost}");
+    }
 }
 ```
 
