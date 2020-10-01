@@ -103,7 +103,7 @@ We will create a simple Azure SQL Database. For additional reference on Azure SQ
   - Click 'Create a resource', then search the marketplace for 'SQL Database' and select it. Provide a 'Subscription', 'Resource Group', and 'Database name.' Under the 'Server' field, click 'Create New'
 <kbd>![alt text](/Images/dbSetup.png)</kbd>
   - Fill in the fields of the 'New server' panel. Make sure you know your 'Server admin login' and 'Password' as you will need them later. Click 'OK' at the bottom of the panel.
-  - Click 'Review and Create' at the bottom of the page. Then press 'Create.' While you are waiting for your resource to be created, feel free to do the "Set Up Your Local Environment" step and return here when completed.
+  - Click 'Review and Create' at the bottom of the page. Then press 'Create.' While you are waiting for your resource to be created, feel free to do the [Set Up Local .NET Function App](#Set-Up-Local-.NET-Function-App) step if you have not done so already and return here when completed.
 - Once created, navigate to the SQL Database resource. In the left panel, click 'Query editor'
 - Enter your SQL Server login from when you created the SQL Database.
   - If an error pops up for not being able to open the server, copy the Client IP address in the second sentence of the error message, and click 'set server firewall' at the bottom
