@@ -205,6 +205,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
         }
 
+        public static void GetTableAndSchema(string fullName, out string schema, out string tableName)
+        {
+            // defaults
+            tableName = fullName;
+            schema = string.Empty;
+
+            // remove [ ] from name if necessary
+            string cleanName = fullName.Replace("]", string.Empty).Replace("[", string.Empty);
+
+            // if in format schema.table, split into two parts for query
+            string[] pieces = cleanName.Split('.');
+
+            if (pieces.Length == 2)
+            {
+                schema = pieces[0];
+                tableName = pieces[1];
+            }
+        }
+
         /// <summary>
         /// Attaches SqlParameters to "command". Each parameter follows the format (@PrimaryKey_i, PrimaryKeyValue), where @PrimaryKey is the
         /// name of a primary key column, and PrimaryKeyValue is one of the row's value for that column. To distinguish between the parameters
