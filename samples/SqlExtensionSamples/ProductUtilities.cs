@@ -32,7 +32,7 @@ namespace SqlExtensionSamples
 
         public static List<Product> GetNewProducts(int num, int cost)
         {
-            var products = new List<Product>();
+            var products = new List<Product>(num);
             for (int i = 0; i < num; i++)
             {
                 var product = new Product
