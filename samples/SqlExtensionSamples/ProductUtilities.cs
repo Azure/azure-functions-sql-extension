@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace SqlExtensionSamples
 {
@@ -10,7 +11,9 @@ namespace SqlExtensionSamples
 
             public string Name { get; set; }
 
-            public int Cost { get; set; }
+            public int Cost { get; set; }            
+
+            public DateTime LastChangeDate { get; set; }
 
         }
 
@@ -32,14 +35,17 @@ namespace SqlExtensionSamples
 
         public static List<Product> GetNewProducts(int num, int cost)
         {
+            var r = new Random();
+
             var products = new List<Product>(num);
             for (int i = 0; i < num; i++)
             {
                 var product = new Product
                 {
-                    ProductID = i,
-                    Cost = cost,
-                    Name = "test"
+                    ProductID = r.Next(1, num),
+                    Cost = (int)(Math.Round(r.NextDouble() * cost)),
+                    Name = "test",
+                    LastChangeDate = DateTime.Now
                 };
                 products.Add(product);
             }
