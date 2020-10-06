@@ -18,6 +18,7 @@ using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Tokens;
 using MoreLinq;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
@@ -91,7 +92,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private async Task<bool> OldImplementation(IEnumerable<T> rows, SqlAttribute attribute, IConfiguration configuration)
         {
             Stopwatch st = new Stopwatch();
-            
+
             int batchsize = 1000;
 
             using (SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, configuration))
@@ -156,7 +157,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             using (System.IO.StreamWriter file =
                     new System.IO.StreamWriter(@$"C:\temp\old-{batchsize}-fullbatch-{batches}.txt", true))
             {
-                file.WriteLine($"{st.ElapsedMilliseconds}, {st.ElapsedMilliseconds/batches}");
+                file.WriteLine($"{st.ElapsedMilliseconds}, {st.ElapsedMilliseconds / batches}");
             }
             return true;
         }
@@ -172,10 +173,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="configuration"> Used to build up the connection </param>
         private async Task UpsertRowsAsync(IEnumerable<T> rows, SqlAttribute attribute, IConfiguration configuration)
         {
-            if (await OldImplementation(rows, attribute, configuration))
-            {
-                return;
-            }
+            //if (await OldImplementation(rows, attribute, configuration))
+            //{
+            //    return;
+            //}
 
             using (SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
@@ -185,7 +186,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 ObjectCache cachedTables = MemoryCache.Default;
                 TableInformation tableInfo = cachedTables[fullDatabaseAndTableName] as TableInformation;
 
-                await connection.OpenAsync();
                 if (tableInfo == null)
                 {
                     tableInfo = TableInformation.RetrieveTableInformation(connection, fullDatabaseAndTableName);
@@ -217,25 +217,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 List<long> times = new List<long>(totalBatches);
 
                 st.Restart();
+                await connection.OpenAsync();
                 foreach (IEnumerable<T> batch in rows.Batch(batchSize))
                 {
-                    string newDataQuery = GenerateDataQueryForMerge(tableInfo, batch);
+                    var t = GenerateDataQueryForMerge(tableInfo, batch);
+                    var newDataQuery = t.Item1;
+                    var payload = t.Item2;
                     queryGen.Start();
-                    SqlCommand cmd = new SqlCommand($"{newDataQuery} {tableInfo.MergeQuery};", connection);
+                    var cmd = new SqlCommand($"{newDataQuery} {tableInfo.MergeQuery};", connection);
+                    var par = cmd.Parameters.Add("@j", SqlDbType.NVarChar, -1);
+                    par.Value = payload;
                     await cmd.ExecuteNonQueryAsync();
-
                     times.Add(queryGen.ElapsedMilliseconds);
                     queryGen.Restart();
                 }
+                await connection.CloseAsync();
 
                 st.Stop();
                 string line = $"Time for all rows: {st.ElapsedMilliseconds} ms. Row count: {rows.Count()}. Batch size: {batchSize}";
                 Console.WriteLine(line);
 
-                using (System.IO.StreamWriter file =
-                    new System.IO.StreamWriter(@$"C:\temp\new-{batchSize}-ms.txt", true))
+                using (System.IO.StreamWriter file = new System.IO.StreamWriter(@$"C:\temp\new-{batchSize}-ms.txt", true))
                 {
-                    foreach(long batchTime in times)
+                    foreach (long batchTime in times)
                     {
                         file.WriteLine(batchTime);
                     }
@@ -249,7 +253,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="rows">Rows to be upserted</param>
         /// <returns>T-SQL containing data for merge</returns>
 
-        private static string GenerateDataQueryForMerge(TableInformation table, IEnumerable<T> rows)
+        private static Tuple<string, string> GenerateDataQueryForMerge(TableInformation table, IEnumerable<T> rows)
         {
             IList<T> rowsToUpsert = new List<T>();
             HashSet<string> uniqueUpdatedPrimaryKeys = new HashSet<string>();
@@ -276,38 +280,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 rowsToUpsert.Add(row);
             }
 
-            string rowData = string.Empty;
-
             // todo: SURELY there is a better way to do this.........
             IEnumerable<MemberInfo> pocoFields = typeof(T).GetMembers().Where(f => f.MemberType == MemberTypes.Property || f.MemberType == MemberTypes.Field);
-            foreach (T row in rows)
-            {
-                rowData += "(";
-                // Pretty much everything should be surrounded with '' except for select few types
-                // todo: what about byte/char arrays, datetime?
-                foreach (PropertyInfo field in pocoFields)
-                {
-                    if (field.PropertyType == typeof(int) || field.PropertyType == typeof(bool) || field.PropertyType == typeof(double) || field.PropertyType == typeof(Decimal))
-                    {
-                        rowData += $"{field.GetValue(row)},";
-                    }
-                    else
-                    {
-                        // surround with ''
-                        rowData += $"'{field.GetValue(row)}',";
-                    }
-                }
-                rowData = rowData.TrimEnd(','); // trim any trailing commas
-                rowData += "),";
-            }
 
-            rowData = rowData.TrimEnd(','); // trim any trailing commas
 
             string columnNames = string.Join(",", pocoFields.Select(f => f.Name));
-            string newDataQuery = "WITH cte AS" +
-                $"( SELECT * FROM ( VALUES {rowData}) AS s({columnNames}))";
+            string rowData = JsonConvert.SerializeObject(rowsToUpsert);
+            string newDataQuery = $"WITH cte AS ( SELECT * FROM OPENJSON(@j) WITH ({string.Join(",", table.ColumnDefinitions)}) )";
 
-            return newDataQuery;
+            return Tuple.Create<string, string>(newDataQuery, rowData);
         }
 
         public class TableInformation
@@ -320,43 +301,60 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             public IEnumerable<string> ColumnNames { get; }
 
             /// <summary>
+            /// List of all of the columns, along with their data type, to use to turn JSON into table
+            /// </summary>
+            public IEnumerable<string> ColumnDefinitions { get; }
+
+            /// <summary>
             /// T-SQL merge statement generated from primary keys
             /// and column names for a specific table.
             /// </summary>
             public string MergeQuery { get; }
 
-            public TableInformation(IEnumerable<MemberInfo> primaryKeys, IEnumerable<string> columns, string mergeQuery)
+            public TableInformation(IEnumerable<MemberInfo> primaryKeys, IEnumerable<string> columns, IEnumerable<string> columnsDefinition, string mergeQuery)
             {
                 this.PrimaryKeys = primaryKeys;
                 this.ColumnNames = columns;
                 this.MergeQuery = mergeQuery;
+                this.ColumnDefinitions = columnsDefinition;
             }
 
             public static TableInformation RetrieveTableInformation(SqlConnection sqlConnection, string fullName)
             {
                 SqlBindingUtilities.GetTableAndSchema(fullName, out string schema, out string tableName);
 
-                // 1. Query SQL to get primary keys
-                // TODO: is this the best way to do this? This query seems inefficient & may require more control over DB than customers are willing to give us
-                string primaryKeyQuery = "SELECT Col.Column_Name from INFORMATION_SCHEMA.TABLE_CONSTRAINTS Tab, INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE Col" +
-                " WHERE Col.Constraint_Name = Tab.Constraint_Name AND Col.Table_Name = Tab.Table_Name AND Constraint_Type = 'PRIMARY KEY'" +
-                $" AND Col.Table_Name = '{tableName}'";
+                var schemaOrDefault = string.IsNullOrEmpty(schema) ? "SCHEMA_NAME()" : "'" + schema + "'"; // Use default user schema if only object name has been provided
 
-                if (!string.IsNullOrEmpty(schema))
-                {
-                    primaryKeyQuery += $"AND Col.Constraint_Schema = '{schema}'";
-                }
+                IEnumerable<string> columnNames = typeof(T).GetMembers().Where(f => f.MemberType == MemberTypes.Property || f.MemberType == MemberTypes.Field).Select(f => f.Name);
 
                 var primaryKeys = new List<string>();
+                var columnsDefinition = new List<string>();
+
+                // 1. Query SQL to get primary keys
+                string primaryKeyQuery = $@"
+                    select 
+                        COLUMN_NAME
+                    from
+                        INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+                    inner join
+                        INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE ccu on ccu.CONSTRAINT_NAME = tc.CONSTRAINT_NAME AND ccu.TABLE_NAME = tc.TABLE_NAME
+                    where
+                        tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
+                    and
+                        tc.TABLE_NAME = '{tableName}'
+                    and
+                        tc.TABLE_SCHEMA = {schemaOrDefault}
+                    ";
 
                 try
                 {
+                    sqlConnection.Open();
                     SqlCommand cmd = new SqlCommand(primaryKeyQuery, sqlConnection);
                     using (SqlDataReader rdr = cmd.ExecuteReader())
                     {
                         while (rdr.Read())
                         {
-                            primaryKeys.Add(rdr["Column_Name"].ToString());
+                            primaryKeys.Add(rdr["COLUMN_NAME"].ToString());
                         }
                     }
                 }
@@ -366,7 +364,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     string message = $"Encountered exception while retrieving primary keys for table '{tableName}.' Cannot generate upsert command without them.";
                     throw new InvalidOperationException(message, ex);
                 }
-                
+                finally
+                {
+                    sqlConnection.Close();
+                }
+
                 if (!primaryKeys.Any())
                 {
                     string message = $"Did not retrieve any primary keys for '{tableName}.' Cannot generate upsert command without them.";
@@ -379,8 +381,55 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     primaryKeyMatchingQuery += $" AND ExistingData.{primaryKey} = NewData.{primaryKey}";
                 }
 
+                // 2. Get Columns Definition
+                string columnDefinitionQuery = $@"
+                    select	
+	                    COLUMN_NAME + ' ' + DATA_TYPE +
+		                    case 
+			                    when CHARACTER_MAXIMUM_LENGTH = -1 then '(max)'
+			                    when CHARACTER_MAXIMUM_LENGTH <> -1 then '(' + cast(CHARACTER_MAXIMUM_LENGTH as varchar(4)) + ')'
+			                    when DATETIME_PRECISION is not null then '(' + cast(DATETIME_PRECISION as varchar(1)) + ')'
+			                    when DATETIME_PRECISION is not null then '(' + cast(DATETIME_PRECISION as varchar(1)) + ')'
+			                    when DATA_TYPE in ('decimal', 'numeric') then '(' + cast(NUMERIC_PRECISION as varchar(9)) + ',' + + cast(NUMERIC_SCALE as varchar(9)) + ')'
+			                    else ''
+		                    end as COLUMN_DEFINITION	
+                    from 
+	                    INFORMATION_SCHEMA.COLUMNS c
+                    where
+	                    c.TABLE_NAME = '{tableName}'         
+                    and
+                        c.TABLE_SCHEMA = {schemaOrDefault}
+                    and
+	                    c.COLUMN_NAME in (select [value] from openjson(@c))
+                    ";
+
+                try
+                {
+                    sqlConnection.Open();
+                    SqlCommand cmdColDef = new SqlCommand(columnDefinitionQuery, sqlConnection);
+                    var p = cmdColDef.Parameters.Add("@c", SqlDbType.NVarChar, -1);
+                    p.Value = JsonConvert.SerializeObject(columnNames);
+
+                    using (SqlDataReader rdr = cmdColDef.ExecuteReader())
+                    {
+                        while (rdr.Read())
+                        {
+                            columnsDefinition.Add(rdr["COLUMN_DEFINITION"].ToString());
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Throw a custom error so that it's easier to decipher.
+                    string message = $"Encountered exception while retrieving columns definition for table '{tableName}.' Cannot generate upsert command without them.";
+                    throw new InvalidOperationException(message, ex);
+                }
+                finally
+                {
+                    sqlConnection.Close();
+                }
+
                 // TODO -- do these need to be case sensitive? 
-                IEnumerable<string> columnNames = typeof(T).GetMembers().Where(f => f.MemberType == MemberTypes.Property || f.MemberType == MemberTypes.Field).Select(f => f.Name);
                 string columnMatchingQuery = string.Empty;
                 foreach (var column in columnNames)
                 {
@@ -400,7 +449,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // Match SQL column names to POCO field/property names
                 IEnumerable<MemberInfo> primaryKeyFields = typeof(T).GetMembers().Where(f => primaryKeys.Contains(f.Name, StringComparer.OrdinalIgnoreCase));
 
-                return new TableInformation(primaryKeyFields, columnNames, mergeQuery);
+                return new TableInformation(primaryKeyFields, columnNames, columnsDefinition, mergeQuery);
             }
         }
     }
