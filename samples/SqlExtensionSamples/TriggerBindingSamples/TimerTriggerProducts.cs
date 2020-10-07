@@ -22,7 +22,7 @@ namespace SqlExtensionSamples.TriggerBindingSamples
             log.LogInformation($"{DateTime.Now} starting execution #{_executionNumber}");
             int totalUpserts = 100000;
             
-            List<Product> newProducts = GetNewProducts(totalUpserts, _executionNumber);
+            List<Product> newProducts = GetNewProducts(totalUpserts, _executionNumber * 100);
             foreach (var product in newProducts)
             {
                 products.Add(product);
