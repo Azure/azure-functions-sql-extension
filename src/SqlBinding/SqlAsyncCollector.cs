@@ -2,25 +2,17 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Caching;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Protocols;
-using Microsoft.IdentityModel.Tokens;
 using MoreLinq;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -85,15 +77,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             if (_rows.Count != 0)
             {
-                // string rows = JsonConvert.SerializeObject(_rows);
-                // todo: take a lock on _rows
+                // TODO: do we need to take a lock on _rows?
                 await UpsertRowsAsync(_rows, _attribute, _configuration);
                 _rows.Clear();
             }
         }
-
-        // Maps from database name + table name to SqlCommandBuilders
-        private static ConcurrentDictionary<string, SqlCommandBuilder> _commandBuilders = new ConcurrentDictionary<string, SqlCommandBuilder>();
 
         /// <summary>
         /// Upserts the rows specified in "rows" to the table specified in "attribute"
@@ -114,7 +102,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 if (tableInfo == null)
                 {
-                    tableInfo = TableInformation.RetrieveTableInformation(connection, fullDatabaseAndTableName);
+                    Console.WriteLine("lookin");
+                    tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullDatabaseAndTableName);
 
                     // If we were unable to look up the primary keys, for whatever reason, return early. 
                     // We'll try again next time. TODO: do we need to have a max # of retries / backoff plan?
@@ -147,7 +136,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
         }
         /// <summary>
-        ///  Generates T-SQL for data to be upserted using Merge
+        /// Generates T-SQL for data to be upserted using Merge. 
+        /// This needs to be regenerated for every batch to upsert.
         /// </summary>
         /// <param name="table">Information about the table we will be upserting into</param>
         /// <param name="rows">Rows to be upserted</param>
@@ -288,12 +278,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             /// <summary>
             /// Retrieve (relatively) static information of SQL Table like primary keys, column names, etc. 
-            /// This information is used to generate the reusable portion of the MERGE query. 
+            /// in order to generate the MERGE portion of the upsert query.
+            /// This only needs to be generated once and can be reused for subsequent upserts.
             /// </summary>
             /// <param name="sqlConnection">Connection with which to query SQL against</param>
             /// <param name="fullName">Full name of table, including schema (if exists).</param>
             /// <returns>TableInformation object containing primary keys, column types, etc.</returns>
-            public static TableInformation RetrieveTableInformation(SqlConnection sqlConnection, string fullName)
+            public async static Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName)
             {
                 SqlBindingUtilities.GetTableAndSchema(fullName, out string schema, out string tableName);
 
@@ -301,9 +292,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var columnDefinitionsFromSQL = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 try
                 {
-                    sqlConnection.Open();
+                    await sqlConnection.OpenAsync();
                     SqlCommand cmdColDef = new SqlCommand(GetColumnDefinitionsQuery(schema, tableName), sqlConnection);
-                    using (SqlDataReader rdr = cmdColDef.ExecuteReader())
+                    using (SqlDataReader rdr = await cmdColDef.ExecuteReaderAsync())
                     {
                         while (rdr.Read())
                         {
@@ -319,7 +310,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 finally
                 {
-                    sqlConnection.Close();
+                    await sqlConnection.CloseAsync();
                 }
 
                 // 2. Ensure the POCO fields match the SQL column names. If not, throw. (TODO: is this expected behavior?)
@@ -348,9 +339,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var primaryKeys = new List<string>();
                 try
                 {
-                    sqlConnection.Open();
+                    await sqlConnection.OpenAsync();
                     SqlCommand cmd = new SqlCommand(GetPrimaryKeysQuery(schema, tableName), sqlConnection);
-                    using (SqlDataReader rdr = cmd.ExecuteReader())
+                    using (SqlDataReader rdr = await cmd.ExecuteReaderAsync())
                     {
                         while (rdr.Read())
                         {
@@ -366,7 +357,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 finally
                 {
-                    sqlConnection.Close();
+                    await sqlConnection.CloseAsync();
                 }
 
                 if (!primaryKeys.Any())
