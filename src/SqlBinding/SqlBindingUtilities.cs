@@ -209,7 +209,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             // defaults
             tableName = fullName;
-            schema = string.Empty;
+            schema = "SCHEMA_NAME()"; // default to user schema
 
             // remove [ ] from name if necessary
             string cleanName = fullName.Replace("]", string.Empty).Replace("[", string.Empty);

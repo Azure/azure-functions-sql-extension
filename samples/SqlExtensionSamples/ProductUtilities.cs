@@ -11,10 +11,7 @@ namespace SqlExtensionSamples
 
             public string Name { get; set; }
 
-            public int Cost { get; set; }            
-
-            public DateTime LastChangeDate { get; set; }
-
+            public int Cost { get; set; }
         }
 
         public static List<Product> GetNewProducts(int num)
@@ -44,8 +41,7 @@ namespace SqlExtensionSamples
                 {
                     ProductID = r.Next(1, num),
                     Cost = (int)(Math.Round(r.NextDouble() * cost)),
-                    Name = "test",
-                    LastChangeDate = DateTime.Now
+                    Name = "test"
                 };
                 products.Add(product);
             }
