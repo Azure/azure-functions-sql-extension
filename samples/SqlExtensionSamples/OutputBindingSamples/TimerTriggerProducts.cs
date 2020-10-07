@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 using static SqlExtensionSamples.ProductUtilities;
@@ -13,7 +12,7 @@ namespace SqlExtensionSamples.TriggerBindingSamples
         private static int _executionNumber = 0;
         [FunctionName("TimerTriggerProducts")]
         public static void Run(
-            [TimerTrigger("0 */1 * * * *")]TimerInfo myTimer, ILogger log,
+            [TimerTrigger("0 */3 * * * *")]TimerInfo myTimer, ILogger log,
             [Sql("Products", ConnectionStringSetting = "SqlConnectionString")] ICollector<Product> products)
         {
             Stopwatch sw = new Stopwatch();
@@ -31,7 +30,7 @@ namespace SqlExtensionSamples.TriggerBindingSamples
             sw.Stop();
 
 
-            string line = $"{DateTime.Now} finished execution #{_executionNumber}. Total time to create rows={sw.ElapsedMilliseconds}.";
+            string line = $"{DateTime.Now} finished execution #{_executionNumber}. Total time to create {totalUpserts} rows={sw.ElapsedMilliseconds}.";
 
             log.LogInformation(line);
             _executionNumber++;

@@ -11,18 +11,18 @@ namespace SqlExtensionSamples.TriggerBindingSamples
 {
     public static class ProductsTrigger
     {
-        //[FunctionName("ProductsTrigger")]
-        //public static void Run(
-        //    [SqlTrigger("[dbo].[Products]", ConnectionStringSetting = "SqlConnectionString")]
-        //    IEnumerable<SqlChangeTrackingEntry<Product>> changes,
-        //    ILogger logger)
-        //{
-        //    foreach (var change in changes)
-        //    {
-        //        Product product = change.Data;
-        //        logger.LogInformation($"Change occurred to Products table row: {change.ChangeType}");
-        //        logger.LogInformation($"ProductID: {product.ProductID}, Name: {product.Name}, Cost: {product.Cost}");
-        //    }
-        //}
+        [FunctionName("ProductsTrigger")]
+        public static void Run(
+            [SqlTrigger("[dbo].[Products]", ConnectionStringSetting = "SqlConnectionString")]
+            IEnumerable<SqlChangeTrackingEntry<Product>> changes,
+            ILogger logger)
+        {
+            foreach (var change in changes)
+            {
+                Product product = change.Data;
+                logger.LogInformation($"Change occurred to Products table row: {change.ChangeType}");
+                logger.LogInformation($"ProductID: {product.ProductID}, Name: {product.Name}, Cost: {product.Cost}");
+            }
+        }
     }
 }
