@@ -219,7 +219,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             if (pieces.Length == 2)
             {
-                schema = pieces[0];
+                schema = $"'{pieces[0]}'";
                 tableName = pieces[1];
             }
         }
