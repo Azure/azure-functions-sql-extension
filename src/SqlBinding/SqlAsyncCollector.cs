@@ -7,26 +7,33 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Caching;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using MoreLinq;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
     internal class SqlAsyncCollector<T> : IAsyncCollector<T>
     {
-        private static string RowDataParameter = "@rowData";
-        private static string ColumnName = "COLUMN_NAME";
-        private static string ColumnDefinition = "COLUMN_DEFINITION";
-        private static string NewDataParameter = "cte";
+        private readonly static string RowDataParameter = "@rowData";
+        private readonly static string ColumnName = "COLUMN_NAME";
+        private readonly static string ColumnDefinition = "COLUMN_DEFINITION";
+        private readonly static string NewDataParameter = "cte";
 
         private readonly IConfiguration _configuration;
         private readonly SqlAttribute _attribute;
-        private readonly List<T> _rows;
+        private readonly ILogger _logger;
+
+        private readonly List<T> _rows = new List<T>();
+        private readonly SemaphoreSlim _rowLock = new SemaphoreSlim(1, 1);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlAsyncCollector<typeparamref name="T"/>"/> class.
@@ -38,14 +45,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="attribute"> 
         /// Contains as one of its attributes the SQL table that rows will be inserted into 
         /// </param>
+        /// <param name="loggerFactory"> 
+        /// Logger Factory for creating an ILogger
+        /// </param>
         /// <exception cref="ArgumentNullException">
         /// Thrown if either configuration or attribute is null
         /// </exception>
-        public SqlAsyncCollector(IConfiguration configuration, SqlAttribute attribute)
+        public SqlAsyncCollector(IConfiguration configuration, SqlAttribute attribute, ILoggerFactory loggerFactory)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
-            _rows = new List<T>();
+            _logger = loggerFactory?.CreateLogger(LogCategories.Bindings) ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
         /// <summary>
@@ -56,13 +66,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="item"> The item to add to the collector </param>
         /// <param name="cancellationToken">The cancellationToken is not used in this method</param>
         /// <returns> A CompletedTask if executed successfully </returns>
-        public Task AddAsync(T item, CancellationToken cancellationToken = default)
+        public async Task AddAsync(T item, CancellationToken cancellationToken = default)
         {
             if (item != null)
             {
-                _rows.Add(item);
+                await _rowLock.WaitAsync();
+
+                try
+                {
+                    _rows.Add(item);
+                }
+                finally
+                {
+                    _rowLock.Release();
+                }
             }
-            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -75,11 +93,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// automatically. </returns>
         public async Task FlushAsync(CancellationToken cancellationToken = default)
         {
-            if (_rows.Count != 0)
+            await _rowLock.WaitAsync();
+            try
             {
-                // TODO: do we need to take a lock on _rows?
-                await UpsertRowsAsync(_rows, _attribute, _configuration);
-                _rows.Clear();
+                if (_rows.Count != 0)
+                {
+                    await UpsertRowsAsync(_rows, _attribute, _configuration);
+                    _rows.Clear();
+                }
+            }
+            finally
+            {
+                _rowLock.Release();
             }
         }
 
@@ -97,20 +122,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             using (SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
                 string fullDatabaseAndTableName = attribute.CommandText;
+
+                // Include the connection string hash as part of the key in case this customer has the same table in two different Sql Servers
+                string cacheKey = $"{connection.ConnectionString.GetHashCode()}-{fullDatabaseAndTableName}";
+
                 ObjectCache cachedTables = MemoryCache.Default;
-                TableInformation tableInfo = cachedTables[fullDatabaseAndTableName] as TableInformation;
+                TableInformation tableInfo = cachedTables[cacheKey] as TableInformation;
 
                 if (tableInfo == null)
                 {
-                    Console.WriteLine("lookin");
                     tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullDatabaseAndTableName);
-
-                    // If we were unable to look up the primary keys, for whatever reason, return early. 
-                    // We'll try again next time. TODO: do we need to have a max # of retries / backoff plan?
-                    if (tableInfo == null)
-                    {
-                        return;
-                    }
 
                     CacheItemPolicy policy = new CacheItemPolicy
                     {
@@ -118,7 +139,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(10)
                     };
 
-                    cachedTables.Set(fullDatabaseAndTableName, tableInfo, policy);
+                    _logger.LogInformation($"DB and Table: {fullDatabaseAndTableName}. Primary keys: [{string.Join(",", tableInfo.PrimaryKeys.Select(pk => pk.Name))}]. SQL Column and Definitions:  [{string.Join(",", tableInfo.ColumnDefinitions)}]");
+                    cachedTables.Set(cacheKey, tableInfo, policy);
                 }
 
                 int batchSize = 1000;
@@ -145,31 +167,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private static void GenerateDataQueryForMerge(TableInformation table, IEnumerable<T> rows, out string newDataQuery, out string rowData)
         {
             IList<T> rowsToUpsert = new List<T>();
-            HashSet<string> uniqueUpdatedPrimaryKeys = new HashSet<string>();
+
+            // Here, we assume that primary keys are case INsensitive, which is the SQL Server default.
+            HashSet<string> uniqueUpdatedPrimaryKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             // If there are duplicate primary keys, we'll need to pick the LAST (most recent) row per primary key.
             foreach (T row in rows.Reverse())
             {
-                string combinedPrimaryKey = string.Empty;
+                // SQL Server allows 900 bytes per primary key, so use that as a baseline
+                StringBuilder combinedPrimaryKey = new StringBuilder(900 * table.PrimaryKeys.Count());
+
                 // Look up primary key of T. Because we're going in the same order of fields every time,
                 // we can assume that if two rows with the same primary key are in the list, they will collide
                 foreach (PropertyInfo primaryKey in table.PrimaryKeys)
                 {
-                    combinedPrimaryKey += primaryKey.GetValue(row).ToString();
+                    combinedPrimaryKey.Append(primaryKey.GetValue(row).ToString());
                 }
 
-                // If we have already seen this unique primary key, skip this row
-                if (uniqueUpdatedPrimaryKeys.Contains(combinedPrimaryKey))
+                // If we have already seen this unique primary key, skip this update
+                if (uniqueUpdatedPrimaryKeys.Add(combinedPrimaryKey.ToString()))
                 {
-                    continue;
+                    // This is the first time we've seen this particular PK. Add this row to the upsert query.
+                    rowsToUpsert.Add(row);
                 }
-
-                // This is the first time we've seen this particular PK. Add this row to the upsert query.
-                uniqueUpdatedPrimaryKeys.Add(combinedPrimaryKey);
-                rowsToUpsert.Add(row);
             }
 
-            rowData = JsonConvert.SerializeObject(rowsToUpsert);
+            rowData = JsonConvert.SerializeObject(rowsToUpsert, table.JsonSerializerSettings);
             newDataQuery = $"WITH {NewDataParameter} AS ( SELECT * FROM OPENJSON({RowDataParameter}) WITH ({string.Join(",", table.ColumnDefinitions)}) )";
         }
 
@@ -178,7 +201,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             public IEnumerable<MemberInfo> PrimaryKeys { get; }
 
             /// <summary>
-            /// List of all of the columns, along with their data types, to use to turn JSON into table
+            /// All of the columns, along with their data types, for SQL to use to turn JSON into a table
             /// </summary>
             public IDictionary<string, string> Columns { get; }
 
@@ -193,11 +216,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </summary>
             public string MergeQuery { get; }
 
+            /// <summary>
+            /// Settings to use when serializing the POCO into SQL. 
+            /// Only serialize properties and fields that correspond to SQL columns. 
+            /// </summary>
+            public JsonSerializerSettings JsonSerializerSettings { get; }
+
             public TableInformation(IEnumerable<MemberInfo> primaryKeys, IDictionary<string, string> columns, string mergeQuery)
             {
                 this.PrimaryKeys = primaryKeys;
                 this.Columns = columns;
                 this.MergeQuery = mergeQuery;
+
+                this.JsonSerializerSettings = new JsonSerializerSettings
+                {
+                    ContractResolver = new DynamicPOCOContractResolver(columns)
+                };
             }
 
             /// <summary>
@@ -246,23 +280,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <summary>
             /// Generates reusable SQL query that will be part of every upsert command.
             /// </summary>
-            public static string GetMergeQuery(IList<string> primaryKeys, IEnumerable<string> columnNames, string fullTableName)
+            public static string GetMergeQuery(IList<string> primaryKeys, IDictionary<string, string> columnDataFromSQL, string fullTableName)
             {
                 // Generate the ON part of the merge query (compares new data against existing data)
-                string primaryKeyMatchingQuery = $"ExistingData.{primaryKeys[0]} = NewData.{primaryKeys[0]}";
-                foreach (var primaryKey in primaryKeys.Skip(1))
+                StringBuilder primaryKeyMatchingQuery = new StringBuilder($"ExistingData.{primaryKeys[0]} = NewData.{primaryKeys[0]}");
+                foreach (string primaryKey in primaryKeys.Skip(1))
                 {
-                    primaryKeyMatchingQuery += $" AND ExistingData.{primaryKey} = NewData.{primaryKey}";
+                    primaryKeyMatchingQuery.Append($" AND ExistingData.{primaryKey} = NewData.{primaryKey}");
                 }
 
                 // Generate the UPDATE part of the merge query (all columns that should be updated)
-                string columnMatchingQuery = string.Empty;
-                foreach (var column in columnNames)
+                IEnumerable<string> columnNamesFromSQL = columnDataFromSQL.Select(kvp => kvp.Key);
+                StringBuilder columnMatchingQueryBuilder = new StringBuilder();
+                foreach (string column in columnNamesFromSQL)
                 {
-                    columnMatchingQuery += $" ExistingData.{column} = NewData.{column},";
+                    columnMatchingQueryBuilder.Append($" ExistingData.{column} = NewData.{column},");
                 }
-                columnMatchingQuery = columnMatchingQuery.TrimEnd(',');
 
+                string columnMatchingQuery = columnMatchingQueryBuilder.ToString().TrimEnd(',');
                 return @$"
                     MERGE INTO {fullTableName} WITH (HOLDLOCK) 
                         AS ExistingData
@@ -273,7 +308,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     WHEN MATCHED THEN
                         UPDATE SET {columnMatchingQuery}
                     WHEN NOT MATCHED THEN 
-                        INSERT ({string.Join(",", columnNames)}) VALUES ({string.Join(",", columnNames)})";
+                        INSERT ({string.Join(",", columnNamesFromSQL)}) VALUES ({string.Join(",", columnNamesFromSQL)})";
             }
 
             /// <summary>
@@ -296,7 +331,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     SqlCommand cmdColDef = new SqlCommand(GetColumnDefinitionsQuery(schema, tableName), sqlConnection);
                     using (SqlDataReader rdr = await cmdColDef.ExecuteReaderAsync())
                     {
-                        while (rdr.Read())
+                        while (await rdr.ReadAsync())
                         {
                             columnDefinitionsFromSQL.Add(rdr[ColumnName].ToString(), rdr[ColumnDefinition].ToString());
                         }
@@ -305,7 +340,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 catch (Exception ex)
                 {
                     // Throw a custom error so that it's easier to decipher.
-                    string message = $"Encountered exception while retrieving columns definition for table '{tableName}.' Cannot generate upsert command without them.";
+                    string message = $"Encountered exception while retrieving column names and types for table '{tableName}' in schema '{schema}.' Cannot generate upsert command without them.";
                     throw new InvalidOperationException(message, ex);
                 }
                 finally
@@ -313,29 +348,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     await sqlConnection.CloseAsync();
                 }
 
-                // 2. Ensure the POCO fields match the SQL column names. If not, throw. (TODO: is this expected behavior?)
-                IEnumerable<string> columnNamesFromPOCO = typeof(T).GetMembers().Where(f => f.MemberType == MemberTypes.Property || f.MemberType == MemberTypes.Field).Select(f => f.Name);
-                IEnumerable<string> columnNamesFromSQL = columnDefinitionsFromSQL.Select(c => c.Key);
-
-                IEnumerable<string> missingFromSQL = columnNamesFromPOCO.Except(columnNamesFromSQL, StringComparer.OrdinalIgnoreCase);
-                IEnumerable<string> missingFromPOCO = columnNamesFromSQL.Except(columnNamesFromPOCO, StringComparer.OrdinalIgnoreCase);
-                if (missingFromSQL.Any() || missingFromPOCO.Any())
-                {
-                    string sqlWarning = missingFromSQL.Any() ? $" Columns missing from SQL: [{string.Join(",", missingFromSQL)}]." : string.Empty;
-                    string pocoWarning = missingFromPOCO.Any() ? $" Columns missing from '{typeof(T)}': [{string.Join(",", missingFromPOCO)}]" : string.Empty;
-                    string message = $"Expect exact match between fields of '{typeof(T)}' and SQL table '{tableName}.'{sqlWarning}{pocoWarning}";
-                    throw new InvalidOperationException(message);
-                }
-
-                // 3. Make sure the ordering of columns matches that of the POCO (if they differ)
-                // Necessary for proper matching of column names to JSON that is generated for each batch of data
-                Dictionary<string, string> columnDataMatchPOCO = new Dictionary<string, string>(columnNamesFromPOCO.Count(), StringComparer.OrdinalIgnoreCase);
-                foreach (string pocoColumn in columnNamesFromPOCO)
-                {
-                    columnDataMatchPOCO.Add(pocoColumn, columnDefinitionsFromSQL[pocoColumn]);
-                }
-
-                // 4. Query SQL for table Primary Keys
+                // 2. Query SQL for table Primary Keys
                 var primaryKeys = new List<string>();
                 try
                 {
@@ -343,7 +356,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     SqlCommand cmd = new SqlCommand(GetPrimaryKeysQuery(schema, tableName), sqlConnection);
                     using (SqlDataReader rdr = await cmd.ExecuteReaderAsync())
                     {
-                        while (rdr.Read())
+                        while (await rdr.ReadAsync())
                         {
                             primaryKeys.Add(rdr[ColumnName].ToString());
                         }
@@ -352,7 +365,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 catch (Exception ex)
                 {
                     // Throw a custom error so that it's easier to decipher.
-                    string message = $"Encountered exception while retrieving primary keys for table '{tableName}.' Cannot generate upsert command without them.";
+                    string message = $"Encountered exception while retrieving primary keys for table '{tableName}' in schema '{schema}.' Cannot generate upsert command without them.";
                     throw new InvalidOperationException(message, ex);
                 }
                 finally
@@ -362,14 +375,52 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 if (!primaryKeys.Any())
                 {
-                    string message = $"Did not retrieve any primary keys for '{tableName}.' Cannot generate upsert command without them.";
+                    string message = $"Did not retrieve any primary keys for '{tableName}' in schema '{schema}.' Cannot generate upsert command without them.";
                     throw new InvalidOperationException(message);
                 }
 
-                // Match column names to POCO field/property objects
+                // 3. Match SQL Primary Key column names to POCO field/property objects. Ensure none are missing.
                 IEnumerable<MemberInfo> primaryKeyFields = typeof(T).GetMembers().Where(f => primaryKeys.Contains(f.Name, StringComparer.OrdinalIgnoreCase));
+                IEnumerable<string> primaryKeysFromPOCO = primaryKeyFields.Select(f => f.Name);
+                var missingFromPOCO = primaryKeys.Except(primaryKeysFromPOCO);
+                if (missingFromPOCO.Any())
+                {
+                    string message = $"All primary keys for SQL table '{tableName}' and schema '{schema}' need to be found in '{typeof(T)}.' Missing primary keys: [{string.Join(",", missingFromPOCO)}]";
+                    throw new InvalidOperationException(message);
+                }
 
-                return new TableInformation(primaryKeyFields, columnDataMatchPOCO, GetMergeQuery(primaryKeys, columnNamesFromPOCO, fullName));
+                return new TableInformation(primaryKeyFields, columnDefinitionsFromSQL, GetMergeQuery(primaryKeys, columnDefinitionsFromSQL, fullName));
+            }
+        }
+
+        public class DynamicPOCOContractResolver : DefaultContractResolver
+        {
+            private readonly IDictionary<string, string> _propertiesToSerialize;
+
+            public DynamicPOCOContractResolver(IDictionary<string, string> sqlColumns)
+            {
+                // we only want to serialize POCO properties that correspond to SQL columns
+                _propertiesToSerialize = sqlColumns;
+            }
+
+            protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
+            {
+                Dictionary<string, JsonProperty> properties = base
+                    .CreateProperties(type, memberSerialization)
+                    .ToDictionary(p => p.PropertyName, StringComparer.OrdinalIgnoreCase);
+
+                // Make sure the ordering of columns matches that of SQL
+                // Necessary for proper matching of column names to JSON that is generated for each batch of data
+                IList<JsonProperty> propertiesToSerialize = new List<JsonProperty>(properties.Count);
+                foreach (KeyValuePair<string, string> column in _propertiesToSerialize)
+                {
+                    if (properties.ContainsKey(column.Key))
+                    {
+                        propertiesToSerialize.Add(properties[column.Key]);
+                    }
+                }
+
+                return propertiesToSerialize;
             }
         }
     }
