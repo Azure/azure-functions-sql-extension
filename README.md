@@ -211,7 +211,25 @@ Note: This tutorial requires that the Azure SQL database is setup as shown in [C
         employee.LastName = "SQLupdate";
         employee.Company = "Microsoft";
         employee.Team = "Functions";
-        output[1] = employee;
+         output = new Employee[]
+            {
+                new Employee
+                {
+                    EmployeeId = 1,
+                    FirstName = "Hello",
+                    LastName = "World",
+                    Company = "Microsoft",
+                    Team = "Functions"
+                },
+                new Employee
+                {
+                    EmployeeId = 12,
+                    FirstName = "Hi",
+                    LastName = "SQLupdate",
+                    Company = "Microsoft",
+                    Team = "Functions"
+                },
+            };
 
         return new CreatedResult($"/api/addemployees-array", output);
     }
