@@ -50,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             var converter = new SqlConverter(_configuration);
             inputOutputRule.BindToInput<SqlCommand>(converter);
             inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), _configuration);
-            inputOutputRule.BindToCollector<OpenType>(typeof(SqlAsyncCollectorBuilder<>), _configuration);
+            inputOutputRule.BindToCollector<OpenType>(typeof(SqlAsyncCollectorBuilder<>), _configuration, _loggerFactory);
             inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), _configuration);
 
             var triggerRule = context.AddBindingRule<SqlTriggerAttribute>();
