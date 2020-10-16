@@ -226,21 +226,7 @@ Note: This tutorial requires that the Azure SQL database is setup as shown in [C
         ConnectionStringSetting = "SqlConnectionString")]
         out Employee[] output)
     {
-        output = new Employee[2];
-        var employee = new Employee();
-        employee.EmployeeId = 1;
-        employee.FirstName = "Hello";
-        employee.LastName = "World";
-        employee.Company = "Microsoft";
-        employee.Team = "Functions";
-        output[0] = employee;
-        employee = new Employee();
-        employee.EmployeeId = 2;
-        employee.FirstName = "Hi";
-        employee.LastName = "SQLupdate";
-        employee.Company = "Microsoft";
-        employee.Team = "Functions";
-         output = new Employee[]
+        output = new Employee[]
             {
                 new Employee
                 {
@@ -252,7 +238,7 @@ Note: This tutorial requires that the Azure SQL database is setup as shown in [C
                 },
                 new Employee
                 {
-                    EmployeeId = 12,
+                    EmployeeId = 2,
                     FirstName = "Hi",
                     LastName = "SQLupdate",
                     Company = "Microsoft",
