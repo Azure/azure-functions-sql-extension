@@ -333,7 +333,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         while (await rdr.ReadAsync())
                         {
-                            columnDefinitionsFromSQL.Add(rdr[ColumnName].ToString(), rdr[ColumnDefinition].ToString());
+                            columnDefinitionsFromSQL.Add(rdr[ColumnName].ToString().ToLowerInvariant(), rdr[ColumnDefinition].ToString());
                         }
                     }
                 }
@@ -358,7 +358,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         while (await rdr.ReadAsync())
                         {
-                            primaryKeys.Add(rdr[ColumnName].ToString());
+                            primaryKeys.Add(rdr[ColumnName].ToString().ToLowerInvariant());
                         }
                     }
                 }
@@ -382,7 +382,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // 3. Match SQL Primary Key column names to POCO field/property objects. Ensure none are missing.
                 IEnumerable<MemberInfo> primaryKeyFields = typeof(T).GetMembers().Where(f => primaryKeys.Contains(f.Name, StringComparer.OrdinalIgnoreCase));
                 IEnumerable<string> primaryKeysFromPOCO = primaryKeyFields.Select(f => f.Name);
-                var missingFromPOCO = primaryKeys.Except(primaryKeysFromPOCO);
+                var missingFromPOCO = primaryKeys.Except(primaryKeysFromPOCO, StringComparer.OrdinalIgnoreCase);
                 if (missingFromPOCO.Any())
                 {
                     string message = $"All primary keys for SQL table '{tableName}' and schema '{schema}' need to be found in '{typeof(T)}.' Missing primary keys: [{string.Join(",", missingFromPOCO)}]";
@@ -416,7 +416,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     if (properties.ContainsKey(column.Key))
                     {
-                        propertiesToSerialize.Add(properties[column.Key]);
+                        // Lower-case the property name during serialization to match SQL casing
+                        var sqlColumn = properties[column.Key];
+                        sqlColumn.PropertyName = sqlColumn.PropertyName.ToLowerInvariant();
+                        propertiesToSerialize.Add(sqlColumn);
                     }
                 }
 
