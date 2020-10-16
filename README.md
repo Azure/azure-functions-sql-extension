@@ -240,7 +240,25 @@ Note: This tutorial requires that the Azure SQL database is setup as shown in [C
         employee.LastName = "SQLupdate";
         employee.Company = "Microsoft";
         employee.Team = "Functions";
-        output[1] = employee;
+         output = new Employee[]
+            {
+                new Employee
+                {
+                    EmployeeId = 1,
+                    FirstName = "Hello",
+                    LastName = "World",
+                    Company = "Microsoft",
+                    Team = "Functions"
+                },
+                new Employee
+                {
+                    EmployeeId = 12,
+                    FirstName = "Hi",
+                    LastName = "SQLupdate",
+                    Company = "Microsoft",
+                    Team = "Functions"
+                },
+            };
 
         return new CreatedResult($"/api/addemployees-array", output);
     }
@@ -291,7 +309,7 @@ This tutorial requires that the Azure SQL database is setup as shown in [Create 
 
 - (*Skip this step if you have not completed the output binding tutorial*) Open your output binding file and modify some of the values (e.g. Change Team from 'Functions' to 'Azure SQL'). This will update the row when the code is run.
 - Hit 'F5' to run your code. Click the link for the http trigger to the output binding. You should see the log in VS Code update and tell you which row changed and what the data in the row is now.
-- Feel free to update, insert, or delete additional rows in your SQL table using the SQL query editor while the function app is running and observe the log updates.
+- Update, insert, or delete additional rows in your SQL table using the SQL query editor while the function app is running and observe the log updates.
 - Congratulations! You have successfully created your first SQL trigger! Checkout [Trigger Samples](#Trigger-Samples) for more information on how to use the trigger and explore on your own!
 
 ## More Samples ##
