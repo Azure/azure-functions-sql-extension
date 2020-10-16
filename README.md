@@ -141,7 +141,7 @@ We will create a simple Azure SQL Database. For additional reference on Azure SQ
 
     ```sql
     CREATE TABLE Employees (
-          EmployeeID int,
+          EmployeeId int,
           FirstName varchar(255),
           LastName varchar(255),
           Company varchar(255),
@@ -167,20 +167,23 @@ Note: This tutorial requires that the Azure SQL database is setup as shown in [C
 - In the file that opens, replace the 'public static async Task< IActionResult > Run' block with the below code.
 
     ```csharp
-    public static async Task<IActionResult> Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "employees/1")] HttpRequest req,
-        ILogger log,
-        [Sql("select * from Employees where EmployeeId = @EmployeeId",
-        CommandType = System.Data.CommandType.Text,
-        Parameters = "@EmployeeId = {id}",
-        ConnectionStringSetting = "SqlConnectionString")]
-        IEnumerable<Employee> employee)
+    public static class HttpTriggerCSharp1
     {
-        return new OkObjectResult(employee);
+        [FunctionName("HttpTriggerCSharp1")]
+        public static async Task<IActionResult> Run(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "employees")] HttpRequest req,
+            ILogger log,
+            [Sql("select * from Employees",
+            CommandType = System.Data.CommandType.Text,
+            ConnectionStringSetting = "SqlConnectionString")]
+            IEnumerable<Employee> employee)
+        {
+            return new OkObjectResult(employee);
+        }
     }
     ```
 
-    *In the above, "select from Employees where EmployeeId = @EmployeeId" is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. The line below that determines the parameters. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [Input Binding Samples](#Input-Binding-Samples) section*
+    *In the above, "select from Employees where EmployeeId = @EmployeeId" is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [Input Binding Samples](#Input-Binding-Samples) section*
 
 - Add 'using System.Collections.Generic;' to the namespaces list at the top of the page.
 - Currently, there is an error for the IEnumerable. We'll fix this by creating an Employee class.
@@ -202,7 +205,7 @@ Note: This tutorial requires that the Azure SQL database is setup as shown in [C
 - Navigate back to your HttpTrigger file. We can ignore the 'Run' warning for now.
 - Open the local.settings.json file, and in the brackets for "Values," verify there is a 'SqlConnectionString.' If not, add it.
 - Hit 'F5' to run your code. This will start up the Functions Host with a local HTTP Trigger and SQL Input Binding.
-- Click the link that appears in your terminal. Your url should be 'localhost:7071/api/employees/1.' The '1' at the end of the url is the parameters passed through your input binding which, in this tutorial, is the employeeID.
+- Click the link that appears in your terminal.
 - You should see your database output in the browser window.
 - Congratulations! You have successfully created your first SQL input binding! Checkout [Input Binding Samples](#Input-Binding-Samples) for more information on how to use it and explore on your own!
 
