@@ -1,8 +1,8 @@
-# Azure SQL Extension for Azure Functions #
+# SQL Extension for Azure Functions #
 
 ## Introduction ##
 
-This repository contains extension code for the Azure SQL trigger and bindings as well as a quick start, tutorial, and samples of how to use them. A high level explanation of the trigger and bindings is provided below. Additional information for each is in their respective sample sections.
+This repository contains extension code for the SQL trigger and bindings as well as a quick start, tutorial, and samples of how to use them. A high level explanation of the trigger and bindings is provided below. Additional information for each is in their respective sample sections.
 
 - **input binding**: takes a SQL query to run on a provided table and returns the output of the query.
 - **output binding**: takes a list of rows and upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
@@ -18,7 +18,7 @@ This repository contains extension code for the Azure SQL trigger and bindings a
   - [Input Binding Tutorial](#Input-Binding-Tutorial)
   - [Output Binding Tutorial](#Output-Binding-Tutorial)
   - [Trigger Tutorial](#Trigger-Tutorial)
-- [Samples](#Samples)
+- [More Samples](#More-Samples)
   - [Input Binding](#Input-Binding)
   - [Output Binding](#Output-Binding)
   - [Trigger](#Trigger)
@@ -43,7 +43,7 @@ A primary key must be set in your SQL table before using the bindings. To do thi
     ALTER TABLE ['your table name'] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED (['column to be primary key']);
     ```
 
-1. Change tracking must be enabled on the database to use the trigger. If you do not plan on using the trigger, you can skip this step. To enable change tracking on the database, run:
+1. SQL's [change tracking functionality](https://docs.microsoft.com/en-us/sql/relational-databases/track-changes/about-change-tracking-sql-server?view=sql-server-ver15) must be enabled on the database to use the trigger. Please note that change tracking has additional costs. If you do not plan on using the trigger, you can skip this step. To enable change tracking on the database, run:
 
     ```sql
     ALTER DATABASE ['your database name']
@@ -82,14 +82,40 @@ These steps can be done in the CLI, Powershell. Completing this section will all
 1. Install the extension.
 
     ```bash
-    dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql --version 1.0.0-preview2
+    dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql --version 1.0.0-preview3
     ```
 
 1. Ensure you have Azure Storage Emulator running. For information on the Azure Storage Emulator, refer [here](https://docs.microsoft.com/en-us/azure/storage/common/storage-use-emulator#get-the-storage-emulator)
 
-1. Set the SqlConnectionString. Your connection string can be found in your SQL database resource by going to the left blade and clicking 'Connection strings'. Copy the Connection String to 'local.settings.json', so '"SqlConnectionString": [Connection String]' is in 'Values:'.
+1. Get your SqlConnectionString. Your connection string can be found in your SQL database resource by going to the left blade and clicking 'Connection strings'. Copy the Connection String.
 
-1. You have setup your local environment and are now ready to create your first SQL bindings! Continue to the [input](#Input-Binding-Tutorial), [output](#Output-Binding-Tutorial), and [trigger](#Trigger-Tutorial) binding tutorials, or refer to [Samples](#Samples) for information on how to use the bindings and explore on your own.
+    (*Note: when pasting in the connection string, you will need to replace part of the connection string where it says '{your_password}' with your Azure SQL Server password*)
+
+1. In 'local.settings.json' in 'Values', verify you have the below. If not, add the below and replace "Your Connection String" with the your connection string from the previous step:
+
+    ```json
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "AzureWebJobsDashboard": "UseDevelopmentStorage=true",
+    "SqlConnectionString": "<Your Connection String>"
+    ```
+
+1. Verify your host.json looks like the below:
+
+    ```json
+    {
+        "version": "2.0",
+        "logging": {
+            "applicationInsights": {
+                "samplingExcludedTypes": "Request",
+                "samplingSettings": {
+                    "isEnabled": true
+                }
+            }
+        }
+    }
+    ```
+
+1. You have setup your local environment and are now ready to create your first SQL bindings! Continue to the [input](#Input-Binding-Tutorial), [output](#Output-Binding-Tutorial), and [trigger](#Trigger-Tutorial) binding tutorials, or refer to [More Samples](#More-Samples) for information on how to use the bindings and explore on your own.
 
 ## Tutorials ##
 
@@ -142,7 +168,7 @@ Note: This tutorial requires that the Azure SQL database is setup as shown in [C
 
     ```csharp
     public static async Task<IActionResult> Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "employees/{id}")] HttpRequest req,
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "employees/1")] HttpRequest req,
         ILogger log,
         [Sql("select * from Employees where EmployeeId = @EmployeeId",
         CommandType = System.Data.CommandType.Text,
@@ -157,7 +183,7 @@ Note: This tutorial requires that the Azure SQL database is setup as shown in [C
     *In the above, "select from Employees where EmployeeId = @EmployeeId" is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. The line below that determines the parameters. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [Input Binding Samples](#Input-Binding-Samples) section*
 
 - Add 'using System.Collections.Generic;' to the namespaces list at the top of the page.
-- Currently, there is an error for the Ienumerable. We'll fix this by creating an Employee class.
+- Currently, there is an error for the IEnumerable. We'll fix this by creating an Employee class.
 - Create a new file and call it 'Employee.cs'
 - Paste the below in the file. These are the column values of our SQL Database table.
 
@@ -175,8 +201,8 @@ Note: This tutorial requires that the Azure SQL database is setup as shown in [C
 
 - Navigate back to your HttpTrigger file. We can ignore the 'Run' warning for now.
 - Open the local.settings.json file, and in the brackets for "Values," verify there is a 'SqlConnectionString.' If not, add it.
-- Hit 'F5' to run your code. Both an HttpTrigger and SQLBinding will run.
-- Click the link that appears in your terminal. If you get a 'HTTP ERROR 500' message, replace the browser url after the last '/' with 1. This is the id of the employee to be outputted. The url should look like 'localhost:7071/api/employees/1'
+- Hit 'F5' to run your code. This will start up the Functions Host with a local HTTP Trigger and SQL Input Binding.
+- Click the link that appears in your terminal. Your url should be 'localhost:7071/api/employees/1.' The '1' at the end of the url is the parameters passed through your input binding which, in this tutorial, is the employeeID.
 - You should see your database output in the browser window.
 - Congratulations! You have successfully created your first SQL input binding! Checkout [Input Binding Samples](#Input-Binding-Samples) for more information on how to use it and explore on your own!
 
@@ -260,18 +286,12 @@ This tutorial requires that the Azure SQL database is setup as shown in [Create 
     }
     ```
 
-- Add the below to 'local.settings.json' in "Values"
-
-    ```json
-    "AzureWebJobsDashboard": "UseDevelopmentStorage=true"
-    ```
-
 - (*Skip this step if you have not completed the output binding tutorial*) Open your output binding file and modify some of the values (e.g. Change Team from 'Functions' to 'Azure SQL'). This will update the row when the code is run.
 - Hit 'F5' to run your code. Click the link for the http trigger to the output binding. You should see the log in VS Code update and tell you which row changed and what the data in the row is now.
 - Feel free to update, insert, or delete additional rows in your SQL table using the SQL query editor while the function app is running and observe the log updates.
 - Congratulations! You have successfully created your first SQL trigger! Checkout [Trigger Samples](#Trigger-Samples) for more information on how to use the trigger and explore on your own!
 
-## Samples ##
+## More Samples ##
 
 ### Input Binding ###
 
