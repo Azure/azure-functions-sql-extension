@@ -167,20 +167,16 @@ Note: This tutorial requires that the Azure SQL database is setup as shown in [C
 - In the file that opens, replace the 'public static async Task< IActionResult > Run' block with the below code.
 
     ```csharp
-    public static class HttpTriggerCSharp1
+    public static async Task<IActionResult> Run(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "employees")] HttpRequest req,
+        ILogger log,
+        [Sql("select * from Employees",
+        CommandType = System.Data.CommandType.Text,
+        ConnectionStringSetting = "SqlConnectionString")]
+        IEnumerable<Employee> employee)
     {
-        [FunctionName("HttpTriggerCSharp1")]
-        public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "employees")] HttpRequest req,
-            ILogger log,
-            [Sql("select * from Employees",
-            CommandType = System.Data.CommandType.Text,
-            ConnectionStringSetting = "SqlConnectionString")]
-            IEnumerable<Employee> employee)
-        {
-            return new OkObjectResult(employee);
-        }
-    }
+        return new OkObjectResult(employee);
+    }    
     ```
 
     *In the above, "select from Employees where EmployeeId = @EmployeeId" is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [Input Binding Samples](#Input-Binding-Samples) section*
