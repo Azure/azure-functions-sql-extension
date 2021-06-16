@@ -4,8 +4,8 @@
 # Add steps that publish symbols, save build artifacts, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
 
-trigger:
-- dev
+#trigger:
+#- dev
 
 pool:
   vmImage: 'windows-latest'
@@ -14,7 +14,7 @@ variables:
   Solution: '**/*.sln'
   BuildPlatform: 'Any CPU'
   BuildConfiguration: 'Release'
-  Version: '0.1.0'
+  NugetVersion: '0.1.0'
 
 # .NET Standard 2.1 for build
 steps:
@@ -36,7 +36,7 @@ steps:
   inputs:
     command: build
     projects: '$(Solution)'
-    arguments: '--configuration $(BuildConfiguration)'
+    arguments: '--configuration $(BuildConfiguration)  --output $(Build.ArtifactStagingDirectory) /p:PackageVersion="$(NugetVersion)"'
 
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'
@@ -45,12 +45,12 @@ steps:
     projects: '$(Solution)'
     arguments: '--configuration $(BuildConfiguration)'
 
-- task: DotNetCoreCLI@2
-  displayName: '.NET Pack'
-  inputs:
-    command: 'pack'
-    packagesToPack: '**/*.csproj'   # We should use a nuspec instead
-    arguments: '--configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory) --no-build --include-symbols /p:PackageVersion="$(Version)"'
+#- task: DotNetCoreCLI@2
+#  displayName: '.NET Pack'
+#  inputs:
+#    command: 'pack'
+#    packagesToPack: '**/*.csproj'   # We should use a nuspec instead
+#    arguments: '--configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory) --no-build /p:PackageVersion="$(NugetVersion)"'
 
 # .NET Core 2.1 for CodeSign
 - task: UseDotNet@2
