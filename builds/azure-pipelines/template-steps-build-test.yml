@@ -14,7 +14,6 @@ steps:
   inputs:
     command: restore
     projects: '${{ parameters.solution }}'
-    verbosityRestore: Quiet
 
   # Build outputs directly into staging directory
 - task: DotNetCoreCLI@2
