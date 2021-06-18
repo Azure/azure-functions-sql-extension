@@ -1,0 +1,32 @@
+parameters:
+  configuration: ''
+  solution: ''
+  nugetVersion: ''
+
+steps:
+- task: UseDotNet@2
+  displayName: 'Install .NET Core SDK 3.1.x for Build'
+  inputs:
+    version: '3.1.x'
+
+- task: DotNetCoreCLI@2
+  displayName: '.NET Restore'
+  inputs:
+    command: restore
+    projects: '${{ parameters.solution }}'
+    verbosityRestore: Quiet
+
+  # Build outputs directly into staging directory
+- task: DotNetCoreCLI@2
+  displayName: '.NET Build'
+  inputs:
+    command: build
+    projects: '${{ parameters.solution }}'
+    arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) /p:PackageVersion="${{ parameters.nugetVersion }}"'
+
+- task: DotNetCoreCLI@2
+  displayName: '.NET Test'
+  inputs:
+    command: test
+    projects: '${{ parameters.solution }}'
+    arguments: '--configuration ${{ parameters.configuration }}'

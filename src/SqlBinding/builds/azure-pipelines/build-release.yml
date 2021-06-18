@@ -1,0 +1,36 @@
+trigger: none
+
+pr: none
+
+schedules:
+  - cron: "0 0 * * Mon-Fri"
+    displayName: Mon-Fri at Midnight
+    branches:
+      include:
+        - dev
+
+variables:
+  solution: '**/*.sln'
+  configuration: 'Release'
+  nugetVersion: '0.1.0-preview'
+
+stages:
+- stage: BuildPublish
+  displayName: 'Release Build and Publish'
+
+  pool:
+    vmImage: 'windows-latest'
+
+  workspace:
+    clean: all
+
+  steps:
+    - template: 'template-steps-build-test.yml'
+      parameters:
+        solution: '$(solution)'
+        configuration: '$(configuration)'
+        nugetVersion: '$(nugetVersion)'
+
+    - template: 'template-steps-publish.yml'
+      parameters:
+        configuration: '$(configuration)'
