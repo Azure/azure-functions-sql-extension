@@ -18,19 +18,23 @@ stages:
 - stage: BuildPublish
   displayName: 'Release Build and Publish'
 
-  pool:
-    vmImage: 'windows-latest'
+  jobs:
+  - job: BuildTestPublish
+    displayName: 'Release: Build, Test and Publish on Windows'
 
-  workspace:
-    clean: all
+    pool:
+      vmImage: 'windows-latest'
 
-  steps:
-    - template: 'template-steps-build-test.yml'
-      parameters:
-        solution: '$(solution)'
-        configuration: '$(configuration)'
-        nugetVersion: '$(nugetVersion)'
+    workspace:
+      clean: all
 
-    - template: 'template-steps-publish.yml'
-      parameters:
-        configuration: '$(configuration)'
+    steps:
+      - template: 'template-steps-build-test.yml'
+        parameters:
+          solution: '$(solution)'
+          configuration: '$(configuration)'
+          nugetVersion: '$(nugetVersion)'
+
+      - template: 'template-steps-publish.yml'
+        parameters:
+          configuration: '$(configuration)'
