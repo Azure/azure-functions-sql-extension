@@ -1,4 +1,4 @@
-# SQL Extension for Azure Functions #
+# SQL Extension for Azure Functions Private Preview #
 
 ## Introduction ##
 
