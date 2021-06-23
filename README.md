@@ -1,5 +1,7 @@
 # SQL Extension for Azure Functions #
 
+[![Build Status](https://mssqltools.visualstudio.com/CrossPlatBuildScripts/_apis/build/status/SQL%20Bindings/SQL%20Bindings%20-%20Nightly?branchName=build-azure-pipelines-2)](https://mssqltools.visualstudio.com/CrossPlatBuildScripts/_build/latest?definitionId=481&branchName=build-azure-pipelines-2)
+
 ## Introduction ##
 
 This repository contains extension code for the SQL trigger and bindings as well as a quick start, tutorial, and samples of how to use them. A high level explanation of the trigger and bindings is provided below. Additional information for each is in their respective sample sections.
