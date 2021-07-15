@@ -11,8 +11,11 @@ schedules:
 
 variables:
   solution: '**/*.sln'
-  configuration: 'Release'
-  nugetVersion: '0.1.0-preview'
+  configuration: 'Release'  
+  versionMajor: 0
+  versionMinor: 1
+  versionPatch: $[counter(variables['versionMinor'], 0)] # This will reset when we bump minor version
+  nugetVersion: '$(versionMajor).$(versionMinor).$(versionPatch)'
 
 stages:
 - stage: BuildPublish
