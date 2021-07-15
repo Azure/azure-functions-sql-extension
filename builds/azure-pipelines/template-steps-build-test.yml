@@ -24,6 +24,7 @@ steps:
     arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) -p:PackageVersion="${{ parameters.nugetVersion }}"'
 
   # Above build task generates a nuget package, this extra step packs into a -preview nuget with same version #
+  # Extra parameter GeneratePackageOnBuild=false is needed for issue https://github.com/dotnet/sdk/pull/3473#issuecomment-516612070
 - task: DotNetCoreCLI@2
   displayName: '.NET Pack Preview Nuget'
   inputs:
