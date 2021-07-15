@@ -30,7 +30,7 @@ steps:
     command: custom
     custom: pack
     projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) -p:PackageVersion="${{ parameters.nugetVersion }}-preview" --no-build -p:GeneratePackageOnBuild=false'
+    arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) -p:PackageVersion="${{ parameters.nugetVersion }}-preview" -p:GeneratePackageOnBuild=false'
 
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'
