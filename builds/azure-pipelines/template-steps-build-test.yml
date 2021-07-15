@@ -23,6 +23,14 @@ steps:
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) /p:PackageVersion="${{ parameters.nugetVersion }}"'
 
+  # Above build task generates a nuget package automatically, this extra step packs into a -preview nuget with same version #
+- task: DotNetCoreCLI@2
+  displayName: '.NET Pack Preview Nuget'
+  inputs:
+    command: pack
+    projects: '${{ parameters.solution }}'
+    arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) --no-build --version-suffix "preview" /p:PackageVersion="${{ parameters.nugetVersion }}"'
+
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'
   inputs:
