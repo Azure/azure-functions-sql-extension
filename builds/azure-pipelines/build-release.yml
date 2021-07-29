@@ -8,6 +8,7 @@ schedules:
     branches:
       include:
         - dev
+    always: true
 
 variables:
   solution: '**/*.sln'
