@@ -185,7 +185,7 @@ Note: This tutorial requires that the Azure SQL database is setup as shown in [C
     }
     ```
 
-    *In the above, "select from Employees where EmployeeId = @EmployeeId" is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [Input Binding Samples](#Input-Binding-Samples) section*
+    *In the above, "select * from Employees" is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [Input Binding](#Input-Binding) section*
 
 - Add 'using System.Collections.Generic;' to the namespaces list at the top of the page.
 - Currently, there is an error for the IEnumerable. We'll fix this by creating an Employee class.
@@ -209,7 +209,7 @@ Note: This tutorial requires that the Azure SQL database is setup as shown in [C
 - Hit 'F5' to run your code. This will start up the Functions Host with a local HTTP Trigger and SQL Input Binding.
 - Click the link that appears in your terminal.
 - You should see your database output in the browser window.
-- Congratulations! You have successfully created your first SQL input binding! Checkout [Input Binding Samples](#Input-Binding-Samples) for more information on how to use it and explore on your own!
+- Congratulations! You have successfully created your first SQL input binding! Checkout [Input Binding](#Input-Binding) for more information on how to use it and explore on your own!
 
 ### Output Binding Tutorial ###
 
@@ -252,10 +252,10 @@ Note: This tutorial requires that the Azure SQL database is setup as shown in [C
     }
     ```
 
-    *In the above, "dbo.Employees" is the name of the database our output binding is upserting into. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [Output Binding Samples](#Output-Binding-Samples) section*
+    *In the above, "dbo.Employees" is the name of the table our output binding is upserting into. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [Output Binding](#Output-Binding) section*
 
 - Hit 'F5' to run your code. Click the link to upsert the output array values in your SQL table. Your upserted values should launch in the browser.
-- Congratulations! You have successfully created your first SQL output binding! Checkout [Output Binding Samples](#Output-Binding-Samples) for more information on how to use it and explore on your own!
+- Congratulations! You have successfully created your first SQL output binding! Checkout [Output Binding](#Output-Binding) for more information on how to use it and explore on your own!
 
 ### Trigger Tutorial ###
 
