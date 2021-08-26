@@ -1,4 +1,4 @@
-SQL Server Extension for Azure Functions
+SQL Server Extension for Azure Functions - Preview
 ===
 
 This repository contains extension code for SQL Server input and output bindings. Trigger bindings are coming soon.
