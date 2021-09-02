@@ -59,7 +59,7 @@ A primary key must be set in your SQL table before using the bindings. To do thi
     ALTER TABLE ['your table name'] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED (['column to be primary key']);
     ```
 
-1. SQL's [change tracking functionality](https://docs.microsoft.com/en-us/sql/relational-databases/track-changes/about-change-tracking-sql-server?view=sql-server-ver15) must be enabled on the database to use the trigger. Please note that change tracking has additional costs. If you do not plan on using the trigger, you can skip this step. To enable change tracking on the database, run:
+1. SQL's [change tracking functionality](https://docs.microsoft.com/sql/relational-databases/track-changes/about-change-tracking-sql-server?view=sql-server-ver15) must be enabled on the database to use the trigger. Please note that change tracking has additional costs. If you do not plan on using the trigger, you can skip this step. To enable change tracking on the database, run:
 
     ```sql
     ALTER DATABASE ['your database name']
@@ -101,7 +101,7 @@ These steps can be done in the CLI, Powershell. Completing this section will all
     dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql --version 1.0.0-preview3
     ```
 
-1. Ensure you have Azure Storage Emulator running. For information on the Azure Storage Emulator, refer [here](https://docs.microsoft.com/en-us/azure/storage/common/storage-use-emulator#get-the-storage-emulator)
+1. Ensure you have Azure Storage Emulator running. For information on the Azure Storage Emulator, refer [here](https://docs.microsoft.com/azure/storage/common/storage-use-emulator#get-the-storage-emulator)
 
 1. Get your SqlConnectionString. Your connection string can be found in your SQL database resource by going to the left blade and clicking 'Connection strings'. Copy the Connection String.
 
@@ -137,10 +137,10 @@ These steps can be done in the CLI, Powershell. Completing this section will all
 
 ### Create Azure SQL Database
 
-We will create a simple Azure SQL Database. For additional reference on Azure SQL Databases, go [here](https://docs.microsoft.com/en-us/azure/azure-sql/database/single-database-create-quickstart?tabs=azure-portal).
+We will create a simple Azure SQL Database. For additional reference on Azure SQL Databases, go [here](https://docs.microsoft.com/azure/azure-sql/database/single-database-create-quickstart?tabs=azure-portal).
 
 - Create an Azure SQL Database
-  - Make sure you have an Azure subscription. If you don't already have an Azure Subscription, go [here](https://azure.microsoft.com/en-us/free/search/?&OCID=AID2100131_SEM_XzK4bAAAAJBpCjfl:20200918000154:s&msclkid=f33d47a9a4ec1c1b6ced18cd9bd2923f&ef_id=XzK4bAAAAJBpCjfl:20200918000154:s&dclid=CKLQqbL28esCFUrBfgod4BIBMA).
+  - Make sure you have an Azure subscription. If you don't already have an Azure Subscription, go [here](https://azure.microsoft.com/free/search/?&OCID=AID2100131_SEM_XzK4bAAAAJBpCjfl:20200918000154:s&msclkid=f33d47a9a4ec1c1b6ced18cd9bd2923f&ef_id=XzK4bAAAAJBpCjfl:20200918000154:s&dclid=CKLQqbL28esCFUrBfgod4BIBMA).
   - Navigate to the [Azure portal](https://ms.portal.azure.com/)
   - Click 'Create a resource', then search the marketplace for 'SQL Database' and select it. Provide a 'Subscription', 'Resource Group', and 'Database name.' Under the 'Server' field, click 'Create New'
 <kbd>![alt text](/Images/dbSetup.png)</kbd>
@@ -319,7 +319,7 @@ The input binding takes four arguments
 - **CommandText**: Passed as a constructor argument to the binding. Represents either a query string or the name of a stored procedure.
 - **CommandType**: Specifies whether CommandText is a query (`System.Data.CommandType.Text`) or a stored procedure (`System.Data.CommandType.StoredProcedure`)
 - **Parameters**: The parameters to the query/stored procedure. This string must follow the format "@param1=param1,@param2=param2" where @param1 is the name of the parameter and param1 is the parameter value. Each pair of parameter name, parameter value is separated by a comma. Within each pair, the parameter name and value is separated by an equals sign. This means that neither the parameter name nor value can contain "," or "=". To specify a `NULL` parameter value, do "@param1=null,@param2=param2". To specify an empty string as a value, do "@param1=,@param2=param2", i.e. do not put any text after the equals sign of the corresponding parameter name. This argument is auto-resolvable (see Query String examples).
-- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/en-us/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
+- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
 
 The following are valid binding types for the result of the query/stored procedure execution:
 
@@ -458,7 +458,7 @@ The output binding takes a list of rows to be upserted into a user table. If the
 The output binding takes two arguments
 
 - **CommandText**: Passed as a constructor argument to the binding. Represents the name of the table into which rows will be upserted.
-- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/en-us/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
+- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
 
 The following are valid binding types for the rows to be upserted into the table:
 
@@ -566,7 +566,7 @@ public static IActionResult Run(
 
 #### Change Tracking
 
-The trigger uses SQL's [change tracking functionality](https://docs.microsoft.com/en-us/sql/relational-databases/track-changes/about-change-tracking-sql-server?view=sql-server-ver15) to monitor a user table for changes. As such, it is necessary to enable change tracking on the database and table before using the trigger. This can be done in the query editor in the portal. If you need help navigating to it, visit the [Create Azure SQL Database](#Create-Azure-SQL-Database) section in the README.
+The trigger uses SQL's [change tracking functionality](https://docs.microsoft.com/sql/relational-databases/track-changes/about-change-tracking-sql-server?view=sql-server-ver15) to monitor a user table for changes. As such, it is necessary to enable change tracking on the database and table before using the trigger. This can be done in the query editor in the portal. If you need help navigating to it, visit the [Create Azure SQL Database](#Create-Azure-SQL-Database) section in the README.
 
 1. To enable change tracking on the database, run
 
@@ -576,7 +576,7 @@ The trigger uses SQL's [change tracking functionality](https://docs.microsoft.co
     (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON)
     ```
 
-    The `CHANGE_RETENTION` parameter specifies for how long changes are kept in the change tracking table. In this case, if a row in a user table hasn't experienced any new changes for two days, it will be removed from the associated change tracking table. The `AUTO_CLEANUP` parameter is used to enable or disable the clean-up task that removes stale data. More information about this command is provided [here](https://docs.microsoft.com/en-us/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server?view=sql-server-ver15#enable-change-tracking-for-a-database).
+    The `CHANGE_RETENTION` parameter specifies for how long changes are kept in the change tracking table. In this case, if a row in a user table hasn't experienced any new changes for two days, it will be removed from the associated change tracking table. The `AUTO_CLEANUP` parameter is used to enable or disable the clean-up task that removes stale data. More information about this command is provided [here](https://docs.microsoft.com/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server?view=sql-server-ver15#enable-change-tracking-for-a-database).
 
 1. To enable change tracking on the table, run
 
@@ -586,7 +586,7 @@ The trigger uses SQL's [change tracking functionality](https://docs.microsoft.co
     WITH (TRACK_COLUMNS_UPDATED = ON)
     ```
 
-    The `TRACK_COLUMNS_UPDATED` feature being enabled means that the change tracking table also stores information about what columns where updated in the case of an `UPDATE`. Currently, the trigger does not make use of this additional metadata, though that functionality could be added in the future. More information about this command is provided [here](https://docs.microsoft.com/en-us/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server?view=sql-server-ver15#enable-change-tracking-for-a-table).
+    The `TRACK_COLUMNS_UPDATED` feature being enabled means that the change tracking table also stores information about what columns where updated in the case of an `UPDATE`. Currently, the trigger does not make use of this additional metadata, though that functionality could be added in the future. More information about this command is provided [here](https://docs.microsoft.com/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server?view=sql-server-ver15#enable-change-tracking-for-a-table).
 
     The trigger needs to have read access to the table being monitored for changes as well as to the change tracking system tables. It also needs write access to an `az_func` schema within the database, where it will create additional worker tables to process the changes. Each user table will thus have an associated change tracking table and worker table. The worker table will contain roughly as many rows as the change tracking table, and will be cleaned up approximately as often as the change table.
 
@@ -594,7 +594,7 @@ The trigger uses SQL's [change tracking functionality](https://docs.microsoft.co
 The trigger takes two arguments
 
 - **TableName**: Passed as a constructor argument to the binding. Represents the name of the table to be monitored for changes.
-- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/en-us/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
+- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
 
 The following are valid binding types for trigger
 
