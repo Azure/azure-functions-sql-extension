@@ -87,6 +87,8 @@ These steps can be done in the CLI, Powershell. Completing this section will all
     dotnet nuget add source https://www.myget.org/F/azure-appservice/api/v3/index.json
     ```
 
+1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
+
 1. Create a function app.
 
     ```bash
