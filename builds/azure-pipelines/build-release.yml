@@ -7,12 +7,12 @@ schedules:
     displayName: Mon-Fri at Midnight
     branches:
       include:
-        - dev
+        - main
     always: true
 
 variables:
   solution: '**/*.sln'
-  configuration: 'Release'  
+  configuration: 'Release'
   versionMajor: 0
   versionMinor: 1
   versionPatch: $[counter(variables['versionMinor'], 0)] # This will reset when we bump minor version
