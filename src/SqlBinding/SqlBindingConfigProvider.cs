@@ -52,9 +52,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), _configuration);
             inputOutputRule.BindToCollector<OpenType>(typeof(SqlAsyncCollectorBuilder<>), _configuration, _loggerFactory);
             inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), _configuration);
-
-            var triggerRule = context.AddBindingRule<SqlTriggerAttribute>();
-            triggerRule.BindToTrigger(new SqlTriggerAttributeBindingProvider(_configuration, _loggerFactory));
         }
     }
 }
