@@ -38,4 +38,4 @@ steps:
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} --collect:"XPlat Code Coverage"
+    arguments: '--configuration ${{ parameters.configuration }} --collect:"XPlat Code Coverage"'
