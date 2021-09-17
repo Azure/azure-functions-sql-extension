@@ -46,4 +46,4 @@ steps:
   displayName: 'Publish Code Coverage Results'
   inputs:
     codeCoverageTool: Cobertura
-    summaryFileLocation: '$(Build.SourcesDirectory)\TestResults\coverage\coverage.cobertura.xml'
+    summaryFileLocation: '$(Build.ArtifactStagingDirectory)\TestResults\coverage\coverage.cobertura.xml'
