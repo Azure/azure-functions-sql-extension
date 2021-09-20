@@ -9,20 +9,19 @@ using static SqlExtensionSamples.ProductUtilities;
 
 namespace SqlExtensionSamples
 {
-    
     public static class AddProduct
     {
         [FunctionName("AddProduct")]
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct")]
             HttpRequest req,
-            [Sql("Products", ConnectionStringSetting = "SqlConnectionString")] out Product product)
+            [Sql("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] out Product product)
         {
             product = new Product
             {
-                Name = req.Query["name"],
-                ProductID = int.Parse(req.Query["id"]),
-                Cost = int.Parse(req.Query["cost"])
+                Name = req.Query["Name"],
+                ProductID = int.Parse(req.Query["ProductID"]),
+                Cost = int.Parse(req.Query["Cost"])
             };
             return new CreatedResult($"/api/addproduct", product);
         }

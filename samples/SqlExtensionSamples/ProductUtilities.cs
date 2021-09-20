@@ -5,15 +5,9 @@ namespace SqlExtensionSamples
 {
     public class ProductUtilities
     {
-        public class Product
-        {
-            public int ProductID { get; set; }
-
-            public string Name { get; set; }
-
-            public int Cost { get; set; }
-        }
-
+        /// <summary>
+        /// Returns a list of <paramref name="num"/> Products with sequential IDs, a cost of 100, and "test" as name.
+        /// </summary>
         public static List<Product> GetNewProducts(int num)
         {
             var products = new List<Product>();
@@ -30,7 +24,10 @@ namespace SqlExtensionSamples
             return products;
         }
 
-        public static List<Product> GetNewProducts(int num, int cost)
+        /// <summary>
+        /// Returns a list of <paramref name="num"/> Products with sequential IDs, a random cost between 0 and 100, and "test" as name.
+        /// </summary>
+        public static List<Product> GetProductsWithRandomCost(int num)
         {
             var r = new Random();
 
@@ -40,7 +37,7 @@ namespace SqlExtensionSamples
                 var product = new Product
                 {
                     ProductID = r.Next(1, num),
-                    Cost = (int)(Math.Round(r.NextDouble() * cost)),
+                    Cost = (int)Math.Round(r.NextDouble() * 100.0),
                     Name = "test"
                 };
                 products.Add(product);
