@@ -1,33 +1,42 @@
-# SQL Extension for Azure Functions #
+# SQL Extension for Azure Functions - Preview
 
-[![Build Status](https://mssqltools.visualstudio.com/CrossPlatBuildScripts/_apis/build/status/SQL%20Bindings/SQL%20Bindings%20-%20Nightly?branchName=dev)](https://mssqltools.visualstudio.com/CrossPlatBuildScripts/_build/latest?definitionId=481&branchName=dev)
+[![Build Status](https://mssqltools.visualstudio.com/CrossPlatBuildScripts/_apis/build/status/SQL%20Bindings/SQL%20Bindings%20-%20Nightly?branchName=main)](https://mssqltools.visualstudio.com/CrossPlatBuildScripts/_build/latest?definitionId=481&branchName=main)
 
-## Introduction ##
+## Introduction
 
-This repository contains extension code for the SQL trigger and bindings as well as a quick start, tutorial, and samples of how to use them. A high level explanation of the trigger and bindings is provided below. Additional information for each is in their respective sample sections.
+This repository contains extension code for SQL bindings as well as a quick start, tutorial, and samples of how to use them. A high level explanation of the bindings is provided below. Additional information for each is in their respective sample sections.
 
 - **input binding**: takes a SQL query to run on a provided table and returns the output of the query.
 - **output binding**: takes a list of rows and upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
-- **trigger**: requires the user to specify the name of a table, and in the event a change occurs (i.e. the row is updated, deleted, or inserted), the trigger will return the updated rows and values along with any associated metadata.
 
-## Table of Contents ##
+## Table of Contents
 
-- [Quick Start](#Quick-Start)
-  - [SQL Setup](#SQL-Setup)
-  - [Set Up Local .NET Function App](#Set-Up-Local-.NET-Function-App)
-- [Tutorials](#Tutorials)
-  - [Create Azure SQL Database](#Create-Azure-SQL-Database)
-  - [Input Binding Tutorial](#Input-Binding-Tutorial)
-  - [Output Binding Tutorial](#Output-Binding-Tutorial)
-  - [Trigger Tutorial](#Trigger-Tutorial)
-- [More Samples](#More-Samples)
-  - [Input Binding](#Input-Binding)
-  - [Output Binding](#Output-Binding)
-  - [Trigger](#Trigger)
+- [SQL Extension for Azure Functions - Preview](#sql-extension-for-azure-functions---preview)
+  - [Introduction](#introduction)
+  - [Table of Contents](#table-of-contents)
+  - [Quick Start](#quick-start)
+    - [SQL Setup](#sql-setup)
+    - [Set Up Local .NET Function App](#set-up-local-net-function-app)
+  - [Tutorials](#tutorials)
+    - [Create Azure SQL Database](#create-azure-sql-database)
+    - [Input Binding Tutorial](#input-binding-tutorial)
+    - [Output Binding Tutorial](#output-binding-tutorial)
+  - [More Samples](#more-samples)
+    - [Input Binding](#input-binding)
+      - [Query String](#query-string)
+      - [Empty Parameter Value](#empty-parameter-value)
+      - [Null Parameter Value](#null-parameter-value)
+      - [Stored Procedure](#stored-procedure)
+      - [IAsyncEnumerable](#iasyncenumerable)
+    - [Output Binding](#output-binding)
+      - [ICollector<T>/IAsyncCollector<T>](#icollectortiasynccollectort)
+      - [Array](#array)
+      - [Single Row](#single-row)
+  - [Contributing](#contributing)
 
-## Quick Start ##
+## Quick Start
 
-### SQL Setup ###
+### SQL Setup
 
 This requires already having a SQL database. If you need to create a SQL database, please refer to [Create Azure SQL Database](#Create-Azure-SQL-Database) in the tutorials section.
 
@@ -45,25 +54,9 @@ A primary key must be set in your SQL table before using the bindings. To do thi
     ALTER TABLE ['your table name'] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED (['column to be primary key']);
     ```
 
-1. SQL's [change tracking functionality](https://docs.microsoft.com/en-us/sql/relational-databases/track-changes/about-change-tracking-sql-server?view=sql-server-ver15) must be enabled on the database to use the trigger. Please note that change tracking has additional costs. If you do not plan on using the trigger, you can skip this step. To enable change tracking on the database, run:
+1. Congrats on setting up your database! Now continue to set up your local environment and complete the quick start.
 
-    ```sql
-    ALTER DATABASE ['your database name']
-    SET CHANGE_TRACKING = ON  
-    (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON)
-    ```
-
-1. Change tracking must be enabled on the table to use the trigger. If you do not plan on using the trigger, you can skip this step. To enable change tracking on the table, run:
-
-    ```sql
-    ALTER TABLE ['your table name']
-    ENABLE CHANGE_TRACKING  
-    WITH (TRACK_COLUMNS_UPDATED = ON)
-    ```
-
-1. Congrats on setting up your database! Now continue to set up your local environment and complete the quick start. For more information on what change tracking does for the bindings, go to the [Trigger](#Trigger) section.
-
-### Set Up Local .NET Function App ###
+### Set Up Local .NET Function App
 
 These steps can be done in the CLI, Powershell. Completing this section will allow you to begin using the bindings.
 
@@ -72,6 +65,8 @@ These steps can be done in the CLI, Powershell. Completing this section will all
     ```bash
     dotnet nuget add source https://www.myget.org/F/azure-appservice/api/v3/index.json
     ```
+
+1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
 1. Create a function app.
 
@@ -87,7 +82,7 @@ These steps can be done in the CLI, Powershell. Completing this section will all
     dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql --version 1.0.0-preview3
     ```
 
-1. Ensure you have Azure Storage Emulator running. For information on the Azure Storage Emulator, refer [here](https://docs.microsoft.com/en-us/azure/storage/common/storage-use-emulator#get-the-storage-emulator)
+1. Ensure you have Azure Storage Emulator running. For information on the Azure Storage Emulator, refer [here](https://docs.microsoft.com/azure/storage/common/storage-use-emulator#get-the-storage-emulator)
 
 1. Get your SqlConnectionString. Your connection string can be found in your SQL database resource by going to the left blade and clicking 'Connection strings'. Copy the Connection String.
 
@@ -117,16 +112,16 @@ These steps can be done in the CLI, Powershell. Completing this section will all
     }
     ```
 
-1. You have setup your local environment and are now ready to create your first SQL bindings! Continue to the [input](#Input-Binding-Tutorial), [output](#Output-Binding-Tutorial), and [trigger](#Trigger-Tutorial) binding tutorials, or refer to [More Samples](#More-Samples) for information on how to use the bindings and explore on your own.
+1. You have setup your local environment and are now ready to create your first SQL bindings! Continue to the [input](#Input-Binding-Tutorial) and [output](#Output-Binding-Tutorial) binding tutorials, or refer to [More Samples](#More-Samples) for information on how to use the bindings and explore on your own.
 
-## Tutorials ##
+## Tutorials
 
-### Create Azure SQL Database ###
+### Create Azure SQL Database
 
-We will create a simple Azure SQL Database. For additional reference on Azure SQL Databases, go [here](https://docs.microsoft.com/en-us/azure/azure-sql/database/single-database-create-quickstart?tabs=azure-portal).
+We will create a simple Azure SQL Database. For additional reference on Azure SQL Databases, go [here](https://docs.microsoft.com/azure/azure-sql/database/single-database-create-quickstart?tabs=azure-portal).
 
 - Create an Azure SQL Database
-  - Make sure you have an Azure subscription. If you don't already have an Azure Subscription, go [here](https://azure.microsoft.com/en-us/free/search/?&OCID=AID2100131_SEM_XzK4bAAAAJBpCjfl:20200918000154:s&msclkid=f33d47a9a4ec1c1b6ced18cd9bd2923f&ef_id=XzK4bAAAAJBpCjfl:20200918000154:s&dclid=CKLQqbL28esCFUrBfgod4BIBMA).
+  - Make sure you have an Azure subscription. If you don't already have an Azure Subscription, go [here](https://azure.microsoft.com/free/search/?&OCID=AID2100131_SEM_XzK4bAAAAJBpCjfl:20200918000154:s&msclkid=f33d47a9a4ec1c1b6ced18cd9bd2923f&ef_id=XzK4bAAAAJBpCjfl:20200918000154:s&dclid=CKLQqbL28esCFUrBfgod4BIBMA).
   - Navigate to the [Azure portal](https://ms.portal.azure.com/)
   - Click 'Create a resource', then search the marketplace for 'SQL Database' and select it. Provide a 'Subscription', 'Resource Group', and 'Database name.' Under the 'Server' field, click 'Create New'
 <kbd>![alt text](/Images/dbSetup.png)</kbd>
@@ -159,7 +154,7 @@ We will create a simple Azure SQL Database. For additional reference on Azure SQ
 
 - Congratulations! You have successfully created an Azure SQL Database! Make sure you complete [Quick Start](#Quick-Start) before continuing to the rest of the tutorial.
 
-### Input Binding Tutorial ###
+### Input Binding Tutorial
 
 Note: This tutorial requires that the Azure SQL database is setup as shown in [Create Azure SQL Database](#Create-Azure-SQL-Database).
 
@@ -169,23 +164,19 @@ Note: This tutorial requires that the Azure SQL database is setup as shown in [C
 - In the file that opens, replace the 'public static async Task< IActionResult > Run' block with the below code.
 
     ```csharp
-    public static class HttpTriggerCSharp1
+    public static async Task<IActionResult> Run(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "employees")] HttpRequest req,
+        ILogger log,
+        [Sql("select * from Employees",
+        CommandType = System.Data.CommandType.Text,
+        ConnectionStringSetting = "SqlConnectionString")]
+        IEnumerable<Employee> employee)
     {
-        [FunctionName("HttpTriggerCSharp1")]
-        public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "employees")] HttpRequest req,
-            ILogger log,
-            [Sql("select * from Employees",
-            CommandType = System.Data.CommandType.Text,
-            ConnectionStringSetting = "SqlConnectionString")]
-            IEnumerable<Employee> employee)
-        {
-            return new OkObjectResult(employee);
-        }
+        return new OkObjectResult(employee);
     }
     ```
 
-    *In the above, "select from Employees where EmployeeId = @EmployeeId" is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [Input Binding Samples](#Input-Binding-Samples) section*
+    *In the above, "select * from Employees" is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [Input Binding](#Input-Binding) section*
 
 - Add 'using System.Collections.Generic;' to the namespaces list at the top of the page.
 - Currently, there is an error for the IEnumerable. We'll fix this by creating an Employee class.
@@ -209,9 +200,9 @@ Note: This tutorial requires that the Azure SQL database is setup as shown in [C
 - Hit 'F5' to run your code. This will start up the Functions Host with a local HTTP Trigger and SQL Input Binding.
 - Click the link that appears in your terminal.
 - You should see your database output in the browser window.
-- Congratulations! You have successfully created your first SQL input binding! Checkout [Input Binding Samples](#Input-Binding-Samples) for more information on how to use it and explore on your own!
+- Congratulations! You have successfully created your first SQL input binding! Checkout [Input Binding](#Input-Binding) for more information on how to use it and explore on your own!
 
-### Output Binding Tutorial ###
+### Output Binding Tutorial
 
 Note: This tutorial requires that the Azure SQL database is setup as shown in [Create Azure SQL Database](#Create-Azure-SQL-Database), and that you have the 'Employee.cs' class from the [Input Binding Tutorial](#Input-Binding-Tutorial).
 
@@ -252,75 +243,32 @@ Note: This tutorial requires that the Azure SQL database is setup as shown in [C
     }
     ```
 
-    *In the above, "dbo.Employees" is the name of the database our output binding is upserting into. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [Output Binding Samples](#Output-Binding-Samples) section*
+    *In the above, "dbo.Employees" is the name of the table our output binding is upserting into. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [Output Binding](#Output-Binding) section*
 
 - Hit 'F5' to run your code. Click the link to upsert the output array values in your SQL table. Your upserted values should launch in the browser.
-- Congratulations! You have successfully created your first SQL output binding! Checkout [Output Binding Samples](#Output-Binding-Samples) for more information on how to use it and explore on your own!
+- Congratulations! You have successfully created your first SQL output binding! Checkout [Output Binding](#Output-Binding) for more information on how to use it and explore on your own!
 
-### Trigger Tutorial ###
+## More Samples
 
-This tutorial requires that the Azure SQL database is setup as shown in [Create Azure SQL Database](#Create-Azure-SQL-Database), and that you have the 'Employee.cs' class from the [Input Binding Tutorial](#Input-Binding-Tutorial).
-
-- Create a new file
-- Add the following namespaces
-
-    ```csharp
-    using Microsoft.Azure.WebJobs;
-    using Microsoft.Extensions.Logging;
-    using System.Collections.Generic;
-    using Microsoft.Azure.WebJobs.Extensions.Sql;
-    ```
-
-- Below, add the SQL trigger
-
-    ```csharp
-    namespace Company.Function
-    {
-        public static class EmployeeTrigger
-        {
-            [FunctionName("EmployeeTrigger")]
-            public static void Run(
-                [SqlTrigger("[dbo].[Employees]", ConnectionStringSetting = "SqlConnectionString")]
-                IEnumerable<SqlChangeTrackingEntry<Employee>> changes,
-                ILogger logger)
-            {
-                foreach (var change in changes)
-                {
-                    Employee employee = change.Data;
-                    logger.LogInformation($"Change occurred to Employee table row: {change.ChangeType}");
-                    logger.LogInformation($"EmployeeID: {employee.EmployeeId}, FirstName: {employee.FirstName}, LastName: {employee.LastName}, Company: {employee.Company}, Team: {employee.Team}");
-                }
-            }
-        }
-    }
-    ```
-
-- (*Skip this step if you have not completed the output binding tutorial*) Open your output binding file and modify some of the values (e.g. Change Team from 'Functions' to 'Azure SQL'). This will update the row when the code is run.
-- Hit 'F5' to run your code. Click the link for the http trigger to the output binding. You should see the log in VS Code update and tell you which row changed and what the data in the row is now.
-- Update, insert, or delete additional rows in your SQL table using the SQL query editor while the function app is running and observe the log updates.
-- Congratulations! You have successfully created your first SQL trigger! Checkout [Trigger Samples](#Trigger-Samples) for more information on how to use the trigger and explore on your own!
-
-## More Samples ##
-
-### Input Binding ###
+### Input Binding
 
 The input binding takes four arguments
 
 - **CommandText**: Passed as a constructor argument to the binding. Represents either a query string or the name of a stored procedure.
 - **CommandType**: Specifies whether CommandText is a query (`System.Data.CommandType.Text`) or a stored procedure (`System.Data.CommandType.StoredProcedure`)
 - **Parameters**: The parameters to the query/stored procedure. This string must follow the format "@param1=param1,@param2=param2" where @param1 is the name of the parameter and param1 is the parameter value. Each pair of parameter name, parameter value is separated by a comma. Within each pair, the parameter name and value is separated by an equals sign. This means that neither the parameter name nor value can contain "," or "=". To specify a `NULL` parameter value, do "@param1=null,@param2=param2". To specify an empty string as a value, do "@param1=,@param2=param2", i.e. do not put any text after the equals sign of the corresponding parameter name. This argument is auto-resolvable (see Query String examples).
-- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/en-us/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
+- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
 
 The following are valid binding types for the result of the query/stored procedure execution:
 
 - **IEnumerable<T>**: Each element is a row of the result represented by `T`, where `T` is a user-defined POCO, or Plain Old C# Object. `T` should follow the structure of a row in the queried table. See the [Query String](#query-string) section for an example of what `T` should look like.
 - **IAsyncEnumerable<T>**: Each element is again a row of the result represented by `T`, but the rows are retrieved "lazily". A row of the result is only retrieved when `MoveNextAsync` is called on the enumerator. This is useful in the case that the query can return a very large amount of rows.
-- **String**: A JSON string representation of the rows of the result (an example is provided [here](https://github.com/Azure/azure-functions-sql-extension/blob/dev/samples/SqlExtensionSamples/InputBindingSamples/GetProductsString.cs)).
-- **SqlCommand**: The SqlCommand is populated with the appropriate query and parameters, but the associated connection is not opened. It is the responsiblity of the user to execute the command and read in the results. This is useful in the case that the user wants more control over how the results are read in. An example is provided [here](https://github.com/Azure/azure-functions-sql-extension/blob/dev/samples/SqlExtensionSamples/InputBindingSamples/GetProductsSqlCommand.cs).
+- **String**: A JSON string representation of the rows of the result (an example is provided [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/SqlExtensionSamples/InputBindingSamples/GetProductsString.cs)).
+- **SqlCommand**: The SqlCommand is populated with the appropriate query and parameters, but the associated connection is not opened. It is the responsiblity of the user to execute the command and read in the results. This is useful in the case that the user wants more control over how the results are read in. An example is provided [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/SqlExtensionSamples/InputBindingSamples/GetProductsSqlCommand.cs).
 
-The repo contains examples of each of these binding types [here](https://github.com/Azure/azure-functions-sql-extension/tree/dev/samples/SqlExtensionSamples/InputBindingSamples). A few examples are also included below.
+The repo contains examples of each of these binding types [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/SqlExtensionSamples/InputBindingSamples). A few examples are also included below.
 
-#### Query String ###
+#### Query String
 
 The input binding executes the "select * from Products where Cost = @Cost" query, returning the result as an `IEnumerable<Product>`, where Product is a user-defined POCO. The *Parameters* argument passes the `{cost}` specified in the URL that triggers the function, `getproducts/{cost}`, as the value of the `@Cost` parameter in the query. *CommandType* is set to `System.Data.CommandType.Text`, since the constructor argument of the binding is a raw query.
 
@@ -359,7 +307,7 @@ public class Product
 }
 ```
 
-#### Empty Parameter Value ####
+#### Empty Parameter Value
 
 In this case, the parameter value of the `@Name` parameter is an empty string.
 
@@ -378,7 +326,7 @@ In this case, the parameter value of the `@Name` parameter is an empty string.
   }
   ```
 
-#### Null Parameter Value ####
+#### Null Parameter Value
 
 If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", the query returns all rows for which the Name column is `NULL`. Otherwise, it returns all rows for which the value of the Name column matches the string passed in `{name}`
 
@@ -397,7 +345,7 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
   }
 ```
 
-#### Stored Procedure ####
+#### Stored Procedure
 
 `SelectsProductCost` is the name of a procedure stored in the user's database. In this case, *CommandType* is `System.Data.CommandType.StoredProcedure`. The parameter value of the `@Cost` parameter in the procedure is once again the `{cost}` specified in the `getproducts-storedprocedure/{cost}` URL.
 
@@ -416,7 +364,7 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
   }
 ```
 
-#### IAsyncEnumerable ####
+#### IAsyncEnumerable
 
 Using the `IAsyncEnumerable` binding generally requires that the `Run` function be `async`. It is also important to call `DisposeAsync` at the end of function execution to make sure all resources used by the enumerator are freed.
 
@@ -441,14 +389,14 @@ public static async Task<IActionResult> Run(
 }
 ```
 
-### Output Binding ###
+### Output Binding
 
 The output binding takes a list of rows to be upserted into a user table. If the primary key value of the row already exists in the table, the row is interpreted as an update, meaning that the values of the other columns in the table for that primary key are updated. If the primary key value does not exist in the table, the row is interpreted as an insert. The upserting of the rows is batched by the output binding code.
 
 The output binding takes two arguments
 
 - **CommandText**: Passed as a constructor argument to the binding. Represents the name of the table into which rows will be upserted.
-- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/en-us/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
+- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
 
 The following are valid binding types for the rows to be upserted into the table:
 
@@ -456,9 +404,9 @@ The following are valid binding types for the rows to be upserted into the table
 - **T**: Used when just one row is to be upserted into the table.
 - **T[]**: Each element is again a row of the result represented by `T`. This output binding type requires manual instantiation of the array in the function.
 
-The repo contains examples of each of these binding types [here](https://github.com/Azure/azure-functions-sql-extension/tree/dev/samples/SqlExtensionSamples/OutputBindingSamples). A few examples are also included below.
+The repo contains examples of each of these binding types [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/SqlExtensionSamples/OutputBindingSamples). A few examples are also included below.
 
-#### ICollector<T>/IAsyncCollector<T> ####
+#### ICollector<T>/IAsyncCollector<T>
 
 When using an `ICollector`, it is not necessary to instantiate it. The function can add rows to the `ICollector` directly, and its contents are automatically upserted once the function exits.
 
@@ -476,7 +424,7 @@ public static IActionResult Run(
     return new CreatedResult($"/api/addproducts-collector", "done");
 }
 ```
-  
+
 It is also possible to force an upsert within the function by calling `FlushAsync()` on an `IAsyncCollector`
 
 ```csharp
@@ -502,7 +450,7 @@ public static async Task<IActionResult> Run(
 }
 ```
 
-#### Array ####
+#### Array
 
 This output binding type requires explicit instantiation within the function body. Note also that the `Product[]` array must be prefixed by `out` when attached to the output binding
 
@@ -531,7 +479,7 @@ public static IActionResult Run(
 }
 ```
 
-#### Single Row ####
+#### Single Row
 
 When binding to a single row, it is also necessary to prefix the row with `out`
 
@@ -552,63 +500,7 @@ public static IActionResult Run(
 }
 ```
 
-### Trigger ###
-
-#### Change Tracking ####
-
-The trigger uses SQL's [change tracking functionality](https://docs.microsoft.com/en-us/sql/relational-databases/track-changes/about-change-tracking-sql-server?view=sql-server-ver15) to monitor a user table for changes. As such, it is necessary to enable change tracking on the database and table before using the trigger. This can be done in the query editor in the portal. If you need help navigating to it, visit the [Create Azure SQL Database](#Create-Azure-SQL-Database) section in the README.
-
-1. To enable change tracking on the database, run
-
-    ```sql
-    ALTER DATABASE ['your database name']
-    SET CHANGE_TRACKING = ON  
-    (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON)
-    ```
-
-    The `CHANGE_RETENTION` parameter specifies for how long changes are kept in the change tracking table. In this case, if a row in a user table hasn't experienced any new changes for two days, it will be removed from the associated change tracking table. The `AUTO_CLEANUP` parameter is used to enable or disable the clean-up task that removes stale data. More information about this command is provided [here](https://docs.microsoft.com/en-us/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server?view=sql-server-ver15#enable-change-tracking-for-a-database).
-
-1. To enable change tracking on the table, run
-
-    ```sql
-    ALTER TABLE dbo.Employees
-    ENABLE CHANGE_TRACKING  
-    WITH (TRACK_COLUMNS_UPDATED = ON)
-    ```
-
-    The `TRACK_COLUMNS_UPDATED` feature being enabled means that the change tracking table also stores information about what columns where updated in the case of an `UPDATE`. Currently, the trigger does not make use of this additional metadata, though that functionality could be added in the future. More information about this command is provided [here](https://docs.microsoft.com/en-us/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server?view=sql-server-ver15#enable-change-tracking-for-a-table).
-
-    The trigger needs to have read access to the table being monitored for changes as well as to the change tracking system tables. It also needs write access to an `az_func` schema within the database, where it will create additional worker tables to process the changes. Each user table will thus have an associated change tracking table and worker table. The worker table will contain roughly as many rows as the change tracking table, and will be cleaned up approximately as often as the change table.
-
-#### Trigger Samples ####
-The trigger takes two arguments
-
-- **TableName**: Passed as a constructor argument to the binding. Represents the name of the table to be monitored for changes.
-- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/en-us/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
-
-The following are valid binding types for trigger
-
-- **IEnumerable<SqlChangeTrackingEntry\<T\>>**: Each element is a `SqlChangeTrackingEntry`, which stores change metadata about a modified row in the user table as well as the row itself. In the case that the row was deleted, only the primary key values of the row are populated. The user table row is represented by `T`, where `T` is a user-defined POCO, or Plain Old C# Object. `T` should follow the structure of a row in the queried table. See the [Query String](#query-string) section for an example of what `T` should look like. The two fields of a `SqlChangeTrackingEntry` are the `Data` field of type `T` which stores the row, and the `ChangeType` field of type `SqlChangeType` which indicates the type of operaton done to the row (either an insert, update, or delete).
-
-Any time changes happen to the "Products" table, the function is triggered with a list of changes that occurred. The changes are processed sequentially, so the function will be triggered by the earliest changes first.
-
-```csharp
-[FunctionName("ProductsTrigger")]
-public static void Run(
-    [SqlTrigger("Products", ConnectionStringSetting = "SqlConnectionString")]
-    IEnumerable<SqlChangeTrackingEntry<Product>> changes,
-    ILogger logger)
-{
-    foreach (var change in changes)
-    {
-        Product product = change.Data;
-        logger.LogInformation($"Change occurred to Products table row: {change.ChangeType}");
-        logger.LogInformation($"ProductID: {product.ProductID}, Name: {product.Name}, Price: {product.Cost}");
-    }
-}
-```
-
-## Contributing ##
+## Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
 Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
