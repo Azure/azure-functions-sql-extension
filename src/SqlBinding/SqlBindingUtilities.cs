@@ -159,52 +159,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             return result;
         }
 
-        /// <summary>
-        /// Returns [tableName] if tableName is not prefixed by a schema, otherwise returns [schema].[table] in the case that
-        /// tableName = schema.table
-        /// </summary>
-        /// <param name="tableName">The name of the user's table</param>
-        /// <returns>The normalized table name</returns>
-        public static string NormalizeTableName(string tableName)
-        {
-            // In the case that the user specified the table name as something like 'dbo.Products', we split this into
-            // 'dbo' and 'Products' to build the select query in the SqlDataAdapter. In that case, the length of the
-            // tableNameComponents array is 2. Otherwise, the user specified a table name without the prefix so we 
-            // just surround it by brackets
-            string[] tableNameComponents = tableName.Split(new[] { '.' }, 2);
-            var schema = string.Empty;
-            var table = string.Empty;
-            if (tableNameComponents.Length == 2)
-            {
-                schema = tableNameComponents[0];
-                table = tableNameComponents[1];
-                // User didn't already surround the schema name with brackets
-                if (!schema.StartsWith('[') && !schema.EndsWith(']'))
-                {
-                    schema = $"[{schema}]";
-                }
-            }
-            else
-            {
-                table = tableName;
-            }
-
-            // User didn't already surround the table name with brackets
-            if (!table.StartsWith('[') && !table.EndsWith(']'))
-            {
-                table = $"[{table}]";
-            }
-
-            if (!String.IsNullOrEmpty(schema))
-            {
-                return $"{schema}.{table}";
-            }
-            else
-            {
-                return table;
-            }
-        }
-
         public static void GetTableAndSchema(string fullName, out string schema, out string tableName)
         {
             // defaults
@@ -221,34 +175,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 schema = $"'{pieces[0]}'";
                 tableName = pieces[1];
-            }
-        }
-
-        /// <summary>
-        /// Attaches SqlParameters to "command". Each parameter follows the format (@PrimaryKey_i, PrimaryKeyValue), where @PrimaryKey is the
-        /// name of a primary key column, and PrimaryKeyValue is one of the row's value for that column. To distinguish between the parameters
-        /// of different rows, each row will have a distinct value of i.
-        /// </summary>
-        /// <param name="command">The command the parameters are attached to</param>
-        /// <param name="rows">The rows to which this command corresponds to</param>
-        /// <param name="primaryKeys">List of primary key column names</param>
-        /// <remarks>
-        /// Ideally, we would have a map that maps from rows to a list of SqlCommands populated with their primary key values. The issue with
-        /// this is that SQL doesn't seem to allow adding parameters to one collection when they are part of another. So, for example, since
-        /// the SqlParameters are part of the list in the map, an exception is thrown if they are also added to the collection of a SqlCommand.
-        /// The expected behavior seems to be to rebuild the SqlParameters each time
-        /// </remarks>
-        public static void AddPrimaryKeyParametersToCommand(SqlCommand command, List<Dictionary<string, string>> rows, IEnumerable<string> primaryKeys)
-        {
-            var index = 0;
-            foreach (var row in rows)
-            {
-                foreach (var key in primaryKeys)
-                {
-                    row.TryGetValue(key, out string primaryKeyValue);
-                    command.Parameters.Add(new SqlParameter($"@{key}_{index}", primaryKeyValue));
-                }
-                index++;
             }
         }
     }
