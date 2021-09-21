@@ -207,12 +207,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public static void GetTableAndSchema(string fullName, out string schema, out string tableName)
         {
-            // defaults
-            tableName = fullName;
-            schema = "SCHEMA_NAME()"; // default to user schema
-
             // remove [ ] from name if necessary
             string cleanName = fullName.Replace("]", string.Empty).Replace("[", string.Empty);
+
+            // defaults
+            tableName = cleanName;
+            schema = "SCHEMA_NAME()"; // default to user schema
 
             // if in format schema.table, split into two parts for query
             string[] pieces = cleanName.Split('.');

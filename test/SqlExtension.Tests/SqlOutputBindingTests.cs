@@ -40,5 +40,23 @@ namespace SqlExtension.Tests
             };
             await collector.AddAsync(data);
         }
+
+        [Fact]
+        public void TestGetTableAndSchema()
+        {
+            var fullName = "[schema].[table]";
+            SqlBindingUtilities.GetTableAndSchema(fullName, out string schema, out string tableName);
+            Assert.Equal("'schema'", schema);
+            Assert.Equal("table", tableName);
+        }
+
+        [Fact]
+        public void TestGetTableAndSchemaWithNoSchema()
+        {
+            var fullName = "[table]";
+            SqlBindingUtilities.GetTableAndSchema(fullName, out string schema, out string tableName);
+            Assert.Equal("SCHEMA_NAME()", schema);
+            Assert.Equal("table", tableName);
+        }
     }
 }
