@@ -17,7 +17,7 @@ namespace SqlExtension.IntegrationTests
 
         private async Task<HttpResponseMessage> SendInputRequest(string functionName, string query = "")
         {
-            string requestUri = $"http://localhost:7071/api/{functionName}/{query}";
+            string requestUri = $"http://localhost:{Port}/api/{functionName}/{query}";
 
             return await SendGetRequest(requestUri);
         }

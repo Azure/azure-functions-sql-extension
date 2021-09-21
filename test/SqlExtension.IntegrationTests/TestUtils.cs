@@ -10,7 +10,7 @@ namespace SqlExtension.IntegrationTests
     /// </remarks>
     public static class TestUtils
     {
-        private static int databaseId = 0;
+        internal static int ThreadId = 0;
 
         /// <summary>
         /// Returns a mangled name that unique based on Prefix + Machine + Process
@@ -24,7 +24,7 @@ namespace SqlExtension.IntegrationTests
                 safeMachineName,
                 AppDomain.CurrentDomain.Id,
                 Process.GetCurrentProcess().Id,
-                Interlocked.Increment(ref databaseId));
+                Interlocked.Increment(ref ThreadId));
         }
 
         /// <summary>

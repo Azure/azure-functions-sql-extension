@@ -15,7 +15,7 @@ namespace SqlExtension.IntegrationTests
 
         private async Task<HttpResponseMessage> SendOutputRequest(string functionName, IDictionary<string, string> query = null)
         {
-            string requestUri = @"http://localhost:7071/api/" + functionName;
+            string requestUri = $"http://localhost:{Port}/api/{functionName}";
 
             if (query != null)
             {
@@ -68,6 +68,18 @@ namespace SqlExtension.IntegrationTests
             SendOutputRequest("addproducts-collector").Wait();
 
             Assert.Equal(5000, ExecuteScalar("SELECT COUNT(1) FROM Products"));
+        }
+
+        [Fact]
+        public void QueueTriggerProductsTest()
+        {
+            string uri = $"http://localhost:{Port}/admin/functions/QueueTriggerProducts";
+            string json = "{ 'input': 'Test Data' }";
+
+            SendPostRequest(uri, json).Wait();
+
+            // Function should add 100 rows
+            Assert.Equal(100, ExecuteScalar("SELECT COUNT(1) FROM Products"));
         }
     }
 }

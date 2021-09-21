@@ -21,7 +21,7 @@ namespace SqlExtensionSamples.TriggerBindingSamples
             Stopwatch sw = new Stopwatch();
             sw.Start();
                     
-            List<Product> newProducts = GetNewProducts(totalUpserts, _executionNumber * 100);
+            List<Product> newProducts = GetNewProductsRandomized(totalUpserts, _executionNumber * 100);
             foreach (var product in newProducts)
             {
                 products.Add(product);

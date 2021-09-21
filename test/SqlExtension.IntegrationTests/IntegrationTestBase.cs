@@ -6,6 +6,7 @@ using System.IO;
 using System.Net.Http;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -34,6 +35,8 @@ namespace SqlExtension.IntegrationTests
         /// Output redirect for XUnit tests. Please use TestOutput.WriteLine() instead of Console or Debug.
         /// </summary>
         protected ITestOutputHelper TestOutput { get; private set; }
+
+        protected int Port { get; private set; }
 
         public IntegrationTestBase(ITestOutputHelper output)
         {
@@ -80,11 +83,13 @@ namespace SqlExtension.IntegrationTests
                 throw new FileNotFoundException("Azure Function Core Tools not found at " + funcPath);
             }
 
+            Port = 7071 + TestUtils.ThreadId;
+
             FunctionHost = new Process();
             FunctionHost.StartInfo = new ProcessStartInfo
             {
                 FileName = funcPath,
-                Arguments = "start --verbose",
+                Arguments = $"start --verbose -p {Port}",
                 WorkingDirectory = Path.Combine(GetPathToSamplesBin(), "SqlExtensionSamples"),
                 WindowStyle = ProcessWindowStyle.Hidden,
                 RedirectStandardOutput = true,
@@ -111,6 +116,9 @@ namespace SqlExtension.IntegrationTests
             throw new Exception("Function host failed with error: " + e.Data);
         }
 
+        /// <summary>
+        /// Sends an HTTP GET request to the <paramref name="requestUri"/>
+        /// </summary>
         protected async Task<HttpResponseMessage> SendGetRequest(string requestUri, bool verifySuccess = true)
         {
             TestOutput.WriteLine("Sending GET request: " + requestUri);
@@ -122,6 +130,27 @@ namespace SqlExtension.IntegrationTests
 
             HttpClient client = new HttpClient();
             HttpResponseMessage response = await client.GetAsync(requestUri);
+
+            if (verifySuccess)
+            {
+                Assert.True(response.IsSuccessStatusCode, $"Http request failed with code {response.StatusCode}. Please check output for more detailed message.");
+            }
+
+            return response;
+        }
+
+        protected async Task<HttpResponseMessage> SendPostRequest(string requestUri, string json, bool verifySuccess = true)
+        {
+            TestOutput.WriteLine("Sending POST request: " + requestUri);
+
+            if (string.IsNullOrEmpty(requestUri))
+            {
+                throw new ArgumentException("URI cannot be null or empty.");
+            }
+
+            HttpClient client = new HttpClient();
+            StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
+            HttpResponseMessage response = await client.PostAsync(requestUri, content);
 
             if (verifySuccess)
             {

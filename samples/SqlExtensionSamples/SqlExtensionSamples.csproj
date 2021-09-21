@@ -5,12 +5,6 @@
     <AzureFunctionsVersion>v3</AzureFunctionsVersion>
   </PropertyGroup>
 
-  <!-- Excluding from build now until we add support for these in integration tests -->
-  <ItemGroup>
-    <Compile Remove="OutputBindingSamples\QueueTriggerProducts.cs" />
-    <Compile Remove="OutputBindingSamples\TimerTriggerProducts.cs" />
-  </ItemGroup>
-
   <ItemGroup>
 	<PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="4.0.3" />
