@@ -1,27 +1,28 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <AzureFunctionsVersion>v3</AzureFunctionsVersion>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Remove="TriggerBindingSamples\**" />
-    <EmbeddedResource Remove="TriggerBindingSamples\**" />
-    <None Remove="TriggerBindingSamples\**" />
-  </ItemGroup>
+
+  <!-- Excluding from build now until we add support for these in integration tests -->
   <ItemGroup>
     <Compile Remove="OutputBindingSamples\QueueTriggerProducts.cs" />
     <Compile Remove="OutputBindingSamples\TimerTriggerProducts.cs" />
   </ItemGroup>
+
   <ItemGroup>
 	<PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="4.0.3" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.11" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\SqlBinding\SqlBinding.csproj" />
   </ItemGroup>
+
   <ItemGroup>
-    <None Update="Database\Products.sql">
+    <None Update="Database\*.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="host.json">
@@ -32,4 +33,5 @@
       <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </None>
   </ItemGroup>
+  
 </Project>

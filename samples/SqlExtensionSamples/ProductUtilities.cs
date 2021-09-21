@@ -24,10 +24,7 @@ namespace SqlExtensionSamples
             return products;
         }
 
-        /// <summary>
-        /// Returns a list of <paramref name="num"/> Products with sequential IDs, a random cost between 0 and 100, and "test" as name.
-        /// </summary>
-        public static List<Product> GetProductsWithRandomCost(int num)
+        public static List<Product> GetNewProductsRandomized(int num, int cost)
         {
             var r = new Random();
 

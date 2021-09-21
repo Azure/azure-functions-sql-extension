@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using static SqlExtensionSamples.ProductUtilities;
 
 namespace SqlExtensionSamples
 {
@@ -23,7 +22,7 @@ namespace SqlExtensionSamples
                 ConnectionStringSetting = "SqlConnectionString")]
             IEnumerable<Product> products)
         {
-            return (ActionResult)new OkObjectResult(products);
+            return new OkObjectResult(products);
         }
     }
 }

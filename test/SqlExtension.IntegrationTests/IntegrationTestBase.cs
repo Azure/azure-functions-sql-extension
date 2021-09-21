@@ -66,7 +66,7 @@ namespace SqlExtension.IntegrationTests
                 ExecuteNonQuery(File.ReadAllText(file));
             }
 
-            // Set connection string env var for the test Azure Functions to use
+            // Set SqlConnectionString env var for the Function to use
             Environment.SetEnvironmentVariable("SqlConnectionString", connectionString);
         }
 
@@ -98,7 +98,7 @@ namespace SqlExtension.IntegrationTests
             FunctionHost.BeginOutputReadLine();
             FunctionHost.BeginErrorReadLine();
 
-            Thread.Sleep(8000);     // This is just to give some time to func host to start, maybe there's a better way to do this (check if port's open?)
+            Thread.Sleep(5000);     // This is just to give some time to func host to start, maybe there's a better way to do this (check if port's open?)
         }
 
         private void TestOutputHandler(object sender, DataReceivedEventArgs e)
@@ -111,21 +111,24 @@ namespace SqlExtension.IntegrationTests
             throw new Exception("Function host failed with error: " + e.Data);
         }
 
-        protected async Task SendGetRequest(string uriWithQuery)
+        protected async Task<HttpResponseMessage> SendGetRequest(string requestUri, bool verifySuccess = true)
         {
-            if (string.IsNullOrEmpty(uriWithQuery))
+            TestOutput.WriteLine("Sending GET request: " + requestUri);
+
+            if (string.IsNullOrEmpty(requestUri))
             {
                 throw new ArgumentException("URI cannot be null or empty.");
             }
 
             HttpClient client = new HttpClient();
+            HttpResponseMessage response = await client.GetAsync(requestUri);
 
-            HttpResponseMessage response = await client.GetAsync(uriWithQuery);
-            string responseOutput = await response.Content.ReadAsStringAsync();
+            if (verifySuccess)
+            {
+                Assert.True(response.IsSuccessStatusCode, $"Http request failed with code {response.StatusCode}. Please check output for more detailed message.");
+            }
 
-            TestOutput.WriteLine(responseOutput);
-
-            Assert.True(response.IsSuccessStatusCode, $"Http request failed with code {response.StatusCode}. Please check output for more detailed message.");
+            return response;
         }
 
         protected void ExecuteNonQuery(string commandText)
