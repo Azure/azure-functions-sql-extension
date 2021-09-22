@@ -5,7 +5,7 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 using static SqlExtensionSamples.ProductUtilities;
 
-namespace SqlExtensionSamples.OutputBindingSamples
+namespace SqlExtensionSamples
 {
     public static class QueueTriggerProducts
     {

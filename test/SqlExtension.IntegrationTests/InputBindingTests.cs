@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using SqlExtensionSamples;
+using xRetry;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -22,7 +23,7 @@ namespace SqlExtension.IntegrationTests
             return await SendGetRequest(requestUri);
         }
 
-        [Theory]
+        [RetryTheory]
         [InlineData(0, 100)]
         [InlineData(1, -500)]
         [InlineData(100, 500)]
@@ -42,7 +43,7 @@ namespace SqlExtension.IntegrationTests
             Assert.Equal(expectedResponse, actualResponse, StringComparer.OrdinalIgnoreCase);
         }
 
-        [Theory]
+        [RetryTheory]
         [InlineData(0, 99)]
         [InlineData(1, -999)]
         [InlineData(100, 999)]
@@ -62,7 +63,7 @@ namespace SqlExtension.IntegrationTests
             Assert.Equal(expectedResponse, actualResponse, StringComparer.OrdinalIgnoreCase);
         }
 
-        [Theory]
+        [RetryTheory]
         [InlineData(0, 0)]
         [InlineData(1, 20)]
         [InlineData(100, 1000)]

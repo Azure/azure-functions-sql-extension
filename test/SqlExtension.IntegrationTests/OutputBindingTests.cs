@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.WebUtilities;
+using xRetry;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -26,7 +27,7 @@ namespace SqlExtension.IntegrationTests
             return await SendGetRequest(requestUri);
         }
 
-        [Theory]
+        [RetryTheory]
         [InlineData(1, "Test", 5)]
         [InlineData(0, "", 0)]
         [InlineData(-500, "ABCD", 580)]
@@ -46,7 +47,7 @@ namespace SqlExtension.IntegrationTests
             Assert.Equal(cost, ExecuteScalar($"select cost from Products where ProductId={id}"));
         }
 
-        [Fact]
+        [RetryFact]
         public void AddProductArrayTest()
         {
             // First insert some test data
@@ -62,7 +63,7 @@ namespace SqlExtension.IntegrationTests
             Assert.Equal(2, ExecuteScalar("SELECT ProductId FROM Products WHERE Cost = 12"));
         }
 
-        [Fact]
+        [RetryFact]
         public void AddProductsCollectorTest()
         {
             // Function should add 5000 rows to the table
@@ -71,7 +72,7 @@ namespace SqlExtension.IntegrationTests
             Assert.Equal(5000, ExecuteScalar("SELECT COUNT(1) FROM Products"));
         }
 
-        [Fact]
+        [RetryFact]
         public void QueueTriggerProductsTest()
         {
             string uri = $"http://localhost:{Port}/admin/functions/QueueTriggerProducts";

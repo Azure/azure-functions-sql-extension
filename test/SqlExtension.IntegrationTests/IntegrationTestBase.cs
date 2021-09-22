@@ -89,7 +89,7 @@ namespace SqlExtension.IntegrationTests
             FunctionHost.StartInfo = new ProcessStartInfo
             {
                 FileName = funcPath,
-                Arguments = $"start --verbose -p {Port}",
+                Arguments = $"start --verbose --port {Port}",
                 WorkingDirectory = Path.Combine(GetPathToSamplesBin(), "SqlExtensionSamples"),
                 WindowStyle = ProcessWindowStyle.Hidden,
                 RedirectStandardOutput = true,
@@ -113,7 +113,7 @@ namespace SqlExtension.IntegrationTests
 
         private void TestErrorOutputHandler(object sender, DataReceivedEventArgs e)
         {
-            throw new Exception("Function host failed with error: " + e.Data);
+            TestOutput.WriteLine(e.Data);
         }
 
         /// <summary>
@@ -121,7 +121,8 @@ namespace SqlExtension.IntegrationTests
         /// </summary>
         protected async Task<HttpResponseMessage> SendGetRequest(string requestUri, bool verifySuccess = true)
         {
-            TestOutput.WriteLine("Sending GET request: " + requestUri);
+            string timeStamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", System.Globalization.CultureInfo.InvariantCulture);
+            TestOutput.WriteLine($"[{timeStamp}] Sending GET request: {requestUri}");
 
             if (string.IsNullOrEmpty(requestUri))
             {
@@ -196,8 +197,7 @@ namespace SqlExtension.IntegrationTests
             {
                 Connection.Dispose();
 
-                FunctionHost.CloseMainWindow();
-                FunctionHost.Close();
+                FunctionHost.Kill();
                 FunctionHost.Dispose();
             }
         }
