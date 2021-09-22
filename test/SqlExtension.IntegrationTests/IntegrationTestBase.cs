@@ -196,12 +196,8 @@ namespace SqlExtension.IntegrationTests
             {
                 Connection.Dispose();
 
-                if (!FunctionHost.HasExited)
-                {
-                    FunctionHost.Kill();
-                }
-
                 FunctionHost.CloseMainWindow();
+                FunctionHost.Close();
                 FunctionHost.Dispose();
             }
         }

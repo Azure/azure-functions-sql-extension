@@ -20,7 +20,7 @@ namespace SqlExtensionSamples.OutputBindingSamples
             Stopwatch sw = new Stopwatch();
             sw.Start();
 
-            List<Product> newProducts = GetNewProductsRandomized(totalUpserts, 2 * 100);
+            List<Product> newProducts = GetNewProducts(totalUpserts);
             foreach (var product in newProducts)
             {
                 products.Add(product);

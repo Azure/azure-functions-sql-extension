@@ -1,0 +1,44 @@
+parameters:
+  configuration: ''
+  solution: ''
+  nugetVersion: ''
+
+steps:
+- script: npm i -g azure-functions-core-tools@2 --unsafe-perm true
+  displayName: 'Install Azure Functions Core Tools'
+
+- task: UseDotNet@2
+  displayName: 'Install .NET Core SDK 3.1.x for Build'
+  inputs:
+    version: '3.1.x'
+
+- task: DotNetCoreCLI@2
+  displayName: '.NET Restore'
+  inputs:
+    command: restore
+    projects: '${{ parameters.solution }}'
+
+  # Build outputs directly into staging directory
+- task: DotNetCoreCLI@2
+  displayName: '.NET Build'
+  inputs:
+    command: build
+    projects: '${{ parameters.solution }}'
+    arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) -p:PackageVersion="${{ parameters.nugetVersion }}"'
+
+  # Above build task generates a nuget package, this extra step packs into a -preview nuget with same version #
+  # Extra parameter GeneratePackageOnBuild=false is needed for issue https://github.com/dotnet/sdk/pull/3473#issuecomment-516612070
+- task: DotNetCoreCLI@2
+  displayName: '.NET Pack Preview Nuget'
+  inputs:
+    command: custom
+    custom: pack
+    projects: '${{ parameters.solution }}'
+    arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) -p:PackageVersion="${{ parameters.nugetVersion }}-preview" -p:GeneratePackageOnBuild=false'
+
+- task: DotNetCoreCLI@2
+  displayName: '.NET Test'
+  inputs:
+    command: test
+    projects: '${{ parameters.solution }}'
+    arguments: '--configuration ${{ parameters.configuration }} /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=$(Build.ArtifactStagingDirectory)\TestResults\coverage\'

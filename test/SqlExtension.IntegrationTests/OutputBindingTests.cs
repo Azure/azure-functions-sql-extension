@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.WebUtilities;
 using Xunit;
@@ -77,6 +78,8 @@ namespace SqlExtension.IntegrationTests
             string json = "{ 'input': 'Test Data' }";
 
             SendPostRequest(uri, json).Wait();
+
+            Thread.Sleep(5000);
 
             // Function should add 100 rows
             Assert.Equal(100, ExecuteScalar("SELECT COUNT(1) FROM Products"));
