@@ -265,7 +265,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 		                    case 
 			                    when CHARACTER_MAXIMUM_LENGTH = -1 then '(max)'
 			                    when CHARACTER_MAXIMUM_LENGTH <> -1 then '(' + cast(CHARACTER_MAXIMUM_LENGTH as varchar(4)) + ')'
-                                when DATETIME_PRECISION is not null and DATA_TYPE <> 'datetime' then '(' + cast(DATETIME_PRECISION as varchar(1)) + ')'
+                                when DATETIME_PRECISION is not null and DATA_TYPE not in ('datetime', 'date', 'smalldatetime') then '(' + cast(DATETIME_PRECISION as varchar(1)) + ')'
 			                    when DATA_TYPE in ('decimal', 'numeric') then '(' + cast(NUMERIC_PRECISION as varchar(9)) + ',' + + cast(NUMERIC_SCALE as varchar(9)) + ')'
 			                    else ''
 		                    end as {ColumnDefinition}	
