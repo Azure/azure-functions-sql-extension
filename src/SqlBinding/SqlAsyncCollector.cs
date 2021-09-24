@@ -235,6 +235,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             /// <summary>
+            /// Generates SQL query that can be used to check if a table exists
+            /// </summary>
+            public static string GetTableExistsQuery(string schema, string tableName)
+            {
+                return $@"
+                    if (exists (select * from INFORMATION_SCHEMA.TABLES where TABLE_NAME = '{tableName}' and TABLE_SCHEMA = {schema}))
+                        select 'true'
+                    else
+                        select 'false'";
+            }
+
+            /// <summary>
             /// Generates SQL query that can be used to retrieve the Primary Keys of a table
             /// </summary>
             public static string GetPrimaryKeysQuery(string schema, string tableName) 
@@ -323,7 +335,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 SqlBindingUtilities.GetTableAndSchema(fullName, out string schema, out string tableName);
 
-                // 1. Get all column names and types
+                // 1. Check if table exists
+                string tableExists;
+                try
+                {
+                    await sqlConnection.OpenAsync();
+                    SqlCommand cmdTableExists = new SqlCommand(GetTableExistsQuery(schema, tableName), sqlConnection);
+                    using (SqlDataReader rdr = await cmdTableExists.ExecuteReaderAsync())
+                    {
+                        await rdr.ReadAsync();
+                        tableExists = rdr.GetString(0);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    string message = $"Encountered exception while checking if table '{tableName}' in schema {schema} exists";                    
+                    throw new InvalidOperationException(message, ex);
+                }
+                finally
+                {
+                    await sqlConnection.CloseAsync();
+                }
+
+                if (tableExists.Equals("false"))
+                {
+                    string message = $"Table '{tableName}' in schema {schema} does not exist.";
+                    throw new InvalidOperationException(message);
+                }
+
+                // 2. Get all column names and types
                 var columnDefinitionsFromSQL = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 try
                 {
@@ -340,7 +380,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 catch (Exception ex)
                 {
                     // Throw a custom error so that it's easier to decipher.
-                    string message = $"Encountered exception while retrieving column names and types for table '{tableName}' in schema '{schema}.' Cannot generate upsert command without them.";
+                    string message = $"Encountered exception while retrieving column names and types for table '{tableName}' in schema {schema}. Cannot generate upsert command without them.";
                     throw new InvalidOperationException(message, ex);
                 }
                 finally
@@ -348,7 +388,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     await sqlConnection.CloseAsync();
                 }
 
-                // 2. Query SQL for table Primary Keys
+                // 3. Query SQL for table Primary Keys
                 var primaryKeys = new List<string>();
                 try
                 {
@@ -365,7 +405,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 catch (Exception ex)
                 {
                     // Throw a custom error so that it's easier to decipher.
-                    string message = $"Encountered exception while retrieving primary keys for table '{tableName}' in schema '{schema}.' Cannot generate upsert command without them.";
+                    string message = $"Encountered exception while retrieving primary keys for table '{tableName}' in schema {schema}. Cannot generate upsert command without them.";
                     throw new InvalidOperationException(message, ex);
                 }
                 finally
@@ -375,17 +415,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 if (!primaryKeys.Any())
                 {
-                    string message = $"Did not retrieve any primary keys for '{tableName}' in schema '{schema}.' Cannot generate upsert command without them.";
+                    string message = $"Did not retrieve any primary keys for '{tableName}' in schema {schema}. Cannot generate upsert command without them.";
                     throw new InvalidOperationException(message);
                 }
 
-                // 3. Match SQL Primary Key column names to POCO field/property objects. Ensure none are missing.
+                // 4. Match SQL Primary Key column names to POCO field/property objects. Ensure none are missing.
                 IEnumerable<MemberInfo> primaryKeyFields = typeof(T).GetMembers().Where(f => primaryKeys.Contains(f.Name, StringComparer.OrdinalIgnoreCase));
                 IEnumerable<string> primaryKeysFromPOCO = primaryKeyFields.Select(f => f.Name);
                 var missingFromPOCO = primaryKeys.Except(primaryKeysFromPOCO, StringComparer.OrdinalIgnoreCase);
                 if (missingFromPOCO.Any())
                 {
-                    string message = $"All primary keys for SQL table '{tableName}' and schema '{schema}' need to be found in '{typeof(T)}.' Missing primary keys: [{string.Join(",", missingFromPOCO)}]";
+                    string message = $"All primary keys for SQL table '{tableName}' and schema {schema} need to be found in '{typeof(T)}.' Missing primary keys: [{string.Join(",", missingFromPOCO)}]";
                     throw new InvalidOperationException(message);
                 }
 
