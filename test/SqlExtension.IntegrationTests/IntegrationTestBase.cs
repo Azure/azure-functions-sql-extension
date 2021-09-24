@@ -100,11 +100,21 @@ namespace SqlExtension.IntegrationTests
 
         private string GetFunctionsCoreToolsPath()
         {
-            string nodeModulesPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\node_modules\") :
-                @"/usr/local/lib/node_modules";
+            string nodeModulesPath = Environment.GetEnvironmentVariable("node_modules_path");   // See if this is set on Azure pipelines
+            if (string.IsNullOrEmpty(nodeModulesPath))
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    nodeModulesPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\node_modules\");
+                }
+                else
+                {
+                    nodeModulesPath = @"/usr/local/lib/node_modules";
+                }
+            }
+
             string funcExe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "func.exe" : "func";
-            string funcPath = Path.Combine(nodeModulesPath, @"azure-functions-core-tools\bin", funcExe);
+            string funcPath = Path.Combine(nodeModulesPath, "azure-functions-core-tools", "bin", funcExe);
 
             if (!File.Exists(funcPath))
             {
