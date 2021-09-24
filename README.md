@@ -32,6 +32,7 @@ This repository contains extension code for SQL bindings as well as a quick star
       - [ICollector<T>/IAsyncCollector<T>](#icollectortiasynccollectort)
       - [Array](#array)
       - [Single Row](#single-row)
+  - [Known Issues](#known-issues)
   - [Contributing](#contributing)
 
 ## Quick Start
@@ -499,6 +500,9 @@ public static IActionResult Run(
     return new CreatedResult($"/api/addproduct", product);
 }
 ```
+## Known Issues
+
+- Attempting to use output bindings against tables with columns of data types `NTEXT`, `TEXT`, or `IMAGE` is not supported, as these types are deprecated and do not work with the `OPENJSON` function. Upserting data will fail in this case.
 
 ## Contributing
 
