@@ -235,18 +235,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             /// <summary>
-            /// Generates SQL query that can be used to check if a table exists
-            /// </summary>
-            public static string GetTableExistsQuery(string schema, string tableName)
-            {
-                return $@"
-                    if (exists (select * from INFORMATION_SCHEMA.TABLES where TABLE_NAME = '{tableName}' and TABLE_SCHEMA = {schema}))
-                        select 'true'
-                    else
-                        select 'false'";
-            }
-
-            /// <summary>
             /// Generates SQL query that can be used to retrieve the Primary Keys of a table
             /// </summary>
             public static string GetPrimaryKeysQuery(string schema, string tableName) 
@@ -280,7 +268,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                                 when DATETIME_PRECISION is not null and DATA_TYPE not in ('datetime', 'date', 'smalldatetime') then '(' + cast(DATETIME_PRECISION as varchar(1)) + ')'
 			                    when DATA_TYPE in ('decimal', 'numeric') then '(' + cast(NUMERIC_PRECISION as varchar(9)) + ',' + + cast(NUMERIC_SCALE as varchar(9)) + ')'
 			                    else ''
-		                    end as {ColumnDefinition}	
+		                    end as {ColumnDefinition}
                     from 
 	                    INFORMATION_SCHEMA.COLUMNS c
                     where
@@ -335,35 +323,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 SqlBindingUtilities.GetTableAndSchema(fullName, out string schema, out string tableName);
 
-                // 1. Check if table exists
-                string tableExists;
-                try
-                {
-                    await sqlConnection.OpenAsync();
-                    SqlCommand cmdTableExists = new SqlCommand(GetTableExistsQuery(schema, tableName), sqlConnection);
-                    using (SqlDataReader rdr = await cmdTableExists.ExecuteReaderAsync())
-                    {
-                        await rdr.ReadAsync();
-                        tableExists = rdr.GetString(0);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    string message = $"Encountered exception while checking if table '{tableName}' in schema {schema} exists";                    
-                    throw new InvalidOperationException(message, ex);
-                }
-                finally
-                {
-                    await sqlConnection.CloseAsync();
-                }
-
-                if (tableExists.Equals("false"))
-                {
-                    string message = $"Table '{tableName}' in schema {schema} does not exist.";
-                    throw new InvalidOperationException(message);
-                }
-
-                // 2. Get all column names and types
+                // 1. Get all column names and types
                 var columnDefinitionsFromSQL = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 try
                 {
@@ -388,7 +348,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     await sqlConnection.CloseAsync();
                 }
 
-                // 3. Query SQL for table Primary Keys
+                if (columnDefinitionsFromSQL.Count == 0)
+                {
+                    string message = $"Table '{tableName}' in schema {schema} does not exist.";
+                    throw new InvalidOperationException(message);
+                }
+
+                // 2. Query SQL for table Primary Keys
                 var primaryKeys = new List<string>();
                 try
                 {
@@ -419,7 +385,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new InvalidOperationException(message);
                 }
 
-                // 4. Match SQL Primary Key column names to POCO field/property objects. Ensure none are missing.
+                // 3. Match SQL Primary Key column names to POCO field/property objects. Ensure none are missing.
                 IEnumerable<MemberInfo> primaryKeyFields = typeof(T).GetMembers().Where(f => primaryKeys.Contains(f.Name, StringComparer.OrdinalIgnoreCase));
                 IEnumerable<string> primaryKeysFromPOCO = primaryKeyFields.Select(f => f.Name);
                 var missingFromPOCO = primaryKeys.Except(primaryKeysFromPOCO, StringComparer.OrdinalIgnoreCase);
