@@ -75,20 +75,12 @@ namespace SqlExtension.IntegrationTests
 
         private void StartFunctionHost()
         {
-            string funcExe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "func.exe" : "func";
-            string funcPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\node_modules\azure-functions-core-tools\bin", funcExe);
-
-            if (!File.Exists(funcPath))
-            {
-                throw new FileNotFoundException("Azure Function Core Tools not found at " + funcPath);
-            }
-
             Port = 7071 + TestUtils.ThreadId;
 
             FunctionHost = new Process();
             FunctionHost.StartInfo = new ProcessStartInfo
             {
-                FileName = funcPath,
+                FileName = GetFunctionsCoreToolsPath(),
                 Arguments = $"start --verbose --port {Port}",
                 WorkingDirectory = Path.Combine(GetPathToSamplesBin(), "SqlExtensionSamples"),
                 WindowStyle = ProcessWindowStyle.Hidden,
@@ -97,7 +89,7 @@ namespace SqlExtension.IntegrationTests
                 UseShellExecute = false
             };
             FunctionHost.OutputDataReceived += TestOutputHandler;
-            FunctionHost.ErrorDataReceived += TestErrorOutputHandler;
+            FunctionHost.ErrorDataReceived += TestOutputHandler;
 
             FunctionHost.Start();
             FunctionHost.BeginOutputReadLine();
@@ -106,12 +98,23 @@ namespace SqlExtension.IntegrationTests
             Thread.Sleep(5000);     // This is just to give some time to func host to start, maybe there's a better way to do this (check if port's open?)
         }
 
-        private void TestOutputHandler(object sender, DataReceivedEventArgs e)
+        private string GetFunctionsCoreToolsPath()
         {
-            TestOutput.WriteLine(e.Data);
+            string nodeModulesPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\node_modules\") :
+                @"/usr/local/lib/node_modules";
+            string funcExe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "func.exe" : "func";
+            string funcPath = Path.Combine(nodeModulesPath, @"azure-functions-core-tools\bin", funcExe);
+
+            if (!File.Exists(funcPath))
+            {
+                throw new FileNotFoundException("Azure Function Core Tools not found at " + funcPath);
+            }
+
+            return funcPath;
         }
 
-        private void TestErrorOutputHandler(object sender, DataReceivedEventArgs e)
+        private void TestOutputHandler(object sender, DataReceivedEventArgs e)
         {
             TestOutput.WriteLine(e.Data);
         }

@@ -4,6 +4,9 @@ parameters:
   nugetVersion: ''
 
 steps:
+- script: npm install -g azure-functions-core-tools@3 --unsafe-perm true
+  displayName: 'Install Azure Functions Core Tools'
+
 - task: UseDotNet@2
   displayName: 'Install .NET Core SDK 3.1.x for Build'
   inputs:

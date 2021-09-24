@@ -4,7 +4,7 @@ parameters:
   nugetVersion: ''
 
 steps:
-- script: npm install azure-functions-core-tools@3 --unsafe-perm true
+- script: npm install -g azure-functions-core-tools@3 --unsafe-perm true
   displayName: 'Install Azure Functions Core Tools'
 
 - task: UseDotNet@2
