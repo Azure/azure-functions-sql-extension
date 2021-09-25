@@ -126,7 +126,10 @@ namespace SqlExtension.IntegrationTests
 
         private void TestOutputHandler(object sender, DataReceivedEventArgs e)
         {
-            TestOutput.WriteLine(e.Data);
+            if (e != null && !string.IsNullOrEmpty(e.Data))
+            {
+                TestOutput.WriteLine(e.Data);
+            }
         }
 
         /// <summary>
