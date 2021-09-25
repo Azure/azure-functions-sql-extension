@@ -38,7 +38,9 @@ steps:
 
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'
+  env:
+    node_modules_path: 'C:\npm\prefix\node_modules'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=$(Build.ArtifactStagingDirectory)\TestResults\coverage\ /p:node_modules_path=C:\npm\prefix\node_modules'
+    arguments: '--configuration ${{ parameters.configuration }} /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=$(Build.ArtifactStagingDirectory)\TestResults\coverage\'
