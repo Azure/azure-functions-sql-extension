@@ -502,7 +502,7 @@ public static IActionResult Run(
 ```
 ## Known Issues
 
-- Attempting to use output bindings against tables with columns of data types `NTEXT`, `TEXT`, or `IMAGE` is not supported, as these types are deprecated and do not work with the `OPENJSON` function. Upserting data will fail in this case.
+- Output bindings against tables with columns of data types `NTEXT`, `TEXT`, or `IMAGE` are not supported and data upserts will fail. These types [will be removed](https://docs.microsoft.com/sql/t-sql/data-types/ntext-text-and-image-transact-sql) in a future version of SQL Server and are not compatible with the `OPENJSON` function used by this Azure Functions binding.
 
 ## Contributing
 
