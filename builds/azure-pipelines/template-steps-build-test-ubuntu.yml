@@ -53,7 +53,7 @@ steps:
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'
   env:
-    SA_Password: 'Placeholder1'
+    SA_PASSWORD: 'Placeholder1'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
