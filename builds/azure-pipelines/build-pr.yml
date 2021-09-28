@@ -40,7 +40,7 @@ stages:
         configuration: '$(configuration)'
         nugetVersion: '1.0.0-test'
 
-  - job: BuildTestUbuntu
+  - job: BuildTestMac
     displayName: 'Build and Test on Mac'
     pool:
       vmImage: 'ubuntu-latest'
