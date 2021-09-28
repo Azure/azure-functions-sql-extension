@@ -27,7 +27,6 @@ stages:
         configuration: '$(configuration)'
         nugetVersion: '1.0.0-test'
 
-  jobs:
   - job: BuildTestUbuntu
     displayName: 'Build and Test on Ubuntu'
     pool:
