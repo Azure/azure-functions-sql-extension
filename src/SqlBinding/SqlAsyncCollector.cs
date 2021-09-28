@@ -249,7 +249,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     where
                         tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
                     and
-                        tc.TABLE_NAME = '{tableName}'
+                        tc.TABLE_NAME = {tableName}
                     and
                         tc.TABLE_SCHEMA = {schema}";
             }
@@ -272,7 +272,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     from 
 	                    INFORMATION_SCHEMA.COLUMNS c
                     where
-	                    c.TABLE_NAME = '{tableName}'         
+	                    c.TABLE_NAME = {tableName}
                     and
                         c.TABLE_SCHEMA = {schema}";
             }
@@ -340,7 +340,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 catch (Exception ex)
                 {
                     // Throw a custom error so that it's easier to decipher.
-                    string message = $"Encountered exception while retrieving column names and types for table '{tableName}' in schema {schema}. Cannot generate upsert command without them.";
+                    string message = $"Encountered exception while retrieving column names and types for table {tableName} in schema {schema}. Cannot generate upsert command without them.";
                     throw new InvalidOperationException(message, ex);
                 }
                 finally
@@ -350,7 +350,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 if (columnDefinitionsFromSQL.Count == 0)
                 {
-                    string message = $"Table '{tableName}' in schema {schema} does not exist.";
+                    string message = $"Table {tableName} in schema {schema} does not exist.";
                     throw new InvalidOperationException(message);
                 }
 
@@ -371,7 +371,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 catch (Exception ex)
                 {
                     // Throw a custom error so that it's easier to decipher.
-                    string message = $"Encountered exception while retrieving primary keys for table '{tableName}' in schema {schema}. Cannot generate upsert command without them.";
+                    string message = $"Encountered exception while retrieving primary keys for table {tableName} in schema {schema}. Cannot generate upsert command without them.";
                     throw new InvalidOperationException(message, ex);
                 }
                 finally
@@ -381,7 +381,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 if (!primaryKeys.Any())
                 {
-                    string message = $"Did not retrieve any primary keys for '{tableName}' in schema {schema}. Cannot generate upsert command without them.";
+                    string message = $"Did not retrieve any primary keys for {tableName} in schema {schema}. Cannot generate upsert command without them.";
                     throw new InvalidOperationException(message);
                 }
 
@@ -391,7 +391,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var missingFromPOCO = primaryKeys.Except(primaryKeysFromPOCO, StringComparer.OrdinalIgnoreCase);
                 if (missingFromPOCO.Any())
                 {
-                    string message = $"All primary keys for SQL table '{tableName}' and schema {schema} need to be found in '{typeof(T)}.' Missing primary keys: [{string.Join(",", missingFromPOCO)}]";
+                    string message = $"All primary keys for SQL table {tableName} and schema {schema} need to be found in '{typeof(T)}.' Missing primary keys: [{string.Join(",", missingFromPOCO)}]";
                     throw new InvalidOperationException(message);
                 }
 

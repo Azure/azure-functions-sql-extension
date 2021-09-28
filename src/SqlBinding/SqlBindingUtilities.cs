@@ -159,10 +159,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             return result;
         }
 
+        /// <summary>
+        /// Returns schema and tableName with quotes around them.
+        /// If there is no schema in fullName, SCHEMA_NAME is returned as schema.
+        /// </summary>
+        /// <param name="fullName">
+        /// Full name of table, including schema (if exists).
+        /// </param>
         public static void GetTableAndSchema(string fullName, out string schema, out string tableName)
         {
             // defaults
-            tableName = fullName;
+            tableName = $"'{fullName}'";
             schema = "SCHEMA_NAME()"; // default to user schema
 
             // remove [ ] from name if necessary
@@ -174,7 +181,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             if (pieces.Length == 2)
             {
                 schema = $"'{pieces[0]}'";
-                tableName = pieces[1];
+                tableName = $"'{pieces[1]}'";
             }
         }
     }
