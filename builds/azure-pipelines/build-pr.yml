@@ -27,7 +27,7 @@ stages:
         configuration: '$(configuration)'
         nugetVersion: '1.0.0-test'
 
-- job: BuildTest
+  - job: BuildTest
     displayName: 'Build and Test on'
 
     # Verifies cross-platform build and test
