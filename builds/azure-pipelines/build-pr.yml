@@ -14,27 +14,27 @@ stages:
   displayName: 'PR Validation'
 
   jobs:
-  # - job: BuildTestWindows
-  #   displayName: 'Build and Test on Windows'
-  #   pool:
-  #     vmImage: 'windows-latest'
-  #   workspace:
-  #     clean: all
-  #   steps:
-  #   - template: 'template-steps-build-test-windows.yml'
-  #     parameters:
-  #       solution: '$(solution)'
-  #       configuration: '$(configuration)'
-  #       nugetVersion: '1.0.0-test'
+  - job: BuildTest
+    displayName: 'Build and Test on'
 
-  - job: BuildTestUbuntu
-    displayName: 'Build and Test on Ubuntu'
+    # Verifies cross-platform build and test
+    strategy:
+      matrix:
+        linux:
+          imageName: 'ubuntu-latest'
+        mac:
+          imageName: 'macos-latest'
+        windows:
+          imageName: 'windows-latest'
+
     pool:
-      vmImage: 'ubuntu-latest'
+      vmImage: '$(imageName)'
+
     workspace:
       clean: all
+
     steps:
-    - template: 'template-steps-build-test-ubuntu.yml'
+    - template: 'template-steps-build-test.yml'
       parameters:
         solution: '$(solution)'
         configuration: '$(configuration)'

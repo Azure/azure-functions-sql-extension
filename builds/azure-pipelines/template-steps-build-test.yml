@@ -4,13 +4,34 @@ parameters:
   nugetVersion: ''
 
 steps:
-- script: npm install -g azure-functions-core-tools@3 --unsafe-perm true
-  displayName: 'Install Azure Functions Core Tools'
-
 - task: UseDotNet@2
   displayName: 'Install .NET Core SDK 3.1.x for Build'
   inputs:
     version: '3.1.x'
+
+- task: Npm@1
+  displayName: 'Install Azure Functions Core Tools'
+  inputs: 
+    command: custom
+    verbose: true
+    customCommand: 'install -g azure-functions-core-tools@3 --unsafe-perm true'
+  
+# - script: npm install -g azure-functions-core-tools@3 --unsafe-perm true
+#   displayName: 'Install Azure Functions Core Tools'
+
+- task: DockerInstaller@0
+  displayName: Docker Installer
+  inputs:
+    dockerVersion: 17.09.0-ce
+    releaseType: stable
+        
+- script: docker pull mcr.microsoft.com/mssql/server:2019-latest
+  displayName: Pull MSSQL Docker Image
+
+- script: 'docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Placeholder1" -e "MSSQL_PID=Express"
+   -p 1433:1433 --name sql1 -h sql1
+   -d mcr.microsoft.com/mssql/server:2019-latest'
+  displayName: Start Server in Docker Container
 
 - task: DotNetCoreCLI@2
   displayName: '.NET Restore'
@@ -38,6 +59,8 @@ steps:
 
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'
+  env:
+    SA_PASSWORD: 'Placeholder1'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
