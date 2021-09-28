@@ -24,8 +24,7 @@ steps:
     brew install docker-machine docker
     brew install --cask virtualbox
     docker-machine create --driver virtualbox default
-    docker-machine restart
-    docker-machine regenerate-certs default
+    docker-machine env default
     eval "$(docker-machine env default)"
     docker ps
   condition: eq(variables['Agent.OS'], 'Darwin')
