@@ -3,15 +3,15 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.WebUtilities;
-using xRetry;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace SqlExtension.IntegrationTests
+namespace SqlExtension.Tests
 {
-    public class OutputBindingTests : IntegrationTestBase
+    [Collection("IntegrationTests")]
+    public class SqlOutputBindingIntegrationTests : IntegrationTestBase
     {
-        public OutputBindingTests(ITestOutputHelper output) : base(output)
+        public SqlOutputBindingIntegrationTests(ITestOutputHelper output) : base(output)
         {
         }
 
@@ -27,7 +27,7 @@ namespace SqlExtension.IntegrationTests
             return await SendGetRequest(requestUri);
         }
 
-        [RetryTheory]
+        [Theory]
         [InlineData(1, "Test", 5)]
         [InlineData(0, "", 0)]
         [InlineData(-500, "ABCD", 580)]
@@ -47,7 +47,7 @@ namespace SqlExtension.IntegrationTests
             Assert.Equal(cost, ExecuteScalar($"select cost from Products where ProductId={id}"));
         }
 
-        [RetryFact]
+        [Fact]
         public void AddProductArrayTest()
         {
             // First insert some test data
@@ -63,7 +63,7 @@ namespace SqlExtension.IntegrationTests
             Assert.Equal(2, ExecuteScalar("SELECT ProductId FROM Products WHERE Cost = 12"));
         }
 
-        [RetryFact]
+        [Fact]
         public void AddProductsCollectorTest()
         {
             // Function should add 5000 rows to the table
@@ -72,7 +72,7 @@ namespace SqlExtension.IntegrationTests
             Assert.Equal(5000, ExecuteScalar("SELECT COUNT(1) FROM Products"));
         }
 
-        [RetryFact]
+        [Fact]
         public void QueueTriggerProductsTest()
         {
             string uri = $"http://localhost:{Port}/admin/functions/QueueTriggerProducts";

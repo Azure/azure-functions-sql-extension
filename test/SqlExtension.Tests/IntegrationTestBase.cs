@@ -12,12 +12,12 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace SqlExtension.IntegrationTests
+namespace SqlExtension.Tests
 {
     public class IntegrationTestBase : IDisposable
     {
         /// <summary>
-        /// Process object for Azure Function CLI
+        /// Host process for Azure Function CLI
         /// </summary>
         private Process FunctionHost;
 
@@ -32,7 +32,8 @@ namespace SqlExtension.IntegrationTests
         protected string DatabaseName { get; private set; }
 
         /// <summary>
-        /// Output redirect for XUnit tests. Please use TestOutput.WriteLine() instead of Console or Debug.
+        /// Output redirect for XUnit tests.
+        /// Please use TestOutput.WriteLine() instead of Console or Debug.
         /// </summary>
         protected ITestOutputHelper TestOutput { get; private set; }
 
@@ -43,26 +44,52 @@ namespace SqlExtension.IntegrationTests
             TestOutput = output;
 
             SetupDatabase();
-
+            
             StartFunctionHost();
         }
 
+        /// <remarks>
+        /// Integration tests depend on a localhost server to be running.
+        /// Either have one running locally with integrated auth, or start a mssql instance in a Docker container 
+        /// and set "SA_PASSWORD" as environment variable before running "dotnet tets".
+        /// </remarks>
         private void SetupDatabase()
         {
-            // Create the test database
+            // First connect to master to create the database
+            SqlConnectionStringBuilder connectionStringBuilder = new SqlConnectionStringBuilder()
+            {
+                DataSource = "localhost",
+                InitialCatalog = "master",
+                Pooling = false
+            };
+
+            string userId = "SA";
+            string password = Environment.GetEnvironmentVariable("SA_PASSWORD");
+            if (string.IsNullOrEmpty(password))
+            {
+                connectionStringBuilder.IntegratedSecurity = true;
+            }
+            else
+            {
+                connectionStringBuilder.UserID = userId;
+                connectionStringBuilder.Password = password;
+            }
+
+            // Create database
             DatabaseName = TestUtils.GetUniqueDBName("SqlBindingsTest");
-            using (SqlConnection masterConnection = new SqlConnection("Data Source=(LocalDb)\\MSSQLLocalDB;Initial Catalog=master;Integrated Security=True;Pooling=False;"))
+            using (SqlConnection masterConnection = new SqlConnection(connectionStringBuilder.ToString()))
             {
                 masterConnection.Open();
                 TestUtils.ExecuteNonQuery(masterConnection, $"CREATE DATABASE [{DatabaseName}]");
             }
 
             // Setup connection
-            string connectionString = $"Data Source=(LocalDb)\\MSSQLLocalDB;Initial Catalog={DatabaseName};Integrated Security=True;Pooling=False;";
-            Connection = new SqlConnection(connectionString);
+            connectionStringBuilder.InitialCatalog = DatabaseName;
+            Connection = new SqlConnection(connectionStringBuilder.ToString());
             Connection.Open();
 
             // Create the database definition
+            // Ideally all the sql files would be in a sqlproj and can just be deployed
             string databaseScriptsPath = Path.Combine(GetPathToSamplesBin(), "Database");
             foreach (string file in Directory.EnumerateFiles(databaseScriptsPath, "*.sql"))
             {
@@ -70,7 +97,7 @@ namespace SqlExtension.IntegrationTests
             }
 
             // Set SqlConnectionString env var for the Function to use
-            Environment.SetEnvironmentVariable("SqlConnectionString", connectionString);
+            Environment.SetEnvironmentVariable("SqlConnectionString", connectionStringBuilder.ToString());
         }
 
         private void StartFunctionHost()
@@ -133,9 +160,6 @@ namespace SqlExtension.IntegrationTests
             }
         }
 
-        /// <summary>
-        /// Sends an HTTP GET request to the <paramref name="requestUri"/>
-        /// </summary>
         protected async Task<HttpResponseMessage> SendGetRequest(string requestUri, bool verifySuccess = true)
         {
             string timeStamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", System.Globalization.CultureInfo.InvariantCulture);
@@ -178,11 +202,17 @@ namespace SqlExtension.IntegrationTests
             return response;
         }
 
+        /// <summary>
+        /// Executes a command against the current connection.
+        /// </summary>
         protected void ExecuteNonQuery(string commandText)
         {
             TestUtils.ExecuteNonQuery(Connection, commandText);
         }
 
+        /// <summary>
+        /// Executes a command against the current connection and the result is returned.
+        /// </summary>
         protected object ExecuteScalar(string commandText)
         {
             return TestUtils.ExecuteScalar(Connection, commandText);

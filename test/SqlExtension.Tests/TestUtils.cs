@@ -3,7 +3,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Threading;
 
-namespace SqlExtension.IntegrationTests
+namespace SqlExtension.Tests
 {
     /// <remarks>
     /// Adapted from Microsoft.VisualStudio.TeamSystem.Data.UnitTests.UnitTestUtilities.TestDBManager

@@ -14,12 +14,12 @@ steps:
     releaseType: stable
         
 - script: docker pull mcr.microsoft.com/mssql/server:2019-latest
-  displayName: Pull SQL Server Image
+  displayName: Pull MSSQL Docker Image
 
-- script: 'docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Placeholder1"
+- script: 'docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Placeholder1" -e "MSSQL_PID=Express"
    -p 1433:1433 --name sql1 -h sql1
    -d mcr.microsoft.com/mssql/server:2019-latest'
-  displayName: Start SQL Server
+  displayName: Start Server in Docker Container
 
 - task: UseDotNet@2
   displayName: 'Install .NET Core SDK 3.1.x for Build'
@@ -53,7 +53,7 @@ steps:
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'
   env:
-    node_modules_path: 'C:\npm\prefix\node_modules'
+    SA_Password: 'Placeholder1'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
