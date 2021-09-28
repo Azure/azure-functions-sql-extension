@@ -9,21 +9,19 @@ steps:
   inputs:
     version: '3.1.x'
 
-- task: Npm@1
+- script: npm install -g azure-functions-core-tools@3 --unsafe-perm true
   displayName: 'Install Azure Functions Core Tools'
-  inputs: 
-    command: custom
-    verbose: true
-    customCommand: 'install -g azure-functions-core-tools@3 --unsafe-perm true'
-  
-# - script: npm install -g azure-functions-core-tools@3 --unsafe-perm true
-#   displayName: 'Install Azure Functions Core Tools'
 
 - task: DockerInstaller@0
   displayName: Docker Installer
   inputs:
     dockerVersion: 17.09.0-ce
     releaseType: stable
+
+# Start Docker required for MacOS
+- script: sudo systemctl start docker
+  # condition: eq(variables['Agent.OS'], 'Darwin')
+  displayName: Start Docker
         
 - script: docker pull mcr.microsoft.com/mssql/server:2019-latest
   displayName: Pull MSSQL Docker Image
@@ -65,3 +63,8 @@ steps:
     command: test
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=$(Build.ArtifactStagingDirectory)\TestResults\coverage\'
+
+- script: |
+    docker stop sql1
+    docker rm sql1
+  displayName: 'Stop and Remove SQL Server Image'
