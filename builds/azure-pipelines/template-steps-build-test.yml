@@ -9,12 +9,8 @@ steps:
   inputs:
     version: '3.1.x'
 
-- task: Npm@1
+- script: npm install -g azure-functions-core-tools@3 --unsafe-perm true
   displayName: 'Install Azure Functions Core Tools'
-  inputs: 
-    command: custom
-    verbose: true
-    customCommand: 'install -g azure-functions-core-tools@3 --unsafe-perm true'
 
 - task: DockerInstaller@0
   displayName: Docker Installer
@@ -22,7 +18,9 @@ steps:
     dockerVersion: 17.09.0-ce
     releaseType: stable
 
-- script:  sudo systemctl start docker
+# Start Docker required for MacOS
+- script: brew install --cask docker
+  condition: eq(variables['Agent.OS'], 'Darwin')
   displayName: Start Docker
         
 - script: docker pull mcr.microsoft.com/mssql/server:2019-latest
