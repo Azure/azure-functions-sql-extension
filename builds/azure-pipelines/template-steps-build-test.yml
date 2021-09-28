@@ -20,11 +20,13 @@ steps:
 
 # Running Docker on MacOS requires some extra steps
 - script: |
-    brew install docker docker-machine
-    brew cask install virtualbox
+    brew install --cask docker virtualbox
+    brew install docker-machine
     docker-machine create --driver virtualbox default
-    docker-machine env default
+    docker-machine restart
     eval "$(docker-machine env default)"
+    docker-machine regenerate-certs default
+    docker-machine restart
     docker ps
   condition: eq(variables['Agent.OS'], 'Darwin')
   displayName: Run Docker on Mac
