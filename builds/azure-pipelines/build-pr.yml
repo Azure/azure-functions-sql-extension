@@ -21,7 +21,7 @@ stages:
     workspace:
       clean: all
     steps:
-    - template: 'template-steps-build-test-unix.yml'
+    - template: 'template-steps-build-test-windows.yml'
       parameters:
         solution: '$(solution)'
         configuration: '$(configuration)'

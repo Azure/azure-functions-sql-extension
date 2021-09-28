@@ -25,15 +25,14 @@ steps:
     dockerVersion: 17.09.0-ce
     releaseType: stable
 
+- script: echo Current OS is $AGENT_OS
+  env:
+    AGENT_OS: $(Agent.OS)
+
 # Start Docker required for MacOS
-- script: systemctl start docker
+- script: sudo systemctl start docker
   condition: ne(variables['Agent.OS'], 'Windows_NT')
   displayName: Start Docker
-
-# Need to switch to Linux container when running on Windows VM
-- script: DockerCli.exe -SwitchDaemon
-  condition: eq(variables['Agent.OS'], 'Windows_NT')
-  displayName: Switch to Linux Container
         
 - script: docker pull mcr.microsoft.com/mssql/server:2019-latest
   displayName: Pull MSSQL Docker Image
