@@ -12,13 +12,13 @@ steps:
   inputs:
     dockerVersion: 17.09.0-ce
     releaseType: stable
-
+        
 - script: sudo docker pull mcr.microsoft.com/mssql/server:2019-latest
   displayName: Pull SQL Server Image
 
-- script: sudo docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Placeholder1" \
+- script: 'sudo docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Placeholder1" \
    -p 1433:1433 --name sql1 -h sql1 \
-   -d mcr.microsoft.com/mssql/server:2019-latest
+   -d mcr.microsoft.com/mssql/server:2019-latest'
   displayName: Start SQL Server
 
 - task: UseDotNet@2

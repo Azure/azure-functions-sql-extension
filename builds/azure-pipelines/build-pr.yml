@@ -14,18 +14,18 @@ stages:
   displayName: 'PR Validation'
 
   jobs:
-  - job: BuildTestWindows
-    displayName: 'Build and Test on Windows'
-    pool:
-      vmImage: 'windows-latest'
-    workspace:
-      clean: all
-    steps:
-    - template: 'template-steps-build-test-windows.yml'
-      parameters:
-        solution: '$(solution)'
-        configuration: '$(configuration)'
-        nugetVersion: '1.0.0-test'
+  # - job: BuildTestWindows
+  #   displayName: 'Build and Test on Windows'
+  #   pool:
+  #     vmImage: 'windows-latest'
+  #   workspace:
+  #     clean: all
+  #   steps:
+  #   - template: 'template-steps-build-test-windows.yml'
+  #     parameters:
+  #       solution: '$(solution)'
+  #       configuration: '$(configuration)'
+  #       nugetVersion: '1.0.0-test'
 
   - job: BuildTestUbuntu
     displayName: 'Build and Test on Ubuntu'
