@@ -13,7 +13,7 @@ steps:
   displayName: 'Install Azure Functions Core Tools'
 
 - task: DockerInstaller@0
-  condition: ne(variables['Agent.OS'], 'Darwin')
+#  condition: ne(variables['Agent.OS'], 'Darwin')
   displayName: Docker Installer
   inputs:
     dockerVersion: 17.09.0-ce
