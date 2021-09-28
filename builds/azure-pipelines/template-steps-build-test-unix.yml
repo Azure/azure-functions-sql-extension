@@ -27,12 +27,12 @@ steps:
 
 # Start Docker required for MacOS
 - script: systemctl start docker
-  condition: $(Agent.OS) != 'Windows_NT'
+  condition: ne(variables['Agent.OS'], 'Windows_NT')
   displayName: Start Docker
 
 # Need to switch to Linux container when running on Windows VM
 - script: DockerCli.exe -SwitchDaemon
-  condition: $(Agent.OS) == 'Windows_NT'
+  condition: eq(variables['Agent.OS'], 'Windows_NT')
   displayName: Switch to Linux Container
         
 - script: docker pull mcr.microsoft.com/mssql/server:2019-latest
