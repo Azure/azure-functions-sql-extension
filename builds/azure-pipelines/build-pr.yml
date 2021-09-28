@@ -21,33 +21,31 @@ stages:
     workspace:
       clean: all
     steps:
-    - template: 'template-steps-build-test-windows.yml'
+    - template: 'template-steps-build-test-unix.yml'
       parameters:
         solution: '$(solution)'
         configuration: '$(configuration)'
         nugetVersion: '1.0.0-test'
 
-  - job: BuildTestUbuntu
-    displayName: 'Build and Test on Ubuntu'
-    pool:
-      vmImage: 'ubuntu-latest'
-    workspace:
-      clean: all
-    steps:
-    - template: 'template-steps-build-test-ubuntu.yml'
-      parameters:
-        solution: '$(solution)'
-        configuration: '$(configuration)'
-        nugetVersion: '1.0.0-test'
+- job: BuildTest
+    displayName: 'Build and Test on'
 
-  - job: BuildTestMac
-    displayName: 'Build and Test on Mac'
+    # Verifies cross-platform build and test
+    strategy:
+      matrix:
+        linux:
+          imageName: 'ubuntu-latest'
+        mac:
+          imageName: 'macos-latest'
+
     pool:
-      vmImage: 'ubuntu-latest'
+      vmImage: '$(imageName)'
+
     workspace:
       clean: all
+
     steps:
-    - template: 'template-steps-build-test-mac.yml'
+    - template: 'template-steps-build-test-unix.yml'
       parameters:
         solution: '$(solution)'
         configuration: '$(configuration)'
