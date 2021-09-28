@@ -21,13 +21,9 @@ steps:
 
 # Running Docker on MacOS requires some extra steps: https://apple.stackexchange.com/questions/373888/how-do-i-start-the-docker-daemon-on-macos
 - script: |
-    brew install docker-machine docker
-    brew install --cask virtualbox
-    docker-machine create --driver virtualbox default
-    docker-machine env default
-    eval "$(docker-machine env default)"
-    docker ps
-    docker pull mcr.microsoft.com/mssql/server:2019-latest
+    brew install --cask docker
+    open --hide --background /Applications/Docker.app
+    sleep 60
   condition: eq(variables['Agent.OS'], 'Darwin')
   displayName: Run Docker on Mac
         
