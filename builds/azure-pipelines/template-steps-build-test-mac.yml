@@ -24,6 +24,9 @@ steps:
   inputs:
     dockerVersion: 17.09.0-ce
     releaseType: stable
+
+- script:  sudo systemctl start docker
+  displayName: Start Docker
         
 - script: docker pull mcr.microsoft.com/mssql/server:2019-latest
   displayName: Pull MSSQL Docker Image
