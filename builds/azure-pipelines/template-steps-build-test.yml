@@ -13,20 +13,20 @@ steps:
   displayName: 'Install Azure Functions Core Tools'
 
 - task: DockerInstaller@0
+  condition: ne(variables['Agent.OS'], 'Darwin')
   displayName: Docker Installer
   inputs:
     dockerVersion: 17.09.0-ce
     releaseType: stable
 
-# Running Docker on MacOS requires some extra steps
+# Running Docker on MacOS requires some extra steps: https://apple.stackexchange.com/questions/373888/how-do-i-start-the-docker-daemon-on-macos
 - script: |
-    brew install --cask docker virtualbox
-    brew install docker-machine
+    brew install docker-machine docker
+    brew cask install virtualbox
     docker-machine create --driver virtualbox default
     docker-machine restart
-    eval "$(docker-machine env default)"
     docker-machine regenerate-certs default
-    docker-machine restart
+    eval "$(docker-machine env default)"
     docker ps
   condition: eq(variables['Agent.OS'], 'Darwin')
   displayName: Run Docker on Mac
