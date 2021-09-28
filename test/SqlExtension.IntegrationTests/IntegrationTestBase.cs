@@ -100,7 +100,8 @@ namespace SqlExtension.IntegrationTests
 
         private string GetFunctionsCoreToolsPath()
         {
-            string nodeModulesPath = Environment.GetEnvironmentVariable("node_modules_path");   // See if this is set on Azure pipelines
+            // Determine npm install path from either env var set by pipeline or OS defaults
+            string nodeModulesPath = Environment.GetEnvironmentVariable("node_modules_path");
             if (string.IsNullOrEmpty(nodeModulesPath))
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

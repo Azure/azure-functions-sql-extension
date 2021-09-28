@@ -27,25 +27,15 @@ stages:
         configuration: '$(configuration)'
         nugetVersion: '1.0.0-test'
 
-  - job: BuildTest
-    displayName: 'Build and Test on'
-
-    # Verifies cross-platform build and test
-    strategy:
-      matrix:
-        linux:
-          imageName: 'ubuntu-latest'
-        mac:
-          imageName: 'macos-latest'
-
+  jobs:
+  - job: BuildTestUbuntu
+    displayName: 'Build and Test on Ubuntu'
     pool:
-      vmImage: '$(imageName)'
-
+      vmImage: 'ubuntu-latest'
     workspace:
       clean: all
-
     steps:
-    - template: 'template-steps-build-test.yml'
+    - template: 'template-steps-build-test-ubuntu.yml'
       parameters:
         solution: '$(solution)'
         configuration: '$(configuration)'
