@@ -18,13 +18,16 @@ steps:
     dockerVersion: 17.09.0-ce
     releaseType: stable
 
-# Start Docker required for MacOS
+# Install Docker Desktop for MacOS
+- script: brew install --cask docker
+  condition: eq(variables['Agent.OS'], 'Darwin')
+  displayName: Install Docker Desktop for Mac
+
 - script: |
-    brew install --cask docker
     open --hide --background -a Docker
     docker ps
   condition: eq(variables['Agent.OS'], 'Darwin')
-  displayName: Start Docker
+  displayName: Start Docker on Mac
         
 - script: docker pull mcr.microsoft.com/mssql/server:2019-latest
   displayName: Pull MSSQL Docker Image
