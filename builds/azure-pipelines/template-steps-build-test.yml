@@ -19,7 +19,10 @@ steps:
     releaseType: stable
 
 # Start Docker required for MacOS
-- script: brew install --cask docker
+- script: |
+    brew install --cask docker
+    open --hide --background -a Docker
+    docker ps
   condition: eq(variables['Agent.OS'], 'Darwin')
   displayName: Start Docker
         
