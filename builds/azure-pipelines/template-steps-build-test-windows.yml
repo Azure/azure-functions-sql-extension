@@ -45,7 +45,7 @@ steps:
 
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'
-  env:
+  # env:
     # node_modules_path: 'C:\npm\prefix\node_modules'
     # SA_Password: 'Placeholder1'
   inputs:
