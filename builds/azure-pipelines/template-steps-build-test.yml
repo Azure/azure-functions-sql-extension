@@ -21,9 +21,11 @@ steps:
 
 # Running Docker on MacOS requires some extra steps: https://apple.stackexchange.com/questions/373888/how-do-i-start-the-docker-daemon-on-macos
 - script: |
-    brew install --cask docker
-    open --hide --background /Applications/Docker.app
-    sleep 30
+    brew install docker-machine docker
+    brew install --cask virtualbox
+    docker-machine create --driver virtualbox default
+    docker-machine env default
+    eval "$(docker-machine env default)"
     docker ps
     docker pull mcr.microsoft.com/mssql/server:2019-latest
     docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Placeholder1" -e "MSSQL_PID=Express" -p 1433:1433 --name sql1 -h sql1 -d mcr.microsoft.com/mssql/server:2019-latest
