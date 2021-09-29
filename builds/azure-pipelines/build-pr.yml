@@ -22,10 +22,11 @@ stages:
       matrix:
         linux:
           imageName: 'ubuntu-latest'
-        mac:
-          imageName: 'macos-latest'
-        windows:
-          imageName: 'windows-latest'
+        # Disabling other platform builds temporarily until we can get integration tests working there
+        # mac:
+        #   imageName: 'macos-latest'
+        # windows:
+        #   imageName: 'windows-latest'
 
     pool:
       vmImage: '$(imageName)'

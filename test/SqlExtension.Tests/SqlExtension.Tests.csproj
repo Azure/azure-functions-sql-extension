@@ -15,7 +15,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\SqlBinding\SqlBinding.csproj" />
+	<ProjectReference Include="..\..\samples\SqlExtensionSamples\SqlExtensionSamples.csproj" />
+	<ProjectReference Include="..\..\src\SqlBinding\SqlBinding.csproj" />
   </ItemGroup>
+
+  <Target Name="CopySamples" AfterTargets="Build">
+    <ItemGroup>
+      <_CopyItems Include="..\..\samples\SqlExtensionSamples\bin\$(Configuration)\$(TargetFramework)\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_CopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\%(RecursiveDir)" />
+    <Message Text="Copied Samples output to $(OutDir)\SqlExtensionSamples" Importance="high" />
+  </Target>
 
 </Project>

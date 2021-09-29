@@ -1,15 +1,17 @@
 ﻿using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.WebUtilities;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace SqlExtension.IntegrationTests
+namespace SqlExtension.Tests
 {
-    public class OutputBindingTests : IntegrationTestBase
+    [Collection("IntegrationTests")]
+    public class SqlOutputBindingIntegrationTests : IntegrationTestBase
     {
-        public OutputBindingTests(ITestOutputHelper output) : base(output)
+        public SqlOutputBindingIntegrationTests(ITestOutputHelper output) : base(output)
         {
         }
 
@@ -77,6 +79,8 @@ namespace SqlExtension.IntegrationTests
             string json = "{ 'input': 'Test Data' }";
 
             SendPostRequest(uri, json).Wait();
+
+            Thread.Sleep(5000);
 
             // Function should add 100 rows
             Assert.Equal(100, ExecuteScalar("SELECT COUNT(1) FROM Products"));

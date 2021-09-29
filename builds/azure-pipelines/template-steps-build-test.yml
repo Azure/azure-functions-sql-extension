@@ -9,6 +9,23 @@ steps:
   inputs:
     version: '3.1.x'
 
+- script: npm install -g azure-functions-core-tools@3 --unsafe-perm true
+  displayName: 'Install Azure Functions Core Tools'
+
+- task: DockerInstaller@0
+  displayName: Docker Installer
+  inputs:
+    dockerVersion: 17.09.0-ce
+    releaseType: stable
+        
+- script: docker pull mcr.microsoft.com/mssql/server:2019-latest
+  displayName: Pull MSSQL Docker Image
+
+- script: 'docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Placeholder1" -e "MSSQL_PID=Express"
+   -p 1433:1433 --name sql1 -h sql1
+   -d mcr.microsoft.com/mssql/server:2019-latest'
+  displayName: Start Server in Docker Container
+
 - task: DotNetCoreCLI@2
   displayName: '.NET Restore'
   inputs:
@@ -35,7 +52,14 @@ steps:
 
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'
+  env:
+    SA_PASSWORD: 'Placeholder1'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=$(Build.ArtifactStagingDirectory)\TestResults\coverage\'
+
+- script: |
+    docker stop sql1
+    docker rm sql1
+  displayName: 'Stop and Remove SQL Server Image'

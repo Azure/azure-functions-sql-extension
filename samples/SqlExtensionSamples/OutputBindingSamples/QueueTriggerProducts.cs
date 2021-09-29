@@ -5,7 +5,7 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 using static SqlExtensionSamples.ProductUtilities;
 
-namespace SqlExtensionSamples.OutputBindingSamples
+namespace SqlExtensionSamples
 {
     public static class QueueTriggerProducts
     {
@@ -20,7 +20,7 @@ namespace SqlExtensionSamples.OutputBindingSamples
             Stopwatch sw = new Stopwatch();
             sw.Start();
 
-            List<Product> newProducts = GetNewProductsRandomized(totalUpserts, 2 * 100);
+            List<Product> newProducts = GetNewProducts(totalUpserts);
             foreach (var product in newProducts)
             {
                 products.Add(product);

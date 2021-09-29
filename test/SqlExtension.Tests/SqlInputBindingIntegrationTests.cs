@@ -7,11 +7,12 @@ using SqlExtensionSamples;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace SqlExtension.IntegrationTests
+namespace SqlExtension.Tests
 {
-    public class InputBindingTests : IntegrationTestBase
+    [Collection("IntegrationTests")]
+    public class SqlInputBindingIntegrationTests : IntegrationTestBase
     {
-        public InputBindingTests(ITestOutputHelper output) : base(output)
+        public SqlInputBindingIntegrationTests(ITestOutputHelper output) : base(output)
         {
         }
 

@@ -3,7 +3,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Threading;
 
-namespace SqlExtension.IntegrationTests
+namespace SqlExtension.Tests
 {
     /// <remarks>
     /// Adapted from Microsoft.VisualStudio.TeamSystem.Data.UnitTests.UnitTestUtilities.TestDBManager
@@ -49,27 +49,22 @@ namespace SqlExtension.IntegrationTests
                 throw new ArgumentNullException(nameof(commandText));
             }
 
-            IDbCommand cmd = null;
-            try
+            using (IDbCommand cmd = connection.CreateCommand())
             {
-                cmd = connection.CreateCommand();
-                cmd.CommandText = commandText;
-                cmd.CommandType = CommandType.Text;
+                try
+                {
 
-                return cmd.ExecuteNonQuery();
-            }
-            catch (Exception ex)
-            {
-                if (catchException == null || !catchException(ex))
-                {
-                    throw;
+                    cmd.CommandText = commandText;
+                    cmd.CommandType = CommandType.Text;
+
+                    return cmd.ExecuteNonQuery();
                 }
-            }
-            finally
-            {
-                if (cmd != null)
+                catch (Exception ex)
                 {
-                    cmd.Dispose();
+                    if (catchException == null || !catchException(ex))
+                    {
+                        throw;
+                    }
                 }
             }
 
@@ -98,28 +93,24 @@ namespace SqlExtension.IntegrationTests
                 throw new ArgumentNullException(nameof(commandText));
             }
 
-            IDbCommand cmd = null;
-            try
+            using (IDbCommand cmd = connection.CreateCommand())
             {
-                cmd = connection.CreateCommand();
-                cmd.CommandText = commandText;
-                cmd.CommandType = CommandType.Text;
-                return cmd.ExecuteScalar();
-            }
-            catch (Exception ex)
-            {
-                if (catchException == null || !catchException(ex))
+                try
                 {
-                    throw;
+                    cmd.CommandText = commandText;
+                    cmd.CommandType = CommandType.Text;
+                    return cmd.ExecuteScalar();
                 }
-            }
-            finally
-            {
-                if (cmd != null)
+                catch (Exception ex)
                 {
-                    cmd.Dispose();
+                    if (catchException == null || !catchException(ex))
+                    {
+                        throw;
+                    }
                 }
+
             }
+
             return null;
         }
     }
