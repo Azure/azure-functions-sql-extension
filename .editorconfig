@@ -1,3 +1,5 @@
+# See https://github.com/dotnet/roslyn-analyzers/blob/main/.editorconfig for an example on different settings and how they're used
+
 # Remove the line below if you want to inherit .editorconfig settings from higher directories
 root = true
 
@@ -8,7 +10,6 @@ dotnet_analyzer_diagnostic.category-Style.severity = error
 dotnet_analyzer_diagnostic.category-CodeQuality.severity = error
 # Disable warnings from existing issues until we can go through and fix them
 dotnet_diagnostic.IDE0130.severity = silent
-dotnet_diagnostic.IDE0060.severity = silent
 dotnet_diagnostic.IDE0004.severity = silent
 dotnet_diagnostic.IDE0055.severity = silent
 dotnet_diagnostic.IDE0063.severity = silent

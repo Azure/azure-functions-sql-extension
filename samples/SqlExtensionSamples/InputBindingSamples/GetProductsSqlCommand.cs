@@ -11,11 +11,11 @@ namespace SqlExtensionSamples
 {
     public static class GetProductsSqlCommand
     {
-      
+
         [FunctionName("GetProductsSqlCommand")]
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-sqlcommand/{cost}")]
-            HttpRequest req,
+            HttpRequest _,
             [Sql("select * from Products where cost = @Cost",
                 CommandType = System.Data.CommandType.Text,
                 Parameters = "@Cost={cost}",
