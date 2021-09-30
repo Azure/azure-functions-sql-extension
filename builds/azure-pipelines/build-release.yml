@@ -24,7 +24,7 @@ stages:
 
   jobs:
   - job: BuildTestPublish
-    displayName: 'Release: Build, Test and Publish on Ubuntu'
+    displayName: 'Release: Build, Test and Publish on Linux'
 
     pool:
       vmImage: 'ubuntu-latest'
@@ -33,7 +33,7 @@ stages:
       clean: all
 
     steps:
-      - template: 'template-steps-build-test-ubuntu.yml'
+      - template: 'template-steps-build-test-linux.yml'
         parameters:
           solution: '$(solution)'
           configuration: '$(configuration)'

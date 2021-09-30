@@ -14,14 +14,14 @@ stages:
   displayName: 'PR Validation'
 
   jobs:
-  - job: BuildTestOnUbuntu
-    displayName: 'Build and Test on Ubuntu'
+  - job: BuildTestOnLinux
+    displayName: 'Build and Test on Linux'
     pool:
       vmImage: 'ubuntu-latest'
     workspace:
       clean: all
     steps:
-    - template: 'template-steps-build-test-ubuntu.yml'
+    - template: 'template-steps-build-test-linux.yml'
       parameters:
         solution: '$(solution)'
         configuration: '$(configuration)'
