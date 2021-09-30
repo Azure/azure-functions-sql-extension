@@ -33,7 +33,7 @@ stages:
       clean: all
 
     steps:
-      - template: 'template-steps-build-test.yml'
+      - template: 'template-steps-build-test-ubuntu.yml'
         parameters:
           solution: '$(solution)'
           configuration: '$(configuration)'
