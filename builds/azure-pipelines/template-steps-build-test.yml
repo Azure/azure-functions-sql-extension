@@ -28,10 +28,6 @@ steps:
   displayName: Generate password for test server
   condition: eq(variables['Agent.OS'], 'Linux')
 
-- script: | 
-  'echo A $(serverPassword)'
-  'echo B $(variables.serverPassword)'
-
 - script: 'docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=$(serverPassword)" -e "MSSQL_PID=Express"
    -p 1433:1433 --name sql1 -h sql1
    -d mcr.microsoft.com/mssql/server:2019-latest'
