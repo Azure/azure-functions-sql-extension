@@ -2,6 +2,10 @@ parameters:
   configuration: ''
   solution: ''
   nugetVersion: ''
+  testFilter: ''
+
+variables:
+  serverPassword: 'TestPassword-$(Build.BuildNumber)'
 
 steps:
 - task: UseDotNet@2
@@ -9,7 +13,7 @@ steps:
   inputs:
     version: '3.1.x'
 
-- script: npm install -g azure-functions-core-tools@3 --unsafe-perm true
+- script: npm install -g azure-functions-core-tools@3
   displayName: 'Install Azure Functions Core Tools'
 
 - task: DockerInstaller@0
@@ -17,14 +21,22 @@ steps:
   inputs:
     dockerVersion: 17.09.0-ce
     releaseType: stable
+  condition: eq(variables['Agent.OS'], 'Linux')
         
 - script: docker pull mcr.microsoft.com/mssql/server:2019-latest
   displayName: Pull MSSQL Docker Image
+  condition: eq(variables['Agent.OS'], 'Linux')
 
-- script: 'docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Placeholder1" -e "MSSQL_PID=Express"
+- script: | 
+  'echo A ${{ variables.serverPassword }}'
+  'echo B $(variables.serverPassword)'
+  'echo C $variables[serverPassword]'
+
+- script: 'docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=$(variables.serverPassword)" -e "MSSQL_PID=Express"
    -p 1433:1433 --name sql1 -h sql1
    -d mcr.microsoft.com/mssql/server:2019-latest'
   displayName: Start Server in Docker Container
+  condition: eq(variables['Agent.OS'], 'Linux')
 
 - task: DotNetCoreCLI@2
   displayName: '.NET Restore'
@@ -53,11 +65,11 @@ steps:
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'
   env:
-    SA_PASSWORD: 'Placeholder1'
+    SA_PASSWORD: '$(variables.serverPassword)'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=$(Build.ArtifactStagingDirectory)\TestResults\coverage\'
+    arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=$(Build.ArtifactStagingDirectory)\TestResults\coverage\'
 
 - script: |
     docker stop sql1

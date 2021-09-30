@@ -38,6 +38,7 @@ stages:
           solution: '$(solution)'
           configuration: '$(configuration)'
           nugetVersion: '$(nugetVersion)'
+          testFilter: ''
 
       - template: 'template-steps-publish.yml'
         parameters:

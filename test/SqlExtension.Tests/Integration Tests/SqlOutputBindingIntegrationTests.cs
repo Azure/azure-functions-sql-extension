@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -6,7 +9,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace SqlExtension.Tests
+namespace SqlExtension.Tests.Integration
 {
     [Collection("IntegrationTests")]
     public class SqlOutputBindingIntegrationTests : IntegrationTestBase

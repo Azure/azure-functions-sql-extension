@@ -1,4 +1,7 @@
-﻿using Microsoft.Data.SqlClient;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+using Microsoft.Data.SqlClient;
 using System;
 using System.Data.Common;
 using System.Diagnostics;
@@ -12,7 +15,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace SqlExtension.Tests
+namespace SqlExtension.Tests.Integration
 {
     public class IntegrationTestBase : IDisposable
     {
@@ -27,6 +30,11 @@ namespace SqlExtension.Tests
         private DbConnection Connection;
 
         /// <summary>
+        /// Connection string to the master database on the test server, mainly used for database setup and teardown.
+        /// </summary>
+        private string MasterConnectionString;
+
+        /// <summary>
         /// Name of the database used for the current test.
         /// </summary>
         protected string DatabaseName { get; private set; }
@@ -37,7 +45,10 @@ namespace SqlExtension.Tests
         /// </summary>
         protected ITestOutputHelper TestOutput { get; private set; }
 
-        protected int Port { get; private set; }
+        /// <summary>
+        /// The port the Functions Host is running on. Default is 7071.
+        /// </summary>
+        protected int Port { get; private set; } = 7071;
 
         public IntegrationTestBase(ITestOutputHelper output)
         {
@@ -75,9 +86,11 @@ namespace SqlExtension.Tests
                 connectionStringBuilder.Password = password;
             }
 
+            MasterConnectionString = connectionStringBuilder.ToString();
+
             // Create database
             DatabaseName = TestUtils.GetUniqueDBName("SqlBindingsTest");
-            using (SqlConnection masterConnection = new SqlConnection(connectionStringBuilder.ToString()))
+            using (SqlConnection masterConnection = new SqlConnection(MasterConnectionString))
             {
                 masterConnection.Open();
                 TestUtils.ExecuteNonQuery(masterConnection, $"CREATE DATABASE [{DatabaseName}]");
@@ -102,8 +115,6 @@ namespace SqlExtension.Tests
 
         private void StartFunctionHost()
         {
-            Port = 7071 + TestUtils.ThreadId;
-
             FunctionHost = new Process();
             FunctionHost.StartInfo = new ProcessStartInfo
             {
@@ -230,7 +241,7 @@ namespace SqlExtension.Tests
             try
             {
                 // Drop the test database
-                using (SqlConnection masterConnection = new SqlConnection("Data Source=(LocalDb)\\MSSQLLocalDB;Initial Catalog=master;Integrated Security=True;Pooling=False;"))
+                using (SqlConnection masterConnection = new SqlConnection(MasterConnectionString))
                 {
                     masterConnection.Open();
                     TestUtils.ExecuteNonQuery(masterConnection, $"DROP DATABASE IF EXISTS {DatabaseName}");

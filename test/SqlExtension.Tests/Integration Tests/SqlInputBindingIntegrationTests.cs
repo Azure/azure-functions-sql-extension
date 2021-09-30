@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+using System;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -7,7 +10,7 @@ using SqlExtensionSamples;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace SqlExtension.Tests
+namespace SqlExtension.Tests.Integration
 {
     [Collection("IntegrationTests")]
     public class SqlInputBindingIntegrationTests : IntegrationTestBase

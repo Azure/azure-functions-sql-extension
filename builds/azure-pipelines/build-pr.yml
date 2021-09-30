@@ -22,11 +22,14 @@ stages:
       matrix:
         linux:
           imageName: 'ubuntu-latest'
-        # Disabling other platform builds temporarily until we can get integration tests working there
-        # mac:
-        #   imageName: 'macos-latest'
-        # windows:
-        #   imageName: 'windows-latest'
+          testFilter: ''
+        # Disabling integration tests on Mac and Windows until they work
+        mac:
+          imageName: 'macos-latest'
+          testFilter: '--filter FullyQualifiedName!~Integration'
+        windows:
+          imageName: 'windows-latest'
+          testFilter: '--filter FullyQualifiedName!~Integration'
 
     pool:
       vmImage: '$(imageName)'
@@ -40,3 +43,4 @@ stages:
         solution: '$(solution)'
         configuration: '$(configuration)'
         nugetVersion: '1.0.0-test'
+        testFilter: '$(testFilter)'
