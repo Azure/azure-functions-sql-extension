@@ -26,7 +26,6 @@ dotnet_diagnostic.IDE0017.severity = silent
 dotnet_diagnostic.IDE0044.severity = silent
 dotnet_diagnostic.IDE0001.severity = silent
 dotnet_diagnostic.IDE0002.severity = silent
-dotnet_diagnostic.IDE0019.severity = silent
 
 #### Core EditorConfig Options ####
 

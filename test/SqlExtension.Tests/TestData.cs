@@ -16,8 +16,7 @@ namespace SqlExtension.Tests
 
         public override bool Equals(object obj)
         {
-            var otherData = obj as TestData;
-            if (otherData == null)
+            if (!(obj is TestData otherData))
             {
                 return false;
             }
