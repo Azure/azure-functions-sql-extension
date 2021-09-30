@@ -38,9 +38,9 @@ namespace SqlExtension.Tests.Integration
         {
             Dictionary<string, string> query = new Dictionary<string, string>()
             {
-                { "ProductID", id.ToString() },
-                { "Name", name },
-                { "Cost", cost.ToString() }
+                { "id", id.ToString() },
+                { "name", name },
+                { "cost", cost.ToString() }
             };
 
             SendOutputRequest(nameof(SqlExtensionSamples.AddProduct), query).Wait();

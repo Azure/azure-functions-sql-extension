@@ -19,9 +19,9 @@ namespace SqlExtensionSamples
         {
             product = new Product
             {
-                Name = req.Query["Name"],
-                ProductID = int.Parse(req.Query["ProductID"]),
-                Cost = int.Parse(req.Query["Cost"])
+                Name = req.Query["name"],
+                ProductID = int.Parse(req.Query["id"]),
+                Cost = int.Parse(req.Query["cost"])
             };
             return new CreatedResult($"/api/addproduct", product);
         }
