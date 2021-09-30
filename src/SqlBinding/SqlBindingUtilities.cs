@@ -166,11 +166,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="fullName">
         /// Full name of table, including schema (if exists).
         /// </param>
-        public static void GetTableAndSchema(string fullName, out string schema, out string tableName)
+        public static void GetTableAndSchema(string fullName, out string quotedSchema, out string quotedTableName)
         {
             // defaults
-            tableName = $"'{fullName}'";
-            schema = "SCHEMA_NAME()"; // default to user schema
+            quotedTableName = $"'{fullName.Replace("'", "''")}'";
+            quotedSchema = "SCHEMA_NAME()"; // default to user schema
 
             // remove [ ] from name if necessary
             string cleanName = fullName.Replace("]", string.Empty).Replace("[", string.Empty);
@@ -180,8 +180,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             if (pieces.Length == 2)
             {
-                schema = $"'{pieces[0]}'";
-                tableName = $"'{pieces[1]}'";
+                quotedSchema = $"'{pieces[0]}'";
+                quotedTableName = $"'{pieces[1]}'";
             }
         }
     }
