@@ -4,9 +4,6 @@ parameters:
   nugetVersion: ''
   testFilter: ''
 
-variables:
-  serverPassword: 'TestPassword-$(Build.BuildNumber)'
-
 steps:
 - task: UseDotNet@2
   displayName: 'Install .NET Core SDK 3.1.x for Build'
@@ -27,12 +24,15 @@ steps:
   displayName: Pull MSSQL Docker Image
   condition: eq(variables['Agent.OS'], 'Linux')
 
-- script: | 
-  'echo A ${{ variables.serverPassword }}'
-  'echo B $(variables.serverPassword)'
-  'echo C $variables[serverPassword]'
+- bash: echo "##vso[task.setvariable variable=serverPassword]Test-$(Build.BuildNumber)"
+  displayName: Generate password for test server
+  condition: eq(variables['Agent.OS'], 'Linux')
 
-- script: 'docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=$(variables.serverPassword)" -e "MSSQL_PID=Express"
+- script: | 
+  'echo A $(serverPassword)'
+  'echo B $(variables.serverPassword)'
+
+- script: 'docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=$(serverPassword)" -e "MSSQL_PID=Express"
    -p 1433:1433 --name sql1 -h sql1
    -d mcr.microsoft.com/mssql/server:2019-latest'
   displayName: Start Server in Docker Container
@@ -65,7 +65,7 @@ steps:
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'
   env:
-    SA_PASSWORD: '$(variables.serverPassword)'
+    SA_PASSWORD: '$(serverPassword)'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
