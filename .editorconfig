@@ -27,7 +27,6 @@ dotnet_diagnostic.IDE0017.severity = silent
 dotnet_diagnostic.IDE0044.severity = silent
 dotnet_diagnostic.IDE0001.severity = silent
 dotnet_diagnostic.IDE0002.severity = silent
-dotnet_diagnostic.IDE0019.severity = silent
 
 #### Core EditorConfig Options ####
 
@@ -37,7 +36,6 @@ indent_style = space
 tab_width = 4
 
 # New line preferences
-end_of_line = crlf
 insert_final_newline = false
 
 #### .NET Coding Conventions ####
