@@ -126,13 +126,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string cacheKey = $"{connection.ConnectionString.GetHashCode()}-{fullDatabaseAndTableName}";
 
             ObjectCache cachedTables = MemoryCache.Default;
-            TableInformation tableInfo = cachedTables[cacheKey] as TableInformation;
+            var tableInfo = cachedTables[cacheKey] as TableInformation;
 
             if (tableInfo == null)
             {
                 tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullDatabaseAndTableName);
 
-                CacheItemPolicy policy = new CacheItemPolicy
+                var policy = new CacheItemPolicy
                 {
                     // Re-look up the primary key(s) after 10 minutes (they should not change very often!)
                     AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(10)
@@ -167,13 +167,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             IList<T> rowsToUpsert = new List<T>();
 
             // Here, we assume that primary keys are case INsensitive, which is the SQL Server default.
-            HashSet<string> uniqueUpdatedPrimaryKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var uniqueUpdatedPrimaryKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             // If there are duplicate primary keys, we'll need to pick the LAST (most recent) row per primary key.
             foreach (T row in rows.Reverse())
             {
                 // SQL Server allows 900 bytes per primary key, so use that as a baseline
-                StringBuilder combinedPrimaryKey = new StringBuilder(900 * table.PrimaryKeys.Count());
+                var combinedPrimaryKey = new StringBuilder(900 * table.PrimaryKeys.Count());
 
                 // Look up primary key of T. Because we're going in the same order of fields every time,
                 // we can assume that if two rows with the same primary key are in the list, they will collide
@@ -281,7 +281,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             public static string GetMergeQuery(IList<string> primaryKeys, IDictionary<string, string> columnDataFromSQL, string fullTableName)
             {
                 // Generate the ON part of the merge query (compares new data against existing data)
-                StringBuilder primaryKeyMatchingQuery = new StringBuilder($"ExistingData.{primaryKeys[0]} = NewData.{primaryKeys[0]}");
+                var primaryKeyMatchingQuery = new StringBuilder($"ExistingData.{primaryKeys[0]} = NewData.{primaryKeys[0]}");
                 foreach (string primaryKey in primaryKeys.Skip(1))
                 {
                     primaryKeyMatchingQuery.Append($" AND ExistingData.{primaryKey} = NewData.{primaryKey}");
@@ -289,7 +289,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 // Generate the UPDATE part of the merge query (all columns that should be updated)
                 IEnumerable<string> columnNamesFromSQL = columnDataFromSQL.Select(kvp => kvp.Key);
-                StringBuilder columnMatchingQueryBuilder = new StringBuilder();
+                var columnMatchingQueryBuilder = new StringBuilder();
                 foreach (string column in columnNamesFromSQL)
                 {
                     columnMatchingQueryBuilder.Append($" ExistingData.{column} = NewData.{column},");
@@ -326,7 +326,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 try
                 {
                     await sqlConnection.OpenAsync();
-                    SqlCommand cmdColDef = new SqlCommand(GetColumnDefinitionsQuery(quotedSchema, quotedTableName), sqlConnection);
+                    var cmdColDef = new SqlCommand(GetColumnDefinitionsQuery(quotedSchema, quotedTableName), sqlConnection);
                     using SqlDataReader rdr = await cmdColDef.ExecuteReaderAsync();
                     while (await rdr.ReadAsync())
                     {
@@ -355,7 +355,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 try
                 {
                     await sqlConnection.OpenAsync();
-                    SqlCommand cmd = new SqlCommand(GetPrimaryKeysQuery(quotedSchema, quotedTableName), sqlConnection);
+                    var cmd = new SqlCommand(GetPrimaryKeysQuery(quotedSchema, quotedTableName), sqlConnection);
                     using SqlDataReader rdr = await cmd.ExecuteReaderAsync();
                     while (await rdr.ReadAsync())
                     {
@@ -405,7 +405,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
             {
-                Dictionary<string, JsonProperty> properties = base
+                var properties = base
                     .CreateProperties(type, memberSerialization)
                     .ToDictionary(p => p.PropertyName, StringComparer.OrdinalIgnoreCase);
 

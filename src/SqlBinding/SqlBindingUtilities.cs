@@ -114,7 +114,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The built SqlCommand</returns>
         public static SqlCommand BuildCommand(SqlAttribute attribute, SqlConnection connection)
         {
-            SqlCommand command = new SqlCommand();
+            var command = new SqlCommand();
             command.Connection = connection;
             command.CommandText = attribute.CommandText;
             if (attribute.CommandType == CommandType.StoredProcedure)

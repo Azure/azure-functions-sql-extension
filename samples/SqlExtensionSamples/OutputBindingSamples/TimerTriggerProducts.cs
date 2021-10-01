@@ -21,7 +21,7 @@ namespace SqlExtensionSamples.TriggerBindingSamples
             int totalUpserts = 1000;
             log.LogInformation($"{DateTime.Now} starting execution #{_executionNumber}. Rows to generate={totalUpserts}.");
 
-            Stopwatch sw = new Stopwatch();
+            var sw = new Stopwatch();
             sw.Start();
 
             List<Product> newProducts = GetNewProducts(totalUpserts, _executionNumber * 100);
