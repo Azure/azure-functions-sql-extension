@@ -109,11 +109,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // Ideally, we would like to move away from using SqlDataAdapter both here and in the
                 // SqlAsyncCollector since it does not support asynchronous operations.
                 // There is a GitHub issue open to track this
-                using SqlDataAdapter adapter = new SqlDataAdapter();
+                using var adapter = new SqlDataAdapter();
                 using SqlCommand command = SqlBindingUtilities.BuildCommand(attribute, connection);
                 adapter.SelectCommand = command;
                 await connection.OpenAsync();
-                DataTable dataTable = new DataTable();
+                var dataTable = new DataTable();
                 adapter.Fill(dataTable);
                 return JsonConvert.SerializeObject(dataTable);
             }

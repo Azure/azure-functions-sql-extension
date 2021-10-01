@@ -20,7 +20,7 @@ namespace SqlExtensionSamples.OutputBindingSamples
             int totalUpserts = 100;
             log.LogInformation($"[QueueTrigger]: {DateTime.Now} starting execution {queueMessage}. Rows to generate={totalUpserts}.");
 
-            Stopwatch sw = new Stopwatch();
+            var sw = new Stopwatch();
             sw.Start();
 
             List<Product> newProducts = GetNewProducts(totalUpserts, 2 * 100);
