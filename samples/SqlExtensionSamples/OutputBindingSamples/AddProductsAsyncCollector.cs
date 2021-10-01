@@ -16,11 +16,11 @@ namespace SqlExtensionSamples
         [FunctionName("AddProductsAsyncCollector")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproducts-asynccollector")]
-            HttpRequest _,
+            HttpRequest req,
             [Sql("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] IAsyncCollector<Product> products)
         {
             List<Product> newProducts = GetNewProducts(5000);
-            foreach (var product in newProducts)
+            foreach (Product product in newProducts)
             {
                 await products.AddAsync(product);
             }
@@ -28,7 +28,7 @@ namespace SqlExtensionSamples
             await products.FlushAsync();
 
             newProducts = GetNewProducts(5000);
-            foreach (var product in newProducts)
+            foreach (Product product in newProducts)
             {
                 await products.AddAsync(product);
             }

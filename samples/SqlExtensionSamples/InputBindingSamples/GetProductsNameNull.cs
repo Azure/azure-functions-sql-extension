@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using static SqlExtensionSamples.ProductUtilities;
 
 namespace SqlExtensionSamples
 {
@@ -19,7 +18,7 @@ namespace SqlExtensionSamples
         [FunctionName("GetProductsNameNull")]
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-namenull/{name}")]
-            HttpRequest _,
+            HttpRequest req,
             [Sql("if @Name is null select * from Products where Name is null else select * from Products where @Name = name",
                 CommandType = System.Data.CommandType.Text,
                 Parameters = "@Name={name}",

@@ -15,11 +15,11 @@ namespace SqlExtensionSamples
         [FunctionName("AddProductsCollector")]
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproducts-collector")]
-            HttpRequest _,
+            HttpRequest req,
             [Sql("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] ICollector<Product> products)
         {
             List<Product> newProducts = GetNewProducts(5000);
-            foreach (var product in newProducts)
+            foreach (Product product in newProducts)
             {
                 products.Add(product);
             }

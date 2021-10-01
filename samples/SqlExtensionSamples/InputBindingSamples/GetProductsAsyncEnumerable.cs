@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using static SqlExtensionSamples.ProductUtilities;
 
 namespace SqlExtensionSamples
 {
@@ -16,7 +15,7 @@ namespace SqlExtensionSamples
         [FunctionName("GetProductsAsyncEnumerable")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-async/{cost}")]
-            HttpRequest _,
+            HttpRequest req,
             [Sql("select * from Products where cost = @Cost",
                  CommandType = System.Data.CommandType.Text,
                  Parameters = "@Cost={cost}",

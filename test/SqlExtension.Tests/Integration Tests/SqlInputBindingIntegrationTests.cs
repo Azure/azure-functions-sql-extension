@@ -35,7 +35,7 @@ namespace SqlExtension.Tests.Integration
             // Generate T-SQL to insert n rows of data with cost
             Product[] products = GetProductsWithSameCost(n, cost);
             InsertProducts(products);
-            
+
             // Run the function
             HttpResponseMessage response = await SendInputRequest("getproducts", cost.ToString());
 
@@ -93,7 +93,7 @@ namespace SqlExtension.Tests.Integration
 
         private Product[] GetProductsWithSameCost(int n, int cost)
         {
-            Product[] result = new Product[n];
+            var result = new Product[n];
             for (int i = 0; i < n; i++)
             {
                 result[i] = new Product
@@ -108,7 +108,7 @@ namespace SqlExtension.Tests.Integration
 
         private Product[] GetProductsWithSameCostAndName(int n, int cost, string name, int offset = 0)
         {
-            Product[] result = new Product[n];
+            var result = new Product[n];
             for (int i = 0; i < n; i++)
             {
                 result[i] = new Product
@@ -128,7 +128,7 @@ namespace SqlExtension.Tests.Integration
                 return;
             }
 
-            StringBuilder queryBuilder = new StringBuilder();
+            var queryBuilder = new StringBuilder();
             foreach (Product p in products)
             {
                 queryBuilder.AppendLine($"INSERT INTO dbo.Products VALUES({p.ProductID}, '{p.Name}', {p.Cost});");

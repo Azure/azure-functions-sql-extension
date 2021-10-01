@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Azure.WebJobs;
@@ -17,11 +20,11 @@ namespace SqlExtensionSamples
             int totalUpserts = 100;
             log.LogInformation($"[QueueTrigger]: {DateTime.Now} starting execution {queueMessage}. Rows to generate={totalUpserts}.");
 
-            Stopwatch sw = new Stopwatch();
+            var sw = new Stopwatch();
             sw.Start();
 
             List<Product> newProducts = GetNewProducts(totalUpserts);
-            foreach (var product in newProducts)
+            foreach (Product product in newProducts)
             {
                 products.Add(product);
             }

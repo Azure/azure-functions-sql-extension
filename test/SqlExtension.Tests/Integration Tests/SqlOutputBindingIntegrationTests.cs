@@ -36,7 +36,7 @@ namespace SqlExtension.Tests.Integration
         [InlineData(-500, "ABCD", 580)]
         public void AddProductTest(int id, string name, int cost)
         {
-            Dictionary<string, string> query = new Dictionary<string, string>()
+            var query = new Dictionary<string, string>()
             {
                 { "id", id.ToString() },
                 { "name", name },

@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using static SqlExtensionSamples.ProductUtilities;
 
 namespace SqlExtensionSamples
 {
@@ -16,7 +15,7 @@ namespace SqlExtensionSamples
         [FunctionName("GetProductsNameEmpty")]
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-nameempty/{cost}")]
-            HttpRequest _,
+            HttpRequest req,
             [Sql("select * from Products where Cost = @Cost and Name = @Name",
                 CommandType = System.Data.CommandType.Text,
                 Parameters = "@Cost={cost},@Name=",

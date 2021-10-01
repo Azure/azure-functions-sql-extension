@@ -55,7 +55,7 @@ namespace SqlExtension.Tests.Integration
             TestOutput = output;
 
             SetupDatabase();
-            
+
             StartFunctionHost();
         }
 
@@ -67,7 +67,7 @@ namespace SqlExtension.Tests.Integration
         private void SetupDatabase()
         {
             // First connect to master to create the database
-            SqlConnectionStringBuilder connectionStringBuilder = new SqlConnectionStringBuilder()
+            var connectionStringBuilder = new SqlConnectionStringBuilder()
             {
                 DataSource = "localhost",
                 InitialCatalog = "master",
@@ -90,7 +90,7 @@ namespace SqlExtension.Tests.Integration
 
             // Create database
             DatabaseName = TestUtils.GetUniqueDBName("SqlBindingsTest");
-            using (SqlConnection masterConnection = new SqlConnection(MasterConnectionString))
+            using (var masterConnection = new SqlConnection(MasterConnectionString))
             {
                 masterConnection.Open();
                 TestUtils.ExecuteNonQuery(masterConnection, $"CREATE DATABASE [{DatabaseName}]");
@@ -115,16 +115,18 @@ namespace SqlExtension.Tests.Integration
 
         private void StartFunctionHost()
         {
-            FunctionHost = new Process();
-            FunctionHost.StartInfo = new ProcessStartInfo
+            FunctionHost = new Process
             {
-                FileName = GetFunctionsCoreToolsPath(),
-                Arguments = $"start --verbose --port {Port}",
-                WorkingDirectory = Path.Combine(GetPathToSamplesBin(), "SqlExtensionSamples"),
-                WindowStyle = ProcessWindowStyle.Hidden,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = GetFunctionsCoreToolsPath(),
+                    Arguments = $"start --verbose --port {Port}",
+                    WorkingDirectory = Path.Combine(GetPathToSamplesBin(), "SqlExtensionSamples"),
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false
+                }
             };
             FunctionHost.OutputDataReceived += TestOutputHandler;
             FunctionHost.ErrorDataReceived += TestOutputHandler;
@@ -176,7 +178,7 @@ namespace SqlExtension.Tests.Integration
                 throw new ArgumentException("URI cannot be null or empty.");
             }
 
-            HttpClient client = new HttpClient();
+            var client = new HttpClient();
             HttpResponseMessage response = await client.GetAsync(requestUri);
 
             if (verifySuccess)
@@ -196,8 +198,8 @@ namespace SqlExtension.Tests.Integration
                 throw new ArgumentException("URI cannot be null or empty.");
             }
 
-            HttpClient client = new HttpClient();
-            StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
+            var client = new HttpClient();
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
             HttpResponseMessage response = await client.PostAsync(requestUri, content);
 
             if (verifySuccess)
@@ -236,11 +238,9 @@ namespace SqlExtension.Tests.Integration
             try
             {
                 // Drop the test database
-                using (SqlConnection masterConnection = new SqlConnection(MasterConnectionString))
-                {
-                    masterConnection.Open();
-                    TestUtils.ExecuteNonQuery(masterConnection, $"DROP DATABASE IF EXISTS {DatabaseName}");
-                }
+                using var masterConnection = new SqlConnection(MasterConnectionString);
+                masterConnection.Open();
+                TestUtils.ExecuteNonQuery(masterConnection, $"DROP DATABASE IF EXISTS {DatabaseName}");
             }
             catch (Exception e)
             {

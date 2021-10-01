@@ -69,7 +69,7 @@ namespace SqlExtension.Tests
         public void TestNullCurrentValueEnumerator()
         {
             var enumerable = new SqlAsyncEnumerable<string>(connection, new SqlAttribute(""));
-            var enumerator = enumerable.GetAsyncEnumerator();
+            IAsyncEnumerator<string> enumerator = enumerable.GetAsyncEnumerator();
             Assert.Null(enumerator.Current);
         }
 
@@ -79,8 +79,10 @@ namespace SqlExtension.Tests
             var attribute = new SqlAttribute("");
             Assert.Throws<ArgumentException>(() => SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, config.Object));
 
-            attribute = new SqlAttribute("");
-            attribute.ConnectionStringSetting = "ConnectionStringSetting";
+            attribute = new SqlAttribute("")
+            {
+                ConnectionStringSetting = "ConnectionStringSetting"
+            };
             Assert.Throws<ArgumentNullException>(() => SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, null));
         }
 
@@ -88,8 +90,10 @@ namespace SqlExtension.Tests
         public void TestInvalidCommandType()
         {
             // Specify an invalid type
-            var attribute = new SqlAttribute("");
-            attribute.CommandType = System.Data.CommandType.TableDirect;
+            var attribute = new SqlAttribute("")
+            {
+                CommandType = System.Data.CommandType.TableDirect
+            };
             Assert.Throws<ArgumentException>(() => SqlBindingUtilities.BuildCommand(attribute, null));
 
 
@@ -101,16 +105,20 @@ namespace SqlExtension.Tests
         [Fact]
         public void TestValidCommandType()
         {
-            var query = "select * from Products";
-            var attribute = new SqlAttribute(query);
-            attribute.CommandType = System.Data.CommandType.Text;
-            var command = SqlBindingUtilities.BuildCommand(attribute, null);
+            string query = "select * from Products";
+            var attribute = new SqlAttribute(query)
+            {
+                CommandType = System.Data.CommandType.Text
+            };
+            SqlCommand command = SqlBindingUtilities.BuildCommand(attribute, null);
             Assert.Equal(System.Data.CommandType.Text, command.CommandType);
             Assert.Equal(query, command.CommandText);
 
-            var procedure = "StoredProceudre";
-            attribute = new SqlAttribute(procedure);
-            attribute.CommandType = System.Data.CommandType.StoredProcedure;
+            string procedure = "StoredProceudre";
+            attribute = new SqlAttribute(procedure)
+            {
+                CommandType = System.Data.CommandType.StoredProcedure
+            };
             command = SqlBindingUtilities.BuildCommand(attribute, null);
             Assert.Equal(System.Data.CommandType.StoredProcedure, command.CommandType);
             Assert.Equal(procedure, command.CommandText);

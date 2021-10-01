@@ -10,19 +10,11 @@ dotnet_analyzer_diagnostic.category-Style.severity = error
 dotnet_analyzer_diagnostic.category-CodeQuality.severity = error
 # Disable warnings from existing issues until we can go through and fix them
 dotnet_diagnostic.IDE0130.severity = silent
-dotnet_diagnostic.IDE0055.severity = silent
-dotnet_diagnostic.IDE0063.severity = silent
-dotnet_diagnostic.IDE0007.severity = silent
-dotnet_diagnostic.IDE0008.severity = silent
-dotnet_diagnostic.IDE0073.severity = silent
-dotnet_diagnostic.IDE0047.severity = silent
-dotnet_diagnostic.IDE0036.severity = silent
 dotnet_diagnostic.IDE0130.severity = silent
 dotnet_diagnostic.IDE0058.severity = silent
 dotnet_diagnostic.IDE0003.severity = silent
 dotnet_diagnostic.IDE0032.severity = silent
 dotnet_diagnostic.IDE0046.severity = silent
-dotnet_diagnostic.IDE0017.severity = silent
 dotnet_diagnostic.IDE0044.severity = silent
 dotnet_diagnostic.IDE0001.severity = silent
 dotnet_diagnostic.IDE0002.severity = silent
@@ -41,7 +33,7 @@ insert_final_newline = false
 
 # Organize usings
 dotnet_separate_import_directive_groups = false
-dotnet_sort_system_directives_first = false
+dotnet_sort_system_directives_first = true
 file_header_template = Copyright (c) .NET Foundation. All rights reserved.\nLicensed under the MIT License. See License.txt in the project root for license information.
 
 # this. and Me. preferences
