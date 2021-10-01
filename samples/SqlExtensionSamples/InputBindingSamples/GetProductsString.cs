@@ -23,7 +23,7 @@ namespace SqlExtensionSamples.InputBindingSamples
             // Products is a JSON representation of the returned rows. For example, if there are two returned rows,
             // products could look like:
             // [{"ProductID":1,"Name":"Dress","Cost":100},{"ProductID":2,"Name":"Skirt","Cost":100}]
-            return (ActionResult)new OkObjectResult(products);
+            return new OkObjectResult(products);
         }
     }
 }
