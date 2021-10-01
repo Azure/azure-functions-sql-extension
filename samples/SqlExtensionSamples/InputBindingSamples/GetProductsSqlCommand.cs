@@ -34,7 +34,7 @@ namespace SqlExtensionSamples
                     }
                 }
             }
-            return (ActionResult)new OkObjectResult(result);
+            return new OkObjectResult(result);
         }
     }
 }
