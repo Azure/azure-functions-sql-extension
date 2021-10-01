@@ -12,7 +12,7 @@ namespace SqlExtensionSamples.TriggerBindingSamples
         private static int _executionNumber = 0;
         [FunctionName("TimerTriggerProducts")]
         public static void Run(
-            [TimerTrigger("0 */3 * * * *")]TimerInfo myTimer, ILogger log,
+            [TimerTrigger("0 */3 * * * *")]TimerInfo _, ILogger log,
             [Sql("Products", ConnectionStringSetting = "SqlConnectionString")] ICollector<Product> products)
         {
             int totalUpserts = 1000;
@@ -20,7 +20,7 @@ namespace SqlExtensionSamples.TriggerBindingSamples
 
             Stopwatch sw = new Stopwatch();
             sw.Start();
-                    
+
             List<Product> newProducts = GetNewProducts(totalUpserts, _executionNumber * 100);
             foreach (var product in newProducts)
             {
