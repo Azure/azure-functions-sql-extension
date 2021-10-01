@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
+
+using System;
 using System.Collections.Generic;
 
 namespace SqlExtensionSamples
@@ -40,7 +43,7 @@ namespace SqlExtensionSamples
                 var product = new Product
                 {
                     ProductID = r.Next(1, num),
-                    Cost = (int)(Math.Round(r.NextDouble() * cost)),
+                    Cost = (int)Math.Round(r.NextDouble() * cost),
                     Name = "test"
                 };
                 products.Add(product);

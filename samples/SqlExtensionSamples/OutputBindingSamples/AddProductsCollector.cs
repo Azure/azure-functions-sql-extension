@@ -19,7 +19,7 @@ namespace SqlExtensionSamples
             [Sql("Products", ConnectionStringSetting = "SqlConnectionString")] ICollector<Product> products)
         {
             List<Product> newProducts = GetNewProducts(5000);
-            foreach (var product in newProducts)
+            foreach (Product product in newProducts)
             {
                 products.Add(product);
             }

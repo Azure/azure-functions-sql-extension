@@ -15,17 +15,17 @@ namespace SqlExtensionSamples.TriggerBindingSamples
         private static int _executionNumber = 0;
         [FunctionName("TimerTriggerProducts")]
         public static void Run(
-            [TimerTrigger("0 */3 * * * *")]TimerInfo req, ILogger log,
+            [TimerTrigger("0 */3 * * * *")] TimerInfo req, ILogger log,
             [Sql("Products", ConnectionStringSetting = "SqlConnectionString")] ICollector<Product> products)
         {
             int totalUpserts = 1000;
             log.LogInformation($"{DateTime.Now} starting execution #{_executionNumber}. Rows to generate={totalUpserts}.");
 
-            Stopwatch sw = new Stopwatch();
+            var sw = new Stopwatch();
             sw.Start();
 
             List<Product> newProducts = GetNewProducts(totalUpserts, _executionNumber * 100);
-            foreach (var product in newProducts)
+            foreach (Product product in newProducts)
             {
                 products.Add(product);
             }

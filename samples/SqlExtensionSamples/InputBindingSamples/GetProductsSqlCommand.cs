@@ -26,12 +26,10 @@ namespace SqlExtensionSamples
             using (SqlConnection connection = command.Connection)
             {
                 connection.Open();
-                using (SqlDataReader reader = command.ExecuteReader())
+                using SqlDataReader reader = command.ExecuteReader();
+                while (reader.Read())
                 {
-                    while (reader.Read())
-                    {
-                        result += $"ProductID: {reader["ProductID"]},  Name: {reader["Name"]}, Cost: {reader["Cost"]}\n";
-                    }
+                    result += $"ProductID: {reader["ProductID"]},  Name: {reader["Name"]}, Cost: {reader["Cost"]}\n";
                 }
             }
             return new OkObjectResult(result);

@@ -43,11 +43,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Parses the parameter string into a list of parameters, where each parameter is separted by "," and has the form 
-        /// "@param1=param2". "@param1" is the parameter name to be used in the query or stored procedure, and param1 is the 
-        /// parameter value. Parameter name and parameter value are separated by "=". Parameter names/values cannot contain ',' or '='. 
+        /// Parses the parameter string into a list of parameters, where each parameter is separated by "," and has the form
+        /// "@param1=param2". "@param1" is the parameter name to be used in the query or stored procedure, and param1 is the
+        /// parameter value. Parameter name and parameter value are separated by "=". Parameter names/values cannot contain ',' or '='.
         /// A valid parameter string would be "@param1=param1,@param2=param2". Attaches each parsed parameter to command.
-        /// If the value of a parameter should be null, use "null", as in @param1=null,@param2=param2". 
+        /// If the value of a parameter should be null, use "null", as in @param1=null,@param2=param2".
         /// If the value of a parameter should be an empty string, do not add anything after the equals sign and before the comma,
         /// as in "@param1=,@param2=param2"
         /// </summary>
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // I.e., ",,@param1=param1,,@param2=param2,,," will be parsed just like "@param1=param1,@param2=param2" is.
                 string[] paramPairs = parameters.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 
-                foreach (var pair in paramPairs)
+                foreach (string pair in paramPairs)
                 {
                     // Note that we don't throw away empty entries here, so a parameter pair that looks like "=@param1=param1"
                     // or "@param2=param2=" is considered malformed
@@ -86,12 +86,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         throw new ArgumentException("Parameter name must start with \"@\", i.e. \"@param1=param1,@param2=param2\"");
                     }
-                    
+
 
                     if (items[1].Equals("null", StringComparison.OrdinalIgnoreCase))
                     {
                         command.Parameters.Add(new SqlParameter(items[0], DBNull.Value));
-                    } 
+                    }
                     else
                     {
                         command.Parameters.Add(new SqlParameter(items[0], items[1]));
@@ -102,21 +102,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Builds a SqlCommand using the query/stored procedure and parameters specifed in attribute.
+        /// Builds a SqlCommand using the query/stored procedure and parameters specified in attribute.
         /// </summary>
         /// <param name="attribute">The SqlAttribute with the parameter, command type, and command text</param>
         /// <param name="connection">The connection to attach to the SqlCommand</param>
         /// <exception cref="InvalidOperationException">
         /// Thrown if the CommandType specified in attribute is neither StoredProcedure nor Text. We only support
-        /// commands that refer to the name of a StoredProcedure (the StoredProcedure CommandType) or are themselves 
+        /// commands that refer to the name of a StoredProcedure (the StoredProcedure CommandType) or are themselves
         /// raw queries (the Text CommandType).
         /// </exception>
         /// <returns>The built SqlCommand</returns>
         public static SqlCommand BuildCommand(SqlAttribute attribute, SqlConnection connection)
         {
-            SqlCommand command = new SqlCommand();
-            command.Connection = connection;
-            command.CommandText = attribute.CommandText;
+            var command = new SqlCommand
+            {
+                Connection = connection,
+                CommandText = attribute.CommandText
+            };
             if (attribute.CommandType == CommandType.StoredProcedure)
             {
                 command.CommandType = CommandType.StoredProcedure;
@@ -137,7 +139,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Used to determine the columns of the table as well as the next SQL row to process
         /// </param>
         /// <param name="cols">
-        /// Filled with the columns of the table if empty, otherwise assumed to be populated 
+        /// Filled with the columns of the table if empty, otherwise assumed to be populated
         /// with their names already (used for cacheing so we don't retrieve the column names every time)
         /// </param>
         /// <returns>The built dictionary</returns>
@@ -145,36 +147,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             if (cols.Count == 0)
             {
-                for (var i = 0; i < reader.FieldCount; i++)
+                for (int i = 0; i < reader.FieldCount; i++)
                 {
                     cols.Add(reader.GetName(i));
                 }
             }
 
             var result = new Dictionary<string, string>();
-            foreach (var col in cols)
+            foreach (string col in cols)
             {
                 result.Add(col, reader[col].ToString());
             }
             return result;
         }
 
-        public static void GetTableAndSchema(string fullName, out string schema, out string tableName)
+        /// <summary>
+        /// Returns schema and tableName with quotes around them.
+        /// If there is no schema in fullName, SCHEMA_NAME is returned as schema.
+        /// </summary>
+        /// <param name="fullName">
+        /// Full name of table, including schema (if exists).
+        /// </param>
+        public static void GetTableAndSchema(string fullName, out string quotedSchema, out string quotedTableName)
         {
+            // ensure names are properly escaped
+            string escapedFullName = fullName.Replace("'", "''");
+
             // defaults
-            tableName = fullName;
-            schema = "SCHEMA_NAME()"; // default to user schema
+            quotedTableName = $"'{escapedFullName}'";
+            quotedSchema = "SCHEMA_NAME()"; // default to user schema
 
             // remove [ ] from name if necessary
-            string cleanName = fullName.Replace("]", string.Empty).Replace("[", string.Empty);
+            string cleanName = escapedFullName.Replace("]", string.Empty).Replace("[", string.Empty);
 
             // if in format schema.table, split into two parts for query
             string[] pieces = cleanName.Split('.');
 
             if (pieces.Length == 2)
             {
-                schema = $"'{pieces[0]}'";
-                tableName = pieces[1];
+                quotedSchema = $"'{pieces[0]}'";
+                quotedTableName = $"'{pieces[1]}'";
             }
         }
     }

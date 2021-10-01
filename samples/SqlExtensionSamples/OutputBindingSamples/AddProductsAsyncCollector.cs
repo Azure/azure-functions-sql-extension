@@ -20,7 +20,7 @@ namespace SqlExtensionSamples
             [Sql("Products", ConnectionStringSetting = "SqlConnectionString")] IAsyncCollector<Product> products)
         {
             List<Product> newProducts = GetNewProducts(5000);
-            foreach (var product in newProducts)
+            foreach (Product product in newProducts)
             {
                 await products.AddAsync(product);
             }
@@ -28,7 +28,7 @@ namespace SqlExtensionSamples
             await products.FlushAsync();
 
             newProducts = GetNewProducts(5000);
-            foreach (var product in newProducts)
+            foreach (Product product in newProducts)
             {
                 await products.AddAsync(product);
             }
