@@ -78,7 +78,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 finally
                 {
-                    _rowLock.Release();
+                    _ = _rowLock.Release();
                 }
             }
         }
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             finally
             {
-                _rowLock.Release();
+                _ = _rowLock.Release();
             }
         }
 
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var par = cmd.Parameters.Add(RowDataParameter, SqlDbType.NVarChar, -1);
                 par.Value = rowData;
 
-                await cmd.ExecuteNonQueryAsync();
+                _ = await cmd.ExecuteNonQueryAsync();
             }
             await connection.CloseAsync();
         }
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // we can assume that if two rows with the same primary key are in the list, they will collide
                 foreach (PropertyInfo primaryKey in table.PrimaryKeys)
                 {
-                    combinedPrimaryKey.Append(primaryKey.GetValue(row).ToString());
+                    _ = combinedPrimaryKey.Append(primaryKey.GetValue(row).ToString());
                 }
 
                 // If we have already seen this unique primary key, skip this update
@@ -267,7 +267,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 			                    when DATA_TYPE in ('decimal', 'numeric') then '(' + cast(NUMERIC_PRECISION as varchar(9)) + ',' + + cast(NUMERIC_SCALE as varchar(9)) + ')'
 			                    else ''
 		                    end as {ColumnDefinition}
-                    from 
+                    from
 	                    INFORMATION_SCHEMA.COLUMNS c
                     where
 	                    c.TABLE_NAME = {quotedTableName}
@@ -284,7 +284,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var primaryKeyMatchingQuery = new StringBuilder($"ExistingData.{primaryKeys[0]} = NewData.{primaryKeys[0]}");
                 foreach (string primaryKey in primaryKeys.Skip(1))
                 {
-                    primaryKeyMatchingQuery.Append($" AND ExistingData.{primaryKey} = NewData.{primaryKey}");
+                    _ = primaryKeyMatchingQuery.Append($" AND ExistingData.{primaryKey} = NewData.{primaryKey}");
                 }
 
                 // Generate the UPDATE part of the merge query (all columns that should be updated)
@@ -292,7 +292,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var columnMatchingQueryBuilder = new StringBuilder();
                 foreach (string column in columnNamesFromSQL)
                 {
-                    columnMatchingQueryBuilder.Append($" ExistingData.{column} = NewData.{column},");
+                    _ = columnMatchingQueryBuilder.Append($" ExistingData.{column} = NewData.{column},");
                 }
 
                 string columnMatchingQuery = columnMatchingQueryBuilder.ToString().TrimEnd(',');

@@ -114,7 +114,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 adapter.SelectCommand = command;
                 await connection.OpenAsync();
                 var dataTable = new DataTable();
-                adapter.Fill(dataTable);
+                _ = adapter.Fill(dataTable);
                 return JsonConvert.SerializeObject(dataTable);
             }
 

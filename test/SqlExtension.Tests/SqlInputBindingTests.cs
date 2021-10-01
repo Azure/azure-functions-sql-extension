@@ -25,44 +25,44 @@ namespace SqlExtension.Tests
         [Fact]
         public void TestNullConfiguration()
         {
-            Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(null, loggerFactory.Object));
-            Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(config.Object, null));
-            Assert.Throws<ArgumentNullException>(() => new SqlConverter(null));
-            Assert.Throws<ArgumentNullException>(() => new SqlGenericsConverter<string>(null));
+            _ = Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(null, loggerFactory.Object));
+            _ = Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(config.Object, null));
+            _ = Assert.Throws<ArgumentNullException>(() => new SqlConverter(null));
+            _ = Assert.Throws<ArgumentNullException>(() => new SqlGenericsConverter<string>(null));
         }
 
         [Fact]
         public void TestNullCommandText()
         {
-            Assert.Throws<ArgumentNullException>(() => new SqlAttribute(null));
+            _ = Assert.Throws<ArgumentNullException>(() => new SqlAttribute(null));
         }
 
         [Fact]
         public void TestNullContext()
         {
             var configProvider = new SqlBindingConfigProvider(config.Object, loggerFactory.Object);
-            Assert.Throws<ArgumentNullException>(() => configProvider.Initialize(null));
+            _ = Assert.Throws<ArgumentNullException>(() => configProvider.Initialize(null));
         }
 
         [Fact]
         public void TestNullBuilder()
         {
             IWebJobsBuilder builder = null;
-            Assert.Throws<ArgumentNullException>(() => builder.AddSql());
+            _ = Assert.Throws<ArgumentNullException>(() => builder.AddSql());
         }
 
         [Fact]
         public void TestNullCommand()
         {
-            Assert.Throws<ArgumentNullException>(() => SqlBindingUtilities.ParseParameters("", null));
+            _ = Assert.Throws<ArgumentNullException>(() => SqlBindingUtilities.ParseParameters("", null));
         }
 
         [Fact]
         public void TestNullArgumentsSqlAsyncEnumerableConstructor()
         {
 
-            Assert.Throws<ArgumentNullException>(() => new SqlAsyncEnumerable<string>(connection, null));
-            Assert.Throws<ArgumentNullException>(() => new SqlAsyncEnumerable<string>(null, new SqlAttribute("")));
+            _ = Assert.Throws<ArgumentNullException>(() => new SqlAsyncEnumerable<string>(connection, null));
+            _ = Assert.Throws<ArgumentNullException>(() => new SqlAsyncEnumerable<string>(null, new SqlAttribute("")));
         }
 
         [Fact]
@@ -77,11 +77,11 @@ namespace SqlExtension.Tests
         public void TestInvalidArgumentsBuildConnection()
         {
             var attribute = new SqlAttribute("");
-            Assert.Throws<ArgumentException>(() => SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, config.Object));
+            _ = Assert.Throws<ArgumentException>(() => SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, config.Object));
 
             attribute = new SqlAttribute("");
             attribute.ConnectionStringSetting = "ConnectionStringSetting";
-            Assert.Throws<ArgumentNullException>(() => SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, null));
+            _ = Assert.Throws<ArgumentNullException>(() => SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, null));
         }
 
         [Fact]
@@ -90,12 +90,12 @@ namespace SqlExtension.Tests
             // Specify an invalid type
             var attribute = new SqlAttribute("");
             attribute.CommandType = System.Data.CommandType.TableDirect;
-            Assert.Throws<ArgumentException>(() => SqlBindingUtilities.BuildCommand(attribute, null));
+            _ = Assert.Throws<ArgumentException>(() => SqlBindingUtilities.BuildCommand(attribute, null));
 
 
             // Don't specify a type at all
             attribute = new SqlAttribute("");
-            Assert.Throws<ArgumentException>(() => SqlBindingUtilities.BuildCommand(attribute, null));
+            _ = Assert.Throws<ArgumentException>(() => SqlBindingUtilities.BuildCommand(attribute, null));
         }
 
         [Fact]
@@ -122,21 +122,21 @@ namespace SqlExtension.Tests
             var command = new SqlCommand();
             // Second param name doesn't start with "@"
             string parameters = "@param1=param1,param2=param2";
-            Assert.Throws<ArgumentException>(() => SqlBindingUtilities.ParseParameters(parameters, command));
+            _ = Assert.Throws<ArgumentException>(() => SqlBindingUtilities.ParseParameters(parameters, command));
 
             // Second param not separated by "=", or contains extra "="
             parameters = "@param1=param1,@param2==param2";
-            Assert.Throws<ArgumentException>(() => SqlBindingUtilities.ParseParameters(parameters, command));
+            _ = Assert.Throws<ArgumentException>(() => SqlBindingUtilities.ParseParameters(parameters, command));
             parameters = "@param1=param1,@param2;param2";
-            Assert.Throws<ArgumentException>(() => SqlBindingUtilities.ParseParameters(parameters, command));
+            _ = Assert.Throws<ArgumentException>(() => SqlBindingUtilities.ParseParameters(parameters, command));
             parameters = "@param1=param1,@param2=param2=";
-            Assert.Throws<ArgumentException>(() => SqlBindingUtilities.ParseParameters(parameters, command));
+            _ = Assert.Throws<ArgumentException>(() => SqlBindingUtilities.ParseParameters(parameters, command));
 
             // Params list not separated by "," correctly
             parameters = "@param1=param1;@param2=param2";
-            Assert.Throws<ArgumentException>(() => SqlBindingUtilities.ParseParameters(parameters, command));
+            _ = Assert.Throws<ArgumentException>(() => SqlBindingUtilities.ParseParameters(parameters, command));
             parameters = "@param1=param1,@par,am2=param2";
-            Assert.Throws<ArgumentException>(() => SqlBindingUtilities.ParseParameters(parameters, command));
+            _ = Assert.Throws<ArgumentException>(() => SqlBindingUtilities.ParseParameters(parameters, command));
         }
 
         [Fact]
@@ -215,7 +215,7 @@ namespace SqlExtension.Tests
             var converter = new Mock<SqlGenericsConverter<TestData>>(config.Object);
             string json = "[{ \"ID\":1,\"Name\":\"Broom\",\"Cost\":32.5,\"Timestamp\":\"2019-11-22T06:32:15\"},{ \"ID\":2,\"Name\":\"Brush\",\"Cost\":12.3," +
                 "\"Timestamp\":\"2017-01-27T03:13:11\"},{ \"ID\":3,\"Name\":\"Comb\",\"Cost\":100.12,\"Timestamp\":\"1997-05-03T10:11:56\"}]";
-            converter.Setup(_ => _.BuildItemFromAttributeAsync(arg)).ReturnsAsync(json);
+            _ = converter.Setup(_ => _.BuildItemFromAttributeAsync(arg)).ReturnsAsync(json);
             var list = new List<TestData>();
             var data1 = new TestData
             {
@@ -253,7 +253,7 @@ namespace SqlExtension.Tests
 
             // SQL data is missing a field
             string json = "[{ \"ID\":1,\"Name\":\"Broom\",\"Timestamp\":\"2019-11-22T06:32:15\"}]";
-            converter.Setup(_ => _.BuildItemFromAttributeAsync(arg)).ReturnsAsync(json);
+            _ = converter.Setup(_ => _.BuildItemFromAttributeAsync(arg)).ReturnsAsync(json);
             var list = new List<TestData>();
             var data = new TestData
             {
@@ -268,7 +268,7 @@ namespace SqlExtension.Tests
 
             // SQL data's columns are named differently than the POCO's fields
             json = "[{ \"ID\":1,\"Product Name\":\"Broom\",\"Price\":32.5,\"Timessstamp\":\"2019-11-22T06:32:15\"}]";
-            converter.Setup(_ => _.BuildItemFromAttributeAsync(arg)).ReturnsAsync(json);
+            _ = converter.Setup(_ => _.BuildItemFromAttributeAsync(arg)).ReturnsAsync(json);
             list = new List<TestData>();
             data = new TestData
             {
@@ -282,7 +282,7 @@ namespace SqlExtension.Tests
 
             // Confirm that the JSON fields are case-insensitive (technically malformed string, but still works)
             json = "[{ \"id\":1,\"nAme\":\"Broom\",\"coSt\":32.5,\"TimEStamp\":\"2019-11-22T06:32:15\"}]";
-            converter.Setup(_ => _.BuildItemFromAttributeAsync(arg)).ReturnsAsync(json);
+            _ = converter.Setup(_ => _.BuildItemFromAttributeAsync(arg)).ReturnsAsync(json);
             list = new List<TestData>();
             data = new TestData
             {

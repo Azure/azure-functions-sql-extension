@@ -48,10 +48,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             var inputOutputRule = context.AddBindingRule<SqlAttribute>();
             var converter = new SqlConverter(_configuration);
-            inputOutputRule.BindToInput<SqlCommand>(converter);
-            inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), _configuration);
+            _ = inputOutputRule.BindToInput<SqlCommand>(converter);
+            _ = inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), _configuration);
             inputOutputRule.BindToCollector<OpenType>(typeof(SqlAsyncCollectorBuilder<>), _configuration, _loggerFactory);
-            inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), _configuration);
+            _ = inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), _configuration);
         }
     }
 }

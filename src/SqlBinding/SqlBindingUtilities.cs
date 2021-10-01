@@ -88,14 +88,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     }
 
 
-                    if (items[1].Equals("null", StringComparison.OrdinalIgnoreCase))
-                    {
-                        command.Parameters.Add(new SqlParameter(items[0], DBNull.Value));
-                    }
-                    else
-                    {
-                        command.Parameters.Add(new SqlParameter(items[0], items[1]));
-                    }
+                    _ = items[1].Equals("null", StringComparison.OrdinalIgnoreCase)
+                        ? command.Parameters.Add(new SqlParameter(items[0], DBNull.Value))
+                        : command.Parameters.Add(new SqlParameter(items[0], items[1]));
 
                 }
             }

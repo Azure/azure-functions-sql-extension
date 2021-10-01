@@ -20,8 +20,8 @@ namespace SqlExtension.Tests
         public void TestNullCollectorConstructorArguments()
         {
             var arg = new SqlAttribute(string.Empty);
-            Assert.Throws<ArgumentNullException>(() => new SqlAsyncCollector<string>(config.Object, null, NullLoggerFactory.Instance));
-            Assert.Throws<ArgumentNullException>(() => new SqlAsyncCollector<string>(null, arg, NullLoggerFactory.Instance));
+            _ = Assert.Throws<ArgumentNullException>(() => new SqlAsyncCollector<string>(config.Object, null, NullLoggerFactory.Instance));
+            _ = Assert.Throws<ArgumentNullException>(() => new SqlAsyncCollector<string>(null, arg, NullLoggerFactory.Instance));
         }
 
         [Fact]
