@@ -15,7 +15,6 @@ dotnet_diagnostic.IDE0055.severity = silent
 dotnet_diagnostic.IDE0063.severity = silent
 dotnet_diagnostic.IDE0007.severity = silent
 dotnet_diagnostic.IDE0008.severity = silent
-dotnet_diagnostic.IDE0073.severity = silent
 dotnet_diagnostic.IDE0047.severity = silent
 dotnet_diagnostic.IDE0036.severity = silent
 dotnet_diagnostic.IDE0130.severity = silent
