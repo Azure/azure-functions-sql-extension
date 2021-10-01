@@ -2,7 +2,9 @@
 
 namespace SqlExtension.Tests
 {
+    #pragma warning disable CS0659 // Type overrides Object.Equals(object o) but does not override Object.GetHashCode()
     public class TestData
+    #pragma warning restore CS0659
     {
         public int ID { get; set; }
 
@@ -20,11 +22,6 @@ namespace SqlExtension.Tests
             }
             return this.ID == otherData.ID && this.Cost == otherData.Cost && ((this.Name == null && otherData.Name == null) ||
                 string.Equals(this.Name, otherData.Name, StringComparison.OrdinalIgnoreCase)) && this.Timestamp.Equals(otherData.Timestamp);
-        }
-
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(ID, Name, Cost, Timestamp);
         }
     }
 }
