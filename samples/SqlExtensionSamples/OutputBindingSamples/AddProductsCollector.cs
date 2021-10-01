@@ -15,7 +15,7 @@ namespace SqlExtensionSamples
         [FunctionName("AddProductsCollector")]
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproducts-collector")]
-            HttpRequest _,
+            HttpRequest req,
             [Sql("Products", ConnectionStringSetting = "SqlConnectionString")] ICollector<Product> products)
         {
             List<Product> newProducts = GetNewProducts(5000);
