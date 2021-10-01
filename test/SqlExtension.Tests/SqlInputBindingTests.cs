@@ -69,7 +69,7 @@ namespace SqlExtension.Tests
         public void TestNullCurrentValueEnumerator()
         {
             var enumerable = new SqlAsyncEnumerable<string>(connection, new SqlAttribute(""));
-            var enumerator = enumerable.GetAsyncEnumerator();
+            IAsyncEnumerator<string> enumerator = enumerable.GetAsyncEnumerator();
             Assert.Null(enumerator.Current);
         }
 
@@ -101,14 +101,14 @@ namespace SqlExtension.Tests
         [Fact]
         public void TestValidCommandType()
         {
-            var query = "select * from Products";
+            string query = "select * from Products";
             var attribute = new SqlAttribute(query);
             attribute.CommandType = System.Data.CommandType.Text;
-            var command = SqlBindingUtilities.BuildCommand(attribute, null);
+            SqlCommand command = SqlBindingUtilities.BuildCommand(attribute, null);
             Assert.Equal(System.Data.CommandType.Text, command.CommandType);
             Assert.Equal(query, command.CommandText);
 
-            var procedure = "StoredProceudre";
+            string procedure = "StoredProceudre";
             attribute = new SqlAttribute(procedure);
             attribute.CommandType = System.Data.CommandType.StoredProcedure;
             command = SqlBindingUtilities.BuildCommand(attribute, null);

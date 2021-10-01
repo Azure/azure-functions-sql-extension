@@ -46,7 +46,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 throw new ArgumentNullException(nameof(context));
             }
-            var inputOutputRule = context.AddBindingRule<SqlAttribute>();
+#pragma warning disable CS0618 // Fine to use this for our stuff
+            FluentBindingRule<SqlAttribute> inputOutputRule = context.AddBindingRule<SqlAttribute>();
             var converter = new SqlConverter(_configuration);
             _ = inputOutputRule.BindToInput<SqlCommand>(converter);
             _ = inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), _configuration);

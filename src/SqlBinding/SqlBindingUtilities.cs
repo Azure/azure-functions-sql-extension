@@ -71,7 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // I.e., ",,@param1=param1,,@param2=param2,,," will be parsed just like "@param1=param1,@param2=param2" is.
                 string[] paramPairs = parameters.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 
-                foreach (var pair in paramPairs)
+                foreach (string pair in paramPairs)
                 {
                     // Note that we don't throw away empty entries here, so a parameter pair that looks like "=@param1=param1"
                     // or "@param2=param2=" is considered malformed
@@ -140,14 +140,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             if (cols.Count == 0)
             {
-                for (var i = 0; i < reader.FieldCount; i++)
+                for (int i = 0; i < reader.FieldCount; i++)
                 {
                     cols.Add(reader.GetName(i));
                 }
             }
 
             var result = new Dictionary<string, string>();
-            foreach (var col in cols)
+            foreach (string col in cols)
             {
                 result.Add(col, reader[col].ToString());
             }

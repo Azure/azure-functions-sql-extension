@@ -24,7 +24,7 @@ namespace SqlExtensionSamples.OutputBindingSamples
             sw.Start();
 
             List<Product> newProducts = GetNewProducts(totalUpserts, 2 * 100);
-            foreach (var product in newProducts)
+            foreach (Product product in newProducts)
             {
                 products.Add(product);
             }
