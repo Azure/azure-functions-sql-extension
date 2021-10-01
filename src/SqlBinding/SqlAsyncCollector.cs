@@ -148,7 +148,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 GenerateDataQueryForMerge(tableInfo, batch, out string newDataQuery, out string rowData);
                 var cmd = new SqlCommand($"{newDataQuery} {tableInfo.MergeQuery};", connection);
-                var par = cmd.Parameters.Add(RowDataParameter, SqlDbType.NVarChar, -1);
+                SqlParameter par = cmd.Parameters.Add(RowDataParameter, SqlDbType.NVarChar, -1);
                 par.Value = rowData;
 
                 await cmd.ExecuteNonQueryAsync();
@@ -382,7 +382,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // 3. Match SQL Primary Key column names to POCO field/property objects. Ensure none are missing.
                 IEnumerable<MemberInfo> primaryKeyFields = typeof(T).GetMembers().Where(f => primaryKeys.Contains(f.Name, StringComparer.OrdinalIgnoreCase));
                 IEnumerable<string> primaryKeysFromPOCO = primaryKeyFields.Select(f => f.Name);
-                var missingFromPOCO = primaryKeys.Except(primaryKeysFromPOCO, StringComparer.OrdinalIgnoreCase);
+                IEnumerable<string> missingFromPOCO = primaryKeys.Except(primaryKeysFromPOCO, StringComparer.OrdinalIgnoreCase);
                 if (missingFromPOCO.Any())
                 {
                     string message = $"All primary keys for SQL table {quotedTableName} and schema {quotedSchema} need to be found in '{typeof(T)}.' Missing primary keys: [{string.Join(",", missingFromPOCO)}]";
@@ -417,7 +417,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     if (properties.ContainsKey(column.Key))
                     {
                         // Lower-case the property name during serialization to match SQL casing
-                        var sqlColumn = properties[column.Key];
+                        JsonProperty sqlColumn = properties[column.Key];
                         sqlColumn.PropertyName = sqlColumn.PropertyName.ToLowerInvariant();
                         propertiesToSerialize.Add(sqlColumn);
                     }
