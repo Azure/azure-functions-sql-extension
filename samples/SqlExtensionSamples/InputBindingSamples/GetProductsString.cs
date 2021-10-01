@@ -13,7 +13,7 @@ namespace SqlExtensionSamples.InputBindingSamples
         [FunctionName("GetProductsString")]
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-string/{cost}")]
-            HttpRequest req,
+            HttpRequest _,
             [Sql("select * from Products where cost = @Cost",
                 CommandType = System.Data.CommandType.Text,
                 Parameters = "@Cost={cost}",
