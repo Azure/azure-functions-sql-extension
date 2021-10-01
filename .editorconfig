@@ -10,7 +10,6 @@ dotnet_analyzer_diagnostic.category-Style.severity = error
 dotnet_analyzer_diagnostic.category-CodeQuality.severity = error
 # Disable warnings from existing issues until we can go through and fix them
 dotnet_diagnostic.IDE0130.severity = silent
-dotnet_diagnostic.IDE0036.severity = silent
 dotnet_diagnostic.IDE0130.severity = silent
 dotnet_diagnostic.IDE0058.severity = silent
 dotnet_diagnostic.IDE0003.severity = silent

@@ -23,10 +23,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
     internal class SqlAsyncCollector<T> : IAsyncCollector<T>
     {
-        private readonly static string RowDataParameter = "@rowData";
-        private readonly static string ColumnName = "COLUMN_NAME";
-        private readonly static string ColumnDefinition = "COLUMN_DEFINITION";
-        private readonly static string NewDataParameter = "cte";
+        private const string RowDataParameter = "@rowData";
+        private const string ColumnName = "COLUMN_NAME";
+        private const string ColumnDefinition = "COLUMN_DEFINITION";
+        private const string NewDataParameter = "cte";
 
         private readonly IConfiguration _configuration;
         private readonly SqlAttribute _attribute;
@@ -267,7 +267,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 			                    when DATA_TYPE in ('decimal', 'numeric') then '(' + cast(NUMERIC_PRECISION as varchar(9)) + ',' + + cast(NUMERIC_SCALE as varchar(9)) + ')'
 			                    else ''
 		                    end as {ColumnDefinition}
-                    from 
+                    from
 	                    INFORMATION_SCHEMA.COLUMNS c
                     where
 	                    c.TABLE_NAME = {quotedTableName}
@@ -317,7 +317,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <param name="sqlConnection">Connection with which to query SQL against</param>
             /// <param name="fullName">Full name of table, including schema (if exists).</param>
             /// <returns>TableInformation object containing primary keys, column types, etc.</returns>
-            public async static Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName)
+            public static async Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName)
             {
                 SqlBindingUtilities.GetTableAndSchema(fullName, out string quotedSchema, out string quotedTableName);
 
