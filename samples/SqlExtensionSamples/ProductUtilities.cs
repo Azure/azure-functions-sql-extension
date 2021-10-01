@@ -27,6 +27,10 @@ namespace SqlExtensionSamples
             return products;
         }
 
+        /// <summary>
+        /// Returns a list of <paramref name="num"/> Products with a random cost between 1 and <paramref name="cost"/>.
+        /// Note that ProductID is randomized too so list may not be unique.
+        /// </summary>
         public static List<Product> GetNewProductsRandomized(int num, int cost)
         {
             var r = new Random();
@@ -37,7 +41,7 @@ namespace SqlExtensionSamples
                 var product = new Product
                 {
                     ProductID = r.Next(1, num),
-                    Cost = (int)Math.Round(r.NextDouble() * 100.0),
+                    Cost = (int)Math.Round(r.NextDouble() * cost),
                     Name = "test"
                 };
                 products.Add(product);
