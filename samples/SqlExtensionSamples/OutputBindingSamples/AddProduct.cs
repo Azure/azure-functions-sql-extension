@@ -9,7 +9,6 @@ using static SqlExtensionSamples.ProductUtilities;
 
 namespace SqlExtensionSamples
 {
-    
     public static class AddProduct
     {
         [FunctionName("AddProduct")]
