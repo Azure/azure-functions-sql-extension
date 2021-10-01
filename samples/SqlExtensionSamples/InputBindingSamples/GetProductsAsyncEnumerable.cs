@@ -30,7 +30,7 @@ namespace SqlExtensionSamples
                 productList.Add(enumerator.Current);
             }
             await enumerator.DisposeAsync();
-            return (ActionResult)new OkObjectResult(productList);
+            return new OkObjectResult(productList);
         }
     }
 }

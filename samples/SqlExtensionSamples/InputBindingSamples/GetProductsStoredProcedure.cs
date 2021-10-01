@@ -23,7 +23,7 @@ namespace SqlExtensionSamples
                 ConnectionStringSetting = "SqlConnectionString")]
             IEnumerable<Product> products)
         {
-            return (ActionResult)new OkObjectResult(products);
+            return new OkObjectResult(products);
         }
     }
 }
