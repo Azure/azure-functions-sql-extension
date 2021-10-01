@@ -119,43 +119,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="configuration"> Used to build up the connection </param>
         private async Task UpsertRowsAsync(IEnumerable<T> rows, SqlAttribute attribute, IConfiguration configuration)
         {
-            using (SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, configuration))
+            using SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, configuration);
+            string fullDatabaseAndTableName = attribute.CommandText;
+
+            // Include the connection string hash as part of the key in case this customer has the same table in two different Sql Servers
+            string cacheKey = $"{connection.ConnectionString.GetHashCode()}-{fullDatabaseAndTableName}";
+
+            ObjectCache cachedTables = MemoryCache.Default;
+            TableInformation tableInfo = cachedTables[cacheKey] as TableInformation;
+
+            if (tableInfo == null)
             {
-                string fullDatabaseAndTableName = attribute.CommandText;
+                tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullDatabaseAndTableName);
 
-                // Include the connection string hash as part of the key in case this customer has the same table in two different Sql Servers
-                string cacheKey = $"{connection.ConnectionString.GetHashCode()}-{fullDatabaseAndTableName}";
-
-                ObjectCache cachedTables = MemoryCache.Default;
-                TableInformation tableInfo = cachedTables[cacheKey] as TableInformation;
-
-                if (tableInfo == null)
+                CacheItemPolicy policy = new CacheItemPolicy
                 {
-                    tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullDatabaseAndTableName);
+                    // Re-look up the primary key(s) after 10 minutes (they should not change very often!)
+                    AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(10)
+                };
 
-                    CacheItemPolicy policy = new CacheItemPolicy
-                    {
-                        // Re-look up the primary key(s) after 10 minutes (they should not change very often!)
-                        AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(10)
-                    };
-
-                    _logger.LogInformation($"DB and Table: {fullDatabaseAndTableName}. Primary keys: [{string.Join(",", tableInfo.PrimaryKeys.Select(pk => pk.Name))}]. SQL Column and Definitions:  [{string.Join(",", tableInfo.ColumnDefinitions)}]");
-                    cachedTables.Set(cacheKey, tableInfo, policy);
-                }
-
-                int batchSize = 1000;
-                await connection.OpenAsync();
-                foreach (IEnumerable<T> batch in rows.Batch(batchSize))
-                {
-                    GenerateDataQueryForMerge(tableInfo, batch, out string newDataQuery, out string rowData);
-                    var cmd = new SqlCommand($"{newDataQuery} {tableInfo.MergeQuery};", connection);
-                    var par = cmd.Parameters.Add(RowDataParameter, SqlDbType.NVarChar, -1);
-                    par.Value = rowData;
-
-                    await cmd.ExecuteNonQueryAsync();
-                }
-                await connection.CloseAsync();
+                _logger.LogInformation($"DB and Table: {fullDatabaseAndTableName}. Primary keys: [{string.Join(",", tableInfo.PrimaryKeys.Select(pk => pk.Name))}]. SQL Column and Definitions:  [{string.Join(",", tableInfo.ColumnDefinitions)}]");
+                cachedTables.Set(cacheKey, tableInfo, policy);
             }
+
+            int batchSize = 1000;
+            await connection.OpenAsync();
+            foreach (IEnumerable<T> batch in rows.Batch(batchSize))
+            {
+                GenerateDataQueryForMerge(tableInfo, batch, out string newDataQuery, out string rowData);
+                var cmd = new SqlCommand($"{newDataQuery} {tableInfo.MergeQuery};", connection);
+                var par = cmd.Parameters.Add(RowDataParameter, SqlDbType.NVarChar, -1);
+                par.Value = rowData;
+
+                await cmd.ExecuteNonQueryAsync();
+            }
+            await connection.CloseAsync();
         }
         /// <summary>
         /// Generates T-SQL for data to be upserted using Merge.
@@ -329,12 +327,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     await sqlConnection.OpenAsync();
                     SqlCommand cmdColDef = new SqlCommand(GetColumnDefinitionsQuery(schema, tableName), sqlConnection);
-                    using (SqlDataReader rdr = await cmdColDef.ExecuteReaderAsync())
+                    using SqlDataReader rdr = await cmdColDef.ExecuteReaderAsync();
+                    while (await rdr.ReadAsync())
                     {
-                        while (await rdr.ReadAsync())
-                        {
-                            columnDefinitionsFromSQL.Add(rdr[ColumnName].ToString().ToLowerInvariant(), rdr[ColumnDefinition].ToString());
-                        }
+                        columnDefinitionsFromSQL.Add(rdr[ColumnName].ToString().ToLowerInvariant(), rdr[ColumnDefinition].ToString());
                     }
                 }
                 catch (Exception ex)
@@ -354,12 +350,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     await sqlConnection.OpenAsync();
                     SqlCommand cmd = new SqlCommand(GetPrimaryKeysQuery(schema, tableName), sqlConnection);
-                    using (SqlDataReader rdr = await cmd.ExecuteReaderAsync())
+                    using SqlDataReader rdr = await cmd.ExecuteReaderAsync();
+                    while (await rdr.ReadAsync())
                     {
-                        while (await rdr.ReadAsync())
-                        {
-                            primaryKeys.Add(rdr[ColumnName].ToString().ToLowerInvariant());
-                        }
+                        primaryKeys.Add(rdr[ColumnName].ToString().ToLowerInvariant());
                     }
                 }
                 catch (Exception ex)
