@@ -1,0 +1,10 @@
+{
+    "azureFunctions.projectSubpath": "samples/SqlExtensionSamples",
+    "azureFunctions.deploySubpath": "samples/SqlExtensionSamples/bin/Release/netcoreapp3.1/publish",
+    "azureFunctions.projectLanguage": "C#",
+    "azureFunctions.projectRuntime": "~3",
+    "debug.internalConsoleOptions": "neverOpen",
+    "azureFunctions.preDeployTask": "publish (functions)",
+    "omnisharp.enableEditorConfigSupport": true,
+    "omnisharp.enableRoslynAnalyzers": true
+}

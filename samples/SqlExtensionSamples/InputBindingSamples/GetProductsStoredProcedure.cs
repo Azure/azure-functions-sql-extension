@@ -16,14 +16,14 @@ namespace SqlExtensionSamples
         [FunctionName("GetProductsStoredProcedure")]
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-storedprocedure/{cost}")]
-            HttpRequest req,
+            HttpRequest _,
             [Sql("SelectProductsCost",
                 CommandType = System.Data.CommandType.StoredProcedure,
                 Parameters = "@Cost={cost}",
                 ConnectionStringSetting = "SqlConnectionString")]
             IEnumerable<Product> products)
         {
-            return (ActionResult)new OkObjectResult(products);
+            return new OkObjectResult(products);
         }
     }
 }

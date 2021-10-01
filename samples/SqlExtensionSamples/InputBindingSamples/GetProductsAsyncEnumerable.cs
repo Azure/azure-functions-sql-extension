@@ -16,7 +16,7 @@ namespace SqlExtensionSamples
         [FunctionName("GetProductsAsyncEnumerable")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-async/{cost}")]
-            HttpRequest req,
+            HttpRequest _,
             [Sql("select * from Products where cost = @Cost",
                  CommandType = System.Data.CommandType.Text,
                  Parameters = "@Cost={cost}",
@@ -30,7 +30,7 @@ namespace SqlExtensionSamples
                 productList.Add(enumerator.Current);
             }
             await enumerator.DisposeAsync();
-            return (ActionResult)new OkObjectResult(productList);
+            return new OkObjectResult(productList);
         }
     }
 }

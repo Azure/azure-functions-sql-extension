@@ -32,6 +32,7 @@ This repository contains extension code for SQL bindings as well as a quick star
       - [ICollector<T>/IAsyncCollector<T>](#icollectortiasynccollectort)
       - [Array](#array)
       - [Single Row](#single-row)
+  - [Known Issues](#known-issues)
   - [Contributing](#contributing)
 
 ## Quick Start
@@ -499,6 +500,9 @@ public static IActionResult Run(
     return new CreatedResult($"/api/addproduct", product);
 }
 ```
+## Known Issues
+
+- Output bindings against tables with columns of data types `NTEXT`, `TEXT`, or `IMAGE` are not supported and data upserts will fail. These types [will be removed](https://docs.microsoft.com/sql/t-sql/data-types/ntext-text-and-image-transact-sql) in a future version of SQL Server and are not compatible with the `OPENJSON` function used by this Azure Functions binding.
 
 ## Contributing
 

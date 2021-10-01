@@ -43,11 +43,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Parses the parameter string into a list of parameters, where each parameter is separted by "," and has the form 
-        /// "@param1=param2". "@param1" is the parameter name to be used in the query or stored procedure, and param1 is the 
-        /// parameter value. Parameter name and parameter value are separated by "=". Parameter names/values cannot contain ',' or '='. 
+        /// Parses the parameter string into a list of parameters, where each parameter is separated by "," and has the form
+        /// "@param1=param2". "@param1" is the parameter name to be used in the query or stored procedure, and param1 is the
+        /// parameter value. Parameter name and parameter value are separated by "=". Parameter names/values cannot contain ',' or '='.
         /// A valid parameter string would be "@param1=param1,@param2=param2". Attaches each parsed parameter to command.
-        /// If the value of a parameter should be null, use "null", as in @param1=null,@param2=param2". 
+        /// If the value of a parameter should be null, use "null", as in @param1=null,@param2=param2".
         /// If the value of a parameter should be an empty string, do not add anything after the equals sign and before the comma,
         /// as in "@param1=,@param2=param2"
         /// </summary>
@@ -86,12 +86,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         throw new ArgumentException("Parameter name must start with \"@\", i.e. \"@param1=param1,@param2=param2\"");
                     }
-                    
+
 
                     if (items[1].Equals("null", StringComparison.OrdinalIgnoreCase))
                     {
                         command.Parameters.Add(new SqlParameter(items[0], DBNull.Value));
-                    } 
+                    }
                     else
                     {
                         command.Parameters.Add(new SqlParameter(items[0], items[1]));
@@ -102,13 +102,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Builds a SqlCommand using the query/stored procedure and parameters specifed in attribute.
+        /// Builds a SqlCommand using the query/stored procedure and parameters specified in attribute.
         /// </summary>
         /// <param name="attribute">The SqlAttribute with the parameter, command type, and command text</param>
         /// <param name="connection">The connection to attach to the SqlCommand</param>
         /// <exception cref="InvalidOperationException">
         /// Thrown if the CommandType specified in attribute is neither StoredProcedure nor Text. We only support
-        /// commands that refer to the name of a StoredProcedure (the StoredProcedure CommandType) or are themselves 
+        /// commands that refer to the name of a StoredProcedure (the StoredProcedure CommandType) or are themselves
         /// raw queries (the Text CommandType).
         /// </exception>
         /// <returns>The built SqlCommand</returns>
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Used to determine the columns of the table as well as the next SQL row to process
         /// </param>
         /// <param name="cols">
-        /// Filled with the columns of the table if empty, otherwise assumed to be populated 
+        /// Filled with the columns of the table if empty, otherwise assumed to be populated
         /// with their names already (used for cacheing so we don't retrieve the column names every time)
         /// </param>
         /// <returns>The built dictionary</returns>
