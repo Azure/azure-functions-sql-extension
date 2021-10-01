@@ -235,7 +235,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <summary>
             /// Generates SQL query that can be used to retrieve the Primary Keys of a table
             /// </summary>
-            public static string GetPrimaryKeysQuery(string schema, string tableName)
+            public static string GetPrimaryKeysQuery(string quotedSchema, string quotedTableName)
             {
                 return $@"
                     select
@@ -247,15 +247,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     where
                         tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
                     and
-                        tc.TABLE_NAME = '{tableName}'
+                        tc.TABLE_NAME = {quotedTableName}
                     and
-                        tc.TABLE_SCHEMA = {schema}";
+                        tc.TABLE_SCHEMA = {quotedSchema}";
             }
 
             /// <summary>
             /// Generates SQL query that can be used to retrieve column names & types of a table
             /// </summary>
-            public static string GetColumnDefinitionsQuery(string schema, string tableName)
+            public static string GetColumnDefinitionsQuery(string quotedSchema, string quotedTableName)
             {
                 return $@"
                     select
@@ -267,12 +267,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 			                    when DATA_TYPE in ('decimal', 'numeric') then '(' + cast(NUMERIC_PRECISION as varchar(9)) + ',' + + cast(NUMERIC_SCALE as varchar(9)) + ')'
 			                    else ''
 		                    end as {ColumnDefinition}
-                    from
+                    from 
 	                    INFORMATION_SCHEMA.COLUMNS c
                     where
-	                    c.TABLE_NAME = '{tableName}'
+	                    c.TABLE_NAME = {quotedTableName}
                     and
-                        c.TABLE_SCHEMA = {schema}";
+                        c.TABLE_SCHEMA = {quotedSchema}";
             }
 
             /// <summary>
@@ -319,14 +319,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns>TableInformation object containing primary keys, column types, etc.</returns>
             public async static Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName)
             {
-                SqlBindingUtilities.GetTableAndSchema(fullName, out string schema, out string tableName);
+                SqlBindingUtilities.GetTableAndSchema(fullName, out string quotedSchema, out string quotedTableName);
 
                 // 1. Get all column names and types
                 var columnDefinitionsFromSQL = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 try
                 {
                     await sqlConnection.OpenAsync();
-                    var cmdColDef = new SqlCommand(GetColumnDefinitionsQuery(schema, tableName), sqlConnection);
+                    var cmdColDef = new SqlCommand(GetColumnDefinitionsQuery(quotedSchema, quotedTableName), sqlConnection);
                     using SqlDataReader rdr = await cmdColDef.ExecuteReaderAsync();
                     while (await rdr.ReadAsync())
                     {
@@ -336,7 +336,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 catch (Exception ex)
                 {
                     // Throw a custom error so that it's easier to decipher.
-                    string message = $"Encountered exception while retrieving column names and types for table '{tableName}' in schema '{schema}.' Cannot generate upsert command without them.";
+                    string message = $"Encountered exception while retrieving column names and types for table {quotedTableName} in schema {quotedSchema}. Cannot generate upsert command without them.";
                     throw new InvalidOperationException(message, ex);
                 }
                 finally
@@ -344,12 +344,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     await sqlConnection.CloseAsync();
                 }
 
+                if (columnDefinitionsFromSQL.Count == 0)
+                {
+                    string message = $"Table {quotedTableName} in schema {quotedSchema} does not exist.";
+                    throw new InvalidOperationException(message);
+                }
+
                 // 2. Query SQL for table Primary Keys
                 var primaryKeys = new List<string>();
                 try
                 {
                     await sqlConnection.OpenAsync();
-                    var cmd = new SqlCommand(GetPrimaryKeysQuery(schema, tableName), sqlConnection);
+                    var cmd = new SqlCommand(GetPrimaryKeysQuery(quotedSchema, quotedTableName), sqlConnection);
                     using SqlDataReader rdr = await cmd.ExecuteReaderAsync();
                     while (await rdr.ReadAsync())
                     {
@@ -359,7 +365,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 catch (Exception ex)
                 {
                     // Throw a custom error so that it's easier to decipher.
-                    string message = $"Encountered exception while retrieving primary keys for table '{tableName}' in schema '{schema}.' Cannot generate upsert command without them.";
+                    string message = $"Encountered exception while retrieving primary keys for table {quotedTableName} in schema {quotedSchema}. Cannot generate upsert command without them.";
                     throw new InvalidOperationException(message, ex);
                 }
                 finally
@@ -369,7 +375,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 if (!primaryKeys.Any())
                 {
-                    string message = $"Did not retrieve any primary keys for '{tableName}' in schema '{schema}.' Cannot generate upsert command without them.";
+                    string message = $"Did not retrieve any primary keys for {quotedTableName} in schema {quotedSchema}. Cannot generate upsert command without them.";
                     throw new InvalidOperationException(message);
                 }
 
@@ -379,7 +385,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var missingFromPOCO = primaryKeys.Except(primaryKeysFromPOCO, StringComparer.OrdinalIgnoreCase);
                 if (missingFromPOCO.Any())
                 {
-                    string message = $"All primary keys for SQL table '{tableName}' and schema '{schema}' need to be found in '{typeof(T)}.' Missing primary keys: [{string.Join(",", missingFromPOCO)}]";
+                    string message = $"All primary keys for SQL table {quotedTableName} and schema {quotedSchema} need to be found in '{typeof(T)}.' Missing primary keys: [{string.Join(",", missingFromPOCO)}]";
                     throw new InvalidOperationException(message);
                 }
 
