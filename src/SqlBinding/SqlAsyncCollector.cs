@@ -23,10 +23,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
     internal class SqlAsyncCollector<T> : IAsyncCollector<T>
     {
-        private static readonly string RowDataParameter = "@rowData";
-        private static readonly string ColumnName = "COLUMN_NAME";
-        private static readonly string ColumnDefinition = "COLUMN_DEFINITION";
-        private static readonly string NewDataParameter = "cte";
+        private const string RowDataParameter = "@rowData";
+        private const string ColumnName = "COLUMN_NAME";
+        private const string ColumnDefinition = "COLUMN_DEFINITION";
+        private const string NewDataParameter = "cte";
 
         private readonly IConfiguration _configuration;
         private readonly SqlAttribute _attribute;
