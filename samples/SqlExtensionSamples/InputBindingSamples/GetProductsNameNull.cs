@@ -19,7 +19,7 @@ namespace SqlExtensionSamples
         [FunctionName("GetProductsNameNull")]
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-namenull/{name}")]
-            HttpRequest _,
+            HttpRequest req,
             [Sql("if @Name is null select * from Products where Name is null else select * from Products where @Name = name",
                 CommandType = System.Data.CommandType.Text,
                 Parameters = "@Name={name}",

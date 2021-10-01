@@ -14,7 +14,7 @@ namespace SqlExtensionSamples
         [FunctionName("AddProductsArray")]
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproducts-array")]
-            HttpRequest _,
+            HttpRequest req,
             [Sql("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] out Product[] output)
         {
             // Suppose that the ProductID column is the primary key in the Products table, and the
