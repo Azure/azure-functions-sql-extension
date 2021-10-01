@@ -16,7 +16,7 @@ namespace SqlExtensionSamples
         [FunctionName("GetProductsAsyncEnumerable")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-async/{cost}")]
-            HttpRequest _,
+            HttpRequest req,
             [Sql("select * from Products where cost = @Cost",
                  CommandType = System.Data.CommandType.Text,
                  Parameters = "@Cost={cost}",
