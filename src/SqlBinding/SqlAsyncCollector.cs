@@ -38,14 +38,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlAsyncCollector<typeparamref name="T"/>"/> class.
         /// </summary>
-        /// <param name="connection"> 
-        /// Contains the SQL connection that will be used by the collector when it inserts SQL rows 
-        /// into the user's table 
+        /// <param name="connection">
+        /// Contains the SQL connection that will be used by the collector when it inserts SQL rows
+        /// into the user's table
         /// </param>
-        /// <param name="attribute"> 
-        /// Contains as one of its attributes the SQL table that rows will be inserted into 
+        /// <param name="attribute">
+        /// Contains as one of its attributes the SQL table that rows will be inserted into
         /// </param>
-        /// <param name="loggerFactory"> 
+        /// <param name="loggerFactory">
         /// Logger Factory for creating an ILogger
         /// </param>
         /// <exception cref="ArgumentNullException">
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Adds an item to this collector that is processed in a batch along with all other items added via 
+        /// Adds an item to this collector that is processed in a batch along with all other items added via
         /// AddAsync when <see cref="FlushAsync"/> is called. Each item is interpreted as a row to be added to the SQL table
         /// specified in the SQL Binding.
         /// </summary>
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// if no items were added via AddAsync.
         /// </summary>
         /// <param name="cancellationToken">The cancellationToken is not used in this method</param>
-        /// <returns> A CompletedTask if executed successfully. If no rows were added, this is returned 
+        /// <returns> A CompletedTask if executed successfully. If no rows were added, this is returned
         /// automatically. </returns>
         public async Task FlushAsync(CancellationToken cancellationToken = default)
         {
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Upserts the rows specified in "rows" to the table specified in "attribute"
         /// If a primary key in "rows" already exists in the table, the row is interpreted as an update rather than an insert.
         /// The column values associated with that primary key in the table are updated to have the values specified in "rows".
-        /// If a new primary key is encountered in "rows", the row is simply inserted into the table. 
+        /// If a new primary key is encountered in "rows", the row is simply inserted into the table.
         /// </summary>
         /// <param name="rows"> The rows to be upserted </param>
         /// <param name="attribute"> Contains the name of the table to be modified and SQL connection information </param>
@@ -158,7 +158,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
         }
         /// <summary>
-        /// Generates T-SQL for data to be upserted using Merge. 
+        /// Generates T-SQL for data to be upserted using Merge.
         /// This needs to be regenerated for every batch to upsert.
         /// </summary>
         /// <param name="table">Information about the table we will be upserting into</param>
@@ -217,8 +217,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             public string MergeQuery { get; }
 
             /// <summary>
-            /// Settings to use when serializing the POCO into SQL. 
-            /// Only serialize properties and fields that correspond to SQL columns. 
+            /// Settings to use when serializing the POCO into SQL.
+            /// Only serialize properties and fields that correspond to SQL columns.
             /// </summary>
             public JsonSerializerSettings JsonSerializerSettings { get; }
 
@@ -237,10 +237,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <summary>
             /// Generates SQL query that can be used to retrieve the Primary Keys of a table
             /// </summary>
-            public static string GetPrimaryKeysQuery(string schema, string tableName) 
+            public static string GetPrimaryKeysQuery(string schema, string tableName)
             {
                 return $@"
-                    select 
+                    select
                         {ColumnName}
                     from
                         INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
@@ -260,19 +260,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             public static string GetColumnDefinitionsQuery(string schema, string tableName)
             {
                 return $@"
-                    select	
+                    select
 	                    {ColumnName}, DATA_TYPE +
-		                    case 
+		                    case
 			                    when CHARACTER_MAXIMUM_LENGTH = -1 then '(max)'
 			                    when CHARACTER_MAXIMUM_LENGTH <> -1 then '(' + cast(CHARACTER_MAXIMUM_LENGTH as varchar(4)) + ')'
                                 when DATETIME_PRECISION is not null and DATA_TYPE not in ('datetime', 'date', 'smalldatetime') then '(' + cast(DATETIME_PRECISION as varchar(1)) + ')'
 			                    when DATA_TYPE in ('decimal', 'numeric') then '(' + cast(NUMERIC_PRECISION as varchar(9)) + ',' + + cast(NUMERIC_SCALE as varchar(9)) + ')'
 			                    else ''
-		                    end as {ColumnDefinition}	
-                    from 
+		                    end as {ColumnDefinition}
+                    from
 	                    INFORMATION_SCHEMA.COLUMNS c
                     where
-	                    c.TABLE_NAME = '{tableName}'         
+	                    c.TABLE_NAME = '{tableName}'
                     and
                         c.TABLE_SCHEMA = {schema}";
             }
@@ -299,20 +299,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 string columnMatchingQuery = columnMatchingQueryBuilder.ToString().TrimEnd(',');
                 return @$"
-                    MERGE INTO {fullTableName} WITH (HOLDLOCK) 
+                    MERGE INTO {fullTableName} WITH (HOLDLOCK)
                         AS ExistingData
                     USING {NewDataParameter}
                         AS NewData
-                    ON 
+                    ON
                         {primaryKeyMatchingQuery}
                     WHEN MATCHED THEN
                         UPDATE SET {columnMatchingQuery}
-                    WHEN NOT MATCHED THEN 
+                    WHEN NOT MATCHED THEN
                         INSERT ({string.Join(",", columnNamesFromSQL)}) VALUES ({string.Join(",", columnNamesFromSQL)})";
             }
 
             /// <summary>
-            /// Retrieve (relatively) static information of SQL Table like primary keys, column names, etc. 
+            /// Retrieve (relatively) static information of SQL Table like primary keys, column names, etc.
             /// in order to generate the MERGE portion of the upsert query.
             /// This only needs to be generated once and can be reused for subsequent upserts.
             /// </summary>

@@ -32,7 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             /// <summary>
             /// Creates a SqlCommand containing a SQL connection and the SQL query and parameters specified in attribute.
-            /// The user can open the connection in the SqlCommand and use it to read in the results of the query themselves. 
+            /// The user can open the connection in the SqlCommand and use it to read in the results of the query themselves.
             /// </summary>
             /// <param name="attribute">
             /// Contains the SQL query and parameters as well as the information necessary to build the SQL Connection
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <exception cref="ArgumentNullException">
             /// Thrown if the configuration is null
             /// </exception>
-            public SqlGenericsConverter(IConfiguration configuration) 
+            public SqlGenericsConverter(IConfiguration configuration)
             {
                 _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             }
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </param>
             /// <param name="cancellationToken">The cancellationToken is not used in this method</param>
             /// <returns>
-            /// The JSON string. I.e., if the result has two rows from a table with schema ProductID: int, Name: varchar, Cost: int, 
+            /// The JSON string. I.e., if the result has two rows from a table with schema ProductID: int, Name: varchar, Cost: int,
             /// then the returned JSON string could look like
             /// [{"productID":3,"name":"Bottle","cost":90},{"productID":5,"name":"Cup","cost":100}]
             /// </returns>
@@ -107,8 +107,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 using (SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, _configuration))
                 {
-                    // Ideally, we would like to move away from using SqlDataAdapter both here and in the 
-                    // SqlAsyncCollector since it does not support asynchronous operations. 
+                    // Ideally, we would like to move away from using SqlDataAdapter both here and in the
+                    // SqlAsyncCollector since it does not support asynchronous operations.
                     // There is a GitHub issue open to track this
                     using (SqlDataAdapter adapter = new SqlDataAdapter())
                     {
