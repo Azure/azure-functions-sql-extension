@@ -43,7 +43,7 @@ namespace SqlExtensionSamples
                 var product = new Product
                 {
                     ProductID = r.Next(1, num),
-                    Cost = (int)(Math.Round(r.NextDouble() * cost)),
+                    Cost = (int)Math.Round(r.NextDouble() * cost),
                     Name = "test"
                 };
                 products.Add(product);
