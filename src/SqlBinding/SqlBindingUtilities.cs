@@ -168,20 +168,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </param>
         public static void GetTableAndSchema(string fullName, out string quotedSchema, out string quotedTableName)
         {
+            // ensure names are properly escaped
+            string escapedFullName = fullName.Replace("'", "''");
+
             // defaults
-            quotedTableName = $"'{fullName.Replace("'", "''")}'"; // ensure names are properly escaped
+            quotedTableName = $"'{escapedFullName}'";
             quotedSchema = "SCHEMA_NAME()"; // default to user schema
 
             // remove [ ] from name if necessary
-            string cleanName = fullName.Replace("]", string.Empty).Replace("[", string.Empty);
+            string cleanName = escapedFullName.Replace("]", string.Empty).Replace("[", string.Empty);
 
             // if in format schema.table, split into two parts for query
             string[] pieces = cleanName.Split('.');
 
             if (pieces.Length == 2)
             {
-                quotedSchema = $"'{pieces[0].Replace("'", "''")}'";
-                quotedTableName = $"'{pieces[1].Replace("'", "''")}'";
+                quotedSchema = $"'{pieces[0]}'";
+                quotedTableName = $"'{pieces[1]}'";
             }
         }
     }
