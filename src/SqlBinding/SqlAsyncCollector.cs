@@ -235,7 +235,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <summary>
             /// Generates SQL query that can be used to retrieve the Primary Keys of a table
             /// </summary>
-            public static string GetPrimaryKeysQuery(string quotedSchema, string quotedTableName) 
+            public static string GetPrimaryKeysQuery(string quotedSchema, string quotedTableName)
             {
                 return $@"
                     select
@@ -327,7 +327,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     await sqlConnection.OpenAsync();
                     SqlCommand cmdColDef = new SqlCommand(GetColumnDefinitionsQuery(quotedSchema, quotedTableName), sqlConnection);
-                    using (SqlDataReader rdr = await cmdColDef.ExecuteReaderAsync())
+                    using SqlDataReader rdr = await cmdColDef.ExecuteReaderAsync();
+                    while (await rdr.ReadAsync())
                     {
                         columnDefinitionsFromSQL.Add(rdr[ColumnName].ToString().ToLowerInvariant(), rdr[ColumnDefinition].ToString());
                     }
@@ -355,7 +356,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     await sqlConnection.OpenAsync();
                     SqlCommand cmd = new SqlCommand(GetPrimaryKeysQuery(quotedSchema, quotedTableName), sqlConnection);
-                    using (SqlDataReader rdr = await cmd.ExecuteReaderAsync())
+                    using SqlDataReader rdr = await cmd.ExecuteReaderAsync();
+                    while (await rdr.ReadAsync())
                     {
                         primaryKeys.Add(rdr[ColumnName].ToString().ToLowerInvariant());
                     }
