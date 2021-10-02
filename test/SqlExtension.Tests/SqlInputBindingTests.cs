@@ -18,9 +18,9 @@ namespace SqlExtension.Tests
 {
     public class SqlInputBindingTests
     {
-        private static Mock<IConfiguration> config = new Mock<IConfiguration>();
-        private static Mock<ILoggerFactory> loggerFactory = new Mock<ILoggerFactory>();
-        private static SqlConnection connection = new SqlConnection();
+        private static readonly Mock<IConfiguration> config = new Mock<IConfiguration>();
+        private static readonly Mock<ILoggerFactory> loggerFactory = new Mock<ILoggerFactory>();
+        private static readonly SqlConnection connection = new SqlConnection();
 
         [Fact]
         public void TestNullConfiguration()
