@@ -46,7 +46,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             private readonly SqlConnection _connection;
             private readonly SqlAttribute _attribute;
-            private T _currentRow;
             private SqlDataReader _reader;
             private readonly List<string> _cols;
 
@@ -71,7 +70,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <see cref="MoveNextAsync"/> has moved through all of the rows returned by the query, it will return 
             /// the last row of the query.
             /// </summary>
-            public T Current => _currentRow;
+            public T Current { get; private set; }
 
             /// <summary>
             /// Closes the SQL connection and resources associated with reading the results of the query
@@ -112,7 +111,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 if (await _reader.ReadAsync())
                 {
-                    _currentRow = JsonConvert.DeserializeObject<T>(SerializeRow());
+                    Current = JsonConvert.DeserializeObject<T>(SerializeRow());
                     return true;
                 }
                 else
