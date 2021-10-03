@@ -250,7 +250,7 @@ namespace SqlExtension.Tests
             list.Add(data2);
             list.Add(data3);
             IEnumerable<TestData> enActual = await converter.Object.ConvertAsync(arg, new CancellationToken());
-            Assert.True(enActual.ToList<TestData>().SequenceEqual<TestData>(list));
+            Assert.True(enActual.ToList().SequenceEqual(list));
         }
 
         [Fact]
@@ -272,7 +272,7 @@ namespace SqlExtension.Tests
             };
             list.Add(data);
             IEnumerable<TestData> enActual = await converter.Object.ConvertAsync(arg, new CancellationToken());
-            Assert.True(enActual.ToList<TestData>().SequenceEqual<TestData>(list));
+            Assert.True(enActual.ToList().SequenceEqual(list));
 
             // SQL data's columns are named differently than the POCO's fields
             json = "[{ \"ID\":1,\"Product Name\":\"Broom\",\"Price\":32.5,\"Timessstamp\":\"2019-11-22T06:32:15\"}]";
@@ -286,7 +286,7 @@ namespace SqlExtension.Tests
             };
             list.Add(data);
             enActual = await converter.Object.ConvertAsync(arg, new CancellationToken());
-            Assert.True(enActual.ToList<TestData>().SequenceEqual<TestData>(list));
+            Assert.True(enActual.ToList().SequenceEqual(list));
 
             // Confirm that the JSON fields are case-insensitive (technically malformed string, but still works)
             json = "[{ \"id\":1,\"nAme\":\"Broom\",\"coSt\":32.5,\"TimEStamp\":\"2019-11-22T06:32:15\"}]";
@@ -301,7 +301,7 @@ namespace SqlExtension.Tests
             };
             list.Add(data);
             enActual = await converter.Object.ConvertAsync(arg, new CancellationToken());
-            Assert.True(enActual.ToList<TestData>().SequenceEqual<TestData>(list));
+            Assert.True(enActual.ToList().SequenceEqual(list));
         }
     }
 }
