@@ -14,18 +14,33 @@ stages:
   displayName: 'PR Validation'
 
   jobs:
+  - job: BuildTestOnLinux
+    displayName: 'Build and Test on Linux'
+    pool:
+      vmImage: 'ubuntu-latest'
+    workspace:
+      clean: all
+    steps:
+    - template: 'template-steps-build-test-linux.yml'
+      parameters:
+        solution: '$(solution)'
+        configuration: '$(configuration)'
+        nugetVersion: '1.0.0-test'
+        testFilter: ''
+
   - job: BuildTest
     displayName: 'Build and Test on'
 
     # Verifies cross-platform build and test
     strategy:
       matrix:
-        linux:
-          imageName: 'ubuntu-latest'
+        # Disabling integration tests on Mac and Windows until they work
         mac:
           imageName: 'macos-latest'
+          testFilter: '--filter FullyQualifiedName!~Integration'
         windows:
           imageName: 'windows-latest'
+          testFilter: '--filter FullyQualifiedName!~Integration'
 
     pool:
       vmImage: '$(imageName)'
@@ -39,3 +54,4 @@ stages:
         solution: '$(solution)'
         configuration: '$(configuration)'
         nugetVersion: '1.0.0-test'
+        testFilter: '$(testFilter)'

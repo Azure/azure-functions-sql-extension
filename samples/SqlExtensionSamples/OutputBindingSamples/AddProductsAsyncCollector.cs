@@ -17,7 +17,7 @@ namespace SqlExtensionSamples
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproducts-asynccollector")]
             HttpRequest req,
-            [Sql("Products", ConnectionStringSetting = "SqlConnectionString")] IAsyncCollector<Product> products)
+            [Sql("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] IAsyncCollector<Product> products)
         {
             List<Product> newProducts = GetNewProducts(5000);
             foreach (Product product in newProducts)

@@ -128,7 +128,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 throw new ArgumentException("The Type of the SQL attribute for an input binding must be either CommandType.Text for a plain text" +
                     "SQL query, or CommandType.StoredProcedure for a stored procedure.");
             }
-            SqlBindingUtilities.ParseParameters(attribute.Parameters, command);
+            ParseParameters(attribute.Parameters, command);
             return command;
         }
 
