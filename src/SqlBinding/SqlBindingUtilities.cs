@@ -82,7 +82,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                            "i.e. \"@param1=param1,@param2=param2\". To specify a null value, use null, as in \"@param1=null,@param2=param2\"." +
                            "To specify an empty string as a value, simply do not add anything after the equals sign, as in \"@param1=,@param2=param2\".");
                     }
-                    if (!items[0].StartsWith("@"))
+                    if (!items[0].StartsWith("@", StringComparison.InvariantCultureIgnoreCase))
                     {
                         throw new ArgumentException("Parameter name must start with \"@\", i.e. \"@param1=param1,@param2=param2\"");
                     }
