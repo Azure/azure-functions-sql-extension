@@ -20,14 +20,14 @@ namespace SqlExtension.Tests.Integration
 
         private async Task<HttpResponseMessage> SendOutputRequest(string functionName, IDictionary<string, string> query = null)
         {
-            string requestUri = $"http://localhost:{Port}/api/{functionName}";
+            string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
 
             if (query != null)
             {
                 requestUri = QueryHelpers.AddQueryString(requestUri, query);
             }
 
-            return await SendGetRequest(requestUri);
+            return await this.SendGetRequest(requestUri);
         }
 
         [Theory]
@@ -43,50 +43,50 @@ namespace SqlExtension.Tests.Integration
                 { "cost", cost.ToString() }
             };
 
-            SendOutputRequest(nameof(SqlExtensionSamples.AddProduct), query).Wait();
+            this.SendOutputRequest(nameof(SqlExtensionSamples.AddProduct), query).Wait();
 
             // Verify result
-            Assert.Equal(name, ExecuteScalar($"select Name from Products where ProductId={id}"));
-            Assert.Equal(cost, ExecuteScalar($"select cost from Products where ProductId={id}"));
+            Assert.Equal(name, this.ExecuteScalar($"select Name from Products where ProductId={id}"));
+            Assert.Equal(cost, this.ExecuteScalar($"select cost from Products where ProductId={id}"));
         }
 
         [Fact]
         public void AddProductArrayTest()
         {
             // First insert some test data
-            ExecuteNonQuery("INSERT INTO Products VALUES (1, 'test', 100)");
-            ExecuteNonQuery("INSERT INTO Products VALUES (2, 'test', 100)");
-            ExecuteNonQuery("INSERT INTO Products VALUES (3, 'test', 100)");
+            this.ExecuteNonQuery("INSERT INTO Products VALUES (1, 'test', 100)");
+            this.ExecuteNonQuery("INSERT INTO Products VALUES (2, 'test', 100)");
+            this.ExecuteNonQuery("INSERT INTO Products VALUES (3, 'test', 100)");
 
-            SendOutputRequest("addproducts-array").Wait();
+            this.SendOutputRequest("addproducts-array").Wait();
 
             // Function call changes first 2 rows to (1, 'Cup', 2) and (2, 'Glasses', 12)
-            Assert.Equal(1, ExecuteScalar("SELECT COUNT(1) FROM Products WHERE Cost = 100"));
-            Assert.Equal(2, ExecuteScalar("SELECT Cost FROM Products WHERE ProductId = 1"));
-            Assert.Equal(2, ExecuteScalar("SELECT ProductId FROM Products WHERE Cost = 12"));
+            Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(1) FROM Products WHERE Cost = 100"));
+            Assert.Equal(2, this.ExecuteScalar("SELECT Cost FROM Products WHERE ProductId = 1"));
+            Assert.Equal(2, this.ExecuteScalar("SELECT ProductId FROM Products WHERE Cost = 12"));
         }
 
         [Fact]
         public void AddProductsCollectorTest()
         {
             // Function should add 5000 rows to the table
-            SendOutputRequest("addproducts-collector").Wait();
+            this.SendOutputRequest("addproducts-collector").Wait();
 
-            Assert.Equal(5000, ExecuteScalar("SELECT COUNT(1) FROM Products"));
+            Assert.Equal(5000, this.ExecuteScalar("SELECT COUNT(1) FROM Products"));
         }
 
         [Fact]
         public void QueueTriggerProductsTest()
         {
-            string uri = $"http://localhost:{Port}/admin/functions/QueueTriggerProducts";
+            string uri = $"http://localhost:{this.Port}/admin/functions/QueueTriggerProducts";
             string json = "{ 'input': 'Test Data' }";
 
-            SendPostRequest(uri, json).Wait();
+            this.SendPostRequest(uri, json).Wait();
 
             Thread.Sleep(5000);
 
             // Function should add 100 rows
-            Assert.Equal(100, ExecuteScalar("SELECT COUNT(1) FROM Products"));
+            Assert.Equal(100, this.ExecuteScalar("SELECT COUNT(1) FROM Products"));
         }
     }
 }

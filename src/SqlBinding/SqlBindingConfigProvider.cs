@@ -28,8 +28,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </exception>
         public SqlBindingConfigProvider(IConfiguration configuration, ILoggerFactory loggerFactory)
         {
-            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+            this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            this._loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
         /// <summary>
@@ -47,11 +47,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 #pragma warning disable CS0618 // Fine to use this for our stuff
             FluentBindingRule<SqlAttribute> inputOutputRule = context.AddBindingRule<SqlAttribute>();
-            var converter = new SqlConverter(_configuration);
+            var converter = new SqlConverter(this._configuration);
             inputOutputRule.BindToInput(converter);
-            inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), _configuration);
-            inputOutputRule.BindToCollector<OpenType>(typeof(SqlAsyncCollectorBuilder<>), _configuration, _loggerFactory);
-            inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), _configuration);
+            inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), this._configuration);
+            inputOutputRule.BindToCollector<OpenType>(typeof(SqlAsyncCollectorBuilder<>), this._configuration, this._loggerFactory);
+            inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), this._configuration);
         }
     }
 }

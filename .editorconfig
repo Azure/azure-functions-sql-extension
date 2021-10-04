@@ -10,7 +10,6 @@ dotnet_analyzer_diagnostic.category-Style.severity = error
 dotnet_analyzer_diagnostic.category-CodeQuality.severity = error
 # Disable warnings from existing issues until we can go through and fix them
 dotnet_diagnostic.IDE0130.severity = silent
-dotnet_diagnostic.IDE0003.severity = silent
 
 #### Core EditorConfig Options ####
 
@@ -30,10 +29,10 @@ dotnet_sort_system_directives_first = true
 file_header_template = Copyright (c) .NET Foundation. All rights reserved.\nLicensed under the MIT License. See License.txt in the project root for license information.
 
 # this. and Me. preferences
-dotnet_style_qualification_for_event = false
-dotnet_style_qualification_for_field = false
-dotnet_style_qualification_for_method = false
-dotnet_style_qualification_for_property = false
+dotnet_style_qualification_for_event = true
+dotnet_style_qualification_for_field = true
+dotnet_style_qualification_for_method = true
+dotnet_style_qualification_for_property = true
 
 # Language keywords vs BCL types preferences
 dotnet_style_predefined_type_for_locals_parameters_members = true
