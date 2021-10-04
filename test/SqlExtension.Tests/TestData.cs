@@ -21,8 +21,8 @@ namespace SqlExtension.Tests
             {
                 return false;
             }
-            return ID == otherData.ID && Cost == otherData.Cost && ((Name == null && otherData.Name == null) ||
-                string.Equals(Name, otherData.Name, StringComparison.OrdinalIgnoreCase)) && Timestamp.Equals(otherData.Timestamp);
+            return this.ID == otherData.ID && this.Cost == otherData.Cost && ((this.Name == null && otherData.Name == null) ||
+                string.Equals(this.Name, otherData.Name, StringComparison.OrdinalIgnoreCase)) && this.Timestamp.Equals(otherData.Timestamp);
         }
 
         public override int GetHashCode()

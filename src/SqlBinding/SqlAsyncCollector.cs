@@ -222,11 +222,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             public TableInformation(IEnumerable<MemberInfo> primaryKeys, IDictionary<string, string> columns, string mergeQuery)
             {
-                PrimaryKeys = primaryKeys;
-                Columns = columns;
-                MergeQuery = mergeQuery;
+                this.PrimaryKeys = primaryKeys;
+                this.Columns = columns;
+                this.MergeQuery = mergeQuery;
 
-                JsonSerializerSettings = new JsonSerializerSettings
+                this.JsonSerializerSettings = new JsonSerializerSettings
                 {
                     ContractResolver = new DynamicPOCOContractResolver(columns)
                 };
