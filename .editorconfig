@@ -12,7 +12,6 @@ dotnet_analyzer_diagnostic.category-CodeQuality.severity = error
 dotnet_diagnostic.IDE0130.severity = silent
 dotnet_diagnostic.IDE0058.severity = silent
 dotnet_diagnostic.IDE0003.severity = silent
-dotnet_diagnostic.IDE0001.severity = silent
 dotnet_diagnostic.IDE0002.severity = silent
 
 #### Core EditorConfig Options ####
