@@ -21,9 +21,9 @@ namespace SqlExtension.Tests.Integration
 
         private async Task<HttpResponseMessage> SendInputRequest(string functionName, string query = "")
         {
-            string requestUri = $"http://localhost:{Port}/api/{functionName}/{query}";
+            string requestUri = $"http://localhost:{this.Port}/api/{functionName}/{query}";
 
-            return await SendGetRequest(requestUri);
+            return await this.SendGetRequest(requestUri);
         }
 
         [Theory]
@@ -33,11 +33,11 @@ namespace SqlExtension.Tests.Integration
         public async void GetProductsTest(int n, int cost)
         {
             // Generate T-SQL to insert n rows of data with cost
-            Product[] products = GetProductsWithSameCost(n, cost);
-            InsertProducts(products);
+            Product[] products = this.GetProductsWithSameCost(n, cost);
+            this.InsertProducts(products);
 
             // Run the function
-            HttpResponseMessage response = await SendInputRequest("getproducts", cost.ToString());
+            HttpResponseMessage response = await this.SendInputRequest("getproducts", cost.ToString());
 
             // Verify result
             string expectedResponse = JsonConvert.SerializeObject(products);
@@ -53,11 +53,11 @@ namespace SqlExtension.Tests.Integration
         public async void GetProductsStoredProcedureTest(int n, int cost)
         {
             // Generate T-SQL to insert n rows of data with cost
-            Product[] products = GetProductsWithSameCost(n, cost);
-            InsertProducts(products);
+            Product[] products = this.GetProductsWithSameCost(n, cost);
+            this.InsertProducts(products);
 
             // Run the function
-            HttpResponseMessage response = await SendInputRequest("getproducts-storedprocedure", cost.ToString());
+            HttpResponseMessage response = await this.SendInputRequest("getproducts-storedprocedure", cost.ToString());
 
             // Verify result
             string expectedResponse = JsonConvert.SerializeObject(products);
@@ -73,16 +73,16 @@ namespace SqlExtension.Tests.Integration
         public async void GetProductsNameEmptyTest(int n, int cost)
         {
             // Add a bunch of noise data
-            InsertProducts(GetProductsWithSameCost(n * 2, cost));
+            this.InsertProducts(this.GetProductsWithSameCost(n * 2, cost));
 
             // Now add the actual test data
-            Product[] products = GetProductsWithSameCostAndName(n, cost, "", n * 2);
-            InsertProducts(products);
+            Product[] products = this.GetProductsWithSameCostAndName(n, cost, "", n * 2);
+            this.InsertProducts(products);
 
-            Assert.Equal(n, ExecuteScalar($"select count(1) from Products where name = '' and cost = {cost}"));
+            Assert.Equal(n, this.ExecuteScalar($"select count(1) from Products where name = '' and cost = {cost}"));
 
             // Run the function
-            HttpResponseMessage response = await SendInputRequest("getproducts-nameempty", cost.ToString());
+            HttpResponseMessage response = await this.SendInputRequest("getproducts-nameempty", cost.ToString());
 
             // Verify result
             string expectedResponse = JsonConvert.SerializeObject(products);
@@ -134,7 +134,7 @@ namespace SqlExtension.Tests.Integration
                 queryBuilder.AppendLine($"INSERT INTO dbo.Products VALUES({p.ProductID}, '{p.Name}', {p.Cost});");
             }
 
-            ExecuteNonQuery(queryBuilder.ToString());
+            this.ExecuteNonQuery(queryBuilder.ToString());
         }
     }
 }

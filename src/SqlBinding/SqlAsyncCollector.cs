@@ -53,9 +53,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </exception>
         public SqlAsyncCollector(IConfiguration configuration, SqlAttribute attribute, ILoggerFactory loggerFactory)
         {
-            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
-            _logger = loggerFactory?.CreateLogger(LogCategories.Bindings) ?? throw new ArgumentNullException(nameof(loggerFactory));
+            this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            this._attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
+            this._logger = loggerFactory?.CreateLogger(LogCategories.Bindings) ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
         /// <summary>
@@ -70,15 +70,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             if (item != null)
             {
-                await _rowLock.WaitAsync();
+                await this._rowLock.WaitAsync();
 
                 try
                 {
-                    _rows.Add(item);
+                    this._rows.Add(item);
                 }
                 finally
                 {
-                    _rowLock.Release();
+                    this._rowLock.Release();
                 }
             }
         }
@@ -93,18 +93,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// automatically. </returns>
         public async Task FlushAsync(CancellationToken cancellationToken = default)
         {
-            await _rowLock.WaitAsync();
+            await this._rowLock.WaitAsync();
             try
             {
-                if (_rows.Count != 0)
+                if (this._rows.Count != 0)
                 {
-                    await UpsertRowsAsync(_rows, _attribute, _configuration);
-                    _rows.Clear();
+                    await this.UpsertRowsAsync(this._rows, this._attribute, this._configuration);
+                    this._rows.Clear();
                 }
             }
             finally
             {
-                _rowLock.Release();
+                this._rowLock.Release();
             }
         }
 
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(10)
                 };
 
-                _logger.LogInformation($"DB and Table: {fullDatabaseAndTableName}. Primary keys: [{string.Join(",", tableInfo.PrimaryKeys.Select(pk => pk.Name))}]. SQL Column and Definitions:  [{string.Join(",", tableInfo.ColumnDefinitions)}]");
+                this._logger.LogInformation($"DB and Table: {fullDatabaseAndTableName}. Primary keys: [{string.Join(",", tableInfo.PrimaryKeys.Select(pk => pk.Name))}]. SQL Column and Definitions:  [{string.Join(",", tableInfo.ColumnDefinitions)}]");
                 cachedTables.Set(cacheKey, tableInfo, policy);
             }
 
@@ -206,7 +206,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <summary>
             /// List of strings containing each column and its type. ex: ["Cost int", "LastChangeDate datetime(7)"]
             /// </summary>
-            public IEnumerable<string> ColumnDefinitions => Columns.Select(c => $"{c.Key} {c.Value}");
+            public IEnumerable<string> ColumnDefinitions => this.Columns.Select(c => $"{c.Key} {c.Value}");
 
             /// <summary>
             /// T-SQL merge statement generated from primary keys
@@ -400,7 +400,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             public DynamicPOCOContractResolver(IDictionary<string, string> sqlColumns)
             {
                 // we only want to serialize POCO properties that correspond to SQL columns
-                _propertiesToSerialize = sqlColumns;
+                this._propertiesToSerialize = sqlColumns;
             }
 
             protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
@@ -412,7 +412,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // Make sure the ordering of columns matches that of SQL
                 // Necessary for proper matching of column names to JSON that is generated for each batch of data
                 IList<JsonProperty> propertiesToSerialize = new List<JsonProperty>(properties.Count);
-                foreach (KeyValuePair<string, string> column in _propertiesToSerialize)
+                foreach (KeyValuePair<string, string> column in this._propertiesToSerialize)
                 {
                     if (properties.ContainsKey(column.Key))
                     {

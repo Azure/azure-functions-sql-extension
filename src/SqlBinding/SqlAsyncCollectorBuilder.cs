@@ -13,13 +13,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public SqlAsyncCollectorBuilder(IConfiguration configuration, ILoggerFactory loggerFactory)
         {
-            _configuration = configuration;
-            _loggerFactory = loggerFactory;
+            this._configuration = configuration;
+            this._loggerFactory = loggerFactory;
         }
 
         IAsyncCollector<T> IConverter<SqlAttribute, IAsyncCollector<T>>.Convert(SqlAttribute attribute)
         {
-            return new SqlAsyncCollector<T>(_configuration, attribute, _loggerFactory);
+            return new SqlAsyncCollector<T>(this._configuration, attribute, this._loggerFactory);
         }
     }
 }

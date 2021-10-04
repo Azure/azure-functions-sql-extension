@@ -52,16 +52,16 @@ namespace SqlExtension.Tests.Integration
 
         public IntegrationTestBase(ITestOutputHelper output)
         {
-            TestOutput = output;
+            this.TestOutput = output;
 
-            SetupDatabase();
+            this.SetupDatabase();
 
-            StartFunctionHost();
+            this.StartFunctionHost();
         }
 
         /// <remarks>
         /// Integration tests depend on a localhost server to be running.
-        /// Either have one running locally with integrated auth, or start a mssql instance in a Docker container 
+        /// Either have one running locally with integrated auth, or start a mssql instance in a Docker container
         /// and set "SA_PASSWORD" as environment variable before running "dotnet tets".
         /// </remarks>
         private void SetupDatabase()
@@ -86,27 +86,27 @@ namespace SqlExtension.Tests.Integration
                 connectionStringBuilder.Password = password;
             }
 
-            MasterConnectionString = connectionStringBuilder.ToString();
+            this.MasterConnectionString = connectionStringBuilder.ToString();
 
             // Create database
-            DatabaseName = TestUtils.GetUniqueDBName("SqlBindingsTest");
-            using (var masterConnection = new SqlConnection(MasterConnectionString))
+            this.DatabaseName = TestUtils.GetUniqueDBName("SqlBindingsTest");
+            using (var masterConnection = new SqlConnection(this.MasterConnectionString))
             {
                 masterConnection.Open();
-                TestUtils.ExecuteNonQuery(masterConnection, $"CREATE DATABASE [{DatabaseName}]");
+                TestUtils.ExecuteNonQuery(masterConnection, $"CREATE DATABASE [{this.DatabaseName}]");
             }
 
             // Setup connection
-            connectionStringBuilder.InitialCatalog = DatabaseName;
-            Connection = new SqlConnection(connectionStringBuilder.ToString());
-            Connection.Open();
+            connectionStringBuilder.InitialCatalog = this.DatabaseName;
+            this.Connection = new SqlConnection(connectionStringBuilder.ToString());
+            this.Connection.Open();
 
             // Create the database definition
             // Ideally all the sql files would be in a sqlproj and can just be deployed
-            string databaseScriptsPath = Path.Combine(GetPathToSamplesBin(), "Database");
+            string databaseScriptsPath = Path.Combine(this.GetPathToSamplesBin(), "Database");
             foreach (string file in Directory.EnumerateFiles(databaseScriptsPath, "*.sql"))
             {
-                ExecuteNonQuery(File.ReadAllText(file));
+                this.ExecuteNonQuery(File.ReadAllText(file));
             }
 
             // Set SqlConnectionString env var for the Function to use
@@ -115,25 +115,25 @@ namespace SqlExtension.Tests.Integration
 
         private void StartFunctionHost()
         {
-            FunctionHost = new Process
+            this.FunctionHost = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = GetFunctionsCoreToolsPath(),
-                    Arguments = $"start --verbose --port {Port}",
-                    WorkingDirectory = Path.Combine(GetPathToSamplesBin(), "SqlExtensionSamples"),
+                    FileName = this.GetFunctionsCoreToolsPath(),
+                    Arguments = $"start --verbose --port {this.Port}",
+                    WorkingDirectory = Path.Combine(this.GetPathToSamplesBin(), "SqlExtensionSamples"),
                     WindowStyle = ProcessWindowStyle.Hidden,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false
                 }
             };
-            FunctionHost.OutputDataReceived += TestOutputHandler;
-            FunctionHost.ErrorDataReceived += TestOutputHandler;
+            this.FunctionHost.OutputDataReceived += this.TestOutputHandler;
+            this.FunctionHost.ErrorDataReceived += this.TestOutputHandler;
 
-            FunctionHost.Start();
-            FunctionHost.BeginOutputReadLine();
-            FunctionHost.BeginErrorReadLine();
+            this.FunctionHost.Start();
+            this.FunctionHost.BeginOutputReadLine();
+            this.FunctionHost.BeginErrorReadLine();
 
             Thread.Sleep(5000);     // This is just to give some time to func host to start, maybe there's a better way to do this (check if port's open?)
         }
@@ -164,14 +164,14 @@ namespace SqlExtension.Tests.Integration
         {
             if (e != null && !string.IsNullOrEmpty(e.Data))
             {
-                TestOutput.WriteLine(e.Data);
+                this.TestOutput.WriteLine(e.Data);
             }
         }
 
         protected async Task<HttpResponseMessage> SendGetRequest(string requestUri, bool verifySuccess = true)
         {
             string timeStamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", System.Globalization.CultureInfo.InvariantCulture);
-            TestOutput.WriteLine($"[{timeStamp}] Sending GET request: {requestUri}");
+            this.TestOutput.WriteLine($"[{timeStamp}] Sending GET request: {requestUri}");
 
             if (string.IsNullOrEmpty(requestUri))
             {
@@ -191,7 +191,7 @@ namespace SqlExtension.Tests.Integration
 
         protected async Task<HttpResponseMessage> SendPostRequest(string requestUri, string json, bool verifySuccess = true)
         {
-            TestOutput.WriteLine("Sending POST request: " + requestUri);
+            this.TestOutput.WriteLine("Sending POST request: " + requestUri);
 
             if (string.IsNullOrEmpty(requestUri))
             {
@@ -215,7 +215,7 @@ namespace SqlExtension.Tests.Integration
         /// </summary>
         protected void ExecuteNonQuery(string commandText)
         {
-            TestUtils.ExecuteNonQuery(Connection, commandText);
+            TestUtils.ExecuteNonQuery(this.Connection, commandText);
         }
 
         /// <summary>
@@ -223,7 +223,7 @@ namespace SqlExtension.Tests.Integration
         /// </summary>
         protected object ExecuteScalar(string commandText)
         {
-            return TestUtils.ExecuteScalar(Connection, commandText);
+            return TestUtils.ExecuteScalar(this.Connection, commandText);
         }
 
         public string GetPathToSamplesBin()
@@ -233,25 +233,25 @@ namespace SqlExtension.Tests.Integration
 
         public void Dispose()
         {
-            Connection.Close();
+            this.Connection.Close();
 
             try
             {
                 // Drop the test database
-                using var masterConnection = new SqlConnection(MasterConnectionString);
+                using var masterConnection = new SqlConnection(this.MasterConnectionString);
                 masterConnection.Open();
-                TestUtils.ExecuteNonQuery(masterConnection, $"DROP DATABASE IF EXISTS {DatabaseName}");
+                TestUtils.ExecuteNonQuery(masterConnection, $"DROP DATABASE IF EXISTS {this.DatabaseName}");
             }
             catch (Exception e)
             {
-                TestOutput.WriteLine($"Failed to drop {DatabaseName}, Error: {e.Message}");
+                this.TestOutput.WriteLine($"Failed to drop {this.DatabaseName}, Error: {e.Message}");
             }
             finally
             {
-                Connection.Dispose();
+                this.Connection.Dispose();
 
-                FunctionHost.Kill();
-                FunctionHost.Dispose();
+                this.FunctionHost.Kill();
+                this.FunctionHost.Dispose();
             }
         }
     }
