@@ -6,7 +6,6 @@ using Microsoft.Azure.WebJobs.Description;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlConverters;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Config;
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -49,7 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 #pragma warning disable CS0618 // Fine to use this for our stuff
             FluentBindingRule<SqlAttribute> inputOutputRule = context.AddBindingRule<SqlAttribute>();
             var converter = new SqlConverter(_configuration);
-            inputOutputRule.BindToInput<SqlCommand>(converter);
+            inputOutputRule.BindToInput(converter);
             inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), _configuration);
             inputOutputRule.BindToCollector<OpenType>(typeof(SqlAsyncCollectorBuilder<>), _configuration, _loggerFactory);
             inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), _configuration);
