@@ -21,7 +21,7 @@ using Newtonsoft.Json.Serialization;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
-    internal class SqlAsyncCollector<T> : IAsyncCollector<T>
+    internal class SqlAsyncCollector<T> : IAsyncCollector<T>, IDisposable
     {
         private const string RowDataParameter = "@rowData";
         private const string ColumnName = "COLUMN_NAME";
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             if (item != null)
             {
-                await _rowLock.WaitAsync();
+                await _rowLock.WaitAsync(cancellationToken);
 
                 try
                 {
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// automatically. </returns>
         public async Task FlushAsync(CancellationToken cancellationToken = default)
         {
-            await _rowLock.WaitAsync();
+            await _rowLock.WaitAsync(cancellationToken);
             try
             {
                 if (_rows.Count != 0)
@@ -425,6 +425,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 return propertiesToSerialize;
             }
+        }
+
+        public void Dispose()
+        {
+            this._rowLock.Dispose();
         }
     }
 }
