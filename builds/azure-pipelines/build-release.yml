@@ -24,20 +24,21 @@ stages:
 
   jobs:
   - job: BuildTestPublish
-    displayName: 'Release: Build, Test and Publish on Windows'
+    displayName: 'Release: Build, Test and Publish on Linux'
 
     pool:
-      vmImage: 'windows-latest'
+      vmImage: 'ubuntu-latest'
 
     workspace:
       clean: all
 
     steps:
-      - template: 'template-steps-build-test.yml'
+      - template: 'template-steps-build-test-linux.yml'
         parameters:
           solution: '$(solution)'
           configuration: '$(configuration)'
           nugetVersion: '$(nugetVersion)'
+          testFilter: ''
 
       - template: 'template-steps-publish.yml'
         parameters:
