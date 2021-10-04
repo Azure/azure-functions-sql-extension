@@ -114,7 +114,7 @@ namespace SqlExtension.Tests
             Assert.Equal(System.Data.CommandType.Text, command.CommandType);
             Assert.Equal(query, command.CommandText);
 
-            string procedure = "StoredProceudre";
+            string procedure = "StoredProcedure";
             attribute = new SqlAttribute(procedure)
             {
                 CommandType = System.Data.CommandType.StoredProcedure

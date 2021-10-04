@@ -26,19 +26,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </exception>
         public SqlAsyncEnumerable(SqlConnection connection, SqlAttribute attribute)
         {
-            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
-            _attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
+            this._connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            this._attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
         }
         /// <summary>
         /// Returns the enumerator associated with this enumerable. The enumerator will execute the query specified
-        /// in attribute and "lazily" grab the SQL rows corresponding to the query result. It will only read a 
+        /// in attribute and "lazily" grab the SQL rows corresponding to the query result. It will only read a
         /// row into memory if <see cref="MoveNextAsync"/> is called
         /// </summary>
         /// <param name="cancellationToken">The cancellationToken is not used in this method</param>
         /// <returns>The enumerator</returns>
         public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
         {
-            return new SqlAsyncEnumerator(_connection, _attribute);
+            return new SqlAsyncEnumerator(this._connection, this._attribute);
         }
 
 
@@ -59,15 +59,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </exception>
             public SqlAsyncEnumerator(SqlConnection connection, SqlAttribute attribute)
             {
-                _connection = connection ?? throw new ArgumentNullException(nameof(connection));
-                _attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
-                _cols = new List<string>();
+                this._connection = connection ?? throw new ArgumentNullException(nameof(connection));
+                this._attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
+                this._cols = new List<string>();
             }
 
             /// <summary>
             /// Returns the current row of the query result that the enumerator is on. If Current is called before a call
-            /// to <see cref="MoveNextAsync"/> is ever made, it will return null. If Current is called after 
-            /// <see cref="MoveNextAsync"/> has moved through all of the rows returned by the query, it will return 
+            /// to <see cref="MoveNextAsync"/> is ever made, it will return null. If Current is called after
+            /// <see cref="MoveNextAsync"/> has moved through all of the rows returned by the query, it will return
             /// the last row of the query.
             /// </summary>
             public T Current { get; private set; }
@@ -78,40 +78,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns></returns>
             public ValueTask DisposeAsync()
             {
-                // Doesn't seem like there's an async version of closing the reader/connection 
-                _reader.Close();
-                _connection.Close();
+                // Doesn't seem like there's an async version of closing the reader/connection
+                this._reader.Close();
+                this._connection.Close();
                 return new ValueTask(Task.CompletedTask);
             }
 
             /// <summary>
             /// Moves the enumerator to the next row of the SQL query result
             /// </summary>
-            /// <returns> 
+            /// <returns>
             /// True if there is another row left in the query to process, or false if this was the last row
             /// </returns>
             public ValueTask<bool> MoveNextAsync()
             {
-                return new ValueTask<bool>(GetNextRowAsync());
+                return new ValueTask<bool>(this.GetNextRowAsync());
             }
 
             /// <summary>
-            /// Attempts to grab the next row of the SQL query result. 
+            /// Attempts to grab the next row of the SQL query result.
             /// </summary>
             /// <returns>
             /// True if there is another row left in the query to process, or false if this was the last row
             /// </returns>
             private async Task<bool> GetNextRowAsync()
             {
-                if (_reader == null)
+                if (this._reader == null)
                 {
-                    using SqlCommand command = SqlBindingUtilities.BuildCommand(_attribute, _connection);
+                    using SqlCommand command = SqlBindingUtilities.BuildCommand(this._attribute, this._connection);
                     await command.Connection.OpenAsync();
-                    _reader = await command.ExecuteReaderAsync();
+                    this._reader = await command.ExecuteReaderAsync();
                 }
-                if (await _reader.ReadAsync())
+                if (await this._reader.ReadAsync())
                 {
-                    Current = JsonConvert.DeserializeObject<T>(SerializeRow());
+                    this.Current = JsonConvert.DeserializeObject<T>(this.SerializeRow());
                     return true;
                 }
                 else
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns>JSON string version of the SQL row</returns>
             private string SerializeRow()
             {
-                return JsonConvert.SerializeObject(SqlBindingUtilities.BuildDictionaryFromSqlRow(_reader, _cols));
+                return JsonConvert.SerializeObject(SqlBindingUtilities.BuildDictionaryFromSqlRow(this._reader, this._cols));
             }
         }
     }
