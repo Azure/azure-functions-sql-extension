@@ -10,7 +10,6 @@ dotnet_analyzer_diagnostic.category-Style.severity = error
 dotnet_analyzer_diagnostic.category-CodeQuality.severity = error
 # Disable warnings from existing issues until we can go through and fix them
 dotnet_diagnostic.IDE0130.severity = silent
-dotnet_diagnostic.IDE0058.severity = silent
 dotnet_diagnostic.IDE0003.severity = silent
 dotnet_diagnostic.IDE0002.severity = silent
 
@@ -126,7 +125,9 @@ csharp_style_prefer_index_operator = true
 csharp_style_prefer_range_operator = true
 csharp_style_throw_expression = true
 csharp_style_unused_value_assignment_preference = discard_variable
-csharp_style_unused_value_expression_statement_preference = discard_variable
+# Disable IDE0058 since it causes a lot of noise/suppressions which doesn't seem worth it to have currently
+dotnet_diagnostic.IDE0058.severity = silent
+# csharp_style_unused_value_expression_statement_preference = discard_variable
 
 # 'using' directive preferences
 csharp_using_directive_placement = outside_namespace
