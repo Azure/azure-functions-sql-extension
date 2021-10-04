@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </exception>
             public SqlConverter(IConfiguration configuration)
             {
-                _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+                this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             }
 
             /// <summary>
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             public SqlCommand Convert(SqlAttribute attribute)
             {
                 return SqlBindingUtilities.BuildCommand(attribute, SqlBindingUtilities.BuildConnection(
-                    attribute.ConnectionStringSetting, _configuration));
+                    attribute.ConnectionStringSetting, this._configuration));
             }
 
         }
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </exception>
             public SqlGenericsConverter(IConfiguration configuration)
             {
-                _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+                this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             }
 
             /// <summary>
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns>An IEnumerable containing the rows read from the user's database in the form of the user-defined POCO</returns>
             public async Task<IEnumerable<T>> ConvertAsync(SqlAttribute attribute, CancellationToken cancellationToken)
             {
-                string json = await BuildItemFromAttributeAsync(attribute);
+                string json = await this.BuildItemFromAttributeAsync(attribute);
                 return JsonConvert.DeserializeObject<IEnumerable<T>>(json);
             }
 
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </returns>
             async Task<string> IAsyncConverter<SqlAttribute, string>.ConvertAsync(SqlAttribute attribute, CancellationToken cancellationToken)
             {
-                return await BuildItemFromAttributeAsync(attribute);
+                return await this.BuildItemFromAttributeAsync(attribute);
             }
 
             /// <summary>
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns></returns>
             public virtual async Task<string> BuildItemFromAttributeAsync(SqlAttribute attribute)
             {
-                using SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, _configuration);
+                using SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, this._configuration);
                 // Ideally, we would like to move away from using SqlDataAdapter both here and in the
                 // SqlAsyncCollector since it does not support asynchronous operations.
                 // There is a GitHub issue open to track this
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             IAsyncEnumerable<T> IConverter<SqlAttribute, IAsyncEnumerable<T>>.Convert(SqlAttribute attribute)
             {
                 return new SqlAsyncEnumerable<T>(SqlBindingUtilities.BuildConnection(
-                    attribute.ConnectionStringSetting, _configuration), attribute);
+                    attribute.ConnectionStringSetting, this._configuration), attribute);
             }
         }
     }

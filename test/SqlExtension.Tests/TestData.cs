@@ -27,7 +27,7 @@ namespace SqlExtension.Tests
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(ID, Name, Cost, Timestamp);
+            return HashCode.Combine(this.ID, this.Name, this.Cost, this.Timestamp);
         }
     }
 }
