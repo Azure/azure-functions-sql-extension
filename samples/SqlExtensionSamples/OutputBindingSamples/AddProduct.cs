@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using static SqlExtensionSamples.ProductUtilities;
 
 namespace SqlExtensionSamples
 {
@@ -15,7 +14,7 @@ namespace SqlExtensionSamples
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct")]
             HttpRequest req,
-            [Sql("Products", ConnectionStringSetting = "SqlConnectionString")] out Product product)
+            [Sql("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] out Product product)
         {
             product = new Product
             {
