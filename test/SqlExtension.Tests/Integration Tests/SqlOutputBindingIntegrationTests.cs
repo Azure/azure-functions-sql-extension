@@ -98,17 +98,12 @@ namespace SqlExtension.Tests.Integration
             // However the timer starts as soon as the Functions host starts, so we need to take that into account when calculating how long to wait.
             // In total we will wait 60 seconds + 1 ms which should allow the function to run twice, generating 2000 rows of data.
 
-            //string uri = $"http://localhost:{this.Port}/admin/functions/TimerTriggerProducts";
-            //string json = "{ 'input': 'Test Data' }";
-
-            //this.SendPostRequest(uri, json).Wait();
-
             TimeSpan elapsed = DateTime.Now.Subtract(this.FunctionHost.StartTime);
             TimeSpan wait = new TimeSpan(TimeSpan.TicksPerMinute + TimeSpan.TicksPerMillisecond).Subtract(elapsed);
 
             Thread.Sleep(wait);
 
-            Assert.Equal(3000, this.ExecuteScalar("SELECT COUNT(1) FROM Products WHERE ProductId >= 10000"));
+            Assert.Equal(2000, this.ExecuteScalar("SELECT COUNT(1) FROM Products WHERE ProductId >= 10000"));
         }
     }
 }
