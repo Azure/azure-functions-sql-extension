@@ -97,5 +97,20 @@ namespace SqlExtension.Tests.Integration
             // Function should add 100 rows
             Assert.Equal(100, this.ExecuteScalar("SELECT COUNT(1) FROM Products"));
         }
+
+        [Fact]
+        public void TimerTriggerProductsTest()
+        {
+            // Timer trigger function requires local storage to be running
+            this.StartAzurite();
+            this.StartFunctionHost(nameof(TimerTriggerProducts));
+
+            // Since this function runs on a schedule (every 5 seconds), we don't need to invoke it.
+            // We will wait 6 seconds to guarantee that it has been fired at least once, and check that at least 1000 rows of data has been added.
+            Thread.Sleep(6000);
+
+            int rowsAdded = (int)this.ExecuteScalar("SELECT COUNT(1) FROM Products");
+            Assert.True(rowsAdded >= 1000);
+        }
     }
 }
