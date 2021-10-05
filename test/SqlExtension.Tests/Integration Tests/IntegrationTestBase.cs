@@ -252,11 +252,8 @@ namespace SqlExtension.Tests.Integration
             {
                 this.Connection.Dispose();
 
-                if (this.FunctionHost != null)
-                {
-                    this.FunctionHost.Kill();
-                    this.FunctionHost.Dispose();
-                }
+                this.FunctionHost?.Kill();
+                this.FunctionHost?.Dispose();
             }
         }
     }
