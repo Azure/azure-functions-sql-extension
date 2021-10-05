@@ -8,14 +8,18 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 using static SqlExtensionSamples.ProductUtilities;
 
-namespace SqlExtensionSamples.TriggerBindingSamples
+namespace SqlExtensionSamples
 {
     public static class TimerTriggerProducts
     {
         private static int _executionNumber = 0;
+
+        /// <summary>
+        /// This timer function runs every 5 seconds, each time it upserts 1000 rows of data.
+        /// </summary>
         [FunctionName("TimerTriggerProducts")]
         public static void Run(
-            [TimerTrigger("0 */3 * * * *")] TimerInfo req, ILogger log,
+            [TimerTrigger("*/5 * * * * *")] TimerInfo req, ILogger log,
             [Sql("Products", ConnectionStringSetting = "SqlConnectionString")] ICollector<Product> products)
         {
             int totalUpserts = 1000;
@@ -23,9 +27,9 @@ namespace SqlExtensionSamples.TriggerBindingSamples
 
             var sw = new Stopwatch();
             sw.Start();
-                    
-            List<Product> newProducts = GetNewProductsRandomized(totalUpserts, _executionNumber * 100);
-            foreach (var product in newProducts)
+
+            List<Product> newProducts = GetNewProducts(totalUpserts);
+            foreach (Product product in newProducts)
             {
                 products.Add(product);
             }
