@@ -15,7 +15,7 @@ namespace SqlExtensionSamples
         private static int _executionNumber = 0;
 
         /// <summary>
-        /// This timer function runs every 5 seconds. Each time it generates 1000 rows of data, starting at a ProductID of 10000.
+        /// This timer function runs every 5 seconds, each time it upserts 1000 rows of data.
         /// </summary>
         [FunctionName("TimerTriggerProducts")]
         public static void Run(

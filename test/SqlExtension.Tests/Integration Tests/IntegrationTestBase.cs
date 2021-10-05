@@ -25,7 +25,8 @@ namespace SqlExtension.Tests.Integration
         private Process FunctionHost;
 
         /// <summary>
-        /// Host process for Azurite emulator for local Azure Storage, required by some trigger functions.
+        /// Host process for Azurite local storage emulator. This is required for non-HTTP trigger functions:
+        /// https://docs.microsoft.com/azure/azure-functions/functions-develop-local
         /// </summary>
         private Process AzuriteHost;
 
