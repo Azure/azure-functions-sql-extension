@@ -11,11 +11,10 @@ namespace SqlExtensionSamples
         /// <summary>
         /// Returns a list of <paramref name="num"/> Products with sequential IDs, a cost of 100, and "test" as name.
         /// </summary>
-        /// <param name="start">Indicates where sequential IDs should start at, defaults to 0.</param>
-        public static List<Product> GetNewProducts(int num, int start = 0)
+        public static List<Product> GetNewProducts(int num)
         {
             var products = new List<Product>();
-            for (int i = start; i < num + start; i++)
+            for (int i = 0; i < num; i++)
             {
                 var product = new Product
                 {

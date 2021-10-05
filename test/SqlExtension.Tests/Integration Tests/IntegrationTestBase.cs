@@ -22,7 +22,7 @@ namespace SqlExtension.Tests.Integration
         /// <summary>
         /// Host process for Azure Function CLI
         /// </summary>
-        protected Process FunctionHost;
+        private Process FunctionHost;
 
         /// <summary>
         /// Host process for Azurite emulator for local Azure Storage, required by some trigger functions.
