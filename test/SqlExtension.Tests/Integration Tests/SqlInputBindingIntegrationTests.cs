@@ -27,7 +27,7 @@ namespace SqlExtension.Tests.Integration
         }
 
         [Theory]
-        [InlineData(0, 1000)]
+        [InlineData(0, 100)]
         [InlineData(1, -500)]
         [InlineData(100, 500)]
         public async void GetProductsTest(int n, int cost)
