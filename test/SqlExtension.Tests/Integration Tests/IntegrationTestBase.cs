@@ -55,8 +55,6 @@ namespace SqlExtension.Tests.Integration
             this.TestOutput = output;
 
             this.SetupDatabase();
-
-            this.StartFunctionHost();
         }
 
         /// <remarks>
@@ -113,14 +111,18 @@ namespace SqlExtension.Tests.Integration
             Environment.SetEnvironmentVariable("SqlConnectionString", connectionStringBuilder.ToString());
         }
 
-        private void StartFunctionHost()
+        /// <summary>
+        /// This starts the Functions runtime with the specified function.
+        /// Note the functionName is different than the route.
+        /// </summary>
+        protected void StartFunctionHost(string functionName)
         {
             this.FunctionHost = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = this.GetFunctionsCoreToolsPath(),
-                    Arguments = $"start --verbose --port {this.Port}",
+                    Arguments = $"start --verbose --port {this.Port} --functions {functionName}",
                     WorkingDirectory = Path.Combine(this.GetPathToSamplesBin(), "SqlExtensionSamples"),
                     WindowStyle = ProcessWindowStyle.Hidden,
                     RedirectStandardOutput = true,
@@ -250,8 +252,8 @@ namespace SqlExtension.Tests.Integration
             {
                 this.Connection.Dispose();
 
-                this.FunctionHost.Kill();
-                this.FunctionHost.Dispose();
+                this.FunctionHost?.Kill();
+                this.FunctionHost?.Dispose();
             }
         }
     }
