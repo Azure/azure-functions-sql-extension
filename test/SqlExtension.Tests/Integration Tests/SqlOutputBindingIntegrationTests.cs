@@ -96,10 +96,10 @@ namespace SqlExtension.Tests.Integration
         {
             // Since this function runs on a schedule (every 30 seconds), we don't need to invoke it.
             // However the timer starts as soon as the Functions host starts, so we need to take that into account when calculating how long to wait.
-            // In total we will wait 60 seconds + 1 ms which should allow the function to run twice, generating 2000 rows of data.
+            // In total we will wait 61 secondswhich should allow the function to run twice, generating 2000 rows of data.
 
             TimeSpan elapsed = DateTime.Now.Subtract(this.FunctionHost.StartTime);
-            TimeSpan wait = new TimeSpan(TimeSpan.TicksPerMinute + TimeSpan.TicksPerMillisecond).Subtract(elapsed);
+            TimeSpan wait = new TimeSpan(TimeSpan.TicksPerSecond * 61).Subtract(elapsed);
 
             Thread.Sleep(wait);
 
