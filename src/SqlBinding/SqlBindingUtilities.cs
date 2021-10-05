@@ -4,8 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using Microsoft.SqlServer.TransactSql.ScriptDom;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -162,8 +164,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Returns schema and tableName with quotes around them.
-        /// If there is no schema in fullName, SCHEMA_NAME is returned as schema.
+        /// Use ScriptDom to parse schema and tableName and return them with quotes.
+        /// If there is no schema in fullName, SCHEMA_NAME() is returned as schema.
         /// </summary>
         /// <param name="fullName">
         /// Full name of table, including schema (if exists).
@@ -173,21 +175,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // ensure names are properly escaped
             string escapedFullName = fullName.Replace("'", "''");
 
-            // defaults
-            quotedTableName = $"'{escapedFullName}'";
-            quotedSchema = "SCHEMA_NAME()"; // default to user schema
+            var parser = new TSql150Parser(false);
+            var stringReader = new StringReader(escapedFullName);
+            SchemaObjectName tree = parser.ParseSchemaObjectName(stringReader, out IList<ParseError> errors);
 
-            // remove [ ] from name if necessary
-            string cleanName = escapedFullName.Replace("]", string.Empty).Replace("[", string.Empty);
-
-            // if in format schema.table, split into two parts for query
-            string[] pieces = cleanName.Split('.');
-
-            if (pieces.Length == 2)
+            foreach (ParseError err in errors)
             {
-                quotedSchema = $"'{pieces[0]}'";
-                quotedTableName = $"'{pieces[1]}'";
+                Console.WriteLine(err.Message);
             }
+
+            var visitor = new Vistor();
+            tree.Accept(visitor);
+            quotedSchema = visitor.quotedSchema;
+            quotedTableName = visitor.quotedTableName;
+        }
+    }
+
+    public class Vistor : TSqlFragmentVisitor
+    {
+        internal string quotedSchema;
+        internal string quotedTableName;
+
+        public override void Visit(SchemaObjectName node)
+        {
+            this.quotedSchema = node.SchemaIdentifier != null ? $"'{node.SchemaIdentifier.Value}'" : "SCHEMA_NAME()";
+            this.quotedTableName = $"'{node.BaseIdentifier.Value}'";
         }
     }
 }
