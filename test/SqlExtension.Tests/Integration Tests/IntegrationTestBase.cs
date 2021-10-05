@@ -141,17 +141,19 @@ namespace SqlExtension.Tests.Integration
         private string GetFunctionsCoreToolsPath()
         {
             // Determine npm install path from either env var set by pipeline or OS defaults
-            string nodeModulesPath = Environment.GetEnvironmentVariable("node_modules_path");
-            if (string.IsNullOrEmpty(nodeModulesPath))
+            string modulesPath = Environment.GetEnvironmentVariable("node_modules_path");
+            if (string.IsNullOrEmpty(modulesPath))
             {
-                nodeModulesPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
-                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\node_modules\") :
-                    @"/usr/local/lib/node_modules";
+                // Note that on Mac, we're looking for the default install location for brew packages, since that's what's recommended by the AF extension
+                modulesPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                    ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\node_modules\")
+                    : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? @"/usr/local/bin" : @"/usr/local/lib/node_modules";
             }
 
             string funcExe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "func.exe" : "func";
-            string funcPath = Path.Combine(nodeModulesPath, "azure-functions-core-tools", "bin", funcExe);
-
+            string funcPath = !RuntimeInformation.IsOSPlatform(OSPlatform.OSX)
+                ? Path.Combine(modulesPath, "azure-functions-core-tools", "bin", funcExe)
+                : Path.Combine(modulesPath, funcExe);
             if (!File.Exists(funcPath))
             {
                 throw new FileNotFoundException("Azure Function Core Tools not found at " + funcPath);
