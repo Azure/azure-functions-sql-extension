@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.WebUtilities;
+using SqlExtensionSamples;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -37,6 +38,8 @@ namespace SqlExtension.Tests.Integration
         [InlineData(-500, "ABCD", 580)]
         public void AddProductTest(int id, string name, int cost)
         {
+            this.StartFunctionHost(nameof(AddProduct));
+
             var query = new Dictionary<string, string>()
             {
                 { "id", id.ToString() },
@@ -44,7 +47,7 @@ namespace SqlExtension.Tests.Integration
                 { "cost", cost.ToString() }
             };
 
-            this.SendOutputRequest(nameof(SqlExtensionSamples.AddProduct), query).Wait();
+            this.SendOutputRequest(nameof(AddProduct), query).Wait();
 
             // Verify result
             Assert.Equal(name, this.ExecuteScalar($"select Name from Products where ProductId={id}"));
@@ -54,6 +57,8 @@ namespace SqlExtension.Tests.Integration
         [Fact]
         public void AddProductArrayTest()
         {
+            this.StartFunctionHost(nameof(AddProductsArray));
+
             // First insert some test data
             this.ExecuteNonQuery("INSERT INTO Products VALUES (1, 'test', 1000)");
             this.ExecuteNonQuery("INSERT INTO Products VALUES (2, 'test', 1000)");
@@ -70,6 +75,8 @@ namespace SqlExtension.Tests.Integration
         [Fact]
         public void AddProductsCollectorTest()
         {
+            this.StartFunctionHost(nameof(AddProductsCollector));
+
             // Function should add 5000 rows to the table
             this.SendOutputRequest("addproducts-collector").Wait();
 
@@ -80,6 +87,8 @@ namespace SqlExtension.Tests.Integration
         [Fact]
         public void QueueTriggerProductsTest()
         {
+            this.StartFunctionHost(nameof(QueueTriggerProducts));
+
             string uri = $"http://localhost:{this.Port}/admin/functions/QueueTriggerProducts";
             string json = "{ 'input': 'Test Data' }";
 

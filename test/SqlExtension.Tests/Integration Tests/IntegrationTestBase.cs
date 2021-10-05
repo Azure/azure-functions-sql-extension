@@ -60,10 +60,6 @@ namespace SqlExtension.Tests.Integration
             this.TestOutput = output;
 
             this.SetupDatabase();
-
-            this.StartAzurite();
-
-            this.StartFunctionHost();
         }
 
         /// <remarks>
@@ -120,7 +116,10 @@ namespace SqlExtension.Tests.Integration
             Environment.SetEnvironmentVariable("SqlConnectionString", connectionStringBuilder.ToString());
         }
 
-        private void StartAzurite()
+        /// <summary>
+        /// This starts the Azurite storage emulator.
+        /// </summary>
+        protected void StartAzurite()
         {
             this.AzuriteHost = new Process()
             {
@@ -135,14 +134,18 @@ namespace SqlExtension.Tests.Integration
             this.AzuriteHost.Start();
         }
 
-        private void StartFunctionHost()
+        /// <summary>
+        /// This starts the Functions runtime with the specified function.
+        /// Note the functionName is different than the route.
+        /// </summary>
+        protected void StartFunctionHost(string functionName)
         {
             this.FunctionHost = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = this.GetFunctionsCoreToolsPath(),
-                    Arguments = $"start --verbose --port {this.Port}",
+                    Arguments = $"start --verbose --port {this.Port} --functions {functionName}",
                     WorkingDirectory = Path.Combine(this.GetPathToSamplesBin(), "SqlExtensionSamples"),
                     WindowStyle = ProcessWindowStyle.Hidden,
                     RedirectStandardOutput = true,
@@ -272,11 +275,11 @@ namespace SqlExtension.Tests.Integration
             {
                 this.Connection.Dispose();
 
-                this.FunctionHost.Kill();
-                this.FunctionHost.Dispose();
+                this.FunctionHost?.Kill();
+                this.FunctionHost?.Dispose();
 
-                this.AzuriteHost.Kill();
-                this.AzuriteHost.Dispose();
+                this.AzuriteHost?.Kill();
+                this.AzuriteHost?.Dispose();
             }
         }
     }

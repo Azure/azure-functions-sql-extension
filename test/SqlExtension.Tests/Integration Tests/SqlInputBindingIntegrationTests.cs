@@ -32,6 +32,8 @@ namespace SqlExtension.Tests.Integration
         [InlineData(100, 500)]
         public async void GetProductsTest(int n, int cost)
         {
+            this.StartFunctionHost(nameof(GetProducts));
+
             // Generate T-SQL to insert n rows of data with cost
             Product[] products = this.GetProductsWithSameCost(n, cost);
             this.InsertProducts(products);
@@ -52,6 +54,8 @@ namespace SqlExtension.Tests.Integration
         [InlineData(100, 999)]
         public async void GetProductsStoredProcedureTest(int n, int cost)
         {
+            this.StartFunctionHost(nameof(GetProductsStoredProcedure));
+
             // Generate T-SQL to insert n rows of data with cost
             Product[] products = this.GetProductsWithSameCost(n, cost);
             this.InsertProducts(products);
@@ -72,6 +76,8 @@ namespace SqlExtension.Tests.Integration
         [InlineData(100, 1000)]
         public async void GetProductsNameEmptyTest(int n, int cost)
         {
+            this.StartFunctionHost(nameof(GetProductsNameEmpty));
+
             // Add a bunch of noise data
             this.InsertProducts(this.GetProductsWithSameCost(n * 2, cost));
 
