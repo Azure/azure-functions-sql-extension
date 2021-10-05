@@ -22,7 +22,12 @@ namespace SqlExtension.Tests.Integration
         /// <summary>
         /// Host process for Azure Function CLI
         /// </summary>
-        private Process FunctionHost;
+        protected Process FunctionHost;
+
+        /// <summary>
+        /// Host process for Azurite emulator for local Azure Storage, required by some trigger functions.
+        /// </summary>
+        private Process AzuriteHost;
 
         /// <summary>
         /// Connection to the database for the current test.
@@ -56,12 +61,14 @@ namespace SqlExtension.Tests.Integration
 
             this.SetupDatabase();
 
+            this.StartAzurite();
+
             this.StartFunctionHost();
         }
 
         /// <remarks>
         /// Integration tests depend on a localhost server to be running.
-        /// Either have one running locally with integrated auth, or start a mssql instance in a Docker container
+        /// Either have one running locally with integrated auth, or start a mssql instance in a Docker container 
         /// and set "SA_PASSWORD" as environment variable before running "dotnet tets".
         /// </remarks>
         private void SetupDatabase()
@@ -111,6 +118,21 @@ namespace SqlExtension.Tests.Integration
 
             // Set SqlConnectionString env var for the Function to use
             Environment.SetEnvironmentVariable("SqlConnectionString", connectionStringBuilder.ToString());
+        }
+
+        private void StartAzurite()
+        {
+            this.AzuriteHost = new Process()
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "azurite",
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    UseShellExecute = true
+                }
+            };
+
+            this.AzuriteHost.Start();
         }
 
         private void StartFunctionHost()
@@ -252,6 +274,9 @@ namespace SqlExtension.Tests.Integration
 
                 this.FunctionHost.Kill();
                 this.FunctionHost.Dispose();
+
+                this.AzuriteHost.Kill();
+                this.AzuriteHost.Dispose();
             }
         }
     }

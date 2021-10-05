@@ -13,19 +13,24 @@ namespace SqlExtensionSamples.TriggerBindingSamples
     public static class TimerTriggerProducts
     {
         private static int _executionNumber = 0;
+
+        /// <summary>
+        /// This timer function runs every 30 seconds. Each time it generates 1000 rows of data, starting at a ProductID of 10000.
+        /// </summary>
         [FunctionName("TimerTriggerProducts")]
         public static void Run(
-            [TimerTrigger("0 */3 * * * *")] TimerInfo req, ILogger log,
+            [TimerTrigger("*/30 * * * * *")] TimerInfo req, ILogger log,
             [Sql("Products", ConnectionStringSetting = "SqlConnectionString")] ICollector<Product> products)
         {
             int totalUpserts = 1000;
+            int productIdStart = 10000;
             log.LogInformation($"{DateTime.Now} starting execution #{_executionNumber}. Rows to generate={totalUpserts}.");
 
             var sw = new Stopwatch();
             sw.Start();
-                    
-            List<Product> newProducts = GetNewProductsRandomized(totalUpserts, _executionNumber * 100);
-            foreach (var product in newProducts)
+
+            List<Product> newProducts = GetNewProducts(totalUpserts, (_executionNumber * totalUpserts) + productIdStart);
+            foreach (Product product in newProducts)
             {
                 products.Add(product);
             }
