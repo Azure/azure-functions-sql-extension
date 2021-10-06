@@ -4,8 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using Microsoft.SqlServer.TransactSql.ScriptDom;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -162,31 +164,56 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Returns schema and tableName with quotes around them.
-        /// If there is no schema in fullName, SCHEMA_NAME is returned as schema.
+        /// Escape any existing quotes and add quotes around the identifier.
+        /// </summary>
+        /// <param name="identifier">The string to quote.</param>
+        /// <returns>The escaped and quoted string.</returns>
+        public static string QuoteIdentifier(string identifier)
+        {
+            return $"'{identifier.Replace("'", "''")}'";
+        }
+
+        /// <summary>
+        /// Use ScriptDom to parse schema and tableName and return them with quotes.
+        /// If there is no schema in fullName, SCHEMA_NAME() is returned as schema.
         /// </summary>
         /// <param name="fullName">
         /// Full name of table, including schema (if exists).
         /// </param>
         public static void GetTableAndSchema(string fullName, out string quotedSchema, out string quotedTableName)
         {
-            // ensure names are properly escaped
-            string escapedFullName = fullName.Replace("'", "''");
+            var parser = new TSql150Parser(false);
+            var stringReader = new StringReader(fullName);
+            SchemaObjectName tree = parser.ParseSchemaObjectName(stringReader, out IList<ParseError> errors);
 
-            // defaults
-            quotedTableName = $"'{escapedFullName}'";
-            quotedSchema = "SCHEMA_NAME()"; // default to user schema
-
-            // remove [ ] from name if necessary
-            string cleanName = escapedFullName.Replace("]", string.Empty).Replace("[", string.Empty);
-
-            // if in format schema.table, split into two parts for query
-            string[] pieces = cleanName.Split('.');
-
-            if (pieces.Length == 2)
+            if (errors.Count > 0)
             {
-                quotedSchema = $"'{pieces[0]}'";
-                quotedTableName = $"'{pieces[1]}'";
+                string errorMessages = "Encountered error(s) while parsing schema and table name:\n";
+                foreach (ParseError err in errors)
+                {
+                    errorMessages += $"{err.Message}\n";
+                }
+                throw new InvalidOperationException(errorMessages);
+            }
+
+            var visitor = new QuotedTSqlFragmentVisitor();
+            tree.Accept(visitor);
+            quotedSchema = visitor.quotedSchema;
+            quotedTableName = visitor.quotedTableName;
+        }
+
+        /// <summary>
+        /// Get the schema and table name with quotes from the SchemaObjectName.  
+        /// </summary>
+        private class QuotedTSqlFragmentVisitor : TSqlFragmentVisitor
+        {
+            internal string quotedSchema;
+            internal string quotedTableName;
+
+            public override void Visit(SchemaObjectName node)
+            {
+                this.quotedSchema = node.SchemaIdentifier != null ? QuoteIdentifier(node.SchemaIdentifier.Value) : "SCHEMA_NAME()";
+                this.quotedTableName = QuoteIdentifier(node.BaseIdentifier.Value);
             }
         }
     }
