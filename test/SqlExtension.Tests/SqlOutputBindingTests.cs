@@ -41,40 +41,18 @@ namespace SqlExtension.Tests
             await collector.AddAsync(data);
         }
 
-        [Fact]
-        public void TestGetTableAndSchema()
+        [Theory]
+        [InlineData("dbo.Products", "'dbo'", "'Products'")]
+        [InlineData("Products", "SCHEMA_NAME()", "'Products'")]
+        [InlineData("[dbo].[Products]", "'dbo'", "'Products'")]
+        [InlineData("[dbo].Products", "'dbo'", "'Products'")]
+        [InlineData("dbo.[Products]", "'dbo'", "'Products'")]
+        [InlineData("[Prod'ucts]", "SCHEMA_NAME()", "'Prod''ucts'")]
+        public void TestGetTableAndSchema(string fullName, string expectedSchema, string expectedTableName)
         {
-            string fullName = "dbo.Products";
             SqlBindingUtilities.GetTableAndSchema(fullName, out string quotedSchema, out string quotedTableName);
-            Assert.Equal("'dbo'", quotedSchema);
-            Assert.Equal("'Products'", quotedTableName);
-        }
-
-        [Fact]
-        public void TestGetTableAndSchemaWithNoSchema()
-        {
-            string fullName = "Products";
-            SqlBindingUtilities.GetTableAndSchema(fullName, out string quotedSchema, out string quotedTableName);
-            Assert.Equal("SCHEMA_NAME()", quotedSchema);
-            Assert.Equal("'Products'", quotedTableName);
-        }
-
-        [Fact]
-        public void TestGetTableAndSchemaWithBrackets()
-        {
-            string fullName = "[dbo].[Products]";
-            SqlBindingUtilities.GetTableAndSchema(fullName, out string quotedSchema, out string quotedTableName);
-            Assert.Equal("'dbo'", quotedSchema);
-            Assert.Equal("'Products'", quotedTableName);
-        }
-
-        [Fact]
-        public void TestGetTableAndSchemaWithQuotation()
-        {
-            string fullName = "[Prod'ucts]";
-            SqlBindingUtilities.GetTableAndSchema(fullName, out string quotedSchema, out string quotedTableName);
-            Assert.Equal("SCHEMA_NAME()", quotedSchema);
-            Assert.Equal("'Prod''ucts'", quotedTableName);
+            Assert.Equal(expectedSchema, quotedSchema);
+            Assert.Equal(expectedTableName, quotedTableName);
         }
     }
 }

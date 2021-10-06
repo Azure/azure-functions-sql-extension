@@ -172,11 +172,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </param>
         public static void GetTableAndSchema(string fullName, out string quotedSchema, out string quotedTableName)
         {
-            // ensure names are properly escaped
-            string escapedFullName = fullName.Replace("'", "''");
-
             var parser = new TSql150Parser(false);
-            var stringReader = new StringReader(escapedFullName);
+            var stringReader = new StringReader(fullName);
             SchemaObjectName tree = parser.ParseSchemaObjectName(stringReader, out IList<ParseError> errors);
 
             if (errors.Count > 0)
@@ -194,20 +191,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             quotedSchema = visitor.quotedSchema;
             quotedTableName = visitor.quotedTableName;
         }
-    }
 
-    /// <summary>
-    /// Get the schema and table name with quotes from the SchemaObjectName.  
-    /// </summary>
-    internal class QuotedTSqlFragmentVisitor : TSqlFragmentVisitor
-    {
-        internal string quotedSchema;
-        internal string quotedTableName;
-
-        public override void Visit(SchemaObjectName node)
+        /// <summary>
+        /// Get the schema and table name with quotes from the SchemaObjectName.  
+        /// </summary>
+        private class QuotedTSqlFragmentVisitor : TSqlFragmentVisitor
         {
-            this.quotedSchema = node.SchemaIdentifier != null ? $"'{node.SchemaIdentifier.Value}'" : "SCHEMA_NAME()";
-            this.quotedTableName = $"'{node.BaseIdentifier.Value}'";
+            internal string quotedSchema;
+            internal string quotedTableName;
+
+            public override void Visit(SchemaObjectName node)
+            {
+                // ensure names with quotes are properly escaped
+                this.quotedSchema = node.SchemaIdentifier != null ? $"'{node.SchemaIdentifier.Value.Replace("'", "''")}'" : "SCHEMA_NAME()";
+                this.quotedTableName = $"'{node.BaseIdentifier.Value.Replace("'", "''")}'";
+            }
         }
     }
 }
