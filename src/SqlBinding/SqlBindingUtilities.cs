@@ -179,19 +179,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             var stringReader = new StringReader(escapedFullName);
             SchemaObjectName tree = parser.ParseSchemaObjectName(stringReader, out IList<ParseError> errors);
 
-            foreach (ParseError err in errors)
+            if (errors.Count > 0)
             {
-                Console.WriteLine(err.Message);
+                string errorMessages = "Encountered error(s) while parsing schema and table name:\n";
+                foreach (ParseError err in errors)
+                {
+                    errorMessages += $"{err.Message}\n";
+                }
+                throw new InvalidOperationException(errorMessages);
             }
 
-            var visitor = new Vistor();
+            var visitor = new QuotedTSqlFragmentVisitor();
             tree.Accept(visitor);
             quotedSchema = visitor.quotedSchema;
             quotedTableName = visitor.quotedTableName;
         }
     }
 
-    public class Vistor : TSqlFragmentVisitor
+    /// <summary>
+    /// Get the schema and table name with quotes from the SchemaObjectName.  
+    /// </summary>
+    internal class QuotedTSqlFragmentVisitor : TSqlFragmentVisitor
     {
         internal string quotedSchema;
         internal string quotedTableName;

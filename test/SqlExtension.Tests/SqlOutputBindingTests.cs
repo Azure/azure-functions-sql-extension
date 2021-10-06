@@ -40,5 +40,41 @@ namespace SqlExtension.Tests
             };
             await collector.AddAsync(data);
         }
+
+        [Fact]
+        public void TestGetTableAndSchema()
+        {
+            string fullName = "dbo.Products";
+            SqlBindingUtilities.GetTableAndSchema(fullName, out string quotedSchema, out string quotedTableName);
+            Assert.Equal("'dbo'", quotedSchema);
+            Assert.Equal("'Products'", quotedTableName);
+        }
+
+        [Fact]
+        public void TestGetTableAndSchemaWithNoSchema()
+        {
+            string fullName = "Products";
+            SqlBindingUtilities.GetTableAndSchema(fullName, out string quotedSchema, out string quotedTableName);
+            Assert.Equal("SCHEMA_NAME()", quotedSchema);
+            Assert.Equal("'Products'", quotedTableName);
+        }
+
+        [Fact]
+        public void TestGetTableAndSchemaWithBrackets()
+        {
+            string fullName = "[dbo].[Products]";
+            SqlBindingUtilities.GetTableAndSchema(fullName, out string quotedSchema, out string quotedTableName);
+            Assert.Equal("'dbo'", quotedSchema);
+            Assert.Equal("'Products'", quotedTableName);
+        }
+
+        [Fact]
+        public void TestGetTableAndSchemaWithQuotation()
+        {
+            string fullName = "[Prod'ucts]";
+            SqlBindingUtilities.GetTableAndSchema(fullName, out string quotedSchema, out string quotedTableName);
+            Assert.Equal("SCHEMA_NAME()", quotedSchema);
+            Assert.Equal("'Prod''ucts'", quotedTableName);
+        }
     }
 }

@@ -33,6 +33,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- ScriptDom is currently only available officially through the DacFx NuGet package. Rather than referencing DacFx
+    for one ScriptDom API, we are getting the ScriptDom dll from the latest DacFx NuGet package. -->
     <Reference Include="Microsoft.SqlServer.TransactSql.ScriptDom">
       <HintPath>..\..\lib\Microsoft.SqlServer.TransactSql.ScriptDom.dll</HintPath>
     </Reference>
