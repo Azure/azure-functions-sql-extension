@@ -164,6 +164,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
+        /// Escape any existing quotes and add quotes around the identifier.
+        /// </summary>
+        /// <param name="identifier">The string to quote.</param>
+        /// <returns>The escaped and quoted string.</returns>
+        public static string QuoteIdentifier(string identifier)
+        {
+            return $"'{identifier.Replace("'", "''")}'";
+        }
+
+        /// <summary>
         /// Use ScriptDom to parse schema and tableName and return them with quotes.
         /// If there is no schema in fullName, SCHEMA_NAME() is returned as schema.
         /// </summary>
@@ -202,9 +212,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             public override void Visit(SchemaObjectName node)
             {
-                // ensure names with quotes are properly escaped
-                this.quotedSchema = node.SchemaIdentifier != null ? $"'{node.SchemaIdentifier.Value.Replace("'", "''")}'" : "SCHEMA_NAME()";
-                this.quotedTableName = $"'{node.BaseIdentifier.Value.Replace("'", "''")}'";
+                this.quotedSchema = node.SchemaIdentifier != null ? QuoteIdentifier(node.SchemaIdentifier.Value) : "SCHEMA_NAME()";
+                this.quotedTableName = QuoteIdentifier(node.BaseIdentifier.Value);
             }
         }
     }
