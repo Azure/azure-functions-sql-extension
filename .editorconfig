@@ -25,7 +25,7 @@ insert_final_newline = false
 # Organize usings
 dotnet_separate_import_directive_groups = false
 dotnet_sort_system_directives_first = true
-file_header_template = Copyright (c) Microsoft. All rights reserved.\nLicensed under the MIT License. See License.txt in the project root for license information.
+file_header_template = Copyright (c) Microsoft Corporation. All rights reserved.\nLicensed under the MIT License. See License.txt in the project root for license information.
 
 # this. and Me. preferences
 dotnet_style_qualification_for_event = true
