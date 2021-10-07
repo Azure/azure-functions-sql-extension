@@ -7,8 +7,6 @@ root = true
 [*.cs]
 
 dotnet_analyzer_diagnostic.severity = error
-# Disable warnings from existing issues until we can go through and fix them
-dotnet_diagnostic.IDE0130.severity = silent
 
 #### Core EditorConfig Options ####
 
