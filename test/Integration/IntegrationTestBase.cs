@@ -67,7 +67,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         /// <remarks>
         /// Integration tests depend on a localhost server to be running.
-        /// Either have one running locally with integrated auth, or start a mssql instance in a Docker container 
+        /// Either have one running locally with integrated auth, or start a mssql instance in a Docker container
         /// and set "SA_PASSWORD" as environment variable before running "dotnet tets".
         /// </remarks>
         private void SetupDatabase()
@@ -143,18 +143,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         protected void StartFunctionHost(string functionName)
         {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = this.GetFunctionsCoreToolsPath(),
+                Arguments = $"start --verbose --port {this.Port} --functions {functionName}",
+                WorkingDirectory = Path.Combine(this.GetPathToSamplesBin(), "SqlExtensionSamples"),
+                WindowStyle = ProcessWindowStyle.Hidden,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false
+            };
+            this.TestOutput.WriteLine($"Starting {startInfo.FileName} {startInfo.Arguments} in {startInfo.WorkingDirectory}");
             this.FunctionHost = new Process
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = this.GetFunctionsCoreToolsPath(),
-                    Arguments = $"start --verbose --port {this.Port} --functions {functionName}",
-                    WorkingDirectory = Path.Combine(this.GetPathToSamplesBin(), "SqlExtensionSamples"),
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false
-                }
+                StartInfo = startInfo
             };
             this.FunctionHost.OutputDataReceived += this.TestOutputHandler;
             this.FunctionHost.ErrorDataReceived += this.TestOutputHandler;
