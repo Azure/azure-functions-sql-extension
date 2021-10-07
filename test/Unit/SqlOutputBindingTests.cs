@@ -53,5 +53,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
             Assert.Equal(expectedSchema, quotedSchema);
             Assert.Equal(expectedTableName, quotedTableName);
         }
+
+        [Theory]
+        [InlineData("myschema.my'table", "Expected but did not find a closing quotation mark after the character string 'table.\n")]
+        [InlineData("my'schema.mytable", "Expected but did not find a closing quotation mark after the character string 'schema.mytable.\n")]
+        [InlineData("schema.mytable", "Incorrect syntax near schema.\n")]
+        [InlineData("myschema.table", "Incorrect syntax near ..\n")]
+        public void TestGetTableAndSchemaError(string fullName, string expectedError)
+        {
+            string expectedErrorMessage = "Encountered error(s) while parsing schema and table name:\n" + expectedError;
+            string errorMessage = Assert.Throws<InvalidOperationException>(() => SqlBindingUtilities.GetTableAndSchema(fullName, out string quotedSchema, out string quotedTableName)).Message;
+            Assert.Equal(expectedErrorMessage, errorMessage);
+        }
     }
 }
