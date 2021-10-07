@@ -25,7 +25,7 @@
       <_CopyItems Include="..\samples\bin\$(Configuration)\$(TargetFramework)\**\*.*" />
     </ItemGroup>
     <Copy SourceFiles="@(_CopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\%(RecursiveDir)" />
-    <Message Text="Copied Samples output to $(OutDir)" Importance="high" />
+    <Message Text="Copied Samples output to $(OutDir)\SqlExtensionSamples" Importance="high" />
   </Target>
 
 </Project>
