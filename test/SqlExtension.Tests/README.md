@@ -6,7 +6,7 @@ Our integration tests are based on functions from the samples project. To run in
 
    Installation with npm:
    ```
-   npm install -g azure-functions-core-tools@3
+   npm install -g azure-functions-core-tools
    ```
 2. [Azurite Emulator for Local Azure Storage](https://docs.microsoft.com/azure/storage/common/storage-use-azurite?tabs=npm#install-and-run-azurite) - This is required to run non-HTTP binding functions.
 
@@ -23,3 +23,5 @@ Our integration tests are based on functions from the samples project. To run in
      docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD={your_password}" -e "MSSQL_PID=Express" -p 1433:1433 --name sql1 -h sql1 -d mcr.microsoft.com/mssql/server:2019-latest
      ```
      After the Docker image is running, you just need to set `SA_PASSWORD` environment variable to `{your_password}` and can run tests normally.
+     
+     Note: If `SA_PASSWORD` is not set, the tests will assume you're using a local MSSQL installation and default to using integrated auth. MSSQL on Docker does not support integrated auth by default.
