@@ -82,7 +82,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 testServer = "localhost";
             }
 
-            TestOutput.Writeline("Testing on server: " + testServer);
+            this.TestOutput.WriteLine("Testing on server: " + testServer);
 
             // First connect to master to create the database
             var connectionStringBuilder = new SqlConnectionStringBuilder()
