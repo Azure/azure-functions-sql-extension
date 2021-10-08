@@ -43,7 +43,7 @@ stages:
         windows:
           imageName: 'windows-latest'
           testFilter: ''
-          testServer: 'localhost'
+          testServer: '(LocalDb)\MSSQLLocalDB'
 
     pool:
       vmImage: '$(imageName)'

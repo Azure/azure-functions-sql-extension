@@ -46,10 +46,6 @@ steps:
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) -p:PackageVersion="${{ parameters.nugetVersion }}-preview" -p:GeneratePackageOnBuild=false'
 
-- script: 'net start MSSQLSERVER'
-  displayName: 'Start MSSQL Service on Windows'
-  condition: eq(variables['Agent.OS'], 'Windows_NT')
-
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'
   env:

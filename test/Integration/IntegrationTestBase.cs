@@ -82,6 +82,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 testServer = "localhost";
             }
 
+            TestOutput.Writeline("Testing on server: " + testServer);
+
             // First connect to master to create the database
             var connectionStringBuilder = new SqlConnectionStringBuilder()
             {
@@ -90,6 +92,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 Pooling = false
             };
 
+            // Either use integrated auth or SQL login depending if SA_PASSWORD is set
             string userId = "SA";
             string password = Environment.GetEnvironmentVariable("SA_PASSWORD");
             if (string.IsNullOrEmpty(password))
