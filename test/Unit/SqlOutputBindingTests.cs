@@ -57,8 +57,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [Theory]
         [InlineData("myschema.my'table", "Expected but did not find a closing quotation mark after the character string 'table.\n")]
         [InlineData("my'schema.mytable", "Expected but did not find a closing quotation mark after the character string 'schema.mytable.\n")]
-        [InlineData("schema.mytable", "Incorrect syntax near schema.\n")]
-        [InlineData("myschema.table", "Incorrect syntax near ..\n")]
+        [InlineData("schema.mytable", "Incorrect syntax near schema.\n")] // 'schema' is a keyword and needs to be bracket-quoted to be used as the schema name.
+        [InlineData("myschema.table", "Incorrect syntax near ..\n")] // 'table' is a keyword and needs to be bracket-quoted to be used as the table name.
         public void TestGetTableAndSchemaError(string fullName, string expectedError)
         {
             string expectedErrorMessage = "Encountered error(s) while parsing schema and table name:\n" + expectedError;
