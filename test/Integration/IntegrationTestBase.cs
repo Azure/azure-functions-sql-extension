@@ -65,17 +65,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.SetupDatabase();
         }
 
+        /// <summary>
+        /// Sets up a test database for the current test to use.
+        /// </summary>
         /// <remarks>
-        /// Integration tests depend on a localhost server to be running.
-        /// Either have one running locally with integrated auth, or start a mssql instance in a Docker container
-        /// and set "SA_PASSWORD" as environment variable before running "dotnet tets".
+        /// The server the database will be created on can be set by the environment variable "TEST_SERVER", otherwise localhost will be used by default.
+        /// By default, integrated authentication will be used to connect to the server, unless the env variable "SA_PASSWORD" is set.
+        /// In this case, connection will be made using SQL login with user "SA" and the provided password.
         /// </remarks>
         private void SetupDatabase()
         {
+            // Get the test server name from environment variable "TEST_SERVER", default to localhost if not set
+            string testServer = Environment.GetEnvironmentVariable("TEST_SERVER");
+            if (string.IsNullOrEmpty(testServer))
+            {
+                testServer = "localhost";
+            }
+
             // First connect to master to create the database
             var connectionStringBuilder = new SqlConnectionStringBuilder()
             {
-                DataSource = "localhost",
+                DataSource = testServer,
                 InitialCatalog = "master",
                 Pooling = false
             };

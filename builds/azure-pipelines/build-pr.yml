@@ -34,13 +34,16 @@ stages:
     # Verifies cross-platform build and test
     strategy:
       matrix:
-        # Disabling integration tests on Mac and Windows until they work
         mac:
           imageName: 'macos-latest'
+          # Disabling integration tests on macOS due to issues with running MSSQL on Docker
+          # We need to set up a self-hosted agent with Docker running by default: https://github.com/microsoft/azure-pipelines-tasks/issues/12823
           testFilter: '--filter FullyQualifiedName!~Integration'
+          testServer: ''
         windows:
           imageName: 'windows-latest'
-          testFilter: '--filter FullyQualifiedName!~Integration'
+          testFilter: ''
+          testServer: '(LocalDb)\\MSSQLLocalDB'
 
     pool:
       vmImage: '$(imageName)'

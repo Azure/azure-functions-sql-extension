@@ -3,6 +3,7 @@ parameters:
   solution: ''
   nugetVersion: ''
   testFilter: ''
+  testServer: ''
 
 steps:
 - task: UseDotNet@2
@@ -46,6 +47,7 @@ steps:
   displayName: '.NET Test'
   env:
     SA_PASSWORD: '$(serverPassword)'
+    TEST_SERVER: '$(testServer)'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
