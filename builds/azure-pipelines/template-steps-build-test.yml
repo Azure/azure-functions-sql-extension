@@ -49,7 +49,6 @@ steps:
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'
   env:
-    SA_PASSWORD: '$(serverPassword)'
     TEST_SERVER: '$(testServer)'
   inputs:
     command: test
