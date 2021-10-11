@@ -149,9 +149,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
-        /// This starts the Functions runtime with the specified function.
-        /// Note the functionName is different than the route.
+        /// This starts the Functions runtime with the specified function(s).
         /// </summary>
+        /// <remarks>
+        /// - The functionName is different than its route.<br/>
+        /// - You can start multiple functions by passing in a space-separated list of function names.<br/>
+        /// - The full path to the Functions CLI is required in the ProcessStartInfo because UseShellExecute is set to false.
+        /// We cannot both use shell execute and redirect output at the same time: https://docs.microsoft.com//dotnet/api/system.diagnostics.processstartinfo.redirectstandardoutput#remarks
+        /// </remarks>
         protected void StartFunctionHost(string functionName)
         {
             var startInfo = new ProcessStartInfo
@@ -182,6 +187,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         private string GetFunctionsCoreToolsPath()
         {
             // Determine npm install path from either env var set by pipeline or OS defaults
+            // Pipeline env var is needed as the Windows hosted agents installs to a non-traditional location
             string nodeModulesPath = Environment.GetEnvironmentVariable("NODE_MODULES_PATH");
             if (string.IsNullOrEmpty(nodeModulesPath))
             {
