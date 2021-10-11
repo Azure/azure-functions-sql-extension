@@ -182,7 +182,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         private string GetFunctionsCoreToolsPath()
         {
             // Determine npm install path from either env var set by pipeline or OS defaults
-            string nodeModulesPath = Environment.GetEnvironmentVariable("node_modules_path");
+            string nodeModulesPath = Environment.GetEnvironmentVariable("NODE_MODULES_PATH");
             if (string.IsNullOrEmpty(nodeModulesPath))
             {
                 nodeModulesPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
