@@ -154,13 +154,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <remarks>
         /// - The functionName is different than its route.<br/>
         /// - You can start multiple functions by passing in a space-separated list of function names.<br/>
-        /// - The full path to the Functions CLI is required in the ProcessStartInfo because UseShellExecute is set to false.
-        /// We cannot both use shell execute and redirect output at the same time: https://docs.microsoft.com//dotnet/api/system.diagnostics.processstartinfo.redirectstandardoutput#remarks
         /// </remarks>
         protected void StartFunctionHost(string functionName)
         {
             var startInfo = new ProcessStartInfo
             {
+                // The full path to the Functions CLI is required in the ProcessStartInfo because UseShellExecute is set to false.
+                // We cannot both use shell execute and redirect output at the same time: https://docs.microsoft.com//dotnet/api/system.diagnostics.processstartinfo.redirectstandardoutput#remarks
                 FileName = this.GetFunctionsCoreToolsPath(),
                 Arguments = $"start --verbose --port {this.Port} --functions {functionName}",
                 WorkingDirectory = Path.Combine(this.GetPathToSamplesBin(), "SqlExtensionSamples"),
