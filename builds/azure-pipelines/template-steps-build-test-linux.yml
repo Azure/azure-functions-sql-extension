@@ -64,7 +64,7 @@ steps:
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=$(Build.ArtifactStagingDirectory)\TestResults\coverage\ /p:Exclude="[SqlExtensionSamples]*"'
+    arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=$(Build.ArtifactStagingDirectory)\TestResults\coverage\ /p:Exclude="[*]Microsoft.Azure.WebJobs.Extensions.Sql.Samples.*"'
 
 - task: PublishCodeCoverageResults@1
   displayName: 'Publish Code Coverage Results'
