@@ -142,6 +142,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 cachedTables.Set(cacheKey, tableInfo, policy);
             }
 
+            List<string> extraProperties = GetExtraProperties(tableInfo.Columns);
+            if (extraProperties.Count > 0)
+            {
+                string message = $"The following properties in {typeof(T)} do not exist in the table {fullDatabaseAndTableName}: {string.Join(", ", extraProperties.ToArray())}.";
+                throw new InvalidOperationException(message);
+            }
+
             int batchSize = 1000;
             await connection.OpenAsync();
             foreach (IEnumerable<T> batch in rows.Batch(batchSize))
@@ -155,6 +162,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             await connection.CloseAsync();
         }
+
+        /// <summary>
+        /// Checks if any properties in T do not exist as columns in the table
+        /// to upsert to and returns the extra property names in a List.
+        /// </summary>
+        /// <param name="columns"> The columns of the table to upsert to </param>
+        /// <returns>List of property names that don't exist in the table</returns>
+        private static List<string> GetExtraProperties(IDictionary<string, string> columns)
+        {
+            var properties = typeof(T).GetProperties().ToList();
+            var extraProperties = new List<string>();
+            for (int i = 0; i < properties.Count; i++)
+            {
+                if (!columns.ContainsKey(properties[i].Name))
+                {
+                    extraProperties.Add(properties[i].Name);
+                }
+            }
+            return extraProperties;
+        }
+
         /// <summary>
         /// Generates T-SQL for data to be upserted using Merge.
         /// This needs to be regenerated for every batch to upsert.
