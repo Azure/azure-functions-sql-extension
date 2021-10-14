@@ -3,6 +3,7 @@ parameters:
   solution: ''
   nugetVersion: ''
   testFilter: ''
+  testServer: ''
 
 steps:
 - task: UseDotNet@2
@@ -15,8 +16,17 @@ steps:
   inputs:
     version: '3.1.x'
 
-- script: npm install -g azure-functions-core-tools@3
+- script: npm install -g azure-functions-core-tools
   displayName: 'Install Azure Functions Core Tools'
+
+- script: npm install -g azurite
+  displayName: 'Install Azurite Local Storage Emulator'
+
+# This step is necessary because npm installs to a non-traditional location on Windows hosted agents
+# This sets the path to npm global installations as a variable which then gets passed to .NET test task
+- bash: echo "##vso[task.setvariable variable=nodeModulesPath]$(npm root -g)"
+  displayName: 'Set npm installation path for Windows'
+  condition: eq(variables['Agent.OS'], 'Windows_NT')
 
 - task: DotNetCoreCLI@2
   displayName: '.NET Restore'
@@ -45,11 +55,12 @@ steps:
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'
   env:
-    SA_PASSWORD: '$(serverPassword)'
+    TEST_SERVER: '$(testServer)'
+    NODE_MODULES_PATH: '$(nodeModulesPath)'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=$(Build.ArtifactStagingDirectory)\TestResults\coverage\ /p:Exclude="[SqlExtensionSamples]*"'
+    arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=$(Build.ArtifactStagingDirectory)\TestResults\coverage\ /p:Exclude="[*]Microsoft.Azure.WebJobs.Extensions.Sql.Samples.*"'
 
 - task: PublishCodeCoverageResults@1
   displayName: 'Publish Code Coverage Results'
