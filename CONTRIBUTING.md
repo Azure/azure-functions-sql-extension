@@ -46,9 +46,13 @@ code .
 3. Install extensions when prompted after VS Code opens
    - Note: This includes the Azure Functions, C#, and editorconfig extensions
 
-4. Get your SqlConnectionString. If you provisioned an Azure SQL Database, your connection string can be found in your SQL database resource by going to the left blade and clicking 'Connection strings'. Copy the Connection String.
+4. Get your SqlConnectionString. 
+   
+    If you provisioned an Azure SQL Database, your connection string can be found in your SQL database resource by going to the left blade and clicking 'Connection strings'. Copy the Connection String.
 
-    (*Note: when pasting in the connection string, you will need to replace part of the connection string where it says '{your_password}' with your Azure SQL Server password*)
+    - (*Note: when pasting in the connection string, you will need to replace part of the connection string where it says '{your_password}' with your Azure SQL Server password*)
+
+    If your database wasn't provisioned in Azure, please follow documentation [here](https://docs.microsoft.com/sql/connect/homepage-sql-connection-programming), if you're unfamliar with how to construct a connection string.
 
 5. In 'local.settings.json' in 'Values', verify you have the below. If not, add the below and replace "Your Connection String" with the your connection string from the previous step:
 
