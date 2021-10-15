@@ -112,5 +112,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             int rowsAdded = (int)this.ExecuteScalar("SELECT COUNT(1) FROM Products");
             Assert.True(rowsAdded >= 1000);
         }
+
+        [Fact]
+        public void ExtraColumnsProductsTest()
+        {
+            this.StartFunctionHost(nameof(AddProductExtraColumns));
+
+            var query = new Dictionary<string, string>()
+            {
+                { "id", "1" },
+                { "name", "test" },
+                { "cost", "100" },
+                { "extraInt", "1"},
+                { "extraString", "test"}
+            };
+
+            var result = this.SendOutputRequest("addproducts-collector").Wait();
+            Assert.Equals(result, new HttpResponseMessage("error"));
+        }
     }
 }

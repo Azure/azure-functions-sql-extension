@@ -142,8 +142,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 cachedTables.Set(cacheKey, tableInfo, policy);
             }
 
-            List<string> extraProperties = GetExtraProperties(tableInfo.Columns);
-            if (extraProperties.Count > 0)
+            IEnumerable<string> extraProperties = GetExtraProperties(tableInfo.Columns);
+            if (extraProperties.Any())
             {
                 string message = $"The following properties in {typeof(T)} do not exist in the table {fullDatabaseAndTableName}: {string.Join(", ", extraProperties.ToArray())}.";
                 throw new InvalidOperationException(message);
@@ -169,18 +169,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         /// <param name="columns"> The columns of the table to upsert to </param>
         /// <returns>List of property names that don't exist in the table</returns>
-        private static List<string> GetExtraProperties(IDictionary<string, string> columns)
+        private static IEnumerable<string> GetExtraProperties(IDictionary<string, string> columns)
         {
-            var properties = typeof(T).GetProperties().ToList();
-            var extraProperties = new List<string>();
-            for (int i = 0; i < properties.Count; i++)
-            {
-                if (!columns.ContainsKey(properties[i].Name))
-                {
-                    extraProperties.Add(properties[i].Name);
-                }
-            }
-            return extraProperties;
+            return typeof(T).GetProperties().ToList()
+                .Where(prop => !columns.ContainsKey(prop.Name))
+                .Select(prop => prop.Name);
         }
 
         /// <summary>
