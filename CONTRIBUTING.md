@@ -16,18 +16,18 @@ This requires already having a SQL database. If you need to create a SQL databas
 - [Local SQL Server running in a Docker container](https://docs.microsoft.com/sql/linux/quickstart-install-connect-docker)
 - [Azure SQL Database](#Create-Azure-SQL-Database).
 
-A primary key must be set in your SQL table before using the bindings. To do this, run the below SQL commands in the SQL query editor.
+A primary key must be set in your SQL table before using the bindings. To do this, run the below SQL commands in the SQL query editor. Note that this step needs to only be done once. If this has already been done, you can safely proceed to [Set Up Development Environment](#set-up-development-environment).
 
 1. Ensure there are no NULL values in the primary key column. The primary key will usually be an ID column.
 
     ```sql
-    ALTER TABLE ['your table name'] alter column ['column to be primary key'] int NOT NULL
+    ALTER TABLE [TableName] ALTER COLUMN [PrimaryKeyColumnName] int NOT NULL
     ```
 
 2. Set primary key column.
 
     ```sql
-    ALTER TABLE ['your table name'] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED (['column to be primary key']);
+    ALTER TABLE [TableName] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED ([PrimaryKeyColumn]);
     ```
 
 3. Congrats on setting up your database! Now continue to set up your local environment and complete the quick start.
@@ -46,7 +46,7 @@ code .
 3. Install extensions when prompted after VS Code opens
    - Note: This includes the Azure Functions, C#, and editorconfig extensions
 
-4. Get your SqlConnectionString. Your connection string can be found in your SQL database resource by going to the left blade and clicking 'Connection strings'. Copy the Connection String.
+4. Get your SqlConnectionString. If you provisioned an Azure SQL Database, your connection string can be found in your SQL database resource by going to the left blade and clicking 'Connection strings'. Copy the Connection String.
 
     (*Note: when pasting in the connection string, you will need to replace part of the connection string where it says '{your_password}' with your Azure SQL Server password*)
 
