@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
@@ -114,21 +115,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         [Fact]
-        public void ExtraColumnsProductsTest()
+        public void AddProductExtraColumnsTest()
         {
             this.StartFunctionHost(nameof(AddProductExtraColumns));
 
-            var query = new Dictionary<string, string>()
-            {
-                { "id", "1" },
-                { "name", "test" },
-                { "cost", "100" },
-                { "extraInt", "1"},
-                { "extraString", "test"}
-            };
+            // Since ProductExtraColumns has columns that does not exist in the table,
+            // no rows should be added to the table.
+            Assert.Throws<AggregateException>(() => this.SendOutputRequest("addproduct-extracolumns").Wait());
+            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM Products"));
 
-            var result = this.SendOutputRequest("addproducts-collector").Wait();
-            Assert.Equals(result, new HttpResponseMessage("error"));
         }
     }
 }

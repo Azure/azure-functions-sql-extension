@@ -1,4 +1,4 @@
-// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using Microsoft.AspNetCore.Http;
@@ -18,11 +18,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples
         {
             product = new ProductExtraColumns
             {
-                Name = req.Query["name"],
-                ProductID = int.Parse(req.Query["id"]),
-                Cost = int.Parse(req.Query["cost"]),
-                ExtraInt = int.Parse(req.Query["extraint"]),
-                ExtraString = req.Query["extrastring"]
+                Name = "test",
+                ProductID = 1,
+                Cost = 100,
+                ExtraInt = 1,
+                ExtraString = "test"
             };
             return new CreatedResult($"/api/addproduct-extracolumns", product);
         }
