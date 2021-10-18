@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
@@ -111,6 +112,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             int rowsAdded = (int)this.ExecuteScalar("SELECT COUNT(1) FROM Products");
             Assert.True(rowsAdded >= 1000);
+        }
+
+        [Fact]
+        public void AddProductExtraColumnsTest()
+        {
+            this.StartFunctionHost(nameof(AddProductExtraColumns));
+
+            // Since ProductExtraColumns has columns that does not exist in the table,
+            // no rows should be added to the table.
+            Assert.Throws<AggregateException>(() => this.SendOutputRequest("addproduct-extracolumns").Wait());
+            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM Products"));
         }
     }
 }
