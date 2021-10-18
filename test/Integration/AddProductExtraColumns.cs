@@ -4,9 +4,9 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 
-namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples
+namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
     public static class AddProductExtraColumns
     {
