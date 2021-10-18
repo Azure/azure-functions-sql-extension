@@ -39,13 +39,13 @@ steps:
     command: restore
     projects: '${{ parameters.solution }}'
 
-  # Build outputs directly into staging directory
+  # Don't generate package so we can sign it before packaging
 - task: DotNetCoreCLI@2
   displayName: '.NET Build'
   inputs:
     command: build
     projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) -p:PackageVersion="${{ parameters.nugetVersion }}"'
+    arguments: '--configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=false'
 
 - task: UseDotNet@2
   displayName: 'Install .NET Core SDK 2.1.x for CodeSign'
@@ -56,7 +56,8 @@ steps:
   displayName: 'ESRP CodeSigning - Binaries'
   inputs:
     ConnectedServiceName: 'Code Signing'
-    FolderPath: '$(Build.ArtifactStagingDirectory)'
+    FolderPath: '$(Build.SourcesDirectory)/bin/${{ parameters.configuration }}'
+    Pattern: '**/Microsoft.Azure.WebJobs.Extensions.Sql.dll'
     signConfigType: inlineSignParams
     inlineOperation: |
      [
@@ -104,7 +105,16 @@ steps:
     SessionTimeout: 600
     MaxConcurrency: 5
 
-  # Above build task generates a nuget package, this extra step packs into a -preview nuget with same version #
+  # Extra parameter GeneratePackageOnBuild=false is needed for issue https://github.com/dotnet/sdk/pull/3473#issuecomment-516612070
+- task: DotNetCoreCLI@2
+  displayName: '.NET Pack Nuget'
+  inputs:
+    command: custom
+    custom: pack
+    projects: '${{ parameters.solution }}'
+    arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) --no-build -p:PackageVersion="${{ parameters.nugetVersion }}" -p:GeneratePackageOnBuild=false'
+
+  # Build preview version of nuget with same version
   # Extra parameter GeneratePackageOnBuild=false is needed for issue https://github.com/dotnet/sdk/pull/3473#issuecomment-516612070
 - task: DotNetCoreCLI@2
   displayName: '.NET Pack Preview Nuget'
@@ -112,7 +122,7 @@ steps:
     command: custom
     custom: pack
     projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) -p:PackageVersion="${{ parameters.nugetVersion }}-preview" -p:GeneratePackageOnBuild=false'
+    arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) --no-build -p:PackageVersion="${{ parameters.nugetVersion }}-preview" -p:GeneratePackageOnBuild=false'
 
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'
