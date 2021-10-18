@@ -42,6 +42,63 @@ steps:
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) -p:PackageVersion="${{ parameters.nugetVersion }}"'
 
+- task: UseDotNet@2
+  displayName: 'Install .NET Core SDK 2.1.x for CodeSign'
+  inputs:
+    version: '2.1.x'
+
+- task: EsrpCodeSigning@1
+  displayName: 'ESRP CodeSigning - Binaries'
+  inputs:
+    ConnectedServiceName: 'Code Signing'
+    FolderPath: '$(Build.ArtifactStagingDirectory)'
+    signConfigType: inlineSignParams
+    inlineOperation: |
+     [
+       {
+         "keyCode": "CP-230012",
+         "operationSetCode": "SigntoolSign",
+         "parameters": [
+         {
+           "parameterName": "OpusName",
+           "parameterValue": "Azure Functions SQL Extension"
+         },
+         {
+           "parameterName": "OpusInfo",
+           "parameterValue": "https://github.com/Azure/azure-functions-sql-extension"
+         },
+         {
+           "parameterName": "PageHash",
+           "parameterValue": "/NPH"
+         },
+         {
+           "parameterName": "FileDigest",
+           "parameterValue": "/fd sha256"
+         },
+         {
+           "parameterName": "TimeStamp",
+           "parameterValue": "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+         }
+         ],
+         "toolName": "signtool.exe",
+         "toolVersion": "6.2.9304.0"
+       },
+       {
+         "keyCode": "CP-230012",
+         "operationSetCode": "SigntoolVerify",
+         "parameters": [
+         {
+           "parameterName": "VerifyAll",
+           "parameterValue": "/all"
+         }
+             ],
+         "toolName": "signtool.exe",
+         "toolVersion": "6.2.9304.0"
+       }
+     ]
+    SessionTimeout: 600
+    MaxConcurrency: 5
+    
   # Above build task generates a nuget package, this extra step packs into a -preview nuget with same version #
   # Extra parameter GeneratePackageOnBuild=false is needed for issue https://github.com/dotnet/sdk/pull/3473#issuecomment-516612070
 - task: DotNetCoreCLI@2
