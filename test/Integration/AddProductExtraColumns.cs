@@ -10,6 +10,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
     public static class AddProductExtraColumns
     {
+        // This output binding should throw an Exception because the ProductExtraColumns object has 
+        // two properties that do not exist as columns in the SQL table (ExtraInt and ExtraString).
         [FunctionName("AddProductExtraColumns")]
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct-extracolumns")]
