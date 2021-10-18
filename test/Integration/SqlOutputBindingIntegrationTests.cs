@@ -123,7 +123,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // no rows should be added to the table.
             Assert.Throws<AggregateException>(() => this.SendOutputRequest("addproduct-extracolumns").Wait());
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM Products"));
-
         }
     }
 }
