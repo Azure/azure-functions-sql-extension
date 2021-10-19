@@ -8,7 +8,7 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 
 <br>
 
-## Contributer Getting Started
+## Contributor Getting Started
 
 ### SQL Setup
 
