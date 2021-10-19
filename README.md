@@ -1,17 +1,17 @@
-# SQL Extension for Azure Functions - Preview
+# Azure SQL binding for Azure Functions - Preview
 
 [![Build Status](https://mssqltools.visualstudio.com/CrossPlatBuildScripts/_apis/build/status/SQL%20Bindings/SQL%20Bindings%20-%20Nightly?branchName=main)](https://mssqltools.visualstudio.com/CrossPlatBuildScripts/_build/latest?definitionId=481&branchName=main)
 
 ## Introduction
 
-This repository contains extension code for SQL bindings as well as a quick start, tutorial, and samples of how to use them. A high level explanation of the bindings is provided below. Additional information for each is in their respective sample sections.
+This repository contains SQL binding extension code as well as a quick start, tutorial, and samples of how to use them.  A high level explanation of the bindings is provided below. Additional information for each is in their respective sample sections.
 
 - **input binding**: takes a SQL query to run on a provided table and returns the output of the query.
 - **output binding**: takes a list of rows and upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
 
 ## Table of Contents
 
-- [SQL Extension for Azure Functions - Preview](#sql-extension-for-azure-functions---preview)
+- [Azure SQL binding for Azure Functions - Preview](#azure-sql-binding-for-azure-functions---preview)
   - [Introduction](#introduction)
   - [Table of Contents](#table-of-contents)
   - [Quick Start](#quick-start)
