@@ -9,14 +9,14 @@ steps:
     version: '2.1.x'
 
 - task: EsrpCodeSigning@1
-  displayName: 'Nuget Code Signing'
+  displayName: 'ESRP Code Signing - Nuget Package'
   inputs:
     ConnectedServiceName: 'Code Signing'
     FolderPath: '$(Build.ArtifactStagingDirectory)'
     Pattern: '*.nupkg'
     signConfigType: 'inlineSignParams'
     inlineOperation: |
-      [ 
+      [
           {
               "keyCode": "CP-401405",
               "operationSetCode": "NuGetSign",
@@ -39,5 +39,5 @@ steps:
 - task: PublishPipelineArtifact@1
   displayName: 'Publish Pipeline Artifact'
   inputs:
-    targetPath: '$(Build.ArtifactStagingDirectory)' 
+    targetPath: '$(Build.ArtifactStagingDirectory)'
     artifactName: 'drop'
