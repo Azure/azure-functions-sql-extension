@@ -121,8 +121,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // Since ProductExtraColumns has columns that does not exist in the table,
             // no rows should be added to the table.
-            Assert.Throws<AggregateException>(() => this.SendOutputRequest("addproduct-extracolumns").Wait());
+            this.SendOutputRequest("addproduct-extracolumns").Wait();
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM Products"));
+        }
+
+        [Fact]
+        public void AddProductMissingColumnsTest()
+        {
+            this.StartFunctionHost(nameof(AddProductMissingColumns));
+
+            // Even though the ProductMissingColumns object is missing the Cost column,
+            // the row should still be added successfully since Cost can be null.
+            this.SendOutputRequest("addproduct-missingcolumns").Wait();
+            Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM Products"));
+            Assert.Null(this.ExecuteScalar("SELECT Cost FROM Products WHERE ProductId = 1"));
         }
     }
 }
