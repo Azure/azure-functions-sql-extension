@@ -135,12 +135,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // the row should still be added successfully since Cost can be null.
             this.SendOutputRequest("addproduct-missingcolumns").Wait();
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM Products"));
+        }
 
-            // After adding the NOT NULL constraint to the Cost column, inserting a row without
-            // a value for the Cost column should throw an exception.
-            this.ExecuteNonQuery("DELETE FROM Products");
-            this.ExecuteNonQuery("ALTER TABLE Products alter column [Cost] INTEGER NOT NULL");
-            Assert.Throws<AggregateException>(() => this.SendOutputRequest("addproduct-missingcolumns").Wait());
+        [Fact]
+        public void AddProductMissingColumnsNotNullTest()
+        {
+            this.StartFunctionHost(nameof(AddProductMissingColumnsException), true);
+
+            // Since the Sql table does not allow null for the Cost column,
+            // inserting a row without a Cost value should throw an Exception.
+            Assert.Throws<AggregateException>(() => this.SendOutputRequest("addproduct-missingcolumnsexception").Wait());
         }
     }
 }
