@@ -164,6 +164,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
+        /// Escape any existing closing brackets and add brackets around the identifier.
+        /// </summary>
+        /// <param name="identifier">The string to bracket quote.</param>
+        /// <returns>The escaped and bracket quoted string.</returns>
+        public static string BracketQuoteIdentifier(string identifier)
+        {
+            return $"[{identifier.Replace("]", "]")}]";
+        }
+
+        /// <summary>
         /// Escape any existing quotes and add quotes around the identifier.
         /// </summary>
         /// <param name="identifier">The string to quote.</param>
