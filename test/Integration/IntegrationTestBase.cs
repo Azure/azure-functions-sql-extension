@@ -120,7 +120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // Create the database definition
             // Ideally all the sql files would be in a sqlproj and can just be deployed
-            string databaseScriptsPath = Path.Combine(this.GetPathToSamplesBin(), "Database");
+            string databaseScriptsPath = Path.Combine(this.GetPathToBin(), "Database");
             foreach (string file in Directory.EnumerateFiles(databaseScriptsPath, "*.sql"))
             {
                 this.ExecuteNonQuery(File.ReadAllText(file));
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// - The functionName is different than its route.<br/>
         /// - You can start multiple functions by passing in a space-separated list of function names.<br/>
         /// </remarks>
-        protected void StartFunctionHost(string functionName)
+        protected void StartFunctionHost(string functionName, bool useTestFolder = false)
         {
             var startInfo = new ProcessStartInfo
             {
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 // We cannot both use shell execute and redirect output at the same time: https://docs.microsoft.com//dotnet/api/system.diagnostics.processstartinfo.redirectstandardoutput#remarks
                 FileName = this.GetFunctionsCoreToolsPath(),
                 Arguments = $"start --verbose --port {this.Port} --functions {functionName}",
-                WorkingDirectory = Path.Combine(this.GetPathToSamplesBin(), "SqlExtensionSamples"),
+                WorkingDirectory = useTestFolder ? this.GetPathToBin() : Path.Combine(this.GetPathToBin(), "SqlExtensionSamples"),
                 WindowStyle = ProcessWindowStyle.Hidden,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -273,7 +273,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             return TestUtils.ExecuteScalar(this.Connection, commandText);
         }
 
-        public string GetPathToSamplesBin()
+        public string GetPathToBin()
         {
             return Path.GetDirectoryName(Assembly.GetAssembly(typeof(Product)).Location);
         }

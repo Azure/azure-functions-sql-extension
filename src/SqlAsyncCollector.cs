@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const string RowDataParameter = "@rowData";
         private const string ColumnName = "COLUMN_NAME";
         private const string ColumnDefinition = "COLUMN_DEFINITION";
-        private const string NewDataParameter = "cte";
+        private const string CteName = "cte";
 
         private readonly IConfiguration _configuration;
         private readonly SqlAttribute _attribute;
@@ -212,7 +212,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             rowData = JsonConvert.SerializeObject(rowsToUpsert, table.JsonSerializerSettings);
-            newDataQuery = $"WITH {NewDataParameter} AS ( SELECT * FROM OPENJSON({RowDataParameter}) WITH ({string.Join(",", table.ColumnDefinitions)}) )";
+            IEnumerable<string> columnNamesFromPOCO = typeof(T).GetProperties().Select(prop => prop.Name);
+            IEnumerable<string> columnDefinitionsFromPOCO = table.Columns.Where(c => columnNamesFromPOCO.Contains(c.Key, StringComparer.OrdinalIgnoreCase)).Select(c => $"{c.Key} {c.Value}");
+            newDataQuery = $"WITH {CteName} AS ( SELECT * FROM OPENJSON({RowDataParameter}) WITH ({string.Join(",", columnDefinitionsFromPOCO)}) )";
         }
 
         public class TableInformation
@@ -299,7 +301,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <summary>
             /// Generates reusable SQL query that will be part of every upsert command.
             /// </summary>
-            public static string GetMergeQuery(IList<string> primaryKeys, IDictionary<string, string> columnDataFromSQL, string fullTableName)
+            public static string GetMergeQuery(IList<string> primaryKeys, string fullTableName)
             {
                 // Generate the ON part of the merge query (compares new data against existing data)
                 var primaryKeyMatchingQuery = new StringBuilder($"ExistingData.{primaryKeys[0]} = NewData.{primaryKeys[0]}");
@@ -309,9 +311,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
 
                 // Generate the UPDATE part of the merge query (all columns that should be updated)
-                IEnumerable<string> columnNamesFromSQL = columnDataFromSQL.Select(kvp => kvp.Key);
+                IEnumerable<string> columnNamesFromPOCO = typeof(T).GetProperties().Select(prop => prop.Name.ToLowerInvariant());
                 var columnMatchingQueryBuilder = new StringBuilder();
-                foreach (string column in columnNamesFromSQL)
+                foreach (string column in columnNamesFromPOCO)
                 {
                     columnMatchingQueryBuilder.Append($" ExistingData.{column} = NewData.{column},");
                 }
@@ -320,14 +322,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 return @$"
                     MERGE INTO {fullTableName} WITH (HOLDLOCK)
                         AS ExistingData
-                    USING {NewDataParameter}
+                    USING {CteName}
                         AS NewData
                     ON
                         {primaryKeyMatchingQuery}
                     WHEN MATCHED THEN
                         UPDATE SET {columnMatchingQuery}
                     WHEN NOT MATCHED THEN
-                        INSERT ({string.Join(",", columnNamesFromSQL)}) VALUES ({string.Join(",", columnNamesFromSQL)})";
+                        INSERT ({string.Join(",", columnNamesFromPOCO)}) VALUES ({string.Join(",", columnNamesFromPOCO)})";
             }
 
             /// <summary>
@@ -410,7 +412,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new InvalidOperationException(message);
                 }
 
-                return new TableInformation(primaryKeyFields, columnDefinitionsFromSQL, GetMergeQuery(primaryKeys, columnDefinitionsFromSQL, fullName));
+                return new TableInformation(primaryKeyFields, columnDefinitionsFromSQL, GetMergeQuery(primaryKeys, fullName));
             }
         }
 

@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples;
 using Xunit;
 using Xunit.Abstractions;
+using Microsoft.Data.SqlClient;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -117,12 +118,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public void AddProductExtraColumnsTest()
         {
-            this.StartFunctionHost(nameof(AddProductExtraColumns));
+            this.StartFunctionHost(nameof(AddProductExtraColumns), true);
 
             // Since ProductExtraColumns has columns that does not exist in the table,
             // no rows should be added to the table.
             Assert.Throws<AggregateException>(() => this.SendOutputRequest("addproduct-extracolumns").Wait());
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM Products"));
+        }
+
+        [Fact]
+        public void AddProductMissingColumnsTest()
+        {
+            this.StartFunctionHost(nameof(AddProductMissingColumns), true);
+
+            // Even though the ProductMissingColumns object is missing the Cost column,
+            // the row should still be added successfully since Cost can be null.
+            this.SendOutputRequest("addproduct-missingcolumns").Wait();
+            Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM Products"));
+        }
+
+        [Fact]
+        public void AddProductMissingColumnsNotNullTest()
+        {
+            this.StartFunctionHost(nameof(AddProductMissingColumnsException), true);
+
+            // Since the Sql table does not allow null for the Cost column,
+            // inserting a row without a Cost value should throw an Exception.
+            Assert.Throws<AggregateException>(() => this.SendOutputRequest("addproduct-missingcolumnsexception").Wait());
         }
     }
 }
