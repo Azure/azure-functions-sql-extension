@@ -214,7 +214,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             rowData = JsonConvert.SerializeObject(rowsToUpsert, table.JsonSerializerSettings);
             IEnumerable<string> columnNamesFromPOCO = typeof(T).GetProperties().Select(prop => prop.Name);
             IEnumerable<string> bracketColumnDefinitionsFromPOCO = table.Columns.Where(c => columnNamesFromPOCO.Contains(c.Key, StringComparer.OrdinalIgnoreCase))
-                .Select(c => $"{SqlBindingUtilities.BracketQuoteIdentifier(c.Key)} {c.Value}");
+                .Select(c => $"{c.Key.AsBracketQuotedString()} {c.Value}");
             newDataQuery = $"WITH {CteName} AS ( SELECT * FROM OPENJSON({RowDataParameter}) WITH ({string.Join(",", bracketColumnDefinitionsFromPOCO)}) )";
         }
 
@@ -304,7 +304,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </summary>
             public static string GetMergeQuery(IList<string> primaryKeys, string fullTableName)
             {
-                IList<string> bracketedPrimaryKeys = primaryKeys.Select(p => SqlBindingUtilities.BracketQuoteIdentifier(p)).ToList();
+                IList<string> bracketedPrimaryKeys = primaryKeys.Select(p => p.AsBracketQuotedString()).ToList();
                 // Generate the ON part of the merge query (compares new data against existing data)
                 var primaryKeyMatchingQuery = new StringBuilder($"ExistingData.{bracketedPrimaryKeys[0]} = NewData.{bracketedPrimaryKeys[0]}");
                 foreach (string primaryKey in bracketedPrimaryKeys.Skip(1))
@@ -313,7 +313,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
 
                 // Generate the UPDATE part of the merge query (all columns that should be updated)
-                IEnumerable<string> bracketedColumnNamesFromPOCO = typeof(T).GetProperties().Select(prop => SqlBindingUtilities.BracketQuoteIdentifier(prop.Name.ToLowerInvariant()));
+                IEnumerable<string> bracketedColumnNamesFromPOCO = typeof(T).GetProperties().Select(prop => prop.Name.ToLowerInvariant().AsBracketQuotedString());
                 var columnMatchingQueryBuilder = new StringBuilder();
                 foreach (string column in bracketedColumnNamesFromPOCO)
                 {

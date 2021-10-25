@@ -70,9 +70,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [InlineData("columnName", "[columnName]")]
         [InlineData("column]Name", "[column]]Name]")]
         [InlineData("col[umn]Name", "[col[umn]]Name]")]
-        public void TestBracketQuoteIdentifier(string identifier, string expectedResult)
+        public void TestAsBracketQuotedString(string s, string expectedResult)
         {
-            string result = SqlBindingUtilities.BracketQuoteIdentifier(identifier);
+            string result = s.AsBracketQuotedString();
             Assert.Equal(expectedResult, result);
         }
     }
