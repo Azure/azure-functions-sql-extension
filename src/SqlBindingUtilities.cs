@@ -164,13 +164,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Escape any existing quotes and add quotes around the identifier.
+        /// Escape any existing closing brackets and add brackets around the string
         /// </summary>
-        /// <param name="identifier">The string to quote.</param>
-        /// <returns>The escaped and quoted string.</returns>
-        public static string QuoteIdentifier(string identifier)
+        /// <param name="s">The string to bracket quote.</param>
+        /// <returns>The escaped and bracket quoted string.</returns>
+        public static string AsBracketQuotedString(this string s)
         {
-            return $"'{identifier.Replace("'", "''")}'";
+            return $"[{s.Replace("]", "]]")}]";
+        }
+
+        /// <summary>
+        /// Escape any existing quotes and add quotes around the string.
+        /// </summary>
+        /// <param name="s">The string to quote.</param>
+        /// <returns>The escaped and quoted string.</returns>
+        public static string AsQuotedString(this string s)
+        {
+            return $"'{s.Replace("'", "''")}'";
         }
 
         /// <summary>
@@ -212,8 +222,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             public override void Visit(SchemaObjectName node)
             {
-                this.quotedSchema = node.SchemaIdentifier != null ? QuoteIdentifier(node.SchemaIdentifier.Value) : "SCHEMA_NAME()";
-                this.quotedTableName = QuoteIdentifier(node.BaseIdentifier.Value);
+                this.quotedSchema = node.SchemaIdentifier != null ? node.SchemaIdentifier.Value.AsQuotedString() : "SCHEMA_NAME()";
+                this.quotedTableName = node.BaseIdentifier.Value.AsQuotedString();
             }
         }
     }

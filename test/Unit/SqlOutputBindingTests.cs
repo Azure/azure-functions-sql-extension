@@ -65,5 +65,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
             string errorMessage = Assert.Throws<InvalidOperationException>(() => SqlBindingUtilities.GetTableAndSchema(fullName, out string quotedSchema, out string quotedTableName)).Message;
             Assert.Equal(expectedErrorMessage, errorMessage);
         }
+
+        [Theory]
+        [InlineData("columnName", "[columnName]")]
+        [InlineData("column]Name", "[column]]Name]")]
+        [InlineData("col[umn]Name", "[col[umn]]Name]")]
+        public void TestAsBracketQuotedString(string s, string expectedResult)
+        {
+            string result = s.AsBracketQuotedString();
+            Assert.Equal(expectedResult, result);
+        }
     }
 }
