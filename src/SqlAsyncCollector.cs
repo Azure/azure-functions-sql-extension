@@ -213,8 +213,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             rowData = JsonConvert.SerializeObject(rowsToUpsert, table.JsonSerializerSettings);
             IEnumerable<string> columnNamesFromPOCO = typeof(T).GetProperties().Select(prop => prop.Name);
-            IEnumerable<string> columnDefinitionsFromPOCO = table.Columns.Where(c => columnNamesFromPOCO.Contains(c.Key, StringComparer.OrdinalIgnoreCase)).Select(c => $"{c.Key} {c.Value}");
-            newDataQuery = $"WITH {CteName} AS ( SELECT * FROM OPENJSON({RowDataParameter}) WITH ({string.Join(",", columnDefinitionsFromPOCO)}) )";
+            IEnumerable<string> bracketColumnDefinitionsFromPOCO = table.Columns.Where(c => columnNamesFromPOCO.Contains(c.Key, StringComparer.OrdinalIgnoreCase))
+                .Select(c => $"{c.Key.AsBracketQuotedString()} {c.Value}");
+            newDataQuery = $"WITH {CteName} AS ( SELECT * FROM OPENJSON({RowDataParameter}) WITH ({string.Join(",", bracketColumnDefinitionsFromPOCO)}) )";
         }
 
         public class TableInformation
@@ -303,17 +304,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </summary>
             public static string GetMergeQuery(IList<string> primaryKeys, string fullTableName)
             {
+                IList<string> bracketedPrimaryKeys = primaryKeys.Select(p => p.AsBracketQuotedString()).ToList();
                 // Generate the ON part of the merge query (compares new data against existing data)
-                var primaryKeyMatchingQuery = new StringBuilder($"ExistingData.{primaryKeys[0]} = NewData.{primaryKeys[0]}");
-                foreach (string primaryKey in primaryKeys.Skip(1))
+                var primaryKeyMatchingQuery = new StringBuilder($"ExistingData.{bracketedPrimaryKeys[0]} = NewData.{bracketedPrimaryKeys[0]}");
+                foreach (string primaryKey in bracketedPrimaryKeys.Skip(1))
                 {
                     primaryKeyMatchingQuery.Append($" AND ExistingData.{primaryKey} = NewData.{primaryKey}");
                 }
 
                 // Generate the UPDATE part of the merge query (all columns that should be updated)
-                IEnumerable<string> columnNamesFromPOCO = typeof(T).GetProperties().Select(prop => prop.Name.ToLowerInvariant());
+                IEnumerable<string> bracketedColumnNamesFromPOCO = typeof(T).GetProperties().Select(prop => prop.Name.ToLowerInvariant().AsBracketQuotedString());
                 var columnMatchingQueryBuilder = new StringBuilder();
-                foreach (string column in columnNamesFromPOCO)
+                foreach (string column in bracketedColumnNamesFromPOCO)
                 {
                     columnMatchingQueryBuilder.Append($" ExistingData.{column} = NewData.{column},");
                 }
@@ -329,7 +331,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     WHEN MATCHED THEN
                         UPDATE SET {columnMatchingQuery}
                     WHEN NOT MATCHED THEN
-                        INSERT ({string.Join(",", columnNamesFromPOCO)}) VALUES ({string.Join(",", columnNamesFromPOCO)})";
+                        INSERT ({string.Join(",", bracketedColumnNamesFromPOCO)}) VALUES ({string.Join(",", bracketedColumnNamesFromPOCO)})";
             }
 
             /// <summary>
