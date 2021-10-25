@@ -170,7 +170,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The escaped and bracket quoted string.</returns>
         public static string BracketQuoteIdentifier(string identifier)
         {
-            return $"[{identifier.Replace("]", "]")}]";
+            return $"[{identifier.Replace("]", "]]")}]";
         }
 
         /// <summary>
