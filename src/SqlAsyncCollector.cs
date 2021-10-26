@@ -151,14 +151,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             int batchSize = 1000;
             await connection.OpenAsync();
-            foreach (IEnumerable<T> batch in rows.Batch(batchSize))
+            SqlCommand command = connection.CreateCommand();
+            SqlTransaction transaction = connection.BeginTransaction("Upsert");
+            command.Connection = connection;
+            command.Transaction = transaction;
+            SqlParameter par = command.Parameters.Add(RowDataParameter, SqlDbType.NVarChar, -1);
+            try
             {
-                GenerateDataQueryForMerge(tableInfo, batch, out string newDataQuery, out string rowData);
-                var cmd = new SqlCommand($"{newDataQuery} {tableInfo.MergeQuery};", connection);
-                SqlParameter par = cmd.Parameters.Add(RowDataParameter, SqlDbType.NVarChar, -1);
-                par.Value = rowData;
+                foreach (IEnumerable<T> batch in rows.Batch(batchSize))
+                {
+                    GenerateDataQueryForMerge(tableInfo, batch, out string newDataQuery, out string rowData);
+                    command.CommandText = $"{newDataQuery} {tableInfo.MergeQuery};";
+                    par.Value = rowData;
 
-                await cmd.ExecuteNonQueryAsync();
+                    await command.ExecuteNonQueryAsync();
+                }
+                transaction.Commit();
+            }
+            catch (Exception ex)
+            {
+                this._logger.LogWarning($"Encountered an exception while upserting: {0}", ex.Message);
+                try
+                {
+                    transaction.Rollback();
+                }
+                catch (Exception ex2)
+                {
+                    this._logger.LogWarning($"Encountered an exception during rollback. {0}", ex2.Message);
+                }
             }
             await connection.CloseAsync();
         }
