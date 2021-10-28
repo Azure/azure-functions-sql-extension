@@ -156,29 +156,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             command.Connection = connection;
             command.Transaction = transaction;
             SqlParameter par = command.Parameters.Add(RowDataParameter, SqlDbType.NVarChar, -1);
-            foreach (IEnumerable<T> batch in rows.Batch(batchSize))
-            {
-                GenerateDataQueryForMerge(tableInfo, batch, out string newDataQuery, out string rowData);
-                command.CommandText = $"{newDataQuery} {tableInfo.MergeQuery};";
-                par.Value = rowData;
-
-                await command.ExecuteNonQueryAsync();
-            }
             try
             {
+                foreach (IEnumerable<T> batch in rows.Batch(batchSize))
+                {
+                    GenerateDataQueryForMerge(tableInfo, batch, out string newDataQuery, out string rowData);
+                    command.CommandText = $"{newDataQuery} {tableInfo.MergeQuery};";
+                    par.Value = rowData;
+
+                    await command.ExecuteNonQueryAsync();
+                }
                 transaction.Commit();
             }
             catch (Exception ex)
             {
-                this._logger.LogWarning($"Encountered an exception during upsert transaction commit: {ex.Message}");
                 try
                 {
                     transaction.Rollback();
                 }
                 catch (Exception ex2)
                 {
-                    this._logger.LogWarning($"Encountered an exception during rollback: {ex2.Message}");
+                    string message2 = $"Encountered exception during upsert and rollback.";
+                    throw new AggregateException(message2, new List<Exception> { ex, ex2 });
                 }
+                throw;
             }
             await connection.CloseAsync();
         }
