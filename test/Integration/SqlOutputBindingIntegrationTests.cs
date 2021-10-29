@@ -152,7 +152,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             this.StartFunctionHost(nameof(AddProductsNoPartialUpsert), true);
 
-            Assert.Throws<AggregateException>(() => this.SendOutputRequest("addproduct-nopartialupsert").Wait());
+            Assert.Throws<AggregateException>(() => this.SendOutputRequest("addproducts-nopartialupsert").Wait());
             // No rows should be upserted since there was a row with an invalid value
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsNameNotNull"));
         }

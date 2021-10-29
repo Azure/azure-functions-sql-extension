@@ -11,11 +11,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
     public static class AddProductsNoPartialUpsert
     {
-        // This output binding should throw an error since the ProductsCostNotNull table does not 
-        // allows rows without a Cost value. No rows should be upserted to the Sql table.
-        [FunctionName("AddProductNoPartialUpsert")]
+        // This output binding should throw an error since the ProductsNameNotNull table does not 
+        // allows rows without a Name value. No rows should be upserted to the Sql table.
+        [FunctionName("AddProductsNoPartialUpsert")]
         public static IActionResult Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct-nopartialupsert")]
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproducts-nopartialupsert")]
             HttpRequest req,
             [Sql("dbo.ProductsNameNotNull", ConnectionStringSetting = "SqlConnectionString")] ICollector<Product> products)
         {
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             };
             products.Add(invalidProduct);
 
-            return new CreatedResult($"/api/addproduct-nopartialupsert", "done");
+            return new CreatedResult($"/api/addproducts-nopartialupsert", "done");
         }
     }
 }
