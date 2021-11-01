@@ -109,16 +109,6 @@ steps:
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) --no-build -p:PackageVersion="${{ parameters.nugetVersion }}" -p:GeneratePackageOnBuild=false'
 
-  # Build preview version of nuget with same version
-  # Extra parameter GeneratePackageOnBuild=false is needed for issue https://github.com/dotnet/sdk/pull/3473#issuecomment-516612070
-- task: DotNetCoreCLI@2
-  displayName: '.NET Pack Preview Nuget'
-  inputs:
-    command: custom
-    custom: pack
-    projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) --no-build -p:PackageVersion="${{ parameters.nugetVersion }}-preview" -p:GeneratePackageOnBuild=false'
-
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'
   env:
