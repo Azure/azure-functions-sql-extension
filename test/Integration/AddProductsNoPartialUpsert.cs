@@ -11,6 +11,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
     public static class AddProductsNoPartialUpsert
     {
+        public const int UpsertBatchSize = 1000;
+
         // This output binding should throw an error since the ProductsNameNotNull table does not 
         // allows rows without a Name value. No rows should be upserted to the Sql table.
         [FunctionName("AddProductsNoPartialUpsert")]
@@ -19,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             HttpRequest req,
             [Sql("dbo.ProductsNameNotNull", ConnectionStringSetting = "SqlConnectionString")] ICollector<Product> products)
         {
-            List<Product> newProducts = ProductUtilities.GetNewProducts(1000);
+            List<Product> newProducts = ProductUtilities.GetNewProducts(UpsertBatchSize);
             foreach (Product product in newProducts)
             {
                 products.Add(product);
@@ -28,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             var invalidProduct = new Product
             {
                 Name = null,
-                ProductID = 1000,
+                ProductID = UpsertBatchSize,
                 Cost = 100
             };
             products.Add(invalidProduct);
