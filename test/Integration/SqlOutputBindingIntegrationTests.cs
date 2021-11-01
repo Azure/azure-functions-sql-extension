@@ -146,5 +146,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // inserting a row without a Cost value should throw an Exception.
             Assert.Throws<AggregateException>(() => this.SendOutputRequest("addproduct-missingcolumnsexception").Wait());
         }
+
+        [Fact]
+        public void AddProductNoPartialUpsertTest()
+        {
+            this.StartFunctionHost(nameof(AddProductsNoPartialUpsert), true);
+
+            Assert.Throws<AggregateException>(() => this.SendOutputRequest("addproducts-nopartialupsert").Wait());
+            // No rows should be upserted since there was a row with an invalid value
+            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsNameNotNull"));
+        }
     }
 }
