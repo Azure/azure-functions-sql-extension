@@ -47,6 +47,15 @@ steps:
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=false'
 
+- task: DotNetCoreCLI@2
+  displayName: '.NET Test'
+  env:
+    SA_PASSWORD: '$(serverPassword)'
+  inputs:
+    command: test
+    projects: '${{ parameters.solution }}'
+    arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} --collect "Code Coverage"'
+
 - task: UseDotNet@2
   displayName: 'Install .NET Core SDK 2.1.x for CodeSign'
   inputs:
@@ -123,20 +132,6 @@ steps:
     custom: pack
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) --no-build -p:PackageVersion="${{ parameters.nugetVersion }}-preview" -p:GeneratePackageOnBuild=false'
-
-- task: UseDotNet@2
-  displayName: 'Use .NET Core SDK 3.1.x for Tests'
-  inputs:
-    version: '3.1.x'
-
-- task: DotNetCoreCLI@2
-  displayName: '.NET Test'
-  env:
-    SA_PASSWORD: '$(serverPassword)'
-  inputs:
-    command: test
-    projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} --collect "Code Coverage"'
 
 - script: |
     docker stop sql1
