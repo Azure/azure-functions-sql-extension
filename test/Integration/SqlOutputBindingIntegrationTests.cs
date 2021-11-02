@@ -94,7 +94,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             this.SendPostRequest(uri, json).Wait();
 
-            Thread.Sleep(30000);
+            Thread.Sleep(10000);
 
             // Function should add 100 rows
             Assert.Equal(100, this.ExecuteScalar("SELECT COUNT(1) FROM Products"));
