@@ -12,7 +12,7 @@
     <IncludeSymbols>false</IncludeSymbols>
     <DebugType>embedded</DebugType>
     <PackageId>Microsoft.Azure.WebJobs.Extensions.Sql</PackageId>
-    <PackageTags>Microsoft Azure WebJobs AzureFunctions SQL</PackageTags>
+    <PackageTags>Microsoft Azure WebJobs AzureFunctions SQL AzureSQL</PackageTags>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/Azure/azure-functions-sql-extension</PackageProjectUrl>
