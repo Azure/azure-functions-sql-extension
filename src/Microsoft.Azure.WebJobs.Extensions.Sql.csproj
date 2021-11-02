@@ -15,8 +15,7 @@
     <PackageTags>Microsoft Azure WebJobs AzureFunctions SQL</PackageTags>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>http://go.microsoft.com/fwlink/?LinkID=320972</PackageProjectUrl>
-
+    <PackageProjectUrl>https://github.com/Azure/azure-functions-sql-extension</PackageProjectUrl>
     <!-- Need to set root namespace to empty for IDE0130 to work properly - otherwise it errors out on top-level namespaces for some reason -->
     <RootNamespace></RootNamespace>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
