@@ -124,6 +124,11 @@ steps:
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) --no-build -p:PackageVersion="${{ parameters.nugetVersion }}-preview" -p:GeneratePackageOnBuild=false'
 
+- task: UseDotNet@2
+  displayName: 'Use .NET Core SDK 3.1.x for Tests'
+  inputs:
+    version: '3.1.x'
+
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'
   env:
@@ -131,7 +136,7 @@ steps:
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} --collect "Code Coverage" --logger trx'
+    arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} --collect "Code Coverage"'
 
 - script: |
     docker stop sql1
