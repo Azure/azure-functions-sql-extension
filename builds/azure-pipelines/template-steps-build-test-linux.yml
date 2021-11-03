@@ -6,9 +6,9 @@ parameters:
 
 steps:
 - task: UseDotNet@2
-  displayName: 'Install .NET Core SDK 3.1.x for Build'
+  displayName: 'Install .NET Core SDK 5.0.x for Build'
   inputs:
-    version: '3.1.x'
+    version: '5.0.x'
 
 - script: npm install -g azure-functions-core-tools
   displayName: 'Install Azure Functions Core Tools'
@@ -46,15 +46,6 @@ steps:
     command: build
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=false'
-
-- task: DotNetCoreCLI@2
-  displayName: '.NET Test'
-  env:
-    SA_PASSWORD: '$(serverPassword)'
-  inputs:
-    command: test
-    projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} --collect "Code Coverage"'
 
 - task: UseDotNet@2
   displayName: 'Install .NET Core SDK 2.1.x for CodeSign'
@@ -132,6 +123,15 @@ steps:
     custom: pack
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) --no-build -p:PackageVersion="${{ parameters.nugetVersion }}-preview" -p:GeneratePackageOnBuild=false'
+
+- task: DotNetCoreCLI@2
+  displayName: '.NET Test'
+  env:
+    SA_PASSWORD: '$(serverPassword)'
+  inputs:
+    command: test
+    projects: '${{ parameters.solution }}'
+    arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} --collect "Code Coverage"'
 
 - script: |
     docker stop sql1
