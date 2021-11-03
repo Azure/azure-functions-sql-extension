@@ -38,7 +38,7 @@ stages:
           solution: '$(solution)'
           configuration: '$(configuration)'
           nugetVersion: '$(nugetVersion)'
-          testFilter: '--filter "DisplayName~SqlInputBindingTests|DisplayName~SqlOutputBindingTests"'
+          testFilter: ''
 
       - template: 'template-steps-publish.yml'
         parameters:

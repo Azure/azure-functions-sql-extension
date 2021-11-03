@@ -136,7 +136,7 @@ steps:
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} --collect "Code Coverage"'
+    arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/runsettings.xml'
 
 - script: |
     docker stop sql1
