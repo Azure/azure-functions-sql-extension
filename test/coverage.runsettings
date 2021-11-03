@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+    <DataCollector friendlyName="Code Coverage">
+        <Configuration>
+            <CodeCoverage>
+                <ModulePaths>
+                    <Include>
+                        <ModulePath>.*\Microsoft.Azure.WebJobs.Extensions.Sql.dll$</ModulePath>
+                    </Include>
+                </ModulePaths>
+            </CodeCoverage>
+        </Configuration>
+    </DataCollector>
+</RunSettings>
