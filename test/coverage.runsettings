@@ -4,6 +4,7 @@
         <DataCollectors>
             <DataCollector friendlyName="Code Coverage">
                 <Configuration>
+                    <SplitCoverage>True</SplitCoverage>
                     <CodeCoverage>
                         <ModulePaths>
                             <Include>
