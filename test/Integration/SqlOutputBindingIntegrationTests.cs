@@ -84,22 +84,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Equal(5000, this.ExecuteScalar("SELECT COUNT(1) FROM Products"));
         }
 
-        // Temporarily disable Queue Trigger test
-        // [Fact]
-        // public void QueueTriggerProductsTest()
-        // {
-        //     this.StartFunctionHost(nameof(QueueTriggerProducts));
+        [Fact]
+        public void QueueTriggerProductsTest()
+        {
+            this.StartFunctionHost(nameof(QueueTriggerProducts));
 
-        //     string uri = $"http://localhost:{this.Port}/admin/functions/QueueTriggerProducts";
-        //     string json = "{ 'input': 'Test Data' }";
+            string uri = $"http://localhost:{this.Port}/admin/functions/QueueTriggerProducts";
+            string json = "{ 'input': 'Test Data' }";
 
-        //     this.SendPostRequest(uri, json).Wait();
+            this.SendPostRequest(uri, json).Wait();
 
-        //     Thread.Sleep(5000);
+            Thread.Sleep(10000);
 
-        //     // Function should add 100 rows
-        //     Assert.Equal(100, this.ExecuteScalar("SELECT COUNT(1) FROM Products"));
-        // }
+            // Function should add 100 rows
+            Assert.Equal(100, this.ExecuteScalar("SELECT COUNT(1) FROM Products"));
+        }
 
         [Fact]
         public void TimerTriggerProductsTest()
