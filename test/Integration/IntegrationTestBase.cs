@@ -181,7 +181,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.FunctionHost.BeginOutputReadLine();
             this.FunctionHost.BeginErrorReadLine();
 
-            Thread.Sleep(30000);     // This is just to give some time to func host to start, maybe there's a better way to do this (check if port's open?)
+            Thread.Sleep(10000);     // This is just to give some time to func host to start, maybe there's a better way to do this (check if port's open?)
         }
 
         private string GetFunctionsCoreToolsPath()
