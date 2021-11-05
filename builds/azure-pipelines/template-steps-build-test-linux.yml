@@ -138,12 +138,6 @@ steps:
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings'
 
-- task: PublishCodeCoverageResults@1
-  displayName: 'Publish Code Coverage Results'
-  inputs:
-    codeCoverageTool: Cobertura
-    summaryFileLocation: '**/*.cobertura.xml'
-
 - script: |
     docker stop sql1
     docker rm sql1
