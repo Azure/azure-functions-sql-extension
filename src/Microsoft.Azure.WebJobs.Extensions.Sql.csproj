@@ -12,6 +12,7 @@
     <IncludeSymbols>false</IncludeSymbols>
     <DebugType>embedded</DebugType>
     <PackageId>Microsoft.Azure.WebJobs.Extensions.Sql</PackageId>
+    <PackageIcon>pkgicon.png</PackageIcon>
     <!-- Need to set root namespace to empty for IDE0130 to work properly - otherwise it errors out on top-level namespaces for some reason -->
     <RootNamespace></RootNamespace>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
@@ -40,6 +41,7 @@
     <Reference Include="Microsoft.SqlServer.TransactSql.ScriptDom">
       <HintPath>..\lib\Microsoft.SqlServer.TransactSql.ScriptDom.dll</HintPath>
     </Reference>
+    <None Include="pkgicon.png" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>
