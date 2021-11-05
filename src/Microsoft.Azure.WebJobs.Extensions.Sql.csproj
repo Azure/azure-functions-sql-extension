@@ -1,17 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <Description>SQL binding extension for Azure Functions</Description>
     <Company>Microsoft</Company>
     <Authors>Microsoft</Authors>
     <Product>SQL Binding Extension</Product>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <DebugSymbols>true</DebugSymbols>
     <IncludeSymbols>false</IncludeSymbols>
     <DebugType>embedded</DebugType>
     <PackageId>Microsoft.Azure.WebJobs.Extensions.Sql</PackageId>
+    <PackageTags>Microsoft Azure WebJobs AzureFunctions SQL AzureSQL</PackageTags>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/Azure/azure-functions-sql-extension</PackageProjectUrl>
     <PackageIcon>pkgicon.png</PackageIcon>
     <!-- Need to set root namespace to empty for IDE0130 to work properly - otherwise it errors out on top-level namespaces for some reason -->
     <RootNamespace></RootNamespace>
