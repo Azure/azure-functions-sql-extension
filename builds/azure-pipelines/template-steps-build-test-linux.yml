@@ -6,7 +6,7 @@ parameters:
 
 steps:
 - task: UseDotNet@2
-  displayName: 'Install .NET Core SDK 5.0.x for Build'
+  displayName: 'Install .NET Core SDK 5.0.x for Running Tests'
   inputs:
     version: '5.0.x'
 
