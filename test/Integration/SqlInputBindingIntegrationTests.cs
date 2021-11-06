@@ -36,7 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.StartFunctionHost(nameof(GetProducts));
 
             // Generate T-SQL to insert n rows of data with cost
-            Product[] products = this.GetProductsWithSameCost(n, cost);
+            Product[] products = GetProductsWithSameCost(n, cost);
             this.InsertProducts(products);
 
             // Run the function
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.StartFunctionHost(nameof(GetProductsStoredProcedure));
 
             // Generate T-SQL to insert n rows of data with cost
-            Product[] products = this.GetProductsWithSameCost(n, cost);
+            Product[] products = GetProductsWithSameCost(n, cost);
             this.InsertProducts(products);
 
             // Run the function
@@ -80,10 +80,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.StartFunctionHost(nameof(GetProductsNameEmpty));
 
             // Add a bunch of noise data
-            this.InsertProducts(this.GetProductsWithSameCost(n * 2, cost));
+            this.InsertProducts(GetProductsWithSameCost(n * 2, cost));
 
             // Now add the actual test data
-            Product[] products = this.GetProductsWithSameCostAndName(n, cost, "", n * 2);
+            Product[] products = GetProductsWithSameCostAndName(n, cost, "", n * 2);
             this.InsertProducts(products);
 
             Assert.Equal(n, this.ExecuteScalar($"select count(1) from Products where name = '' and cost = {cost}"));
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Equal(expectedResponse, actualResponse, StringComparer.OrdinalIgnoreCase);
         }
 
-        private Product[] GetProductsWithSameCost(int n, int cost)
+        private static Product[] GetProductsWithSameCost(int n, int cost)
         {
             var result = new Product[n];
             for (int i = 0; i < n; i++)
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             return result;
         }
 
-        private Product[] GetProductsWithSameCostAndName(int n, int cost, string name, int offset = 0)
+        private static Product[] GetProductsWithSameCostAndName(int n, int cost, string name, int offset = 0)
         {
             var result = new Product[n];
             for (int i = 0; i < n; i++)
