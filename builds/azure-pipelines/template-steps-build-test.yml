@@ -42,10 +42,13 @@ steps:
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=false'
 
+# 5.0 isn't supported on Mac yet
 - task: UseDotNet@2
-  displayName: 'Install .NET Core SDK 2.1.x for CodeSign'
+  displayName: 'Install .NET Core 2.1.x SDK for CodeSigning on Mac'
   inputs:
     version: '2.1.x'
+  condition: eq(variables['Agent.OS'], 'Darwin')
+
 
 - task: EsrpCodeSigning@1
   displayName: 'ESRP CodeSigning - Binaries'
