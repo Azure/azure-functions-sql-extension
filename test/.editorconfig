@@ -1,0 +1,10 @@
+# See https://github.com/dotnet/roslyn-analyzers/blob/main/.editorconfig for an example on different settings and how they're used
+
+[*.cs]
+# Disable these until they can be fixed
+dotnet_diagnostic.CA1309.severity = silent
+dotnet_diagnostic.CA1822.severity = silent
+dotnet_diagnostic.CA1816.severity = silent
+dotnet_diagnostic.CA1305.severity = silent
+dotnet_diagnostic.CA1805.severity = silent
+dotnet_diagnostic.CA1711.severity = silent
