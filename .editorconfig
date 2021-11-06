@@ -8,6 +8,14 @@ root = true
 
 dotnet_analyzer_diagnostic.severity = error
 
+# Documentation related errors, remove once they are fixed
+dotnet_diagnostic.CS1591.severity = none
+dotnet_diagnostic.CS1573.severity = none
+dotnet_diagnostic.CS1572.severity = none
+dotnet_diagnostic.CS1570.severity = none
+dotnet_diagnostic.CS1574.severity = none
+dotnet_diagnostic.CS1584.severity = none
+
 #### Core EditorConfig Options ####
 
 # Indentation and spacing
