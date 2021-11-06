@@ -52,11 +52,6 @@ steps:
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=false'
 
-- task: UseDotNet@2
-  displayName: 'Install .NET Core SDK 2.1.x for CodeSign'
-  inputs:
-    version: '2.1.x'
-
 - task: EsrpCodeSigning@1
   displayName: 'ESRP CodeSigning - Binaries'
   inputs:
