@@ -280,8 +280,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         public void Dispose()
         {
-            this.Connection.Close();
-
+            try
+            {
+                this.Connection.Close();
+            }
+            catch (Exception e1)
+            {
+                this.TestOutput.WriteLine($"Failed to close connection. Error: {e1.Message}");
+            }
             try
             {
                 // Drop the test database
@@ -289,19 +295,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 masterConnection.Open();
                 TestUtils.ExecuteNonQuery(masterConnection, $"DROP DATABASE IF EXISTS {this.DatabaseName}");
             }
-            catch (Exception e)
+            catch (Exception e2)
             {
-                this.TestOutput.WriteLine($"Failed to drop {this.DatabaseName}, Error: {e.Message}");
+                this.TestOutput.WriteLine($"Failed to drop {this.DatabaseName}, Error: {e2.Message}");
             }
             finally
             {
                 this.Connection.Dispose();
 
-                this.FunctionHost?.Kill();
-                this.FunctionHost?.Dispose();
+                // Try to clean up after test run, but don't consider it a failure if we can't for some reason
+                try
+                {
+                    this.FunctionHost?.Kill();
+                    this.FunctionHost?.Dispose();
+                }
+                catch (Exception e3)
+                {
+                    this.TestOutput.WriteLine($"Failed to stop function host, Error: {e3.Message}");
+                }
 
-                this.AzuriteHost?.Kill();
-                this.AzuriteHost?.Dispose();
+                try
+                {
+                    this.AzuriteHost?.Kill();
+                    this.AzuriteHost?.Dispose();
+                }
+                catch (Exception e4)
+                {
+                    this.TestOutput.WriteLine($"Failed to stop Azurite, Error: {e4.Message}");
+                }
             }
             GC.SuppressFinalize(this);
         }
