@@ -303,6 +303,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 this.AzuriteHost?.Kill();
                 this.AzuriteHost?.Dispose();
             }
+            GC.SuppressFinalize(this);
         }
     }
 }
