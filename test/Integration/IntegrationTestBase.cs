@@ -120,7 +120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // Create the database definition
             // Ideally all the sql files would be in a sqlproj and can just be deployed
-            string databaseScriptsPath = Path.Combine(this.GetPathToBin(), "Database");
+            string databaseScriptsPath = Path.Combine(GetPathToBin(), "Database");
             foreach (string file in Directory.EnumerateFiles(databaseScriptsPath, "*.sql"))
             {
                 this.ExecuteNonQuery(File.ReadAllText(file));
@@ -161,9 +161,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 // The full path to the Functions CLI is required in the ProcessStartInfo because UseShellExecute is set to false.
                 // We cannot both use shell execute and redirect output at the same time: https://docs.microsoft.com//dotnet/api/system.diagnostics.processstartinfo.redirectstandardoutput#remarks
-                FileName = this.GetFunctionsCoreToolsPath(),
+                FileName = GetFunctionsCoreToolsPath(),
                 Arguments = $"start --verbose --port {this.Port} --functions {functionName}",
-                WorkingDirectory = useTestFolder ? this.GetPathToBin() : Path.Combine(this.GetPathToBin(), "SqlExtensionSamples"),
+                WorkingDirectory = useTestFolder ? GetPathToBin() : Path.Combine(GetPathToBin(), "SqlExtensionSamples"),
                 WindowStyle = ProcessWindowStyle.Hidden,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Thread.Sleep(10000);     // This is just to give some time to func host to start, maybe there's a better way to do this (check if port's open?)
         }
 
-        private string GetFunctionsCoreToolsPath()
+        private static string GetFunctionsCoreToolsPath()
         {
             // Determine npm install path from either env var set by pipeline or OS defaults
             // Pipeline env var is needed as the Windows hosted agents installs to a non-traditional location
@@ -273,7 +273,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             return TestUtils.ExecuteScalar(this.Connection, commandText);
         }
 
-        public string GetPathToBin()
+        private static string GetPathToBin()
         {
             return Path.GetDirectoryName(Assembly.GetAssembly(typeof(Product)).Location);
         }
