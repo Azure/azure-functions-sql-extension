@@ -9,8 +9,9 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <DebugSymbols>true</DebugSymbols>
-    <IncludeSymbols>false</IncludeSymbols>
-    <DebugType>embedded</DebugType>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <DebugType>pdbonly</DebugType>
     <PackageId>Microsoft.Azure.WebJobs.Extensions.Sql</PackageId>
     <PackageTags>Microsoft Azure WebJobs AzureFunctions SQL AzureSQL</PackageTags>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
