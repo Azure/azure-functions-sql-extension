@@ -139,7 +139,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public void AddProductMissingColumnsNotNullTest()
         {
-            this.StartFunctionHost(nameof(AddProductMissingColumnsException), true);
+            this.StartFunctionHost(nameof(AddProductMissingColumnsExceptionFunction), true);
 
             // Since the Sql table does not allow null for the Cost column,
             // inserting a row without a Cost value should throw an Exception.
