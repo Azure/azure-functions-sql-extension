@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
     /// </remarks>
     public static class TestUtils
     {
-        internal static int ThreadId = 0;
+        internal static int ThreadId;
 
         /// <summary>
         /// Returns a mangled name that unique based on Prefix + Machine + Process
