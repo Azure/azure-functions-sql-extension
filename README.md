@@ -4,10 +4,12 @@
 
 ## Introduction
 
-This repository contains SQL binding extension code as well as a quick start, tutorial, and samples of how to use them.  A high level explanation of the bindings is provided below. Additional information for each is in their respective sample sections.
+This repository contains the Azure SQL binding for Azure Functions extension code as well as a quick start tutorial and samples illustrating how to use the binding in different ways.  A high level explanation of the bindings is provided below. Additional information for each is in their respective sample sections.
 
-- **input binding**: takes a SQL query to run on a provided table and returns the output of the query.
+- **input binding**: takes a SQL query to run and returns the output of the query in the function.
 - **output binding**: takes a list of rows and upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
+
+Further information on the Azure SQL binding for Azure Functions is also available in the [Azure Functions docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azuresql).
 
 ## Table of Contents
 
@@ -59,13 +61,7 @@ A primary key must be set in your SQL table before using the bindings. To do thi
 
 ### Set Up Local .NET Function App
 
-These steps can be done in the CLI, Powershell. Completing this section will allow you to begin using the bindings.
-
-1. Add MyGet package feed. If you are running into errors, make sure you have the [.NET sdk](https://dotnet.microsoft.com/download) installed and in your system PATHS.
-
-    ```bash
-    dotnet nuget add source https://www.myget.org/F/azure-appservice/api/v3/index.json
-    ```
+These steps can be done in the Terminal/CLI or with PowerShell. Completing this section will allow you to begin using the Azure SQL binding.
 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
@@ -79,11 +75,11 @@ These steps can be done in the CLI, Powershell. Completing this section will all
 
 1. Install the extension.
 
-    ```bash
-    dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql --version 1.0.0-preview3
+    ```powershell
+    dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql --prerelease
     ```
 
-1. Ensure you have Azure Storage Emulator running. For information on the Azure Storage Emulator, refer [here](https://docs.microsoft.com/azure/storage/common/storage-use-emulator#get-the-storage-emulator)
+1. Ensure you have Azure Storage Emulator running. This is specific to the sample functions in this repository with a non-HTTP trigger. For information on the Azure Storage Emulator, refer to the docs on its use in [functions local development](https://docs.microsoft.com/azure/azure-functions/functions-app-settings#azurewebjobsstorage) and [installation](https://docs.microsoft.com/azure/storage/common/storage-use-emulator#get-the-storage-emulator).
 
 1. Get your SqlConnectionString. Your connection string can be found in your SQL database resource by going to the left blade and clicking 'Connection strings'. Copy the Connection String.
 
@@ -253,7 +249,7 @@ Note: This tutorial requires that the Azure SQL database is setup as shown in [C
 
 ### Input Binding
 
-The input binding takes four arguments
+The input binding takes four [arguments](https://github.com/Azure/azure-functions-sql-extension/blob/main/src/SqlAttribute.cs):
 
 - **CommandText**: Passed as a constructor argument to the binding. Represents either a query string or the name of a stored procedure.
 - **CommandType**: Specifies whether CommandText is a query (`System.Data.CommandType.Text`) or a stored procedure (`System.Data.CommandType.StoredProcedure`)
@@ -394,7 +390,7 @@ public static async Task<IActionResult> Run(
 
 The output binding takes a list of rows to be upserted into a user table. If the primary key value of the row already exists in the table, the row is interpreted as an update, meaning that the values of the other columns in the table for that primary key are updated. If the primary key value does not exist in the table, the row is interpreted as an insert. The upserting of the rows is batched by the output binding code.
 
-The output binding takes two arguments
+The output binding takes two [arguments](https://github.com/Azure/azure-functions-sql-extension/blob/main/src/SqlAttribute.cs):
 
 - **CommandText**: Passed as a constructor argument to the binding. Represents the name of the table into which rows will be upserted.
 - **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
