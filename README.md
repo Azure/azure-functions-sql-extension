@@ -61,7 +61,7 @@ A primary key must be set in your SQL table before using the bindings. To do thi
 
 ### Set Up Local .NET Function App
 
-These steps can be done in the Terminal/CLI or with Powershell. Completing this section will allow you to begin using the Azure SQL binding.
+These steps can be done in the Terminal/CLI or with PowerShell. Completing this section will allow you to begin using the Azure SQL binding.
 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
