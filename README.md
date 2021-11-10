@@ -61,7 +61,7 @@ A primary key must be set in your SQL table before using the bindings. To do thi
 
 ### Set Up Local .NET Function App
 
-These steps can be done in the CLI, Powershell. Completing this section will allow you to begin using the Azure SQL binding.
+These steps can be done in the Terminal/CLI or with Powershell. Completing this section will allow you to begin using the Azure SQL binding.
 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
@@ -75,8 +75,8 @@ These steps can be done in the CLI, Powershell. Completing this section will all
 
 1. Install the extension.
 
-    ```bash
-    dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql
+    ```powershell
+    dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql --prerelease
     ```
 
 1. Ensure you have Azure Storage Emulator running. This is specific to the sample functions in this repository with a non-HTTP trigger. For information on the Azure Storage Emulator, refer to the docs on its use in [functions local development](https://docs.microsoft.com/azure/azure-functions/functions-app-settings#azurewebjobsstorage) and [installation](https://docs.microsoft.com/azure/storage/common/storage-use-emulator#get-the-storage-emulator).
