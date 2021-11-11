@@ -162,7 +162,7 @@ Once you have your Function App you need to configure it for use with Azure SQL 
 
 ### Input Binding Tutorial
 
-Note: This tutorial requires that the SQL database is setup as shown in [Create Azure SQL Database](#Create-a-SQL-Server).
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](#Create-a-SQL-Server).
 
 - Open your app that you created in 'Set Up Your Local Environment' in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
@@ -210,7 +210,7 @@ Note: This tutorial requires that the SQL database is setup as shown in [Create 
 
 ### Output Binding Tutorial
 
-Note: This tutorial requires that the Azure SQL database is setup as shown in [Create Azure SQL Database](#Create-Azure-SQL-Database), and that you have the 'Employee.cs' class from the [Input Binding Tutorial](#Input-Binding-Tutorial).
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](#Create-a-SQL-Server), and that you have the 'Employee.cs' class from the [Input Binding Tutorial](#Input-Binding-Tutorial).
 
 - Open your app in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
