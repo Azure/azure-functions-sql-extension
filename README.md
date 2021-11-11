@@ -9,7 +9,7 @@ This repository contains the Azure SQL binding for Azure Functions extension cod
 - **input binding**: takes a SQL query to run and returns the output of the query in the function.
 - **output binding**: takes a list of rows and upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
 
-Further information on the Azure SQL binding for Azure Functions is also available in the [Azure Functions docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azuresql).
+Further information on the Azure SQL binding for Azure Functions is also available in the [Azure Functions docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
 
 ## Table of Contents
 
