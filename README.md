@@ -6,8 +6,8 @@
 
 This repository contains the Azure SQL binding for Azure Functions extension code as well as a quick start tutorial and samples illustrating how to use the binding in different ways.  A high level explanation of the bindings is provided below. Additional information for each is in their respective sample sections.
 
-- **input binding**: takes a SQL query to run and returns the output of the query in the function.
-- **output binding**: takes a list of rows and upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
+- **Input Binding**: takes a SQL query to run and returns the output of the query in the function.
+- **Output Binding**: takes a list of rows and upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
 
 Further information on the Azure SQL binding for Azure Functions is also available in the [Azure Functions docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
 
@@ -17,10 +17,13 @@ Further information on the Azure SQL binding for Azure Functions is also availab
   - [Introduction](#introduction)
   - [Table of Contents](#table-of-contents)
   - [Quick Start](#quick-start)
+    - [Create a SQL Server](#create-a-sql-server)
+      - [Docker container](#docker-container)
+      - [Azure SQL Database](#azure-sql-database)
     - [SQL Setup](#sql-setup)
-    - [Set Up Local .NET Function App](#set-up-local-net-function-app)
+    - [Create .NET Function App](#create-net-function-app)
+    - [Configure Function App](#configure-function-app)
   - [Tutorials](#tutorials)
-    - [Create Azure SQL Database](#create-azure-sql-database)
     - [Input Binding Tutorial](#input-binding-tutorial)
     - [Output Binding Tutorial](#output-binding-tutorial)
   - [More Samples](#more-samples)
@@ -39,33 +42,57 @@ Further information on the Azure SQL binding for Azure Functions is also availab
 
 ## Quick Start
 
+### Create a SQL Server
+
+First you'll need a SQL server for the bindings to connect to. If you already have your own set up then you can skip this step, otherwise pick from one of the below options.
+
+#### Docker container
+
+SQL Server on Docker makes it easy to set up and connect to a locally hosted instance of SQL Server. Instructions for getting started can be found [here](https://docs.microsoft.com/sql/linux/sql-server-linux-docker-container-deployment).
+
+#### Azure SQL Database
+
+Azure SQL Database is a fully managed platform as a service (PaaS) database engine that runs the latest stable version of the Microsoft SQL Server database engine. Instructions for getting started can be found [here](https://docs.microsoft.com/azure/azure-sql/database/single-database-create-quickstart).
+
+
 ### SQL Setup
 
-This requires already having a SQL database. If you need to create a SQL database, please refer to [Create Azure SQL Database](#Create-Azure-SQL-Database) in the tutorials section.
+Next you'll configure your SQL Server database for use with Azure SQL binding for Azure Functions.
 
-A primary key must be set in your SQL table before using the bindings. To do this, run the below SQL commands in the SQL query editor.
+This will require connecting to and running queries - you can use [Azure Data Studio](https://docs.microsoft.com/sql/azure-data-studio/download-azure-data-studio) or the [MSSQL for VS Code Extension](https://docs.microsoft.com/sql/tools/visual-studio-code/sql-server-develop-use-vscode) to do this.
 
-1. Ensure there are no NULL values in the primary key column. The primary key will usually be an ID column.
+1. First you'll need a table to run queries against. If you already have one you'd like to use then you can skip this step.
 
-    ```sql
-    ALTER TABLE ['your table name'] alter column ['column to be primary key'] int NOT NULL
-    ```
+    Otherwise connect to your database and run the following query to create a simple table to start with.
 
-1. Set primary key column.
+```sql
+CREATE TABLE Employees (
+        EmployeeId int,
+        FirstName varchar(255),
+        LastName varchar(255),
+        Company varchar(255),
+        Team varchar(255)
+);
+```
 
-    ```sql
-    ALTER TABLE ['your table name'] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED (['column to be primary key']);
-    ```
+2. Next a primary key must be set in your SQL table before using the bindings. To do this, run the queries below, replacing the placeholder values for your table and column.
 
-1. Congrats on setting up your database! Now continue to set up your local environment and complete the quick start.
+```sql
+ALTER TABLE ['{table_name}'] ALTER COLUMN ['{primary_key_column_name}'] int NOT NULL
 
-### Set Up Local .NET Function App
+ALTER TABLE ['{table_name}'] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED (['{primary_key_column_name}']);
+```
 
-These steps can be done in the Terminal/CLI or with PowerShell. Completing this section will allow you to begin using the Azure SQL binding.
+
+### Create .NET Function App
+
+Now you will need a .NET Function App to add the binding to. If you have one created already you can skip this step.
+
+These steps can be done in the Terminal/CLI or with PowerShell.
 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
-1. Create a function app.
+2. Create a function app.
 
     ```bash
     mkdir MyApp
@@ -73,27 +100,47 @@ These steps can be done in the Terminal/CLI or with PowerShell. Completing this 
     func init --worker-runtime dotnet
     ```
 
+**Note**: Other languages are not supported at this time
+
 1. Install the extension.
 
     ```powershell
     dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql --prerelease
     ```
 
+### Configure Function App
+
+Once you have your Function App you need to configure it for use with Azure SQL bindings for Azure Functions.
+
 1. Ensure you have Azure Storage Emulator running. This is specific to the sample functions in this repository with a non-HTTP trigger. For information on the Azure Storage Emulator, refer to the docs on its use in [functions local development](https://docs.microsoft.com/azure/azure-functions/functions-app-settings#azurewebjobsstorage) and [installation](https://docs.microsoft.com/azure/storage/common/storage-use-emulator#get-the-storage-emulator).
 
-1. Get your SqlConnectionString. Your connection string can be found in your SQL database resource by going to the left blade and clicking 'Connection strings'. Copy the Connection String.
+1. Get your SQL connection string
 
-    (*Note: when pasting in the connection string, you will need to replace part of the connection string where it says '{your_password}' with your Azure SQL Server password*)
+   <details>
+   <summary>Local SQL Server</summary>
+   - Use this connection string, replacing the placeholder values for the database and password.</br>
+    </br>
+    <code>Server=localhost;Initial Catalog={db_name};Persist Security Info=False;User ID=sa;Password={your_password};</code>
+   </details>
 
-1. In 'local.settings.json' in 'Values', verify you have the below. If not, add the below and replace "Your Connection String" with the your connection string from the previous step:
+   <details>
+   <summary>Azure SQL Server</summary>
+   - Browse to the SQL Database resource in the [Azure portal](https://ms.portal.azure.com/)</br>
+   - In the left blade click on the <b>Connection Strings</b> tab</br>
+   - Copy the <b>SQL Authentication</b> connection string</br>
+    </br>
+    (<i>Note: when pasting in the connection string, you will need to replace part of the connection string where it says '{your_password}' with your Azure SQL Server password</i>)
+   </details>
+
+1. Open the generated `local.settings.json` file and in the `Values` section verify you have the below. If not, add the below and replace `{connection_string}` with the your connection string from the previous step:
 
     ```json
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "AzureWebJobsDashboard": "UseDevelopmentStorage=true",
-    "SqlConnectionString": "<Your Connection String>"
+    "SqlConnectionString": "{connection_string}"
     ```
 
-1. Verify your host.json looks like the below:
+1. Verify your `host.json` looks like the below:
 
     ```json
     {
@@ -113,47 +160,9 @@ These steps can be done in the Terminal/CLI or with PowerShell. Completing this 
 
 ## Tutorials
 
-### Create Azure SQL Database
-
-We will create a simple Azure SQL Database. For additional reference on Azure SQL Databases, go [here](https://docs.microsoft.com/azure/azure-sql/database/single-database-create-quickstart?tabs=azure-portal).
-
-- Create an Azure SQL Database
-  - Make sure you have an Azure subscription. If you don't already have an Azure Subscription, go [here](https://azure.microsoft.com/free/search/?&OCID=AID2100131_SEM_XzK4bAAAAJBpCjfl:20200918000154:s&msclkid=f33d47a9a4ec1c1b6ced18cd9bd2923f&ef_id=XzK4bAAAAJBpCjfl:20200918000154:s&dclid=CKLQqbL28esCFUrBfgod4BIBMA).
-  - Navigate to the [Azure portal](https://ms.portal.azure.com/)
-  - Click 'Create a resource', then search the marketplace for 'SQL Database' and select it. Provide a 'Subscription', 'Resource Group', and 'Database name.' Under the 'Server' field, click 'Create New'
-<kbd>![alt text](/Images/dbSetup.png)</kbd>
-  - Fill in the fields of the 'New server' panel. Make sure you know your 'Server admin login' and 'Password' as you will need them later. Click 'OK' at the bottom of the panel.
-  - Click 'Review and Create' at the bottom of the page. Then press 'Create.' While you are waiting for your resource to be created, feel free to do the [Set Up Local .NET Function App](#Set-Up-Local-.NET-Function-App) step if you have not done so already and return here when completed.
-- Once created, navigate to the SQL Database resource. In the left panel, click 'Query editor'
-- Enter your Azure SQL login from when you created the SQL Database.
-  - If an error pops up for not being able to open the server, copy the Client IP address in the second sentence of the error message, and click 'set server firewall' at the bottom
-  - In the new window, click 'Add Client IP.' This will create an entry
-  - In the section with Rule Name, Start IP, and End IP, paste the IP address you just copied into the Start and End IP fields for the entry created in the previous step.
-  - Hit 'Save' in the top left and navigate back into the SQL Database login page.
-  - Enter your login. You should now be in the Query editor view
-- Enter the below script and hit run to create a table. Once created, if you expand the Tables section by clicking the arrow, you should see a table
-
-    ```sql
-    CREATE TABLE Employees (
-          EmployeeId int,
-          FirstName varchar(255),
-          LastName varchar(255),
-          Company varchar(255),
-          Team varchar(255)
-    );
-    ```
-
-- Enter the blow script and hit run to create an entry in the table. Once created, if you right click your table name and click 'Select Top 1000 Rows', you'll be able to see your entry present.
-
-    ```sql
-    INSERT INTO [dbo].[Employees] values (1, 'Hello', 'World', 'Microsoft', 'Functions')
-    ```
-
-- Congratulations! You have successfully created an Azure SQL Database! Make sure you complete [Quick Start](#Quick-Start) before continuing to the rest of the tutorial.
-
 ### Input Binding Tutorial
 
-Note: This tutorial requires that the Azure SQL database is setup as shown in [Create Azure SQL Database](#Create-Azure-SQL-Database).
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](#Create-a-SQL-Server).
 
 - Open your app that you created in 'Set Up Your Local Environment' in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
@@ -201,7 +210,7 @@ Note: This tutorial requires that the Azure SQL database is setup as shown in [C
 
 ### Output Binding Tutorial
 
-Note: This tutorial requires that the Azure SQL database is setup as shown in [Create Azure SQL Database](#Create-Azure-SQL-Database), and that you have the 'Employee.cs' class from the [Input Binding Tutorial](#Input-Binding-Tutorial).
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](#Create-a-SQL-Server), and that you have the 'Employee.cs' class from the [Input Binding Tutorial](#Input-Binding-Tutorial).
 
 - Open your app in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
