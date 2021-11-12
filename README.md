@@ -105,7 +105,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
 1. Install the extension.
 
     ```powershell
-    dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql --prerelease
+    dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql --version 0.1.129-preview
     ```
 
 ### Configure Function App
