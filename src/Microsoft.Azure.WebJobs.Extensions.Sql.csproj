@@ -45,6 +45,7 @@
       <HintPath>..\lib\Microsoft.SqlServer.TransactSql.ScriptDom.dll</HintPath>
     </Reference>
     <None Include="pkgicon.png" Pack="true" PackagePath="" />
+    <None Include="..\lib\Microsoft.SqlServer.TransactSql.ScriptDom.dll" Pack="true" PackagePath="lib/$(TargetFramework)" />
   </ItemGroup>
 
 </Project>
