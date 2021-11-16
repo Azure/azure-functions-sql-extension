@@ -24,21 +24,39 @@ stages:
 
   jobs:
   - job: BuildTestPublish
-    displayName: 'Release: Build, Test and Publish on Linux'
+    displayName: 'Release: Build, Test and Publish'
+
+  # Verifies cross-platform build and test
+    strategy:
+      matrix:
+        mac:
+          imageName: 'macos-latest'
+          # Disabling integration tests on macOS due to issues with running MSSQL on Docker
+          # We need to set up a self-hosted agent with Docker running by default: https://github.com/microsoft/azure-pipelines-tasks/issues/12823
+          testFilter: '--filter FullyQualifiedName!~Integration'
+          testServer: ''
+        windows:
+          imageName: 'windows-latest'
+          testFilter: ''
+          testServer: '(LocalDb)\MSSQLLocalDB'
+        linux:
+          imageName: 'ubuntu-latest'
+          testFilter: ''
+          testServer: ''
 
     pool:
-      vmImage: 'ubuntu-latest'
+      vmImage: '$(imageName)'
 
     workspace:
       clean: all
 
     steps:
-      - template: 'template-steps-build-test-linux.yml'
+      - template: 'template-steps-build-test.yml'
         parameters:
           solution: '$(solution)'
           configuration: '$(configuration)'
           nugetVersion: '$(nugetVersion)'
-          testFilter: ''
+          testFilter: '$(testFilter)'
 
       - template: 'template-steps-publish.yml'
         parameters:
