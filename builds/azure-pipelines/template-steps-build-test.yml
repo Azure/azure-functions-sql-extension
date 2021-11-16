@@ -138,6 +138,7 @@ steps:
   env:
     TEST_SERVER: '$(testServer)'
     NODE_MODULES_PATH: '$(nodeModulesPath)'
+    SA_PASSWORD: '$(serverPassword)'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
