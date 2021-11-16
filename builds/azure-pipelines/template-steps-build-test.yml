@@ -4,6 +4,7 @@ parameters:
   nugetVersion: ''
   testFilter: ''
   testServer: ''
+  nodeModulesPath: ''
 
 steps:
 - task: UseDotNet@2
