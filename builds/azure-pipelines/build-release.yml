@@ -57,6 +57,7 @@ stages:
           configuration: '$(configuration)'
           nugetVersion: '$(nugetVersion)'
           testFilter: '$(testFilter)'
+          nodeModulesPath: ''
 
       - template: 'template-steps-publish.yml'
         parameters:
