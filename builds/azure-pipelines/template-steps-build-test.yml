@@ -133,7 +133,6 @@ steps:
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) --no-build -p:PackageVersion="${{ parameters.nugetVersion }}" -p:GeneratePackageOnBuild=false'
 
-
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'
   env:
