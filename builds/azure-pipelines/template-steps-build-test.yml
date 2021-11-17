@@ -4,10 +4,13 @@ parameters:
   nugetVersion: ''
   testFilter: ''
   testServer: ''
-  nodeModulesPath: ''
-  serverPassword: ''
 
 steps:
+- bash: |
+    echo "##vso[task.setvariable variable=nodeModulesPath]"
+    echo "##vso[task.setvariable variable=serverPassword]"
+  displayName: Set variables
+
 - task: UseDotNet@2
   displayName: 'Install .NET Core SDK for Running Tests'
   inputs:
