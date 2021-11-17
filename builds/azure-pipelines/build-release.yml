@@ -35,14 +35,17 @@ stages:
           # We need to set up a self-hosted agent with Docker running by default: https://github.com/microsoft/azure-pipelines-tasks/issues/12823
           testFilter: '--filter FullyQualifiedName!~Integration'
           testServer: ''
+          publish: false
         windows:
           imageName: 'windows-latest'
           testFilter: ''
           testServer: '(LocalDb)\MSSQLLocalDB'
+          publish: true
         linux:
           imageName: 'ubuntu-latest'
           testFilter: ''
           testServer: ''
+          publish: false
 
     pool:
       vmImage: '$(imageName)'
@@ -58,7 +61,7 @@ stages:
           nugetVersion: '$(nugetVersion)'
           testFilter: '$(testFilter)'
 
-      - ${{ if eq(variables['Agent.OS'], 'Windows_NT') }}:
+      - ${{ if eq(parameters.publish, true) }}:
         - template: 'template-steps-publish.yml'
           parameters:
             configuration: '$(configuration)'
