@@ -5,6 +5,7 @@ parameters:
   testFilter: ''
   testServer: ''
 
+- steps:
 - task: UseDotNet@2
   displayName: 'Install .NET Core SDK for Running Tests'
   inputs:
