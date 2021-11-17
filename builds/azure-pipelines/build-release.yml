@@ -58,7 +58,7 @@ stages:
           nugetVersion: '$(nugetVersion)'
           testFilter: '$(testFilter)'
 
-      - if {{ eq(variables['Agent.OS'], 'Windows_NT') }}:
+      - ${{ if eq(variables['Agent.OS'], 'Windows_NT') }}:
         - template: 'template-steps-publish.yml'
           parameters:
             configuration: '$(configuration)'
