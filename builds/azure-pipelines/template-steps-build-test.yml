@@ -49,6 +49,12 @@ steps:
   displayName: Start Server in Docker Container
   condition: eq(variables['Agent.OS'], 'linux')
 
+- bash: echo $(serverPassword)
+  displayName: Print serverPassword
+
+- bash: echo $(nodeModulesPath)
+  displayName: Print nodeModulesPath
+
 - task: DotNetCoreCLI@2
   displayName: '.NET Restore'
   inputs:
