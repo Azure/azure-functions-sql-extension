@@ -62,3 +62,4 @@ stages:
       - template: 'template-steps-publish.yml'
         parameters:
           configuration: '$(configuration)'
+        condition: eq(variables['Agent.OS'], 'linux')
