@@ -133,12 +133,16 @@ steps:
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) --no-build -p:PackageVersion="${{ parameters.nugetVersion }}" -p:GeneratePackageOnBuild=false'
 
+- bash: echo $[variables.serverPassword]
+  displayName: Print serverPassword
+
+- bash: echo '$[variables.nodeModulesPath]'
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'
   env:
     TEST_SERVER: '$(testServer)'
     NODE_MODULES_PATH: '$[variables.nodeModulesPath]'
-    SA_PASSWORD: $[variables.serverPassword]
+    SA_PASSWORD: '$[variables.serverPassword]'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
