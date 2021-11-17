@@ -23,8 +23,8 @@ stages:
   displayName: 'Release Build and Publish'
 
   jobs:
-  - job: BuildTestPublish
-    displayName: 'Release: Build, Test and Publish'
+  - job: BuildTest
+    displayName: 'Build and Test'
 
   # Verifies cross-platform build and test
     strategy:
@@ -35,17 +35,10 @@ stages:
           # We need to set up a self-hosted agent with Docker running by default: https://github.com/microsoft/azure-pipelines-tasks/issues/12823
           testFilter: '--filter FullyQualifiedName!~Integration'
           testServer: ''
-          publish: false
         windows:
           imageName: 'windows-latest'
           testFilter: ''
           testServer: '(LocalDb)\MSSQLLocalDB'
-          publish: true
-        linux:
-          imageName: 'ubuntu-latest'
-          testFilter: ''
-          testServer: ''
-          publish: false
 
     pool:
       vmImage: '$(imageName)'
@@ -61,7 +54,24 @@ stages:
           nugetVersion: '$(nugetVersion)'
           testFilter: '$(testFilter)'
 
-      - ${{ if eq(parameters.publish, true) }}:
-        - template: 'template-steps-publish.yml'
-          parameters:
-            configuration: '$(configuration)'
+  - job: BuildTestPublishLinux
+    displayName: 'Release: Build, Test and Publish'
+
+    pool:
+      vmImage: 'ubuntu-latest'
+
+    workspace:
+      clean: all
+
+    steps:
+      - template: 'template-steps-build-test.yml'
+        parameters:
+          solution: '$(solution)'
+          configuration: '$(configuration)'
+          nugetVersion: '$(nugetVersion)'
+          testFilter: ''
+          testServer: ''
+
+      - template: 'template-steps-publish.yml'
+        parameters:
+          configuration: '$(configuration)'
