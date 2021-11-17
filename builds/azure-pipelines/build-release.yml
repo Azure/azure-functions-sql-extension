@@ -59,7 +59,7 @@ stages:
           testFilter: '$(testFilter)'
           nodeModulesPath: ''
 
-    - ${{ if eq(variables['Agent.OS'], 'linux') }}:
+    - ${{ if eq($(imageName), 'ubuntu-latest') }}:
       - template: 'template-steps-publish.yml'
         parameters:
           configuration: '$(configuration)'
