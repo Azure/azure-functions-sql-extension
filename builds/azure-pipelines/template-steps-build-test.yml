@@ -49,10 +49,10 @@ steps:
   displayName: Start Server in Docker Container
   condition: eq(variables['Agent.OS'], 'linux')
 
-- bash: echo $(serverPassword)
+- bash: echo ${{ variables.serverPassword }}
   displayName: Print serverPassword
 
-- bash: echo $(nodeModulesPath)
+- bash: echo ${{ variables.nodeModulesPath }}
   displayName: Print nodeModulesPath
 
 - task: DotNetCoreCLI@2
@@ -143,8 +143,8 @@ steps:
   displayName: '.NET Test'
   env:
     TEST_SERVER: '$(testServer)'
-    NODE_MODULES_PATH: '${{ variables.nodeModulesPath }}'
-    SA_PASSWORD: '${{ variables.serverPassword }}'
+    NODE_MODULES_PATH: ${{ variables.nodeModulesPath }}
+    SA_PASSWORD: ${{ variables.serverPassword }}
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
