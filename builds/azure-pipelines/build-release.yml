@@ -58,6 +58,7 @@ stages:
           nugetVersion: '$(nugetVersion)'
           testFilter: '$(testFilter)'
           nodeModulesPath: ''
+          serverPassword: ''
 
       - ${{ if eq(variables['Agent.OS'], 'linux') }}:
         - template: 'template-steps-publish.yml'

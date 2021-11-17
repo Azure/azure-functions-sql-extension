@@ -5,6 +5,7 @@ parameters:
   testFilter: ''
   testServer: ''
   nodeModulesPath: ''
+  serverPassword: ''
 
 steps:
 - task: UseDotNet@2
@@ -139,7 +140,7 @@ steps:
   env:
     TEST_SERVER: '$(testServer)'
     NODE_MODULES_PATH: '${{ variables.nodeModulesPath }}'
-    SA_PASSWORD: '$(serverPassword)'
+    SA_PASSWORD: '${{ variables.serverPassword }}'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'

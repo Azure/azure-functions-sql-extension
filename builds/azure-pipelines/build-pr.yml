@@ -49,3 +49,4 @@ stages:
         nugetVersion: '1.0.0-test'
         testFilter: '$(testFilter)'
         nodeModulesPath: ''
+        serverPassword: ''
