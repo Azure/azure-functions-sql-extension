@@ -138,7 +138,7 @@ steps:
   displayName: '.NET Test'
   env:
     TEST_SERVER: '$(testServer)'
-    NODE_MODULES_PATH: '$(nodeModulesPath)'
+    NODE_MODULES_PATH: '${{ variables.nodeModulesPath }}'
     SA_PASSWORD: '$(serverPassword)'
   inputs:
     command: test
