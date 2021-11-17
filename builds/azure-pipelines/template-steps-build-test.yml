@@ -133,22 +133,27 @@ steps:
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) --no-build -p:PackageVersion="${{ parameters.nugetVersion }}" -p:GeneratePackageOnBuild=false'
 
-- bash: echo '$[variables.serverPassword]'
-  displayName: Print serverPassword
-
-- bash: echo '$[variables.nodeModulesPath]'
-  displayName: Print nodeModulesPath
 
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'
   env:
     TEST_SERVER: '$(testServer)'
-    NODE_MODULES_PATH: '$[variables.nodeModulesPath]'
-    SA_PASSWORD: '$[variables.serverPassword]'
+    NODE_MODULES_PATH: '$(nodeModulesPath)'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings'
+  condition: ne(variables['Agent.OS'], 'linux')
+
+- task: DotNetCoreCLI@2
+  displayName: '.NET Test on Linux'
+  env:
+    SA_PASSWORD: '$(serverPassword)'
+  inputs:
+    command: test
+    projects: '${{ parameters.solution }}'
+    arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings'
+  condition: eq(variables['Agent.OS'], 'linux')
 
 - script: |
     docker stop sql1
