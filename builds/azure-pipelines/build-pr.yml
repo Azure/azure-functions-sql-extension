@@ -14,20 +14,6 @@ stages:
   displayName: 'PR Validation'
 
   jobs:
-  - job: BuildTestOnLinux
-    displayName: 'Build and Test on Linux'
-    pool:
-      vmImage: 'ubuntu-latest'
-    workspace:
-      clean: all
-    steps:
-    - template: 'template-steps-build-test-linux.yml'
-      parameters:
-        solution: '$(solution)'
-        configuration: '$(configuration)'
-        nugetVersion: '1.0.0-test'
-        testFilter: ''
-
   - job: BuildTest
     displayName: 'Build and Test on'
 
@@ -44,6 +30,10 @@ stages:
           imageName: 'windows-latest'
           testFilter: ''
           testServer: '(LocalDb)\MSSQLLocalDB'
+        linux:
+          imageName: 'ubuntu-latest'
+          testFilter: ''
+          testServer: ''
 
     pool:
       vmImage: '$(imageName)'
