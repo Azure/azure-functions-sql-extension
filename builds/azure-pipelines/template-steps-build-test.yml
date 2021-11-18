@@ -70,6 +70,12 @@ steps:
     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
   condition: eq(variables['Agent.OS'], 'Windows_NT')
 
+- task: BinSkim@4
+  inputs:
+    InputType: 'CommandLine'
+    arguments: 'analyze $(Build.SourcesDirectory)\src\bin\${{ parameters.configuration }}\* --recurse --verbose'
+  condition: eq(variables['Agent.OS'], 'Windows_NT')
+
 # 5.0 isn't supported on Mac yet
 - task: UseDotNet@2
   displayName: 'Install .NET Core 2.1.x SDK for CodeSigning on Mac'
