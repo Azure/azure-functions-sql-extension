@@ -71,9 +71,9 @@ steps:
   condition: eq(variables['Agent.OS'], 'Windows_NT')
 
 - task: BinSkim@4
-inputs:
-  InputType: 'CommandLine'
-  arguments: 'analyze $(Build.SourcesDirectory)\src\bin\${{ parameters.configuration }}\* --recurse --verbose'
+  inputs:
+    InputType: 'CommandLine'
+    arguments: 'analyze $(Build.SourcesDirectory)\src\bin\${{ parameters.configuration }}\* --recurse --verbose'
 
 # 5.0 isn't supported on Mac yet
 - task: UseDotNet@2
