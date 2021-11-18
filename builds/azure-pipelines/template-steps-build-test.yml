@@ -74,6 +74,7 @@ steps:
   inputs:
     InputType: 'CommandLine'
     arguments: 'analyze $(Build.SourcesDirectory)\src\bin\${{ parameters.configuration }}\* --recurse --verbose'
+  condition: eq(variables['Agent.OS'], 'Windows_NT')
 
 # 5.0 isn't supported on Mac yet
 - task: UseDotNet@2
