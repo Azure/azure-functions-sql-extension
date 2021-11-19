@@ -25,7 +25,7 @@ stages:
 
   jobs:
   - job: BuildTest
-    displayName: 'Build and Test'
+    displayName: 'Build and Test on '
 
   # Verifies cross-platform build and test
     strategy:
@@ -56,7 +56,7 @@ stages:
           testFilter: '$(testFilter)'
 
   - job: BuildTestPublishLinux
-    displayName: 'Release: Build, Test and Publish'
+    displayName: 'Build, Test and Publish on linux'
 
     pool:
       vmImage: 'ubuntu-latest'
