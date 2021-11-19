@@ -63,11 +63,17 @@ steps:
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=false'
 
-- task: RoslynAnalyzers@3
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-roslynanalyzers.RoslynAnalyzers@3
   inputs:
     userProvideBuildInfo: 'autoMsBuildInfo'
   env:
     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+  condition: eq(variables['Agent.OS'], 'Windows_NT')
+
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
+  inputs:
+    InputType: 'CommandLine'
+    arguments: 'analyze $(Build.SourcesDirectory)\src\bin\${{ parameters.configuration }}\* --recurse --verbose'
   condition: eq(variables['Agent.OS'], 'Windows_NT')
 
 # 5.0 isn't supported on Mac yet
