@@ -75,7 +75,7 @@ steps:
   displayName: 'Install .NET Core 5.0.x SDK for CodeSigning'
   inputs:
     version: '5.0.x'
-  condition: neq(variables['Agent.OS'], 'Darwin')
+  condition: ne(variables['Agent.OS'], 'Darwin')
 
 # 5.0 isn't supported on Mac yet
 - task: UseDotNet@2
