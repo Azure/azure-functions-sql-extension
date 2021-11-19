@@ -70,7 +70,7 @@ steps:
     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
   condition: eq(variables['Agent.OS'], 'Windows_NT')
 
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
   inputs:
     InputType: 'CommandLine'
     arguments: 'analyze $(Build.SourcesDirectory)\src\bin\${{ parameters.configuration }}\* --recurse --verbose'
