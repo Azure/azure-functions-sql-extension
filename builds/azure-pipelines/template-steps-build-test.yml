@@ -176,9 +176,9 @@ steps:
     notificationAlias: 'sqltools@service.microsoft.com'
     codeBaseAdmins: 'redmond\chlafren;redmond\chgagnon'
     instanceUrlForTsaV2: MSDATA
-    projectNameMSDATA: 'Database Systems'
-    areaPath: 'Database Systems\SQL Tools\Sql Bindings'
-    iterationPath: 'Database Systems'
+    projectNameMSDATA: 'SQLToolsAndLibraries'
+    areaPath: 'SQLToolsAndLibraries\Azure Functions SQL Bindings'
+    iterationPath: 'SQLToolsAndLibraries'
     uploadAPIScan: false
     uploadFortifySCA: false
     uploadFxCop: false
