@@ -84,6 +84,11 @@ steps:
     version: '2.1.x'
   condition: eq(variables['Agent.OS'], 'Darwin')
 
+- task: UseDotNet@2
+  displayName: 'Install .NET Core 3.1 SDK for Build'
+  inputs:
+    version: '3.1.x'
+
 - task: EsrpCodeSigning@1
   displayName: 'ESRP CodeSigning - Binaries'
   inputs:
