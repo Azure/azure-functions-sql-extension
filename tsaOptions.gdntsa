@@ -1,0 +1,18 @@
+{
+    "codebaseName": "Sql Bindings",
+    "notificationAliases": [
+        "sqltools@service.microsoft.com"
+    ],
+    "codebaseAdmins": [
+        "Redmond\\chlafren",
+        "redmond\\chgagnon"
+    ],
+    "instanceUrl": "https://msdata.visualstudio.com/SQLToolsAndLibraries",
+    "projectName": "SQLToolsAndLibraries",
+    "areaPath": "SQLToolsAndLibraries\\Azure Functions SQL Bindings",
+    "tools": [
+        "BinSkim",
+        "EsrpCodeSigning",
+        "RoslynAnalyzers"
+    ]
+}
