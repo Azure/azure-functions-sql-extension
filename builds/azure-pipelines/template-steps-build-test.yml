@@ -176,20 +176,5 @@ steps:
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-uploadtotsa.TSAUpload@2
   displayName: 'TSA upload to Codebase: Sql Bindings Stamp: TSA'
   inputs:
-    tsaVersion: TsaV2
-    codebase: NewOrUpdate
-    codeBaseName: 'Sql Bindings'
-    notificationAlias: 'sqltools@service.microsoft.com'
-    codeBaseAdmins: 'redmond\chlafren;redmond\chgagnon'
-    instanceUrlForTsaV2: MSDATA
-    projectNameMSDATA: 'SQLToolsAndLibraries'
-    areaPath: 'SQLToolsAndLibraries\Azure Functions SQL Bindings'
-    iterationPath: 'SQLToolsAndLibraries'
-    uploadAPIScan: false
-    uploadFortifySCA: false
-    uploadFxCop: false
-    uploadModernCop: false
-    uploadPoliCheck: false
-    uploadPREfast: false
-    uploadTSLint: false
+    GdnPublishTsaConfigFile: '$(Build.SourcesDirectory)\tsaOptions.gdntsa'
   condition: eq(variables['Agent.OS'], 'Windows_NT')
