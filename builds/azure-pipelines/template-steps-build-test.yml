@@ -63,6 +63,12 @@ steps:
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=false'
 
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
+  inputs:
+    InputType: 'CommandLine'
+    arguments: 'analyze $(Build.SourcesDirectory)\src\bin\${{ parameters.configuration }}\* --recurse --verbose'
+  condition: eq(variables['Agent.OS'], 'Windows_NT')
+
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-roslynanalyzers.RoslynAnalyzers@3
   inputs:
     userProvideBuildInfo: 'autoMsBuildInfo'
@@ -70,10 +76,62 @@ steps:
     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
   condition: eq(variables['Agent.OS'], 'Windows_NT')
 
-- task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-report.SdtReport@2
+  displayName: 'Create Security Analysis Report'
   inputs:
-    InputType: 'CommandLine'
-    arguments: 'analyze $(Build.SourcesDirectory)\src\bin\${{ parameters.configuration }}\* --recurse --verbose'
+    GdnExportTsvFile: true
+    GdnExportHtmlFile: true
+    GdnExportOutputBaselineFile: myBaseline
+    GdnExportOutputBaseline: myBaselinedResults
+    GdnExportOutputSuppressionFile: mySuppressions
+    GdnExportOutputSuppressionSet: mySuppressionSet
+    GdnExportPolicyMinSev: Warning
+    GdnExportGdnToolApiScanSeverity: Warning
+    GdnExportGdnToolArmorySeverity: Warning
+    GdnExportGdnToolBanditSeverity: Warning
+    GdnExportGdnToolBinSkimSeverity: Warning
+    GdnExportGdnToolCodesignValidationSeverity: Warning
+    GdnExportGdnToolCredScanSeverity: Warning
+    GdnExportGdnToolESLintSeverity: Warning
+    GdnExportGdnToolFlawfinderSeverity: Warning
+    GdnExportGdnToolFortifyScaSeverity: Warning
+    GdnExportGdnToolFxCopSeverity: Warning
+    GdnExportGdnToolGosecSeverity: Warning
+    GdnExportGdnToolModernCopSeverity: Warning
+    GdnExportGdnToolPoliCheckSeverity: Warning
+    GdnExportGdnToolRoslynAnalyzersSeverity: Warning
+    GdnExportGdnToolSDLNativeRulesSeverity: Warning
+    GdnExportGdnToolSemmleSeverity: Warning
+    GdnExportGdnToolSpotBugsSeverity: Warning
+    GdnExportGdnToolTSLintSeverity: Warning
+  condition: eq(variables['Agent.OS'], 'Windows_NT')
+
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-publishsecurityanalysislogs.PublishSecurityAnalysisLogs@3
+  displayName: 'Publish Security Analysis Logs'
+  condition: eq(variables['Agent.OS'], 'Windows_NT')
+
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-uploadtotsa.TSAUpload@1
+  displayName: 'TSA upload to Codebase: Sql Bindings Stamp: TSA'
+  inputs:
+    tsaVersion: TsaV2
+    codebase: NewOrUpdate
+    codeBaseName: 'Sql Bindings'
+    notificationAlias: 'sqltools@service.microsoft.com'
+    codeBaseAdmins: 'redmond\chlafren;redmond\chgagnon'
+    instanceUrlForTsaV2: MSDATA
+    projectNameMSDATA: 'SQLToolsAndLibraries'
+    areaPath: 'SQLToolsAndLibraries\Azure Functions SQL Bindings'
+    iterationPath: 'SQLToolsAndLibraries'
+    uploadAPIScan: false
+    uploadBinSkim: true
+    uploadCredScan: false
+    uploadFortifySCA: false
+    uploadFxCop: false
+    uploadModernCop: false
+    uploadPoliCheck: false
+    uploadPREfast: false
+    uploadRoslyn: true
+    uploadTSLint: false
   condition: eq(variables['Agent.OS'], 'Windows_NT')
 
 # 5.0 isn't supported on Mac yet
@@ -172,61 +230,3 @@ steps:
     docker rm sql1
   displayName: 'Stop and Remove SQL Server Image'
   condition: eq(variables['Agent.OS'], 'linux')
-
-- task: securedevelopmentteam.vss-secure-development-tools.build-task-report.SdtReport@2
-  displayName: 'Create Security Analysis Report'
-  inputs:
-    GdnExportTsvFile: true
-    GdnExportHtmlFile: true
-    GdnExportOutputBaselineFile: myBaseline
-    GdnExportOutputBaseline: myBaselinedResults
-    GdnExportOutputSuppressionFile: mySuppressions
-    GdnExportOutputSuppressionSet: mySuppressionSet
-    GdnExportPolicyMinSev: Warning
-    GdnExportGdnToolApiScanSeverity: Warning
-    GdnExportGdnToolArmorySeverity: Warning
-    GdnExportGdnToolBanditSeverity: Warning
-    GdnExportGdnToolBinSkimSeverity: Warning
-    GdnExportGdnToolCodesignValidationSeverity: Warning
-    GdnExportGdnToolCredScanSeverity: Warning
-    GdnExportGdnToolESLintSeverity: Warning
-    GdnExportGdnToolFlawfinderSeverity: Warning
-    GdnExportGdnToolFortifyScaSeverity: Warning
-    GdnExportGdnToolFxCopSeverity: Warning
-    GdnExportGdnToolGosecSeverity: Warning
-    GdnExportGdnToolModernCopSeverity: Warning
-    GdnExportGdnToolPoliCheckSeverity: Warning
-    GdnExportGdnToolRoslynAnalyzersSeverity: Warning
-    GdnExportGdnToolSDLNativeRulesSeverity: Warning
-    GdnExportGdnToolSemmleSeverity: Warning
-    GdnExportGdnToolSpotBugsSeverity: Warning
-    GdnExportGdnToolTSLintSeverity: Warning
-  condition: eq(variables['Agent.OS'], 'Windows_NT')
-
-- task: securedevelopmentteam.vss-secure-development-tools.build-task-publishsecurityanalysislogs.PublishSecurityAnalysisLogs@3
-  displayName: 'Publish Security Analysis Logs'
-  condition: eq(variables['Agent.OS'], 'Windows_NT')
-
-- task: securedevelopmentteam.vss-secure-development-tools.build-task-uploadtotsa.TSAUpload@1
-  displayName: 'TSA upload to Codebase: Sql Bindings Stamp: TSA'
-  inputs:
-    tsaVersion: TsaV2
-    codebase: NewOrUpdate
-    codeBaseName: 'Sql Bindings'
-    notificationAlias: 'sqltools@service.microsoft.com'
-    codeBaseAdmins: 'redmond\chlafren;redmond\chgagnon'
-    instanceUrlForTsaV2: MSDATA
-    projectNameMSDATA: 'SQLToolsAndLibraries'
-    areaPath: 'SQLToolsAndLibraries\Azure Functions SQL Bindings'
-    iterationPath: 'SQLToolsAndLibraries'
-    uploadAPIScan: false
-    uploadBinSkim: true
-    uploadCredScan: false
-    uploadFortifySCA: false
-    uploadFxCop: false
-    uploadModernCop: false
-    uploadPoliCheck: false
-    uploadPREfast: false
-    uploadRoslyn: true
-    uploadTSLint: false
-  condition: eq(variables['Agent.OS'], 'Windows_NT')
