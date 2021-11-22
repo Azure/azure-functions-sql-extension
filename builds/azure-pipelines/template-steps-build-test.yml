@@ -173,8 +173,26 @@ steps:
   displayName: 'Stop and Remove SQL Server Image'
   condition: eq(variables['Agent.OS'], 'linux')
 
-- task: securedevelopmentteam.vss-secure-development-tools.build-task-uploadtotsa.TSAUpload@2
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-uploadtotsa.TSAUpload@1
   displayName: 'TSA upload to Codebase: Sql Bindings Stamp: TSA'
   inputs:
-    GdnPublishTsaConfigFile: '$(Build.SourcesDirectory)\tsaOptions.gdntsa'
+    tsaVersion: TsaV2
+    codebase: NewOrUpdate
+    codeBaseName: 'Sql Bindings'
+    notificationAlias: 'sqltools@service.microsoft.com'
+    codeBaseAdmins: 'redmond\chlafren;redmond\chgagnon'
+    instanceUrlForTsaV2: MSDATA
+    projectNameMSDATA: 'Database Systems'
+    areaPath: 'Database Systems\SQL Tools\Sql Bindings'
+    iterationPath: 'Database Systems'
+    uploadAPIScan: false
+    uploadBinSkim: true
+    uploadCredScan: false
+    uploadFortifySCA: false
+    uploadFxCop: false
+    uploadModernCop: false
+    uploadPoliCheck: false
+    uploadPREfast: false
+    uploadRoslyn: true
+    uploadTSLint: false
   condition: eq(variables['Agent.OS'], 'Windows_NT')
