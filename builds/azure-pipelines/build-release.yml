@@ -13,8 +13,9 @@ schedules:
 variables:
   solution: '**/*.sln'
   configuration: 'Release'
-  versionMajor: 0
+  versionMajor: 0 # TODO When this is bumped have versionPatch counter use versionMajorMinor instead https://github.com/Azure/azure-functions-sql-extension/issues/173
   versionMinor: 1
+  versionMajorMinor: '$(versionMajor).$(versionMinor)'  # This variable is only used for the counter so we reset properly when either major or minor is bumped
   versionPatch: $[counter(variables['versionMinor'], 0)] # This will reset when we bump minor version
   nugetVersion: '$(versionMajor).$(versionMinor).$(versionPatch)-preview'
 
@@ -24,7 +25,7 @@ stages:
 
   jobs:
   - job: BuildTest
-    displayName: 'Build and Test'
+    displayName: 'Build and Test on '
 
   # Verifies cross-platform build and test
     strategy:
@@ -55,7 +56,7 @@ stages:
           testFilter: '$(testFilter)'
 
   - job: BuildTestPublishLinux
-    displayName: 'Release: Build, Test and Publish'
+    displayName: 'Build, Test and Publish on linux'
 
     pool:
       vmImage: 'ubuntu-latest'
