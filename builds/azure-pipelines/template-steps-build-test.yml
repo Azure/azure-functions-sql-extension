@@ -110,7 +110,7 @@ steps:
   displayName: 'Publish Security Analysis Logs'
   condition: eq(variables['Agent.OS'], 'Windows_NT')
 
-- task: securedevelopmentteam.vss-secure-development-tools.build-task-uploadtotsa.TSAUpload@1
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-uploadtotsa.TSAUpload@2
   displayName: 'TSA upload to Codebase: Sql Bindings Stamp: TSA'
   inputs:
     tsaVersion: TsaV2
