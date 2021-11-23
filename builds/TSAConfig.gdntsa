@@ -9,7 +9,7 @@
     ],
     "instanceUrl": "https://msdata.visualstudio.com",
     "projectName": "SQLToolsAndLibraries",
-    "areaPath": "SQLToolsAndLibraries\Azure Functions SQL Bindings",
+    "areaPath": "SQLToolsAndLibraries\\Azure Functions SQL Bindings",
     "iterationPath": "SQLToolsAndLibraries",
     "tools": [
         "BinSkim",
