@@ -1,0 +1,18 @@
+{
+    "codebaseName": "Sql Bindings",
+    "notificationAliases": [
+        "sqltools@service.microsoft.com"
+    ],
+    "codebaseAdmins": [
+        "REDMOND\\chlafren",
+        "REDMOND\\chgagnon"
+    ],
+    "instanceUrl": "https://msdata.visualstudio.com",
+    "projectName": "SQLToolsAndLibraries",
+    "areaPath": "SQLToolsAndLibraries\Azure Functions SQL Bindings",
+    "iterationPath": "SQLToolsAndLibraries",
+    "tools": [
+        "BinSkim",
+        "RoslynAnalyzers"
+    ]
+}
