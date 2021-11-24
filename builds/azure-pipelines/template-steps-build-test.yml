@@ -71,6 +71,11 @@ steps:
     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
   condition: eq(variables['Agent.OS'], 'Windows_NT')
 
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@2
+  inputs:
+    toolMajorVersion: V2
+  condition: eq(variables['Agent.OS'], 'Windows_NT')
+
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-report.SdtReport@2
   displayName: 'Create Security Analysis Report'
   inputs:

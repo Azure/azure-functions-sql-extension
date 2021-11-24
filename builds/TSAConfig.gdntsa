@@ -13,6 +13,7 @@
     "iterationPath": "SQLToolsAndLibraries",
     "tools": [
         "BinSkim",
-        "RoslynAnalyzers"
+        "RoslynAnalyzers",
+        "CredScan"
     ]
 }
