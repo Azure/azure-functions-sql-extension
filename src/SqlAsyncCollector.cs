@@ -151,7 +151,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             int batchSize = 1000;
             await connection.OpenAsync();
-            SqlCommand command = connection.CreateCommand();
+            using SqlCommand command = connection.CreateCommand();
             SqlTransaction transaction = connection.BeginTransaction();
             command.Connection = connection;
             command.Transaction = transaction;
@@ -181,7 +181,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 throw;
             }
-            await connection.CloseAsync();
+            finally
+            {
+                await connection.CloseAsync();
+            }
         }
 
         /// <summary>
