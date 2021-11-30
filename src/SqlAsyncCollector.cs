@@ -151,13 +151,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             int batchSize = 1000;
             await connection.OpenAsync();
-            using SqlCommand command = connection.CreateCommand();
             SqlTransaction transaction = connection.BeginTransaction();
-            command.Connection = connection;
-            command.Transaction = transaction;
-            SqlParameter par = command.Parameters.Add(RowDataParameter, SqlDbType.NVarChar, -1);
             try
             {
+                SqlCommand command = connection.CreateCommand();
+                command.Connection = connection;
+                command.Transaction = transaction;
+                SqlParameter par = command.Parameters.Add(RowDataParameter, SqlDbType.NVarChar, -1);
+
                 foreach (IEnumerable<T> batch in rows.Batch(batchSize))
                 {
                     GenerateDataQueryForMerge(tableInfo, batch, out string newDataQuery, out string rowData);
