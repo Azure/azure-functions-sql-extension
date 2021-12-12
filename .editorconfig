@@ -7,7 +7,8 @@ root = true
 [*.cs]
 
 dotnet_analyzer_diagnostic.severity = error
-
+dotnet_diagnostic.IDE0130.severity = none
+  
 # Documentation related errors, remove once they are fixed
 dotnet_diagnostic.CS1591.severity = none
 dotnet_diagnostic.CS1573.severity = none
