@@ -296,9 +296,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     where
                         tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
                     and
-                        tc.TABLE_NAME = {table.QuotedSchema}
+                        tc.TABLE_NAME = {table.QuotedName}
                     and
-                        tc.TABLE_SCHEMA = {table.QuotedName}";
+                        tc.TABLE_SCHEMA = {table.QuotedSchema}";
             }
 
             /// <summary>
