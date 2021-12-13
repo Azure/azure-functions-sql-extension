@@ -3,6 +3,6 @@
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "dotnet",
-    "SqlConnectionString": "Server=sqltools2019-3;Database=keep_chgagnon;Trusted_Connection=True;"
+    "SqlConnectionString": ""
 }
 }
