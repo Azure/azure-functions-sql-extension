@@ -50,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 throw new InvalidOperationException(errorMessages);
             }
 
-            var visitor = new QuotedTSqlFragmentVisitor();
+            var visitor = new TSqlObjectFragmentVisitor();
             tree.Accept(visitor);
             this.Schema = visitor.schemaName;
             this.QuotedSchema = this.Schema == SCHEMA_NAME_FUNCTION ? this.Schema : this.Schema.AsQuotedString();
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Get the schema and object name from the SchemaObjectName.
         /// </summary>
-        private class QuotedTSqlFragmentVisitor : TSqlFragmentVisitor
+        private class TSqlObjectFragmentVisitor : SqlServer.TransactSql.ScriptDom.TSqlFragmentVisitor
         {
             public string schemaName;
             public string objectName;
