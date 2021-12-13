@@ -9,10 +9,8 @@ using Microsoft.SqlServer.TransactSql.ScriptDom;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     /// <summary>
-    /// Parses the schema and object name for the given object.
-    /// If there is no schema in fullName, SCHEMA_NAME() is returned as schema.
+    /// Helper class for working with SQL object names.
     /// </summary>
-    /// <param name="fullName">Full name of object, including schema (if it exists).</param>
     internal class SqlObject
     {
         private static readonly string SCHEMA_NAME_FUNCTION = "SCHEMA_NAME()";
@@ -22,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         public readonly string Name;
         /// <summary>
-        /// The name of the object, quoted and escaped with single quotes if it's not the default SCHEMA_NAME() function
+        /// The name of the object, quoted and escaped with single quotes
         /// </summary>
         public readonly string QuotedName;
         /// <summary>
@@ -30,10 +28,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         public readonly string Schema;
         /// <summary>
-        /// The name of the object, quoted and escaped with single quotes
+        /// The name of the object, quoted and escaped with single quotes if it's not the default SCHEMA_NAME() function
         /// </summary>
         public readonly string QuotedSchema;
 
+        /// <summary>
+        /// A SqlObject which contains information about the name and schema of the given object full name.
+        /// </summary>
+        /// <param name="fullName">Full name of object, including schema (if it exists).</param>
+        /// <exception cref="InvalidOperationException">If the name can't be parsed</exception>
         public SqlObject(string fullName)
         {
             var parser = new TSql150Parser(false);
@@ -58,6 +61,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this.QuotedName = this.Name.AsQuotedString();
         }
 
+        /// <summary>
+        /// Returns the full name of the object, including the schema if it was specified, in the format {Schema}.{Name}
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return $"{this.Schema}.{this.Name}";
