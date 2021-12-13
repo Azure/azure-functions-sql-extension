@@ -66,7 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Get the schema and object name from the SchemaObjectName.
         /// </summary>
-        private class TSqlObjectFragmentVisitor : SqlServer.TransactSql.ScriptDom.TSqlFragmentVisitor
+        private class TSqlObjectFragmentVisitor : TSqlFragmentVisitor
         {
             public string schemaName;
             public string objectName;
