@@ -22,11 +22,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         public readonly string Name;
         /// <summary>
-        /// The name of the object, quoted and escaped with single quotes
+        /// The name of the object, quoted and escaped with single quotes if it's not the default SCHEMA_NAME() function
         /// </summary>
         public readonly string QuotedName;
         /// <summary>
-        /// The schema of the object
+        /// The schema of the object, defaulting to the SCHEMA_NAME() function if the full name doesn't include a schema
         /// </summary>
         public readonly string Schema;
         /// <summary>
