@@ -120,6 +120,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private async Task UpsertRowsAsync(IEnumerable<T> rows, SqlAttribute attribute, IConfiguration configuration)
         {
             using SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, configuration);
+            await connection.OpenAsync();
+
             string fullDatabaseAndTableName = attribute.CommandText;
 
             // Include the connection string hash as part of the key in case this customer has the same table in two different Sql Servers
@@ -150,7 +152,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             int batchSize = 1000;
-            await connection.OpenAsync();
             SqlTransaction transaction = connection.BeginTransaction();
             try
             {
@@ -375,7 +376,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var columnDefinitionsFromSQL = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 try
                 {
-                    await sqlConnection.OpenAsync();
                     var cmdColDef = new SqlCommand(GetColumnDefinitionsQuery(quotedSchema, quotedTableName), sqlConnection);
                     using SqlDataReader rdr = await cmdColDef.ExecuteReaderAsync();
                     while (await rdr.ReadAsync())
@@ -389,10 +389,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     string message = $"Encountered exception while retrieving column names and types for table {quotedTableName} in schema {quotedSchema}. Cannot generate upsert command without them.";
                     throw new InvalidOperationException(message, ex);
                 }
-                finally
-                {
-                    await sqlConnection.CloseAsync();
-                }
 
                 if (columnDefinitionsFromSQL.Count == 0)
                 {
@@ -404,7 +400,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var primaryKeys = new List<string>();
                 try
                 {
-                    await sqlConnection.OpenAsync();
                     var cmd = new SqlCommand(GetPrimaryKeysQuery(quotedSchema, quotedTableName), sqlConnection);
                     using SqlDataReader rdr = await cmd.ExecuteReaderAsync();
                     while (await rdr.ReadAsync())
@@ -417,10 +412,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     // Throw a custom error so that it's easier to decipher.
                     string message = $"Encountered exception while retrieving primary keys for table {quotedTableName} in schema {quotedSchema}. Cannot generate upsert command without them.";
                     throw new InvalidOperationException(message, ex);
-                }
-                finally
-                {
-                    await sqlConnection.CloseAsync();
                 }
 
                 if (!primaryKeys.Any())
