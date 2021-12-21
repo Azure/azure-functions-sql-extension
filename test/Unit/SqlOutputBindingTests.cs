@@ -41,19 +41,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         }
 
         [Theory]
-        [InlineData("dbo.Products", "dbo", "'dbo'", "Products", "'Products'")]
-        [InlineData("Products", "SCHEMA_NAME()", "SCHEMA_NAME()", "Products", "'Products'")]
-        [InlineData("[dbo].[Products]", "dbo", "'dbo'", "Products", "'Products'")]
-        [InlineData("[dbo].Products", "dbo", "'dbo'", "Products", "'Products'")]
-        [InlineData("dbo.[Products]", "dbo", "'dbo'", "Products", "'Products'")]
-        [InlineData("[Prod'ucts]", "SCHEMA_NAME()", "SCHEMA_NAME()", "Prod'ucts", "'Prod''ucts'")]
-        public void TestSqlObject(string fullName, string expectedSchema, string expectedQuotedSchema, string expectedTableName, string expectedSchemaTableName)
+        [InlineData("dbo.Products", "dbo", "'dbo'", "Products", "'Products'", "dbo.Products", "'dbo.Products'")]
+        [InlineData("Products", "SCHEMA_NAME()", "SCHEMA_NAME()", "Products", "'Products'", "Products", "'Products'")]
+        [InlineData("[dbo].[Products]", "dbo", "'dbo'", "Products", "'Products'", "dbo.Products", "'dbo.Products'")]
+        [InlineData("[dbo].Products", "dbo", "'dbo'", "Products", "'Products'", "dbo.Products", "'dbo.Products'")]
+        [InlineData("dbo.[Products]", "dbo", "'dbo'", "Products", "'Products'", "dbo.Products", "'dbo.Products'")]
+        [InlineData("[My'Schema].[Prod'ucts]", "My'Schema", "'My''Schema'", "Prod'ucts", "'Prod''ucts'", "My'Schema.Prod'ucts", "'My''Schema.Prod''ucts'")]
+        [InlineData("[My]]Schema].[My]]Object]", "My]Schema", "'My]Schema'", "My]Object", "'My]Object'", "My]Schema.My]Object", "'My]Schema.My]Object'")]
+        public void TestSqlObject(string fullName,
+            string expectedSchema,
+            string expectedQuotedSchema,
+            string expectedTableName,
+            string expectedSchemaTableName,
+            string expectedFullName,
+            string expectedQuotedFullName)
         {
-            var table = new SqlObject(fullName);
-            Assert.Equal(expectedSchema, table.Schema);
-            Assert.Equal(expectedQuotedSchema, table.QuotedSchema);
-            Assert.Equal(expectedTableName, table.Name);
-            Assert.Equal(expectedSchemaTableName, table.QuotedName);
+            var sqlObj = new SqlObject(fullName);
+            Assert.Equal(expectedSchema, sqlObj.Schema);
+            Assert.Equal(expectedQuotedSchema, sqlObj.QuotedSchema);
+            Assert.Equal(expectedTableName, sqlObj.Name);
+            Assert.Equal(expectedSchemaTableName, sqlObj.QuotedName);
+            Assert.Equal(expectedFullName, sqlObj.FullName);
+            Assert.Equal(expectedQuotedFullName, sqlObj.QuotedFullName);
         }
 
         [Theory]
