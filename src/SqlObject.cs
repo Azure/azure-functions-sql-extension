@@ -31,6 +31,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// The name of the object, quoted and escaped with single quotes if it's not the default SCHEMA_NAME() function
         /// </summary>
         public readonly string QuotedSchema;
+        /// <summary>
+        /// The full name of the object in the format SCHEMA.NAME (or just NAME if there is no specified schema)
+        /// </summary>
+        public readonly string FullName;
+        /// <summary>
+        /// The full name of the object in the format SCHEMA.NAME (or just NAME if there is no specified schema), quoted and escaped with single quotes
+        /// </summary>
+        public readonly string QuotedFullName;
 
         /// <summary>
         /// A SqlObject which contains information about the name and schema of the given object full name.
@@ -56,9 +64,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             var visitor = new TSqlObjectFragmentVisitor();
             tree.Accept(visitor);
             this.Schema = visitor.schemaName;
-            this.QuotedSchema = this.Schema == SCHEMA_NAME_FUNCTION ? this.Schema : this.Schema.AsQuotedString();
+            this.QuotedSchema = this.Schema == SCHEMA_NAME_FUNCTION ? this.Schema : this.Schema.AsSingleQuotedString();
             this.Name = visitor.objectName;
-            this.QuotedName = this.Name.AsQuotedString();
+            this.QuotedName = this.Name.AsSingleQuotedString();
+            this.FullName = this.Schema == SCHEMA_NAME_FUNCTION ? this.Name : $"{this.Schema}.{this.Name}";
+            this.QuotedFullName = $"'{this.FullName.AsSingleQuoteEscapedString()}'";
         }
 
         /// <summary>
