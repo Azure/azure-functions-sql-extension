@@ -41,13 +41,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         }
 
         [Theory]
-        [InlineData("dbo.Products", "dbo", "'dbo'", "Products", "'Products'", "dbo.Products", "'dbo.Products'")]
-        [InlineData("Products", "SCHEMA_NAME()", "SCHEMA_NAME()", "Products", "'Products'", "Products", "'Products'")]
-        [InlineData("[dbo].[Products]", "dbo", "'dbo'", "Products", "'Products'", "dbo.Products", "'dbo.Products'")]
-        [InlineData("[dbo].Products", "dbo", "'dbo'", "Products", "'Products'", "dbo.Products", "'dbo.Products'")]
-        [InlineData("dbo.[Products]", "dbo", "'dbo'", "Products", "'Products'", "dbo.Products", "'dbo.Products'")]
-        [InlineData("[My'Schema].[Prod'ucts]", "My'Schema", "'My''Schema'", "Prod'ucts", "'Prod''ucts'", "My'Schema.Prod'ucts", "'My''Schema.Prod''ucts'")]
-        [InlineData("[My]]Schema].[My]]Object]", "My]Schema", "'My]Schema'", "My]Object", "'My]Object'", "My]Schema.My]Object", "'My]Schema.My]Object'")]
+        [InlineData("dbo.Products", "dbo", "'dbo'", "Products", "'Products'", "dbo.Products", "'dbo.Products'")] // Simple full name
+        [InlineData("Products", "SCHEMA_NAME()", "SCHEMA_NAME()", "Products", "'Products'", "Products", "'Products'")] // Simple no schema
+        [InlineData("[dbo].[Products]", "dbo", "'dbo'", "Products", "'Products'", "dbo.Products", "'dbo.Products'")] // Simple full name bracket quoted
+        [InlineData("[dbo].Products", "dbo", "'dbo'", "Products", "'Products'", "dbo.Products", "'dbo.Products'")] // Simple full name only schema bracket quoted
+        [InlineData("dbo.[Products]", "dbo", "'dbo'", "Products", "'Products'", "dbo.Products", "'dbo.Products'")] // Simple full name only name bracket quoted
+        [InlineData("[My'Schema].[Prod'ucts]", "My'Schema", "'My''Schema'", "Prod'ucts", "'Prod''ucts'", "My'Schema.Prod'ucts", "'My''Schema.Prod''ucts'")] // Full name with single quotes in schema and name
+        [InlineData("[My]]Schema].[My]]Object]", "My]Schema", "'My]Schema'", "My]Object", "'My]Object'", "My]Schema.My]Object", "'My]Schema.My]Object'")] // Full name with brackets in schema and name
         public void TestSqlObject(string fullName,
             string expectedSchema,
             string expectedQuotedSchema,
