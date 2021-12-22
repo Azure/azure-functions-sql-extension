@@ -28,6 +28,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const string ColumnDefinition = "COLUMN_DEFINITION";
         private const string CteName = "cte";
 
+        private const string Collation = "Collation";
+
         private readonly IConfiguration _configuration;
         private readonly SqlAttribute _attribute;
         private readonly ILogger _logger;
@@ -130,7 +132,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             if (tableInfo == null)
             {
-                tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullDatabaseAndTableName);
+                tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullDatabaseAndTableName, this._logger);
 
                 var policy = new CacheItemPolicy
                 {
@@ -161,7 +163,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 foreach (IEnumerable<T> batch in rows.Batch(batchSize))
                 {
-                    GenerateDataQueryForMerge(tableInfo, batch, out string newDataQuery, out string rowData);
+                    GenerateDataQueryForMerge(tableInfo, batch, tableInfo.Comparer, out string newDataQuery, out string rowData);
                     command.CommandText = $"{newDataQuery} {tableInfo.MergeQuery};";
                     par.Value = rowData;
 
@@ -208,12 +210,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="table">Information about the table we will be upserting into</param>
         /// <param name="rows">Rows to be upserted</param>
         /// <returns>T-SQL containing data for merge</returns>
-        private static void GenerateDataQueryForMerge(TableInformation table, IEnumerable<T> rows, out string newDataQuery, out string rowData)
+        private static void GenerateDataQueryForMerge(TableInformation table, IEnumerable<T> rows, StringComparer comparer, out string newDataQuery, out string rowData)
         {
             IList<T> rowsToUpsert = new List<T>();
 
-            // Here, we assume that primary keys are case INsensitive, which is the SQL Server default.
-            var uniqueUpdatedPrimaryKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var uniqueUpdatedPrimaryKeys = new HashSet<string>(comparer);
 
             // If there are duplicate primary keys, we'll need to pick the LAST (most recent) row per primary key.
             foreach (T row in rows.Reverse())
@@ -238,7 +239,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             rowData = JsonConvert.SerializeObject(rowsToUpsert, table.JsonSerializerSettings);
             IEnumerable<string> columnNamesFromPOCO = typeof(T).GetProperties().Select(prop => prop.Name);
-            IEnumerable<string> bracketColumnDefinitionsFromPOCO = table.Columns.Where(c => columnNamesFromPOCO.Contains(c.Key, StringComparer.OrdinalIgnoreCase))
+            IEnumerable<string> bracketColumnDefinitionsFromPOCO = table.Columns.Where(c => columnNamesFromPOCO.Contains(c.Key, comparer))
                 .Select(c => $"{c.Key.AsBracketQuotedString()} {c.Value}");
             newDataQuery = $"WITH {CteName} AS ( SELECT * FROM OPENJSON({RowDataParameter}) WITH ({string.Join(",", bracketColumnDefinitionsFromPOCO)}) )";
         }
@@ -258,6 +259,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             public IEnumerable<string> ColumnDefinitions => this.Columns.Select(c => $"{c.Key} {c.Value}");
 
             /// <summary>
+            /// The StringComparer to use when comparing column names. Ex. StringComparer.Ordinal or StringComparer.OrdinalIgnoreCase
+            /// </summary>
+            public StringComparer Comparer { get; }
+
+            /// <summary>
             /// T-SQL merge statement generated from primary keys
             /// and column names for a specific table.
             /// </summary>
@@ -269,16 +275,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </summary>
             public JsonSerializerSettings JsonSerializerSettings { get; }
 
-            public TableInformation(IEnumerable<MemberInfo> primaryKeys, IDictionary<string, string> columns, string mergeQuery)
+            public TableInformation(IEnumerable<MemberInfo> primaryKeys, IDictionary<string, string> columns, StringComparer comparer, string mergeQuery)
             {
                 this.PrimaryKeys = primaryKeys;
                 this.Columns = columns;
+                this.Comparer = comparer;
                 this.MergeQuery = mergeQuery;
 
                 this.JsonSerializerSettings = new JsonSerializerSettings
                 {
-                    ContractResolver = new DynamicPOCOContractResolver(columns)
+                    ContractResolver = new DynamicPOCOContractResolver(columns, comparer)
                 };
+            }
+
+            public static bool GetCaseSensitivityFromCollation(string collation)
+            {
+                return collation.Contains("_CS_");
+            }
+
+            public static string GetDatabaseCollationQuery(SqlConnection sqlConnection)
+            {
+                return $@"
+                    select 
+                        DATABASEPROPERTYEX('{sqlConnection.Database}', '{Collation}') AS {Collation};";
             }
 
             /// <summary>
@@ -338,7 +357,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
 
                 // Generate the UPDATE part of the merge query (all columns that should be updated)
-                IEnumerable<string> bracketedColumnNamesFromPOCO = typeof(T).GetProperties().Select(prop => prop.Name.ToLowerInvariant().AsBracketQuotedString());
+                IEnumerable<string> bracketedColumnNamesFromPOCO = typeof(T).GetProperties().Select(prop => prop.Name.AsBracketQuotedString());
                 var columnMatchingQueryBuilder = new StringBuilder();
                 foreach (string column in bracketedColumnNamesFromPOCO)
                 {
@@ -366,13 +385,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </summary>
             /// <param name="sqlConnection">Connection with which to query SQL against</param>
             /// <param name="fullName">Full name of table, including schema (if exists).</param>
+            /// <param name="logger">ILogger used to log any errors or warnings.</param>
             /// <returns>TableInformation object containing primary keys, column types, etc.</returns>
-            public static async Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName)
+            public static async Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName, ILogger logger)
             {
                 var table = new SqlObject(fullName);
 
-                // 1. Get all column names and types
-                var columnDefinitionsFromSQL = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                // Get case sensitivity from database collation (default to false if any exception occurs)
+                bool caseSensitive = false;
+                try
+                {
+                    await sqlConnection.OpenAsync();
+                    var cmdCollation = new SqlCommand(GetDatabaseCollationQuery(sqlConnection), sqlConnection);
+                    using SqlDataReader rdr = await cmdCollation.ExecuteReaderAsync();
+                    while (await rdr.ReadAsync())
+                    {
+                        caseSensitive = GetCaseSensitivityFromCollation(rdr[Collation].ToString());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogInformation($"Encountered exception while retrieving database collation: {ex}. Will use case insensitive behavior by default.");
+                }
+                finally
+                {
+                    await sqlConnection.CloseAsync();
+                }
+
+                StringComparer comparer = caseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+
+                // Get all column names and types
+                var columnDefinitionsFromSQL = new Dictionary<string, string>(comparer);
                 try
                 {
                     await sqlConnection.OpenAsync();
@@ -380,7 +423,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     using SqlDataReader rdr = await cmdColDef.ExecuteReaderAsync();
                     while (await rdr.ReadAsync())
                     {
-                        columnDefinitionsFromSQL.Add(rdr[ColumnName].ToString().ToLowerInvariant(), rdr[ColumnDefinition].ToString());
+                        string columnName = caseSensitive ? rdr[ColumnName].ToString() : rdr[ColumnName].ToString().ToLowerInvariant();
+                        columnDefinitionsFromSQL.Add(columnName, rdr[ColumnDefinition].ToString());
                     }
                 }
                 catch (Exception ex)
@@ -400,7 +444,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new InvalidOperationException(message);
                 }
 
-                // 2. Query SQL for table Primary Keys
+                // Query SQL for table Primary Keys
                 var primaryKeys = new List<string>();
                 try
                 {
@@ -409,7 +453,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     using SqlDataReader rdr = await cmd.ExecuteReaderAsync();
                     while (await rdr.ReadAsync())
                     {
-                        primaryKeys.Add(rdr[ColumnName].ToString().ToLowerInvariant());
+                        primaryKeys.Add(rdr[ColumnName].ToString());
                     }
                 }
                 catch (Exception ex)
@@ -429,35 +473,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new InvalidOperationException(message);
                 }
 
-                // 3. Match SQL Primary Key column names to POCO field/property objects. Ensure none are missing.
-                IEnumerable<MemberInfo> primaryKeyFields = typeof(T).GetMembers().Where(f => primaryKeys.Contains(f.Name, StringComparer.OrdinalIgnoreCase));
+                // Match SQL Primary Key column names to POCO field/property objects. Ensure none are missing.
+                IEnumerable<MemberInfo> primaryKeyFields = typeof(T).GetMembers().Where(f => primaryKeys.Contains(f.Name, comparer));
                 IEnumerable<string> primaryKeysFromPOCO = primaryKeyFields.Select(f => f.Name);
-                IEnumerable<string> missingFromPOCO = primaryKeys.Except(primaryKeysFromPOCO, StringComparer.OrdinalIgnoreCase);
+                IEnumerable<string> missingFromPOCO = primaryKeys.Except(primaryKeysFromPOCO, comparer);
                 if (missingFromPOCO.Any())
                 {
                     string message = $"All primary keys for SQL table {table} need to be found in '{typeof(T)}.' Missing primary keys: [{string.Join(",", missingFromPOCO)}]";
                     throw new InvalidOperationException(message);
                 }
 
-                return new TableInformation(primaryKeyFields, columnDefinitionsFromSQL, GetMergeQuery(primaryKeys, fullName));
+                return new TableInformation(primaryKeyFields, columnDefinitionsFromSQL, comparer, GetMergeQuery(primaryKeys, fullName));
             }
         }
 
         public class DynamicPOCOContractResolver : DefaultContractResolver
         {
             private readonly IDictionary<string, string> _propertiesToSerialize;
+            private readonly StringComparer _comparer;
 
-            public DynamicPOCOContractResolver(IDictionary<string, string> sqlColumns)
+            public DynamicPOCOContractResolver(IDictionary<string, string> sqlColumns, StringComparer comparer)
             {
                 // we only want to serialize POCO properties that correspond to SQL columns
                 this._propertiesToSerialize = sqlColumns;
+                this._comparer = comparer;
             }
 
             protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
             {
                 var properties = base
                     .CreateProperties(type, memberSerialization)
-                    .ToDictionary(p => p.PropertyName, StringComparer.OrdinalIgnoreCase);
+                    .ToDictionary(p => p.PropertyName, this._comparer);
 
                 // Make sure the ordering of columns matches that of SQL
                 // Necessary for proper matching of column names to JSON that is generated for each batch of data
@@ -466,9 +512,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     if (properties.ContainsKey(column.Key))
                     {
-                        // Lower-case the property name during serialization to match SQL casing
                         JsonProperty sqlColumn = properties[column.Key];
-                        sqlColumn.PropertyName = sqlColumn.PropertyName.ToLowerInvariant();
+                        sqlColumn.PropertyName = this._comparer == StringComparer.Ordinal ? sqlColumn.PropertyName : sqlColumn.PropertyName.ToLowerInvariant();
                         propertiesToSerialize.Add(sqlColumn);
                     }
                 }
