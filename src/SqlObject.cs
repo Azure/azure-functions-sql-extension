@@ -68,7 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this.Name = visitor.objectName;
             this.QuotedName = this.Name.AsSingleQuotedString();
             this.FullName = this.Schema == SCHEMA_NAME_FUNCTION ? this.Name : $"{this.Schema}.{this.Name}";
-            this.QuotedFullName = $"'{this.FullName.AsSingleQuoteEscapedString()}'";
+            this.QuotedFullName = this.FullName.AsSingleQuotedString();
         }
 
         /// <summary>
