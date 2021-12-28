@@ -175,8 +175,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
         }
 
-        // TODO Add functionality to update existing rows in tables with identity column
-
         /// <summary>
         /// Tests that for tables with multiple primary columns (including an itemtity column) we are able to
         /// insert items.
