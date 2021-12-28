@@ -155,5 +155,87 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // No rows should be upserted since there was a row with an invalid value
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsNameNotNull"));
         }
+
+        /// <summary>
+        /// Tests that for tables with an identity column we are able to insert items.
+        /// </summary>
+        [Fact]
+        public void AddProductWithIdentity()
+        {
+            this.StartFunctionHost(nameof(AddProductWithIdentityColumn));
+            // Identity column (ProductID) is left out for new items
+            var query = new Dictionary<string, string>()
+            {
+                { "name", "MyProduct" },
+                { "cost", "1" }
+            };
+            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+            this.SendOutputRequest(nameof(AddProductWithIdentityColumn), query).Wait();
+            // Product should have been inserted correctly even without an ID when there's an identity column present
+            Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+        }
+
+        // TODO Add functionality to update existing rows in tables with identity column
+
+        /// <summary>
+        /// Tests that for tables with multiple primary columns (including an itemtity column) we are able to
+        /// insert items.
+        /// </summary>
+        [Fact]
+        public void AddProductWithIdentity_MultiplePrimaryColumns()
+        {
+            this.StartFunctionHost(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity));
+            var query = new Dictionary<string, string>()
+            {
+                { "externalId", "101" },
+                { "name", "MyProduct" },
+                { "cost", "1" }
+            };
+            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithMultiplePrimaryColumnsAndIdentity"));
+            this.SendOutputRequest(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), query).Wait();
+            // Product should have been inserted correctly even without an ID when there's an identity column present
+            Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithMultiplePrimaryColumnsAndIdentity"));
+        }
+
+        /// <summary>
+        /// Tests that when using a table with an identity column that if the identity column is specified
+        /// by the function an error is thrown.
+        /// </summary>
+        [Fact]
+        public void AddProductWithIdentity_SpecifyIdentityColumn()
+        {
+            this.StartFunctionHost(nameof(AddProductIncludeIdentity), true);
+            // Identity column (ProductID) should be left out for new items
+            var query = new Dictionary<string, string>()
+            {
+                { "productId", "1" },
+                { "name", "MyProduct" },
+                { "cost", "1" }
+            };
+            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+            Assert.Throws<AggregateException>(() => this.SendOutputRequest(nameof(AddProductIncludeIdentity), query).Wait());
+            // Nothing should have been inserted
+            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+        }
+
+        /// <summary>
+        /// Tests that when using a table with an identity column along with other primary 
+        /// keys an error is thrown if at least one of the primary keys is missing.
+        /// </summary>
+        [Fact]
+        public void AddProductWithIdentity_MissingPrimaryColumn()
+        {
+            this.StartFunctionHost(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity));
+            var query = new Dictionary<string, string>()
+            {
+                // Missing externalId
+                { "name", "MyProduct" },
+                { "cost", "1" }
+            };
+            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithMultiplePrimaryColumnsAndIdentity"));
+            Assert.Throws<AggregateException>(() => this.SendOutputRequest(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), query).Wait());
+            // Nothing should have been inserted
+            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithMultiplePrimaryColumnsAndIdentity"));
+        }
     }
 }
