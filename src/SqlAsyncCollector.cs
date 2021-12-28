@@ -180,8 +180,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     GenerateDataQueryForMerge(tableInfo, batch, out string newDataQuery, out string rowData);
                     command.CommandText = $"{newDataQuery} {tableInfo.Query};";
                     par.Value = rowData;
-                    Console.WriteLine(command.CommandText); // TODO remove
-                    Console.WriteLine(rowData); // TODO remove
                     await command.ExecuteNonQueryAsync();
                 }
                 transaction.Commit();
@@ -258,7 +256,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             IEnumerable<string> bracketColumnDefinitionsFromPOCO = table.Columns.Where(c => columnNamesFromPOCO.Contains(c.Key, StringComparer.OrdinalIgnoreCase))
                 .Select(c => $"{c.Key.AsBracketQuotedString()} {c.Value}");
             newDataQuery = $"WITH {CteName} AS ( SELECT * FROM OPENJSON({RowDataParameter}) WITH ({string.Join(",", bracketColumnDefinitionsFromPOCO)}) )";
-            Console.WriteLine(newDataQuery); // TODO remove
         }
 
         public class TableInformation
@@ -304,7 +301,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </summary>
             public static string GetPrimaryKeysQuery(SqlObject table)
             {
-                // TODO handle no schema
                 return $@"
                     SELECT
                         {ColumnName}, c.is_identity
@@ -433,7 +429,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     await sqlConnection.OpenAsync();
                     var cmd = new SqlCommand(GetPrimaryKeysQuery(table), sqlConnection);
-                    Console.WriteLine(cmd.CommandText); // TODO REMOVE
                     using SqlDataReader rdr = await cmd.ExecuteReaderAsync();
                     while (await rdr.ReadAsync())
                     {
@@ -471,7 +466,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
 
                 string query = missingPrimaryKeysFromPOCO.Any() ? GetInsertQuery(table) : GetMergeQuery(primaryKeys, table);
-                Console.WriteLine(query); // TODO remove
                 return new TableInformation(primaryKeyFields, columnDefinitionsFromSQL, query);
             }
         }
