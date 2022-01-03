@@ -446,7 +446,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     await sqlConnection.CloseAsync();
                 }
 
-                if (!primaryKeys.Any(k => k.IsIdentity) && !primaryKeys.Any())
+                if (!primaryKeys.Any())
                 {
                     string message = $"Did not retrieve any primary keys for {table}. Cannot generate upsert command without them.";
                     throw new InvalidOperationException(message);
@@ -457,15 +457,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 IEnumerable<string> primaryKeysFromPOCO = primaryKeyFields.Select(f => f.Name);
                 IEnumerable<PrimaryKey> missingPrimaryKeysFromPOCO = primaryKeys
                     .Where(k => !primaryKeysFromPOCO.Contains(k.Name, StringComparer.OrdinalIgnoreCase));
+                bool hasIdentityColumnPrimaryKeys = primaryKeys.Any(k => k.IsIdentity);
                 // If none of the primary keys are an identity column then we require that all primary keys be present in the POCO so we can
                 // generate the MERGE statement correctly
-                if (!primaryKeys.Any(k => k.IsIdentity) && missingPrimaryKeysFromPOCO.Any(k => !k.IsIdentity))
+                if (!hasIdentityColumnPrimaryKeys && missingPrimaryKeysFromPOCO.Any())
                 {
                     string message = $"All primary keys for SQL table {table} need to be found in '{typeof(T)}.' Missing primary keys: [{string.Join(",", missingPrimaryKeysFromPOCO)}]";
                     throw new InvalidOperationException(message);
                 }
 
-                string query = missingPrimaryKeysFromPOCO.Any() ? GetInsertQuery(table) : GetMergeQuery(primaryKeys, table);
+                string query = hasIdentityColumnPrimaryKeys ? GetInsertQuery(table) : GetMergeQuery(primaryKeys, table);
                 return new TableInformation(primaryKeyFields, columnDefinitionsFromSQL, query);
             }
         }
@@ -478,10 +479,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 // we only want to serialize POCO properties that correspond to SQL columns
                 this._propertiesToSerialize = sqlColumns;
-                foreach (KeyValuePair<string, string> kv in this._propertiesToSerialize)
-                {
-                    Console.WriteLine($"{kv.Key}:{kv.Value}");
-                }
             }
 
             protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)

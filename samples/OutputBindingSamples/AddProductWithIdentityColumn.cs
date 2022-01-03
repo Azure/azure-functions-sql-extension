@@ -9,7 +9,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples
 {
     public class ProductWithoutId
     {
-
         public string Name { get; set; }
 
         public int Cost { get; set; }
@@ -18,9 +17,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples
     public static class AddProductWithIdentityColumn
     {
         /// <summary>
-        /// This shows an example of a SQL Output binding where the target table has a primary key 
-        /// which is an identity column. In such a case the primary key is not required to be in 
-        /// the object used by the binding - it will insert a row with the other values and the 
+        /// This shows an example of a SQL Output binding where the target table has a primary key
+        /// which is an identity column. In such a case the primary key is not required to be in
+        /// the object used by the binding - it will insert a row with the other values and the
         /// ID will be generated upon insert.
         /// </summary>
         /// <param name="req">The original request that triggered the function</param>
