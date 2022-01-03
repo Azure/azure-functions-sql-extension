@@ -183,10 +183,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 throw;
             }
-            finally
-            {
-                await connection.CloseAsync();
-            }
         }
 
         /// <summary>
