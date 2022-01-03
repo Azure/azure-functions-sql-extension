@@ -15,4 +15,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 
         public string ExtraString { get; set; }
     }
+
+    public class ProductIncludeIdentity
+    {
+        public int ProductID { get; set; }
+
+        public string Name { get; set; }
+
+        public int Cost { get; set; }
+    }
 }
