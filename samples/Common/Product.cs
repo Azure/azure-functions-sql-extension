@@ -11,4 +11,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common
 
         public int Cost { get; set; }
     }
+
+    public class ProductWithOptionalId
+    {
+        public int? ProductID { get; set; }
+
+        public string Name { get; set; }
+
+        public int Cost { get; set; }
+    }
 }
