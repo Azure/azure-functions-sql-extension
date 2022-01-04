@@ -5,3 +5,4 @@
 # Disabled
 dotnet_diagnostic.CA1309.severity = silent # Use ordinal StringComparison - this isn't important for tests and just adds clutter
 dotnet_diagnostic.CA1305.severity = silent # Specify IFormatProvider - this isn't important for tests and just adds clutter
+dotnet_diagnostic.CA1707.severity = silent # Identifiers should not contain underscores - this helps make test names more readable
