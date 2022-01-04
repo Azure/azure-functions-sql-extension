@@ -237,7 +237,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // we can assume that if two rows with the same primary key are in the list, they will collide
                 foreach (PropertyInfo primaryKey in table.PrimaryKeys)
                 {
-                    combinedPrimaryKey.Append(primaryKey.GetValue(row).ToString());
+                    object value = primaryKey.GetValue(row);
+                    // Identity columns are allowed to be optional, so just skip the key if it doesn't exist
+                    if (value == null)
+                    {
+                        continue;
+                    }
+                    combinedPrimaryKey.Append(value.ToString());
                 }
 
                 // If we have already seen this unique primary key, skip this update
@@ -358,7 +364,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
 
                 // Generate the UPDATE part of the merge query (all columns that should be updated)
-                IEnumerable<string> bracketedColumnNamesFromPOCO = typeof(T).GetProperties().Select(prop => prop.Name.ToLowerInvariant().AsBracketQuotedString());
+                IEnumerable<string> bracketedColumnNamesFromPOCO = typeof(T).GetProperties()
+                    .Where(prop => !primaryKeys.Any(k => k.IsIdentity && k.Name.ToLowerInvariant() == prop.Name.ToLowerInvariant())) // Skip any identity columns, those should never be updated
+                    .Select(prop => prop.Name.ToLowerInvariant().AsBracketQuotedString());
                 var columnMatchingQueryBuilder = new StringBuilder();
                 foreach (string column in bracketedColumnNamesFromPOCO)
                 {
@@ -453,7 +461,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new InvalidOperationException(message);
                 }
 
-                string query = hasIdentityColumnPrimaryKeys ? GetInsertQuery(table) : GetMergeQuery(primaryKeys, table);
+                // If any identity columns aren't included in the object then we have to generate a basic insert since the merge statement expects all primary key
+                // columns to exist. (the merge statement can handle nullable columns though if those exist)
+                string query = hasIdentityColumnPrimaryKeys && missingPrimaryKeysFromPOCO.Any() ? GetInsertQuery(table) : GetMergeQuery(primaryKeys, table);
                 return new TableInformation(primaryKeyFields, columnDefinitionsFromSQL, query);
             }
         }
