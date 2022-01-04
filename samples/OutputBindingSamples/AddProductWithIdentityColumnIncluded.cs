@@ -31,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples
             {
                 Name = req.Query["name"],
                 ProductID = string.IsNullOrEmpty(req.Query["productId"]) ? null : (int?)int.Parse(req.Query["productId"]),
-                Cost = int.Parse(req.Query["cost"]),
+                Cost = int.Parse(req.Query["cost"])
             };
             return new CreatedResult($"/api/addproductwithidentitycolumnincluded", product);
         }
