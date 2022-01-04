@@ -384,7 +384,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// in order to generate the MERGE portion of the upsert query.
             /// This only needs to be generated once and can be reused for subsequent upserts.
             /// </summary>
-            /// <param name="sqlConnection">Connection with which to query SQL against</param>
+            /// <param name="sqlConnection">An open connection with which to query SQL against</param>
             /// <param name="fullName">Full name of table, including schema (if exists).</param>
             /// <returns>TableInformation object containing primary keys, column types, etc.</returns>
             public static async Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName)
