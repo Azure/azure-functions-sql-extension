@@ -197,13 +197,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         /// <summary>
         /// Tests that when using a table with an identity column that if the identity column is specified
-        /// by the function an error is thrown.
+        /// by the function we handle inserting/updating that correctly.
         /// </summary>
         [Fact]
         public void AddProductWithIdentity_SpecifyIdentityColumn()
         {
-            this.StartFunctionHost(nameof(AddProductIncludeIdentity), true);
-            // Identity column (ProductID) should be left out for new items
+            this.StartFunctionHost(nameof(AddProductWithIdentityColumnIncluded));
             var query = new Dictionary<string, string>()
             {
                 { "productId", "1" },
@@ -211,9 +210,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "cost", "1" }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-            Assert.Throws<AggregateException>(() => this.SendOutputRequest(nameof(AddProductIncludeIdentity), query).Wait());
-            // Nothing should have been inserted
+            this.SendOutputRequest(nameof(AddProductWithIdentityColumnIncluded), query).Wait();
+            // New row should have been inserted
+            Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+            query = new Dictionary<string, string>()
+            {
+                { "productId", "1" },
+                { "name", "MyProduct2" },
+                { "cost", "1" }
+            };
+            this.SendOutputRequest(nameof(AddProductWithIdentityColumnIncluded), query).Wait();
+            // Existing row should have been updated
+            Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+            Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity WHERE Name='MyProduct2'"));
+        }
+
+        /// <summary>
+        /// Tests that when using a table with an identity column we can handle a null (missing) identity column
+        /// </summary>
+        [Fact]
+        public void AddProductWithIdentity_NoIdentityColumn()
+        {
+            this.StartFunctionHost(nameof(AddProductWithIdentityColumnIncluded));
+            var query = new Dictionary<string, string>()
+            {
+                { "name", "MyProduct" },
+                { "cost", "1" }
+            };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+            this.SendOutputRequest(nameof(AddProductWithIdentityColumnIncluded), query).Wait();
+            // New row should have been inserted
+            Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+            query = new Dictionary<string, string>()
+            {
+                { "name", "MyProduct2" },
+                { "cost", "1" }
+            };
+            this.SendOutputRequest(nameof(AddProductWithIdentityColumnIncluded), query).Wait();
+            // Another new row should have been inserted
+            Assert.Equal(2, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
         }
 
         /// <summary>

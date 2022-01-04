@@ -516,12 +516,10 @@ Normally Output Bindings require two things :
 
 If either of these are false then an error will be thrown.
 
-This changes if one of the primary key columns is an identity column though. In that case a MERGE is not performed, only a direct insert. The rules for this are
+This changes if one of the primary key columns is an identity column though. In that case there are two options based on how the function defines the output object:
 
-1. There must still be a primary key (which includes the identity column)
-2. Any other non-identity columns in the primary key constraint must still exist in the output POCO object.
-
-But the identity column itself should not be included in the POCO object - if it is included then it will be ignored as the engine handles generating the value for that column.
+1. If the identity column isn't included in the output object then a straight insert is always performed with the other column values. See [](./samples/OutputBindingSamples/AddProductWithIdentityColumn.cs) for an example.
+2. If the identity column is included (even if it's an optional nullable value) then a merge is performed similar to what happens when no identity column is present. This merge will either insert a new row or update an existing row based on the existence of a row that matches the primary keys (including the identity column). See [AddProductWithIdentityColumnIncluded](./samples/OutputBindingSamples/AddProductWithIdentityColumnIncluded.cs) for an example.
 
 ## Known Issues
 
