@@ -180,7 +180,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 foreach (IEnumerable<T> batch in rows.Batch(batchSize))
                 {
-                    GenerateDataQueryForMerge(tableInfo, batch, tableInfo.Comparer, out string newDataQuery, out string rowData);
+                    GenerateDataQueryForMerge(tableInfo, batch, out string newDataQuery, out string rowData);
                     command.CommandText = $"{newDataQuery} {tableInfo.Query};";
                     par.Value = rowData;
                     await command.ExecuteNonQueryAsync();
@@ -222,11 +222,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="table">Information about the table we will be upserting into</param>
         /// <param name="rows">Rows to be upserted</param>
         /// <returns>T-SQL containing data for merge</returns>
-        private static void GenerateDataQueryForMerge(TableInformation table, IEnumerable<T> rows, StringComparer comparer, out string newDataQuery, out string rowData)
+        private static void GenerateDataQueryForMerge(TableInformation table, IEnumerable<T> rows, out string newDataQuery, out string rowData)
         {
             IList<T> rowsToUpsert = new List<T>();
 
-            var uniqueUpdatedPrimaryKeys = new HashSet<string>(comparer);
+            var uniqueUpdatedPrimaryKeys = new HashSet<string>(table.Comparer);
 
             // If there are duplicate primary keys, we'll need to pick the LAST (most recent) row per primary key.
             foreach (T row in rows.Reverse())
@@ -257,7 +257,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             rowData = JsonConvert.SerializeObject(rowsToUpsert, table.JsonSerializerSettings);
             IEnumerable<string> columnNamesFromPOCO = typeof(T).GetProperties().Select(prop => prop.Name);
-            IEnumerable<string> bracketColumnDefinitionsFromPOCO = table.Columns.Where(c => columnNamesFromPOCO.Contains(c.Key, comparer))
+            IEnumerable<string> bracketColumnDefinitionsFromPOCO = table.Columns.Where(c => columnNamesFromPOCO.Contains(c.Key, table.Comparer))
                 .Select(c => $"{c.Key.AsBracketQuotedString()} {c.Value}");
             newDataQuery = $"WITH {CteName} AS ( SELECT * FROM OPENJSON({RowDataParameter}) WITH ({string.Join(",", bracketColumnDefinitionsFromPOCO)}) )";
         }
@@ -433,7 +433,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 catch (Exception ex)
                 {
-                    logger.LogInformation($"Encountered exception while retrieving database collation: {ex}. Case insensitive behavior will be used by default.");
+                    logger.LogWarning($"Encountered exception while retrieving database collation: {ex}. Case insensitive behavior will be used by default.");
                 }
 
                 StringComparer comparer = caseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
