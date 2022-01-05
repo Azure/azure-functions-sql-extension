@@ -315,7 +315,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             public static string GetDatabaseCollationQuery(SqlConnection sqlConnection)
             {
                 return $@"
-                    select 
+                    SELECT 
                         DATABASEPROPERTYEX('{sqlConnection.Database}', '{Collation}') AS {Collation};";
             }
 
@@ -433,7 +433,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 catch (Exception ex)
                 {
-                    logger.LogInformation($"Encountered exception while retrieving database collation: {ex}. Will use case insensitive behavior by default.");
+                    logger.LogInformation($"Encountered exception while retrieving database collation: {ex}. Case insensitive behavior will be used by default.");
                 }
 
                 StringComparer comparer = caseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
