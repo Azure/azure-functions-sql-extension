@@ -270,5 +270,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // Nothing should have been inserted
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithMultiplePrimaryColumnsAndIdentity"));
         }
+
+        /// <summary>
+        /// Tests that when using a case sensitive database, an error is thrown if 
+        /// the POCO fields case and column names case do not match.
+        /// </summary>
+        [Fact]
+        public void AddProductCaseSensitiveTest()
+        {
+            this.StartFunctionHost(nameof(AddProduct));
+
+            // Change database collation to case sensitive
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS");
+
+            var query = new Dictionary<string, string>()
+            {
+                { "id", "1" },
+                { "name", "test" },
+                { "cost", "100" }
+            };
+
+            // The upsert should fail since the database is case sensitive and the column name "ProductId"
+            // does not match the POCO field "ProductID"
+            Assert.Throws<AggregateException>(() => this.SendOutputRequest(nameof(AddProduct), query).Wait());
+
+            // Change database collation back to case insensitive
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS");
+
+            this.SendOutputRequest(nameof(AddProduct), query).Wait();
+
+            // Verify result
+            Assert.Equal("test", this.ExecuteScalar($"select Name from Products where ProductId={1}"));
+            Assert.Equal(100, this.ExecuteScalar($"select cost from Products where ProductId={1}"));
+        }
     }
 }
