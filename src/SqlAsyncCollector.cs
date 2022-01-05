@@ -471,7 +471,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     using SqlDataReader rdr = await cmd.ExecuteReaderAsync();
                     while (await rdr.ReadAsync())
                     {
-                        primaryKeys.Add(new PrimaryKey(rdr[ColumnName].ToString(), bool.Parse(rdr[IsIdentity].ToString())));
+                        string columnName = caseSensitive ? rdr[ColumnName].ToString() : rdr[ColumnName].ToString().ToLowerInvariant();
+                        primaryKeys.Add(new PrimaryKey(columnName, bool.Parse(rdr[IsIdentity].ToString())));
                     }
                 }
                 catch (Exception ex)
@@ -488,7 +489,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
 
                 // Match SQL Primary Key column names to POCO field/property objects. Ensure none are missing.
-                IEnumerable<MemberInfo> primaryKeyFields = typeof(T).GetMembers().Where(f => primaryKeys.Any(k => string.Equals(k.Name, f.Name, comparer)));
+                StringComparison comparison = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+                IEnumerable<MemberInfo> primaryKeyFields = typeof(T).GetMembers().Where(f => primaryKeys.Any(k => string.Equals(k.Name, f.Name, comparison)));
                 IEnumerable<string> primaryKeysFromPOCO = primaryKeyFields.Select(f => f.Name);
                 IEnumerable<PrimaryKey> missingPrimaryKeysFromPOCO = primaryKeys
                     .Where(k => !primaryKeysFromPOCO.Contains(k.Name, comparer));
