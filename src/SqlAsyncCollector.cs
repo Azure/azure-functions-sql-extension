@@ -44,6 +44,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const string IsIdentity = "is_identity";
         private const string CteName = "cte";
 
+        private const string Collation = "Collation";
+
         private readonly IConfiguration _configuration;
         private readonly SqlAttribute _attribute;
         private readonly ILogger _logger;
@@ -148,7 +150,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             if (tableInfo == null)
             {
-                tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullTableName);
+                tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullTableName, this._logger);
 
                 var policy = new CacheItemPolicy
                 {
@@ -224,8 +226,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             IList<T> rowsToUpsert = new List<T>();
 
-            // Here, we assume that primary keys are case INsensitive, which is the SQL Server default.
-            var uniqueUpdatedPrimaryKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var uniqueUpdatedPrimaryKeys = new HashSet<string>(table.Comparer);
 
             // If there are duplicate primary keys, we'll need to pick the LAST (most recent) row per primary key.
             foreach (T row in rows.Reverse())
@@ -256,7 +257,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             rowData = JsonConvert.SerializeObject(rowsToUpsert, table.JsonSerializerSettings);
             IEnumerable<string> columnNamesFromPOCO = typeof(T).GetProperties().Select(prop => prop.Name);
-            IEnumerable<string> bracketColumnDefinitionsFromPOCO = table.Columns.Where(c => columnNamesFromPOCO.Contains(c.Key, StringComparer.OrdinalIgnoreCase))
+            IEnumerable<string> bracketColumnDefinitionsFromPOCO = table.Columns.Where(c => columnNamesFromPOCO.Contains(c.Key, table.Comparer))
                 .Select(c => $"{c.Key.AsBracketQuotedString()} {c.Value}");
             newDataQuery = $"WITH {CteName} AS ( SELECT * FROM OPENJSON({RowDataParameter}) WITH ({string.Join(",", bracketColumnDefinitionsFromPOCO)}) )";
         }
@@ -276,6 +277,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             public IEnumerable<string> ColumnDefinitions => this.Columns.Select(c => $"{c.Key} {c.Value}");
 
             /// <summary>
+            /// The StringComparer to use when comparing column names. Ex. StringComparer.Ordinal or StringComparer.OrdinalIgnoreCase
+            /// </summary>
+            public StringComparer Comparer { get; }
+
+            /// <summary>
+            /// T-SQL merge statement generated from primary keys
             /// T-SQL merge or insert statement generated from primary keys
             /// and column names for a specific table.
             /// </summary>
@@ -287,16 +294,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </summary>
             public JsonSerializerSettings JsonSerializerSettings { get; }
 
-            public TableInformation(IEnumerable<MemberInfo> primaryKeys, IDictionary<string, string> columns, string query)
+            public TableInformation(IEnumerable<MemberInfo> primaryKeys, IDictionary<string, string> columns, StringComparer comparer, string query)
             {
                 this.PrimaryKeys = primaryKeys;
                 this.Columns = columns;
+                this.Comparer = comparer;
                 this.Query = query;
 
                 this.JsonSerializerSettings = new JsonSerializerSettings
                 {
-                    ContractResolver = new DynamicPOCOContractResolver(columns)
+                    ContractResolver = new DynamicPOCOContractResolver(columns, comparer)
                 };
+            }
+
+            public static bool GetCaseSensitivityFromCollation(string collation)
+            {
+                return collation.Contains("_CS_");
+            }
+
+            public static string GetDatabaseCollationQuery(SqlConnection sqlConnection)
+            {
+                return $@"
+                    SELECT 
+                        DATABASEPROPERTYEX('{sqlConnection.Database}', '{Collation}') AS {Collation};";
             }
 
             /// <summary>
@@ -346,14 +366,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             public static string GetInsertQuery(SqlObject table)
             {
-                IEnumerable<string> bracketedColumnNamesFromPOCO = typeof(T).GetProperties().Select(prop => prop.Name.ToLowerInvariant().AsBracketQuotedString());
+                IEnumerable<string> bracketedColumnNamesFromPOCO = typeof(T).GetProperties().Select(prop => prop.Name.AsBracketQuotedString());
                 return $"INSERT INTO {table.BracketQuotedFullName} SELECT * FROM {CteName}";
             }
 
             /// <summary>
             /// Generates reusable SQL query that will be part of every upsert command.
             /// </summary>
-            public static string GetMergeQuery(IList<PrimaryKey> primaryKeys, SqlObject table)
+            public static string GetMergeQuery(IList<PrimaryKey> primaryKeys, SqlObject table, StringComparison comparison)
             {
                 IList<string> bracketedPrimaryKeys = primaryKeys.Select(p => p.Name.AsBracketQuotedString()).ToList();
                 // Generate the ON part of the merge query (compares new data against existing data)
@@ -365,8 +385,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 // Generate the UPDATE part of the merge query (all columns that should be updated)
                 IEnumerable<string> bracketedColumnNamesFromPOCO = typeof(T).GetProperties()
-                    .Where(prop => !primaryKeys.Any(k => k.IsIdentity && k.Name.ToLowerInvariant() == prop.Name.ToLowerInvariant())) // Skip any identity columns, those should never be updated
-                    .Select(prop => prop.Name.ToLowerInvariant().AsBracketQuotedString());
+                    .Where(prop => !primaryKeys.Any(k => k.IsIdentity && string.Equals(k.Name, prop.Name, comparison))) // Skip any identity columns, those should never be updated
+                    .Select(prop => prop.Name.AsBracketQuotedString());
                 var columnMatchingQueryBuilder = new StringBuilder();
                 foreach (string column in bracketedColumnNamesFromPOCO)
                 {
@@ -394,20 +414,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </summary>
             /// <param name="sqlConnection">An open connection with which to query SQL against</param>
             /// <param name="fullName">Full name of table, including schema (if exists).</param>
+            /// <param name="logger">ILogger used to log any errors or warnings.</param>
             /// <returns>TableInformation object containing primary keys, column types, etc.</returns>
-            public static async Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName)
+            public static async Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName, ILogger logger)
             {
                 var table = new SqlObject(fullName);
 
-                // 1. Get all column names and types
-                var columnDefinitionsFromSQL = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                // Get case sensitivity from database collation (default to false if any exception occurs)
+                bool caseSensitive = false;
+                try
+                {
+                    var cmdCollation = new SqlCommand(GetDatabaseCollationQuery(sqlConnection), sqlConnection);
+                    using SqlDataReader rdr = await cmdCollation.ExecuteReaderAsync();
+                    while (await rdr.ReadAsync())
+                    {
+                        caseSensitive = GetCaseSensitivityFromCollation(rdr[Collation].ToString());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning($"Encountered exception while retrieving database collation: {ex}. Case insensitive behavior will be used by default.");
+                }
+
+                StringComparer comparer = caseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
+
+                // Get all column names and types
+                var columnDefinitionsFromSQL = new Dictionary<string, string>(comparer);
                 try
                 {
                     var cmdColDef = new SqlCommand(GetColumnDefinitionsQuery(table), sqlConnection);
                     using SqlDataReader rdr = await cmdColDef.ExecuteReaderAsync();
                     while (await rdr.ReadAsync())
                     {
-                        columnDefinitionsFromSQL.Add(rdr[ColumnName].ToString().ToLowerInvariant(), rdr[ColumnDefinition].ToString());
+                        string columnName = caseSensitive ? rdr[ColumnName].ToString() : rdr[ColumnName].ToString().ToLowerInvariant();
+                        columnDefinitionsFromSQL.Add(columnName, rdr[ColumnDefinition].ToString());
                     }
                 }
                 catch (Exception ex)
@@ -423,7 +463,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new InvalidOperationException(message);
                 }
 
-                // 2. Query SQL for table Primary Keys
+                // Query SQL for table Primary Keys
                 var primaryKeys = new List<PrimaryKey>();
                 try
                 {
@@ -431,7 +471,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     using SqlDataReader rdr = await cmd.ExecuteReaderAsync();
                     while (await rdr.ReadAsync())
                     {
-                        primaryKeys.Add(new PrimaryKey(rdr[ColumnName].ToString().ToLowerInvariant(), bool.Parse(rdr[IsIdentity].ToString())));
+                        string columnName = caseSensitive ? rdr[ColumnName].ToString() : rdr[ColumnName].ToString().ToLowerInvariant();
+                        primaryKeys.Add(new PrimaryKey(columnName, bool.Parse(rdr[IsIdentity].ToString())));
                     }
                 }
                 catch (Exception ex)
@@ -447,11 +488,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new InvalidOperationException(message);
                 }
 
-                // 3. Match SQL Primary Key column names to POCO field/property objects. Ensure none are missing.
-                IEnumerable<MemberInfo> primaryKeyFields = typeof(T).GetMembers().Where(f => primaryKeys.Any(k => string.Equals(k.Name, f.Name, StringComparison.OrdinalIgnoreCase)));
+                // Match SQL Primary Key column names to POCO field/property objects. Ensure none are missing.
+                StringComparison comparison = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+                IEnumerable<MemberInfo> primaryKeyFields = typeof(T).GetMembers().Where(f => primaryKeys.Any(k => string.Equals(k.Name, f.Name, comparison)));
                 IEnumerable<string> primaryKeysFromPOCO = primaryKeyFields.Select(f => f.Name);
                 IEnumerable<PrimaryKey> missingPrimaryKeysFromPOCO = primaryKeys
-                    .Where(k => !primaryKeysFromPOCO.Contains(k.Name, StringComparer.OrdinalIgnoreCase));
+                    .Where(k => !primaryKeysFromPOCO.Contains(k.Name, comparer));
                 bool hasIdentityColumnPrimaryKeys = primaryKeys.Any(k => k.IsIdentity);
                 // If none of the primary keys are an identity column then we require that all primary keys be present in the POCO so we can
                 // generate the MERGE statement correctly
@@ -463,26 +505,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 // If any identity columns aren't included in the object then we have to generate a basic insert since the merge statement expects all primary key
                 // columns to exist. (the merge statement can handle nullable columns though if those exist)
-                string query = hasIdentityColumnPrimaryKeys && missingPrimaryKeysFromPOCO.Any() ? GetInsertQuery(table) : GetMergeQuery(primaryKeys, table);
-                return new TableInformation(primaryKeyFields, columnDefinitionsFromSQL, query);
+                string query = hasIdentityColumnPrimaryKeys && missingPrimaryKeysFromPOCO.Any() ? GetInsertQuery(table) : GetMergeQuery(primaryKeys, table, comparison);
+                return new TableInformation(primaryKeyFields, columnDefinitionsFromSQL, comparer, query);
             }
         }
 
         public class DynamicPOCOContractResolver : DefaultContractResolver
         {
             private readonly IDictionary<string, string> _propertiesToSerialize;
+            private readonly StringComparer _comparer;
 
-            public DynamicPOCOContractResolver(IDictionary<string, string> sqlColumns)
+            public DynamicPOCOContractResolver(IDictionary<string, string> sqlColumns, StringComparer comparer)
             {
                 // we only want to serialize POCO properties that correspond to SQL columns
                 this._propertiesToSerialize = sqlColumns;
+                this._comparer = comparer;
             }
 
             protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
             {
                 var properties = base
                     .CreateProperties(type, memberSerialization)
-                    .ToDictionary(p => p.PropertyName, StringComparer.OrdinalIgnoreCase);
+                    .ToDictionary(p => p.PropertyName, this._comparer);
 
                 // Make sure the ordering of columns matches that of SQL
                 // Necessary for proper matching of column names to JSON that is generated for each batch of data
@@ -491,9 +535,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     if (properties.ContainsKey(column.Key))
                     {
-                        // Lower-case the property name during serialization to match SQL casing
                         JsonProperty sqlColumn = properties[column.Key];
-                        sqlColumn.PropertyName = sqlColumn.PropertyName.ToLowerInvariant();
+                        sqlColumn.PropertyName = this._comparer == StringComparer.Ordinal ? sqlColumn.PropertyName : sqlColumn.PropertyName.ToLowerInvariant();
                         propertiesToSerialize.Add(sqlColumn);
                     }
                 }
