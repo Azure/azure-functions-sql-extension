@@ -98,6 +98,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Equal(expectedResponse, actualResponse, StringComparer.OrdinalIgnoreCase);
         }
 
+        [Fact]
+        public async void GetProductNamesViewTest()
+        {
+            this.StartFunctionHost(nameof(GetProductNamesView));
+
+            // Insert one row of data into Product table
+            Product[] products = GetProductsWithSameCost(1, 100);
+            this.InsertProducts(products);
+
+            // Run the function that queries from the ProductName view
+            HttpResponseMessage response = await this.SendInputRequest("getproduct-namesview");
+
+            // Verify result
+            string expectedResponse = "[{\"name\":\"test\"}]";
+            string actualResponse = await response.Content.ReadAsStringAsync();
+
+            Assert.Equal(expectedResponse, actualResponse, StringComparer.OrdinalIgnoreCase);
+        }
+
         private static Product[] GetProductsWithSameCost(int n, int cost)
         {
             var result = new Product[n];

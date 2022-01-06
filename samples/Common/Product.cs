@@ -20,4 +20,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common
 
         public int Cost { get; set; }
     }
+
+    public class ProductName
+    {
+        public string Name { get; set; }
+    }
 }
