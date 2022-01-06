@@ -9,7 +9,9 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples
 {
-    // This input binding queries the rows in the ProductNames view
+    /// <summary>
+    /// This shows an example of a SQL Input binding that queries from a SQL View named ProductNames.
+    /// </summary>
     public static class GetProductNamesView
     {
         [FunctionName("GetProductNamesView")]
