@@ -35,6 +35,14 @@ steps:
     MaxConcurrency: '50'
     MaxRetryAttempts: '5'
 
+- task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+  displayName: 'SBOM Generation Task'
+  inputs:
+      BuildDropPath: '$(Build.ArtifactStagingDirectory)'
+      PackageName: 'Azure SQL bindings for Azure Functions'
+      PackageVersion: '$(nugetVersion)'
+  condition: eq(variables['Agent.OS'], 'Windows_NT')
+
 - task: PublishPipelineArtifact@1
   displayName: 'Publish Pipeline Artifact'
   inputs:
