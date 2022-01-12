@@ -122,7 +122,8 @@ steps:
   inputs:
       BuildDropPath: '$(Build.ArtifactStagingDirectory)'
       PackageName: 'Azure SQL bindings for Azure Functions'
-      PackageVersion: '$(versionMajor).$(versionMinor)'
+      PackageVersion: '$(nugetVersion)'
+  condition: eq(variables['Agent.OS'], 'Windows_NT')
 
 # 5.0 isn't supported on Mac yet
 - task: UseDotNet@2
