@@ -41,7 +41,6 @@ steps:
       BuildDropPath: '$(Build.ArtifactStagingDirectory)'
       PackageName: 'Azure SQL bindings for Azure Functions'
       PackageVersion: '$(nugetVersion)'
-  condition: eq(variables['Agent.OS'], 'Windows_NT')
 
 - task: PublishPipelineArtifact@1
   displayName: 'Publish Pipeline Artifact'
