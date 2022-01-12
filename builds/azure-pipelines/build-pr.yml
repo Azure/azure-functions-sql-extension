@@ -8,7 +8,6 @@ pr:
 variables:
   solution: '**/*.sln'
   configuration: 'Debug'
-  Packaging.EnableSBOMSigning: true
 
 stages:
 - stage: Build
