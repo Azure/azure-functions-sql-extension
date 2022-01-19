@@ -37,6 +37,7 @@ Further information on the Azure SQL binding for Azure Functions is also availab
       - [ICollector<T>/IAsyncCollector<T>](#icollectortiasynccollectort)
       - [Array](#array)
       - [Single Row](#single-row)
+      - [Primary Keys and Identity Columns](#primary-keys-and-identity-columns)
   - [Known Issues](#known-issues)
   - [Trademarks](#trademarks)
 
@@ -505,6 +506,21 @@ public static IActionResult Run(
     return new CreatedResult($"/api/addproduct", product);
 }
 ```
+
+#### Primary Keys and Identity Columns
+
+Normally Output Bindings require two things :
+
+1. The table being upserted to contains a Primary Key constraint (composed of one or more columns)
+2. Each of those columns must be present in the POCO object used in the attribute
+
+If either of these are false then an error will be thrown.
+
+This changes if one of the primary key columns is an identity column though. In that case there are two options based on how the function defines the output object:
+
+1. If the identity column isn't included in the output object then a straight insert is always performed with the other column values. See [AddProductWithIdentityColumn](./samples/OutputBindingSamples/AddProductWithIdentityColumn.cs) for an example.
+2. If the identity column is included (even if it's an optional nullable value) then a merge is performed similar to what happens when no identity column is present. This merge will either insert a new row or update an existing row based on the existence of a row that matches the primary keys (including the identity column). See [AddProductWithIdentityColumnIncluded](./samples/OutputBindingSamples/AddProductWithIdentityColumnIncluded.cs) for an example.
+
 ## Known Issues
 
 - Output bindings against tables with columns of data types `NTEXT`, `TEXT`, or `IMAGE` are not supported and data upserts will fail. These types [will be removed](https://docs.microsoft.com/sql/t-sql/data-types/ntext-text-and-image-transact-sql) in a future version of SQL Server and are not compatible with the `OPENJSON` function used by this Azure Functions binding.

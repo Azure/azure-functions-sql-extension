@@ -41,17 +41,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         }
 
         [Theory]
-        [InlineData("dbo.Products", "'dbo'", "'Products'")]
-        [InlineData("Products", "SCHEMA_NAME()", "'Products'")]
-        [InlineData("[dbo].[Products]", "'dbo'", "'Products'")]
-        [InlineData("[dbo].Products", "'dbo'", "'Products'")]
-        [InlineData("dbo.[Products]", "'dbo'", "'Products'")]
-        [InlineData("[Prod'ucts]", "SCHEMA_NAME()", "'Prod''ucts'")]
-        public void TestGetTableAndSchema(string fullName, string expectedSchema, string expectedTableName)
+        [InlineData("dbo.Products", "dbo", "'dbo'", "Products", "'Products'", "dbo.Products", "'dbo.Products'", "[dbo].[Products]")] // Simple full name
+        [InlineData("Products", "SCHEMA_NAME()", "SCHEMA_NAME()", "Products", "'Products'", "Products", "'Products'", "[Products]")] // Simple no schema
+        [InlineData("[dbo].[Products]", "dbo", "'dbo'", "Products", "'Products'", "dbo.Products", "'dbo.Products'", "[dbo].[Products]")] // Simple full name bracket quoted
+        [InlineData("[dbo].Products", "dbo", "'dbo'", "Products", "'Products'", "dbo.Products", "'dbo.Products'", "[dbo].[Products]")] // Simple full name only schema bracket quoted
+        [InlineData("dbo.[Products]", "dbo", "'dbo'", "Products", "'Products'", "dbo.Products", "'dbo.Products'", "[dbo].[Products]")] // Simple full name only name bracket quoted
+        [InlineData("[My'Schema].[Prod'ucts]", "My'Schema", "'My''Schema'", "Prod'ucts", "'Prod''ucts'", "My'Schema.Prod'ucts", "'My''Schema.Prod''ucts'", "[My'Schema].[Prod'ucts]")] // Full name with single quotes in schema and name
+        [InlineData("[My]]Schema].[My]]Object]", "My]Schema", "'My]Schema'", "My]Object", "'My]Object'", "My]Schema.My]Object", "'My]Schema.My]Object'", "[My]]Schema].[My]]Object]")] // Full name with brackets in schema and name
+        public void TestSqlObject(string fullName,
+            string expectedSchema,
+            string expectedQuotedSchema,
+            string expectedTableName,
+            string expectedSchemaTableName,
+            string expectedFullName,
+            string expectedQuotedFullName,
+            string expectedBracketQuotedFullName)
         {
-            SqlBindingUtilities.GetTableAndSchema(fullName, out string quotedSchema, out string quotedTableName);
-            Assert.Equal(expectedSchema, quotedSchema);
-            Assert.Equal(expectedTableName, quotedTableName);
+            var sqlObj = new SqlObject(fullName);
+            Assert.Equal(expectedSchema, sqlObj.Schema);
+            Assert.Equal(expectedQuotedSchema, sqlObj.QuotedSchema);
+            Assert.Equal(expectedTableName, sqlObj.Name);
+            Assert.Equal(expectedSchemaTableName, sqlObj.QuotedName);
+            Assert.Equal(expectedFullName, sqlObj.FullName);
+            Assert.Equal(expectedQuotedFullName, sqlObj.QuotedFullName);
+            Assert.Equal(expectedBracketQuotedFullName, sqlObj.BracketQuotedFullName);
         }
 
         [Theory]
@@ -59,10 +72,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [InlineData("my'schema.mytable", "Expected but did not find a closing quotation mark after the character string 'schema.mytable.\n")]
         [InlineData("schema.mytable", "Incorrect syntax near schema.\n")] // 'schema' is a keyword and needs to be bracket-quoted to be used as the schema name.
         [InlineData("myschema.table", "Incorrect syntax near ..\n")] // 'table' is a keyword and needs to be bracket-quoted to be used as the table name.
-        public void TestGetTableAndSchemaError(string fullName, string expectedError)
+        public void TestSqlObjectParseError(string fullName, string expectedError)
         {
-            string expectedErrorMessage = "Encountered error(s) while parsing schema and table name:\n" + expectedError;
-            string errorMessage = Assert.Throws<InvalidOperationException>(() => SqlBindingUtilities.GetTableAndSchema(fullName, out string quotedSchema, out string quotedTableName)).Message;
+            string expectedErrorMessage = "Encountered error(s) while parsing schema and object name:\n" + expectedError;
+            string errorMessage = Assert.Throws<InvalidOperationException>(() => new SqlObject(fullName)).Message;
             Assert.Equal(expectedErrorMessage, errorMessage);
         }
 
