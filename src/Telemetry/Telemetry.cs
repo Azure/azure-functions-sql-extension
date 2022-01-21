@@ -36,7 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
         /// </summary>
         public const string TelemetryOptoutSetting = "AzureFunctionsSqlBindingsTelemetryOptOut";
 
-        public const string WelcomeMessage = @"SQL Bindings for Azure Functions
+        public const string WelcomeMessage = @"Azure SQL binding for Azure Functions
 ---------------------
 Telemetry
 ---------
