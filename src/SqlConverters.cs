@@ -6,10 +6,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
@@ -54,8 +52,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             private readonly IConfiguration _configuration;
 
-            private readonly ILogger _logger;
-
             /// <summary>
             /// Initializes a new instance of the <see cref="SqlGenericsConverter<typeparamref name="T"/>"/> class.
             /// </summary>
@@ -63,10 +59,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <exception cref="ArgumentNullException">
             /// Thrown if the configuration is null
             /// </exception>
-            public SqlGenericsConverter(IConfiguration configuration, ILoggerFactory loggerFactory)
+            public SqlGenericsConverter(IConfiguration configuration)
             {
                 this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-                this._logger = loggerFactory?.CreateLogger(LogCategories.Bindings) ?? throw new ArgumentNullException(nameof(loggerFactory));
             }
 
             /// <summary>
@@ -110,8 +105,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns></returns>
             public virtual async Task<string> BuildItemFromAttributeAsync(SqlAttribute attribute)
             {
-                this._logger.LogInformation($"Fetching data {attribute.CommandText}.");
-                var properties = new Dictionary<string, string>();
                 using SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, this._configuration);
                 // Ideally, we would like to move away from using SqlDataAdapter both here and in the
                 // SqlAsyncCollector since it does not support asynchronous operations.
@@ -120,8 +113,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 using SqlCommand command = SqlBindingUtilities.BuildCommand(attribute, connection);
                 adapter.SelectCommand = command;
                 await connection.OpenAsync();
-                properties.Add("ServerVersion", connection.ServerVersion);
-                Telemetry.Telemetry.Instance.TrackEvent("inputQuery", properties, null, this._logger);
                 var dataTable = new DataTable();
                 adapter.Fill(dataTable);
                 return JsonConvert.SerializeObject(dataTable);
