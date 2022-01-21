@@ -9,97 +9,73 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Azure.WebJobs.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
 {
     public sealed class Telemetry
     {
-        internal static Telemetry Instance = new Telemetry(typeof(Telemetry).Assembly.GetName().Version.ToString(), "azure-functions-sql-ext");
+        internal static Telemetry Instance = new Telemetry();
 
-        private readonly string _eventsNamespace;
+        private const string EventsNamespace = "azure-functions-sql-bindings";
         internal static string CurrentSessionId;
         private TelemetryClient _client;
         private Dictionary<string, string> _commonProperties;
         private Dictionary<string, double> _commonMeasurements;
         private Task _trackEventTask;
+        private ILogger _logger;
+        private bool _initialized;
+        private const string InstrumentationKey = "98697a1c-1416-486a-99ac-c6c74ebe5ebd";
+        /// <summary>
+        /// The environment variable used for opting out of telemetry
+        /// </summary>
+        public const string TelemetryOptoutEnvVar = "AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT";
+        /// <summary>
+        /// The app setting used for opting out of telemetry
+        /// </summary>
+        public const string TelemetryOptoutSetting = "AzureFunctionsSqlBindingsTelemetryOptOut";
 
-        private const string InstrumentationKey = "9f1f76dd-a432-4b93-ba9e-c98336deacb1";
-        public const string TelemetryOptout = "AZUREFUNCTIONS_SQLEXT_TELEMETRY_OPTOUT";
-
-        public const string WelcomeMessage = @"Welcome to .NET Interactive!
+        public const string WelcomeMessage = @"SQL Bindings for Azure Functions
 ---------------------
 Telemetry
 ---------
-The .NET Core tools collect usage data in order to help us improve your experience.The data is anonymous and doesn't include command-line arguments. The data is collected by Microsoft and shared with the community. You can opt-out of telemetry by setting the DOTNET_INTERACTIVE_CLI_TELEMETRY_OPTOUT environment variable to '1' or 'true' using your favorite shell.
+This extension collect usage data in order to help us improve your experience. The data is anonymous and doesn't include any personal information. You can opt-out of telemetry by setting the " + TelemetryOptoutEnvVar + " environment variable or the " + TelemetryOptoutSetting + @" + app setting to '1', 'true' or 'yes';
 ";
 
-        public Telemetry(
-            string productVersion,
-            string eventsNamespace,
-            string sessionId = null,
-            bool blockThreadInitialization = false)
+        public void Initialize(IConfiguration config, ILoggerFactory loggerFactory)
         {
-            if (string.IsNullOrWhiteSpace(eventsNamespace))
-            {
-                throw new ArgumentException("Value cannot be null or whitespace.", nameof(eventsNamespace));
-            }
-            this._eventsNamespace = eventsNamespace;
-            this.Enabled = !GetEnvironmentVariableAsBool(TelemetryOptout); // && PermissionExists(sentinel);
-
+            this._logger = loggerFactory.CreateLogger(LogCategories.Bindings);
+            this.Enabled = !(Utils.GetEnvironmentVariableAsBool(TelemetryOptoutEnvVar) || Utils.GetConfigSettingAsBool(TelemetryOptoutSetting, config));
             if (!this.Enabled)
             {
+                this._logger.LogInformation("Telemetry disabled");
                 return;
             }
-
+            this._logger.LogInformation(WelcomeMessage);
             // Store the session ID in a static field so that it can be reused
-            CurrentSessionId = sessionId ?? Guid.NewGuid().ToString();
+            CurrentSessionId = Guid.NewGuid().ToString();
 
-            if (blockThreadInitialization)
-            {
-                this.InitializeTelemetry(productVersion);
-            }
-            else
-            {
-                //initialize in task to offload to parallel thread
-                this._trackEventTask = Task.Factory.StartNew(() => this.InitializeTelemetry(productVersion));
-            }
+            //initialize in task to offload to parallel thread
+            string productVersion = typeof(Telemetry).Assembly.GetName().Version.ToString();
+            this._trackEventTask = Task.Factory.StartNew(() => this.InitializeTelemetry(productVersion));
+            this._initialized = true;
         }
 
-        public bool Enabled { get; }
-
-        // public static bool SkipFirstTimeExperience => GetEnvironmentVariableAsBool(FirstTimeUseNoticeSentinel.SkipFirstTimeExperienceEnvironmentVariableName, false);
-
-        private static bool GetEnvironmentVariableAsBool(string name, bool defaultValue = false)
-        {
-            string str = Environment.GetEnvironmentVariable(name);
-            if (string.IsNullOrEmpty(str))
-            {
-                return defaultValue;
-            }
-
-            switch (str.ToLowerInvariant())
-            {
-                case "true":
-                case "1":
-                case "yes":
-                    return true;
-                case "false":
-                case "0":
-                case "no":
-                    return false;
-                default:
-                    return defaultValue;
-            }
-        }
+        public bool Enabled { get; private set; }
 
         public void TrackEvent(string eventName, IDictionary<string, string> properties,
-            IDictionary<string, double> measurements, ILogger logger)
+            IDictionary<string, double> measurements)
         {
-            logger.LogInformation($"Sending event {eventName}");
+            if (!this._initialized)
+            {
+                return;
+            }
             if (!this.Enabled)
             {
                 return;
             }
+            this._logger.LogInformation($"Sending event {eventName}");
 
             //continue task in existing parallel thread
             this._trackEventTask = this._trackEventTask.ContinueWith(
@@ -142,7 +118,7 @@ The .NET Core tools collect usage data in order to help us improve your experien
                 Dictionary<string, string> eventProperties = this.GetEventProperties(properties);
                 Dictionary<string, double> eventMeasurements = this.GetEventMeasures(measurements);
 
-                this._client.TrackEvent($"{this._eventsNamespace}/{eventName}", eventProperties, eventMeasurements);
+                this._client.TrackEvent($"{EventsNamespace}/{eventName}", eventProperties, eventMeasurements);
                 this._client.Flush();
             }
             catch (Exception e)
