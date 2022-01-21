@@ -56,8 +56,8 @@ This extension collect usage data in order to help us improve your experience. T
             // Store the session ID in a static field so that it can be reused
             CurrentSessionId = Guid.NewGuid().ToString();
 
-            //initialize in task to offload to parallel thread
             string productVersion = typeof(Telemetry).Assembly.GetName().Version.ToString();
+            //initialize in task to offload to parallel thread
             this._trackEventTask = Task.Factory.StartNew(() => this.InitializeTelemetry(productVersion));
             this._initialized = true;
         }
@@ -67,11 +67,7 @@ This extension collect usage data in order to help us improve your experience. T
         public void TrackEvent(string eventName, IDictionary<string, string> properties,
             IDictionary<string, double> measurements)
         {
-            if (!this._initialized)
-            {
-                return;
-            }
-            if (!this.Enabled)
+            if (!this._initialized || !this.Enabled)
             {
                 return;
             }
