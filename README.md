@@ -39,6 +39,7 @@ Further information on the Azure SQL binding for Azure Functions is also availab
       - [Single Row](#single-row)
       - [Primary Keys and Identity Columns](#primary-keys-and-identity-columns)
   - [Known Issues](#known-issues)
+  - [Telemetry](#telemetry)
   - [Trademarks](#trademarks)
 
 ## Quick Start
@@ -525,6 +526,10 @@ This changes if one of the primary key columns is an identity column though. In 
 
 - Output bindings against tables with columns of data types `NTEXT`, `TEXT`, or `IMAGE` are not supported and data upserts will fail. These types [will be removed](https://docs.microsoft.com/sql/t-sql/data-types/ntext-text-and-image-transact-sql) in a future version of SQL Server and are not compatible with the `OPENJSON` function used by this Azure Functions binding.
 - Case-sensitive [collations](https://docs.microsoft.com/sql/relational-databases/collations/collation-and-unicode-support#Collation_Defn) are not currently supported. This functionality will be added in a future release. [#133](https://github.com/Azure/azure-functions-sql-extension/issues/133) tracks progress on this issue.
+
+## Telemetry
+
+This extension collect usage data in order to help us improve your experience. The data is anonymous and doesn't include any personal information. You can opt-out of telemetry by setting the `AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT` environment variable or the `AzureFunctionsSqlBindingsTelemetryOptOut` app setting (in your `*.settings.json` file) to '1', 'true' or 'yes';
 
 ## Trademarks
 

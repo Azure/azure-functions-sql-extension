@@ -7,6 +7,8 @@ root = true
 [*.cs]
 
 dotnet_analyzer_diagnostic.severity = error
+# Namespace does not match folder structure - Ideally this should be enabled but it seems to have issues with root level files so disabling for now
+dotnet_diagnostic.IDE0130.severity = none
 
 # Documentation related errors, remove once they are fixed
 dotnet_diagnostic.CS1591.severity = none

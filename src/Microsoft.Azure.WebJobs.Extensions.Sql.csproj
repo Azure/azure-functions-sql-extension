@@ -18,13 +18,12 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/Azure/azure-functions-sql-extension</PackageProjectUrl>
     <PackageIcon>pkgicon.png</PackageIcon>
-    <!-- Need to set root namespace to empty for IDE0130 to work properly - otherwise it errors out on top-level namespaces for some reason -->
-    <RootNamespace></RootNamespace>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.ApplicationInsights" Version="2.19.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.*" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="3.0.*" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.*" PrivateAssets="All" />
