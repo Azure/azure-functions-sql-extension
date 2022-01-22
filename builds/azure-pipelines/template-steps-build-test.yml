@@ -191,6 +191,7 @@ steps:
   env:
     TEST_SERVER: '$(testServer)'
     NODE_MODULES_PATH: '$(nodeModulesPath)'
+    AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
@@ -201,6 +202,7 @@ steps:
   displayName: '.NET Test on Linux'
   env:
     SA_PASSWORD: '$(serverPassword)'
+    AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
