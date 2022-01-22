@@ -133,7 +133,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             foreach (string file in Directory.EnumerateFiles(folder, "*.sql"))
             {
-                Console.WriteLine($"Executing scipt ${file}");
+                Console.WriteLine($"Executing script ${file}");
                 this.ExecuteNonQuery(File.ReadAllText(file));
             }
         }
