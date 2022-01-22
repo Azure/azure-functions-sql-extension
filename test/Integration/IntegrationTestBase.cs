@@ -119,15 +119,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.Connection.Open();
 
             // Create the database definition
+            // Create these in a specific order since things like views require that their underlying objects have been created already
             // Ideally all the sql files would be in a sqlproj and can just be deployed
-            string databaseScriptsPath = Path.Combine(GetPathToBin(), "Database");
-            foreach (string file in Directory.EnumerateFiles(databaseScriptsPath, "*.sql"))
-            {
-                this.ExecuteNonQuery(File.ReadAllText(file));
-            }
+            this.ExecuteAllScriptsInFolder(Path.Combine(GetPathToBin(), "Database", "Tables"));
+            this.ExecuteAllScriptsInFolder(Path.Combine(GetPathToBin(), "Database", "Views"));
+            this.ExecuteAllScriptsInFolder(Path.Combine(GetPathToBin(), "Database", "StoredProcedures"));
 
             // Set SqlConnectionString env var for the Function to use
             Environment.SetEnvironmentVariable("SqlConnectionString", connectionStringBuilder.ToString());
+        }
+
+        private void ExecuteAllScriptsInFolder(string folder)
+        {
+            foreach (string file in Directory.EnumerateFiles(folder, "*.sql"))
+            {
+                Console.WriteLine($"Executing script ${file}");
+                this.ExecuteNonQuery(File.ReadAllText(file));
+            }
         }
 
         /// <summary>
