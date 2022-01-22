@@ -59,7 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 
                     cmd.CommandText = commandText;
                     cmd.CommandType = CommandType.Text;
-
+                    Console.WriteLine($"Executing non-query ${commandText}");
                     return cmd.ExecuteNonQuery();
                 }
                 catch (Exception ex)
@@ -102,6 +102,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
                 {
                     cmd.CommandText = commandText;
                     cmd.CommandType = CommandType.Text;
+                    Console.WriteLine($"Executing scalar ${commandText}");
                     return cmd.ExecuteScalar();
                 }
                 catch (Exception ex)
