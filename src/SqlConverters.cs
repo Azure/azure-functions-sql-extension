@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
@@ -28,6 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             public SqlConverter(IConfiguration configuration)
             {
                 this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+                TelemetryInstance.TrackCreate(CreateType.SqlConverter);
             }
 
             /// <summary>
@@ -62,6 +65,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             public SqlGenericsConverter(IConfiguration configuration)
             {
                 this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+                TelemetryInstance.TrackCreate(CreateType.SqlGenericsConverter);
             }
 
             /// <summary>

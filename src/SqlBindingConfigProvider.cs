@@ -45,7 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 throw new ArgumentNullException(nameof(context));
             }
-            Telemetry.Telemetry.Instance.Initialize(this._configuration, this._loggerFactory);
+            Telemetry.Telemetry.TelemetryInstance.Initialize(this._configuration, this._loggerFactory);
 #pragma warning disable CS0618 // Fine to use this for our stuff
             FluentBindingRule<SqlAttribute> inputOutputRule = context.AddBindingRule<SqlAttribute>();
             var converter = new SqlConverter(this._configuration);

@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
 {
     public sealed class Telemetry
     {
-        internal static Telemetry Instance = new Telemetry();
+        internal static Telemetry TelemetryInstance = new Telemetry();
 
         private const string EventsNamespace = "azure-functions-sql-bindings";
         internal static string CurrentSessionId;
@@ -64,19 +64,97 @@ This extension collect usage data in order to help us improve your experience. T
 
         public bool Enabled { get; private set; }
 
-        public void TrackEvent(string eventName, IDictionary<string, string> properties,
-            IDictionary<string, double> measurements)
+        public void TrackEvent(TelemetryEventName eventName, IDictionary<string, string> properties = null,
+            IDictionary<string, double> measurements = null)
         {
-            if (!this._initialized || !this.Enabled)
+            try
             {
-                return;
-            }
-            this._logger.LogInformation($"Sending event {eventName}");
+                if (!this._initialized || !this.Enabled)
+                {
+                    return;
+                }
+                this._logger.LogInformation($"Sending event {eventName}");
 
-            //continue task in existing parallel thread
-            this._trackEventTask = this._trackEventTask.ContinueWith(
-                x => this.TrackEventTask(eventName, properties, measurements)
-            );
+                //continue task in existing parallel thread
+                this._trackEventTask = this._trackEventTask.ContinueWith(
+                    x => this.TrackEventTask(eventName.ToString(), properties, measurements)
+                );
+            }
+            catch (Exception ex)
+            {
+                // We don't want errors sending telemetry to break the app, so just log and move on
+                Debug.Fail($"Error sending event {eventName} : {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Sends an event with the specified duration added as a measurement
+        /// </summary>
+        /// <param name="eventName">The name of the event</param>
+        /// <param name="durationMs">The duration of the event</param>
+        /// <param name="properties">Any other properties to send with the event</param>
+        /// <param name="measurements">Any other measurements to send with the event</param>
+        public void TrackDuration(TelemetryEventName eventName, long durationMs, IDictionary<string, string> properties = null,
+            IDictionary<string, double> measurements = null)
+        {
+            try
+            {
+                measurements ??= new Dictionary<string, double>();
+                measurements.Add(TelemetryMeasureName.DurationMs.ToString(), durationMs);
+                this.TrackEvent(eventName, properties, measurements);
+            }
+            catch (Exception ex)
+            {
+                // We don't want errors sending telemetry to break the app, so just log and move on
+                Debug.Fail($"Error sending event {eventName} : {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Sends an event indicating the creation of a certain type of object. (mostly used to track the different collectors/converters used in the bindings)
+        /// </summary>
+        /// <param name="type">The type of object being created</param>
+        /// <param name="properties">Any other properties to send with the event</param>
+        /// <param name="measurements">Any other measurements to send with the event</param>
+        public void TrackCreate(CreateType type, IDictionary<string, string> properties = null,
+            IDictionary<string, double> measurements = null)
+        {
+            try
+            {
+                properties ??= new Dictionary<string, string>();
+                properties.Add(TelemetryPropertyName.Type.ToString(), type.ToString());
+                this.TrackEvent(TelemetryEventName.Create, properties, measurements);
+            }
+            catch (Exception ex)
+            {
+                // We don't want errors sending telemetry to break the app, so just log and move on
+                Debug.Fail($"Error sending event Create : {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Sends an error event for the given exception information
+        /// </summary>
+        /// <param name="errorName">A generic name identifying where the error occured (e.g. Upsert)</param>
+        /// <param name="errorType">The type of error (e.g. User or System) to differentiate types of errors that can occur</param>
+        /// <param name="properties"></param>
+        /// <param name="measurements"></param>
+        public void TrackError(TelemetryErrorName errorName, TelemetryErrorType errorType, Exception ex, IDictionary<string, string> properties = null,
+            IDictionary<string, double> measurements = null)
+        {
+            try
+            {
+                properties ??= new Dictionary<string, string>();
+                properties.Add(TelemetryPropertyName.ErrorName.ToString(), errorName.ToString());
+                properties.Add(TelemetryPropertyName.ErrorType.ToString(), errorType.ToString());
+                properties.AddExceptionProps(ex);
+                this.TrackEvent(TelemetryEventName.Error, properties, measurements);
+            }
+            catch (Exception ex2)
+            {
+                // We don't want errors sending telemetry to break the app, so just log and move on
+                Debug.Fail($"Error sending error event {errorName} : {ex2.Message}");
+            }
         }
 
         private void InitializeTelemetry(string productVersion)
@@ -152,6 +230,87 @@ This extension collect usage data in order to help us improve your experience. T
                 return this._commonProperties;
             }
         }
+    }
+
+    /// <summary>
+    /// Type of object being created
+    /// </summary>
+    public enum CreateType
+    {
+        SqlAsyncCollector,
+        SqlConverter,
+        SqlGenericsConverter
+    }
+
+    /// <summary>
+    /// Event names used for telemetry events
+    /// </summary>
+    public enum TelemetryEventName
+    {
+        Create,
+        Error,
+        TableInfoCacheHit,
+        TableInfoCacheMiss,
+        GetTableInfoStart,
+        GetTableInfoEnd,
+        UpsertStart,
+        Upsert,
+        GetCaseSensitivity,
+        GetColumnDefinitions,
+        GetPrimaryKeys
+    }
+
+    /// <summary>
+    /// Names used for properties in a telemetry event
+    /// </summary>
+    public enum TelemetryPropertyName
+    {
+        Type,
+        ErrorName,
+        ErrorType,
+        ExceptionType,
+        ServerVersion,
+        QueryType,
+        HasIdentityColumn
+    }
+
+    /// <summary>
+    /// Names used for measures in a telemetry event
+    /// </summary>
+    public enum TelemetryMeasureName
+    {
+        DurationMs,
+        BatchCount,
+        TransactionDurationMs,
+        CommandDurationMs,
+        GetCaseSensitivityDurationMs,
+        GetColumnDefinitionsDurationMs,
+        GetPrimaryKeysDurationMs
+    }
+
+    /// <summary>
+    /// The type of an error that occurred
+    /// </summary>
+    public enum TelemetryErrorType
+    {
+        User,
+        System
+    }
+
+    /// <summary>
+    /// The generic name for an error (indicating where it originated from)
+    /// </summary>
+    public enum TelemetryErrorName
+    {
+        Upsert,
+        UpsertRollback,
+        GetCaseSensitivity,
+        GetColumnDefinitions,
+        GetColumnDefinitionsTableDoesNotExist,
+        GetPrimaryKeys,
+        NoPrimaryKeys,
+        MissingPrimaryKeys,
+        PropsNotExistOnTable
     }
 }
 
