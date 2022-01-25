@@ -290,7 +290,7 @@ This extension collect usage data in order to help us improve your experience. T
         GetTableInfoStart,
         TableInfoCacheHit,
         TableInfoCacheMiss,
-        Upsert,
+        UpsertEnd,
         UpsertStart,
     }
 

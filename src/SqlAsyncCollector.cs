@@ -208,7 +208,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     { TelemetryMeasureName.TransactionDurationMs.ToString(), transactionSw.ElapsedMilliseconds },
                     { TelemetryMeasureName.CommandDurationMs.ToString(), commandSw.ElapsedMilliseconds }
                 };
-                TelemetryInstance.TrackEvent(TelemetryEventName.Upsert, props, measures);
+                TelemetryInstance.TrackEvent(TelemetryEventName.UpsertEnd, props, measures);
             }
             catch (Exception ex)
             {
