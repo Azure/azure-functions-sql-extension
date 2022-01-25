@@ -549,6 +549,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     string message = $"All primary keys for SQL table {table} need to be found in '{typeof(T)}.' Missing primary keys: [{string.Join(",", missingPrimaryKeysFromPOCO)}]";
                     var ex = new InvalidOperationException(message);
                     TelemetryInstance.TrackError(TelemetryErrorName.MissingPrimaryKeys, ex, sqlConnProps);
+                    throw ex;
                 }
 
                 // If any identity columns aren't included in the object then we have to generate a basic insert since the merge statement expects all primary key
