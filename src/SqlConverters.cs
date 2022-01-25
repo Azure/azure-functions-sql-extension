@@ -43,8 +43,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns>The SqlCommand</returns>
             public SqlCommand Convert(SqlAttribute attribute)
             {
-                return SqlBindingUtilities.BuildCommand(attribute, SqlBindingUtilities.BuildConnection(
-                    attribute.ConnectionStringSetting, this._configuration));
+                TelemetryInstance.TrackConvert(ConvertType.SqlCommand);
+                try
+                {
+                    return SqlBindingUtilities.BuildCommand(attribute, SqlBindingUtilities.BuildConnection(
+                                       attribute.ConnectionStringSetting, this._configuration));
+                }
+                catch (Exception ex)
+                {
+                    var props = new Dictionary<string, string>()
+                    {
+                        { TelemetryPropertyName.Type.ToString(), ConvertType.SqlCommand.ToString() }
+                    };
+                    TelemetryInstance.TrackError(TelemetryErrorName.Convert, ex, props);
+                    throw;
+                }
             }
 
         }
@@ -78,8 +91,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns>An IEnumerable containing the rows read from the user's database in the form of the user-defined POCO</returns>
             public async Task<IEnumerable<T>> ConvertAsync(SqlAttribute attribute, CancellationToken cancellationToken)
             {
-                string json = await this.BuildItemFromAttributeAsync(attribute);
-                return JsonConvert.DeserializeObject<IEnumerable<T>>(json);
+                TelemetryInstance.TrackConvert(ConvertType.IEnumerable);
+                try
+                {
+                    string json = await this.BuildItemFromAttributeAsync(attribute);
+                    return JsonConvert.DeserializeObject<IEnumerable<T>>(json);
+                }
+                catch (Exception ex)
+                {
+                    var props = new Dictionary<string, string>()
+                    {
+                        { TelemetryPropertyName.Type.ToString(), ConvertType.IEnumerable.ToString() }
+                    };
+                    TelemetryInstance.TrackError(TelemetryErrorName.Convert, ex, props);
+                    throw;
+                }
             }
 
             /// <summary>
@@ -96,7 +122,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </returns>
             async Task<string> IAsyncConverter<SqlAttribute, string>.ConvertAsync(SqlAttribute attribute, CancellationToken cancellationToken)
             {
-                return await this.BuildItemFromAttributeAsync(attribute);
+                TelemetryInstance.TrackConvert(ConvertType.Json);
+                try
+                {
+                    return await this.BuildItemFromAttributeAsync(attribute);
+                }
+                catch (Exception ex)
+                {
+                    var props = new Dictionary<string, string>()
+                    {
+                        { TelemetryPropertyName.Type.ToString(), ConvertType.Json.ToString() }
+                    };
+                    TelemetryInstance.TrackError(TelemetryErrorName.Convert, ex, props);
+                    throw;
+                }
             }
 
             /// <summary>
@@ -124,8 +163,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             IAsyncEnumerable<T> IConverter<SqlAttribute, IAsyncEnumerable<T>>.Convert(SqlAttribute attribute)
             {
-                return new SqlAsyncEnumerable<T>(SqlBindingUtilities.BuildConnection(
-                    attribute.ConnectionStringSetting, this._configuration), attribute);
+                TelemetryInstance.TrackConvert(ConvertType.IAsyncEnumerable);
+                try
+                {
+                    return new SqlAsyncEnumerable<T>(SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, this._configuration), attribute);
+                }
+                catch (Exception ex)
+                {
+                    var props = new Dictionary<string, string>()
+                    {
+                        { TelemetryPropertyName.Type.ToString(), ConvertType.IAsyncEnumerable.ToString() }
+                    };
+                    TelemetryInstance.TrackError(TelemetryErrorName.Convert, ex, props);
+                    throw;
+                }
             }
         }
     }

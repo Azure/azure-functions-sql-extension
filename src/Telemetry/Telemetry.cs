@@ -133,20 +133,40 @@ This extension collect usage data in order to help us improve your experience. T
         }
 
         /// <summary>
+        /// Sends an event indicating a call to convert for an Input binding
+        /// </summary>
+        /// <param name="type">The type of object we're converting to</param>
+        /// <param name="properties">Any other properties to send with the event</param>
+        /// <param name="measurements">Any other measurements to send with the event</param>
+        public void TrackConvert(ConvertType type, IDictionary<string, string> properties = null,
+            IDictionary<string, double> measurements = null)
+        {
+            try
+            {
+                properties ??= new Dictionary<string, string>();
+                properties.Add(TelemetryPropertyName.Type.ToString(), type.ToString());
+                this.TrackEvent(TelemetryEventName.Convert, properties, measurements);
+            }
+            catch (Exception ex)
+            {
+                // We don't want errors sending telemetry to break the app, so just log and move on
+                Debug.Fail($"Error sending event Create : {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Sends an error event for the given exception information
         /// </summary>
         /// <param name="errorName">A generic name identifying where the error occured (e.g. Upsert)</param>
-        /// <param name="errorType">The type of error (e.g. User or System) to differentiate types of errors that can occur</param>
         /// <param name="properties"></param>
         /// <param name="measurements"></param>
-        public void TrackError(TelemetryErrorName errorName, TelemetryErrorType errorType, Exception ex, IDictionary<string, string> properties = null,
+        public void TrackError(TelemetryErrorName errorName, Exception ex, IDictionary<string, string> properties = null,
             IDictionary<string, double> measurements = null)
         {
             try
             {
                 properties ??= new Dictionary<string, string>();
                 properties.Add(TelemetryPropertyName.ErrorName.ToString(), errorName.ToString());
-                properties.Add(TelemetryPropertyName.ErrorType.ToString(), errorType.ToString());
                 properties.AddExceptionProps(ex);
                 this.TrackEvent(TelemetryEventName.Error, properties, measurements);
             }
@@ -243,11 +263,23 @@ This extension collect usage data in order to help us improve your experience. T
     }
 
     /// <summary>
+    /// The type of conversion being performed by the input binding
+    /// </summary>
+    public enum ConvertType
+    {
+        IEnumerable,
+        IAsyncEnumerable,
+        Json,
+        SqlCommand
+    }
+
+    /// <summary>
     /// Event names used for telemetry events
     /// </summary>
     public enum TelemetryEventName
     {
         Create,
+        Convert,
         Error,
         TableInfoCacheHit,
         TableInfoCacheMiss,
@@ -267,7 +299,6 @@ This extension collect usage data in order to help us improve your experience. T
     {
         Type,
         ErrorName,
-        ErrorType,
         ExceptionType,
         ServerVersion,
         QueryType,
@@ -289,19 +320,11 @@ This extension collect usage data in order to help us improve your experience. T
     }
 
     /// <summary>
-    /// The type of an error that occurred
-    /// </summary>
-    public enum TelemetryErrorType
-    {
-        User,
-        System
-    }
-
-    /// <summary>
     /// The generic name for an error (indicating where it originated from)
     /// </summary>
     public enum TelemetryErrorName
     {
+        Convert,
         Upsert,
         UpsertRollback,
         GetCaseSensitivity,
