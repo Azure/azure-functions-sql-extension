@@ -219,7 +219,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 catch (Exception ex2)
                 {
-                    TelemetryInstance.TrackError(TelemetryErrorName.UpsertRollback, ex, props);
+                    TelemetryInstance.TrackError(TelemetryErrorName.UpsertRollback, ex2, props);
                     string message2 = $"Encountered exception during upsert and rollback.";
                     throw new AggregateException(message2, new List<Exception> { ex, ex2 });
                 }
