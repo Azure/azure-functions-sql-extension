@@ -267,8 +267,8 @@ This extension collect usage data in order to help us improve your experience. T
     /// </summary>
     public enum ConvertType
     {
-        IEnumerable,
         IAsyncEnumerable,
+        IEnumerable,
         Json,
         SqlCommand
     }
@@ -278,18 +278,20 @@ This extension collect usage data in order to help us improve your experience. T
     /// </summary>
     public enum TelemetryEventName
     {
+        AddAsync,
         Create,
         Convert,
         Error,
-        TableInfoCacheHit,
-        TableInfoCacheMiss,
-        GetTableInfoStart,
-        GetTableInfoEnd,
-        UpsertStart,
-        Upsert,
+        FlushAsync,
         GetCaseSensitivity,
         GetColumnDefinitions,
-        GetPrimaryKeys
+        GetPrimaryKeys,
+        GetTableInfoEnd,
+        GetTableInfoStart,
+        TableInfoCacheHit,
+        TableInfoCacheMiss,
+        Upsert,
+        UpsertStart,
     }
 
     /// <summary>
@@ -297,12 +299,12 @@ This extension collect usage data in order to help us improve your experience. T
     /// </summary>
     public enum TelemetryPropertyName
     {
-        Type,
         ErrorName,
         ExceptionType,
-        ServerVersion,
+        HasIdentityColumn,
         QueryType,
-        HasIdentityColumn
+        ServerVersion,
+        Type
     }
 
     /// <summary>
@@ -310,13 +312,13 @@ This extension collect usage data in order to help us improve your experience. T
     /// </summary>
     public enum TelemetryMeasureName
     {
-        DurationMs,
         BatchCount,
-        TransactionDurationMs,
         CommandDurationMs,
+        DurationMs,
         GetCaseSensitivityDurationMs,
         GetColumnDefinitionsDurationMs,
-        GetPrimaryKeysDurationMs
+        GetPrimaryKeysDurationMs,
+        TransactionDurationMs
     }
 
     /// <summary>
@@ -325,15 +327,15 @@ This extension collect usage data in order to help us improve your experience. T
     public enum TelemetryErrorName
     {
         Convert,
-        Upsert,
-        UpsertRollback,
         GetCaseSensitivity,
         GetColumnDefinitions,
         GetColumnDefinitionsTableDoesNotExist,
         GetPrimaryKeys,
         NoPrimaryKeys,
         MissingPrimaryKeys,
-        PropsNotExistOnTable
+        PropsNotExistOnTable,
+        Upsert,
+        UpsertRollback,
     }
 }
 

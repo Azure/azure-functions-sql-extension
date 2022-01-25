@@ -93,7 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             if (item != null)
             {
                 await this._rowLock.WaitAsync(cancellationToken);
-
+                TelemetryInstance.TrackEvent(TelemetryEventName.AddAsync);
                 try
                 {
                     this._rows.Add(item);
@@ -120,6 +120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 if (this._rows.Count != 0)
                 {
+                    TelemetryInstance.TrackEvent(TelemetryEventName.FlushAsync);
                     await this.UpsertRowsAsync(this._rows, this._attribute, this._configuration);
                     this._rows.Clear();
                 }
