@@ -525,7 +525,6 @@ This changes if one of the primary key columns is an identity column though. In 
 ## Known Issues
 
 - Output bindings against tables with columns of data types `NTEXT`, `TEXT`, or `IMAGE` are not supported and data upserts will fail. These types [will be removed](https://docs.microsoft.com/sql/t-sql/data-types/ntext-text-and-image-transact-sql) in a future version of SQL Server and are not compatible with the `OPENJSON` function used by this Azure Functions binding.
-- Case-sensitive [collations](https://docs.microsoft.com/sql/relational-databases/collations/collation-and-unicode-support#Collation_Defn) are not currently supported. This functionality will be added in a future release. [#133](https://github.com/Azure/azure-functions-sql-extension/issues/133) tracks progress on this issue.
 
 ## Telemetry
 
