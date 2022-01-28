@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using Microsoft.ApplicationInsights;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
 {
@@ -10,6 +11,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
     {
         private const string AzureFunctionsSqlBindingsProfileDirectoryName = ".azurefunctions-sqlbindings";
         private readonly string _azureFunctionsSqlBindingsTryUserProfileFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), AzureFunctionsSqlBindingsProfileDirectoryName);
+        private readonly TelemetryClient _telemetryClient;
+
+        public UserLevelCacheWriter(TelemetryClient telemetryClient)
+        {
+            this._telemetryClient = telemetryClient;
+        }
 
         public string RunWithCache(string cacheKey, Func<string> getValueToCache)
         {
@@ -39,13 +46,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
                     || ex is PathTooLongException
                     || ex is IOException)
                 {
+                    this._telemetryClient.TrackException(ex);
                     return getValueToCache();
                 }
 
                 throw;
             }
         }
-
         private string GetCacheFilePath(string cacheKey)
         {
             return Path.Combine(this._azureFunctionsSqlBindingsTryUserProfileFolderPath, $"{cacheKey}.azureFunctionsSqlBindingsTryUserLevelCache");

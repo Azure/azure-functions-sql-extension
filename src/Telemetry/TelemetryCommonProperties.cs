@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Microsoft.ApplicationInsights;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
 {
@@ -11,11 +12,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
     {
         private readonly string _productVersion;
 
-        public TelemetryCommonProperties(
-            string productVersion)
+        public TelemetryCommonProperties(string productVersion, TelemetryClient telemetryClient)
         {
             this._productVersion = productVersion;
-            this._userLevelCacheWriter = new UserLevelCacheWriter();
+            this._userLevelCacheWriter = new UserLevelCacheWriter(telemetryClient);
         }
 
         private readonly UserLevelCacheWriter _userLevelCacheWriter;
