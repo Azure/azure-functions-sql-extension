@@ -186,11 +186,12 @@ This extension collect usage data in order to help us improve your experience. T
                 this._client.Context.Session.Id = CurrentSessionId;
                 this._client.Context.Device.OperatingSystem = RuntimeInformation.OSDescription;
 
-                this._commonProperties = new TelemetryCommonProperties(productVersion).GetTelemetryCommonProperties();
+                this._commonProperties = new TelemetryCommonProperties(productVersion, this._client).GetTelemetryCommonProperties();
                 this._commonMeasurements = new Dictionary<string, double>();
             }
             catch (Exception e)
             {
+                this._client.TrackException(e);
                 this._client = null;
                 // we don't want to fail the tool if telemetry fails.
                 Debug.Fail(e.ToString());
