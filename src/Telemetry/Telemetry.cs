@@ -57,9 +57,30 @@ This extension collect usage data in order to help us improve your experience. T
             CurrentSessionId = Guid.NewGuid().ToString();
 
             string productVersion = typeof(Telemetry).Assembly.GetName().Version.ToString();
-            //initialize in task to offload to parallel thread
-            this._trackEventTask = Task.Factory.StartNew(() => this.InitializeTelemetry(productVersion));
+            // initialize in task to offload to parallel thread
+            this._trackEventTask = Task.Factory.StartNew(() => this.InitializeTelemetry(productVersion, config));
             this._initialized = true;
+        }
+
+        private void InitializeTelemetry(string productVersion, IConfiguration config)
+        {
+            try
+            {
+                var telemetryConfig = new TelemetryConfiguration(InstrumentationKey);
+                this._client = new TelemetryClient(telemetryConfig);
+                this._client.Context.Session.Id = CurrentSessionId;
+                this._client.Context.Device.OperatingSystem = RuntimeInformation.OSDescription;
+
+                this._commonProperties = new TelemetryCommonProperties(productVersion, this._client, config).GetTelemetryCommonProperties();
+                this._commonMeasurements = new Dictionary<string, double>();
+            }
+            catch (Exception e)
+            {
+                this._client.TrackException(e);
+                this._client = null;
+                // we don't want to fail the tool if telemetry fails.
+                Debug.Fail(e.ToString());
+            }
         }
 
         public bool Enabled { get; private set; }
@@ -174,27 +195,6 @@ This extension collect usage data in order to help us improve your experience. T
             {
                 // We don't want errors sending telemetry to break the app, so just log and move on
                 Debug.Fail($"Error sending error event {errorName} : {ex2.Message}");
-            }
-        }
-
-        private void InitializeTelemetry(string productVersion)
-        {
-            try
-            {
-                var config = new TelemetryConfiguration(InstrumentationKey);
-                this._client = new TelemetryClient(config);
-                this._client.Context.Session.Id = CurrentSessionId;
-                this._client.Context.Device.OperatingSystem = RuntimeInformation.OSDescription;
-
-                this._commonProperties = new TelemetryCommonProperties(productVersion, this._client).GetTelemetryCommonProperties();
-                this._commonMeasurements = new Dictionary<string, double>();
-            }
-            catch (Exception e)
-            {
-                this._client.TrackException(e);
-                this._client = null;
-                // we don't want to fail the tool if telemetry fails.
-                Debug.Fail(e.ToString());
             }
         }
 
