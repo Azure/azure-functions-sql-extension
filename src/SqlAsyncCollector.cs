@@ -125,6 +125,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     this._rows.Clear();
                 }
             }
+            catch (Exception ex)
+            {
+                TelemetryInstance.TrackException(TelemetryErrorName.FlushAsync, ex);
+                throw;
+            }
             finally
             {
                 this._rowLock.Release();
@@ -177,7 +182,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 string message = $"The following properties in {typeof(T)} do not exist in the table {fullTableName}: {string.Join(", ", extraProperties.ToArray())}.";
                 var ex = new InvalidOperationException(message);
-                TelemetryInstance.TrackError(TelemetryErrorName.PropsNotExistOnTable, ex, props);
+                TelemetryInstance.TrackException(TelemetryErrorName.PropsNotExistOnTable, ex, props);
                 throw ex;
             }
 
@@ -214,12 +219,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 try
                 {
-                    TelemetryInstance.TrackError(TelemetryErrorName.Upsert, ex, props);
+                    TelemetryInstance.TrackException(TelemetryErrorName.Upsert, ex, props);
                     transaction.Rollback();
                 }
                 catch (Exception ex2)
                 {
-                    TelemetryInstance.TrackError(TelemetryErrorName.UpsertRollback, ex2, props);
+                    TelemetryInstance.TrackException(TelemetryErrorName.UpsertRollback, ex2, props);
                     string message2 = $"Encountered exception during upsert and rollback.";
                     throw new AggregateException(message2, new List<Exception> { ex, ex2 });
                 }
@@ -467,7 +472,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     // Since this doesn't rethrow make sure we stop here too (don't use finally because we want the execution time to be the same here and in the 
                     // overall event but we also only want to send the GetCaseSensitivity event if it succeeds)
                     caseSensitiveSw.Stop();
-                    TelemetryInstance.TrackError(TelemetryErrorName.GetCaseSensitivity, ex, sqlConnProps);
+                    TelemetryInstance.TrackException(TelemetryErrorName.GetCaseSensitivity, ex, sqlConnProps);
                     logger.LogWarning($"Encountered exception while retrieving database collation: {ex}. Case insensitive behavior will be used by default.");
                 }
 
@@ -490,7 +495,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 catch (Exception ex)
                 {
-                    TelemetryInstance.TrackError(TelemetryErrorName.GetColumnDefinitions, ex, sqlConnProps);
+                    TelemetryInstance.TrackException(TelemetryErrorName.GetColumnDefinitions, ex, sqlConnProps);
                     // Throw a custom error so that it's easier to decipher.
                     string message = $"Encountered exception while retrieving column names and types for table {table}. Cannot generate upsert command without them.";
                     throw new InvalidOperationException(message, ex);
@@ -500,7 +505,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     string message = $"Table {table} does not exist.";
                     var ex = new InvalidOperationException(message);
-                    TelemetryInstance.TrackError(TelemetryErrorName.GetColumnDefinitionsTableDoesNotExist, ex, sqlConnProps);
+                    TelemetryInstance.TrackException(TelemetryErrorName.GetColumnDefinitionsTableDoesNotExist, ex, sqlConnProps);
                     throw ex;
                 }
 
@@ -521,7 +526,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 catch (Exception ex)
                 {
-                    TelemetryInstance.TrackError(TelemetryErrorName.GetPrimaryKeys, ex, sqlConnProps);
+                    TelemetryInstance.TrackException(TelemetryErrorName.GetPrimaryKeys, ex, sqlConnProps);
                     // Throw a custom error so that it's easier to decipher.
                     string message = $"Encountered exception while retrieving primary keys for table {table}. Cannot generate upsert command without them.";
                     throw new InvalidOperationException(message, ex);
@@ -531,7 +536,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     string message = $"Did not retrieve any primary keys for {table}. Cannot generate upsert command without them.";
                     var ex = new InvalidOperationException(message);
-                    TelemetryInstance.TrackError(TelemetryErrorName.NoPrimaryKeys, ex, sqlConnProps);
+                    TelemetryInstance.TrackException(TelemetryErrorName.NoPrimaryKeys, ex, sqlConnProps);
                     throw ex;
                 }
 
@@ -548,7 +553,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     string message = $"All primary keys for SQL table {table} need to be found in '{typeof(T)}.' Missing primary keys: [{string.Join(",", missingPrimaryKeysFromPOCO)}]";
                     var ex = new InvalidOperationException(message);
-                    TelemetryInstance.TrackError(TelemetryErrorName.MissingPrimaryKeys, ex, sqlConnProps);
+                    TelemetryInstance.TrackException(TelemetryErrorName.MissingPrimaryKeys, ex, sqlConnProps);
                     throw ex;
                 }
 
