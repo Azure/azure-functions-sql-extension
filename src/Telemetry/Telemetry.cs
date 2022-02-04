@@ -67,6 +67,7 @@ This extension collect usage data in order to help us improve your experience. T
             try
             {
                 var telemetryConfig = new TelemetryConfiguration(InstrumentationKey);
+                telemetryConfig.TelemetryInitializers.Add(new TelemetryInitializer());
                 this._client = new TelemetryClient(telemetryConfig);
                 this._client.Context.Session.Id = CurrentSessionId;
                 this._client.Context.Device.OperatingSystem = RuntimeInformation.OSDescription;
