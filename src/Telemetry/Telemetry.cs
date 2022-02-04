@@ -108,6 +108,30 @@ This extension collect usage data in order to help us improve your experience. T
             }
         }
 
+        public void TrackException(TelemetryErrorName errorName, Exception exception, IDictionary<string, string> properties = null,
+            IDictionary<string, double> measurements = null)
+        {
+            try
+            {
+                if (!this._initialized || !this.Enabled)
+                {
+                    return;
+                }
+                this._logger.LogInformation($"Sending exception event: {exception.Message}");
+                properties ??= new Dictionary<string, string>();
+                properties.Add(TelemetryPropertyName.ErrorName.ToString(), errorName.ToString());
+                //continue task in existing parallel thread
+                this._trackEventTask = this._trackEventTask.ContinueWith(
+                    x => this.TrackExceptionTask(exception, properties, measurements)
+                );
+            }
+            catch (Exception ex)
+            {
+                // We don't want errors sending telemetry to break the app, so just log and move on
+                Debug.Fail($"Error sending exception event : {ex.Message}");
+            }
+        }
+
         /// <summary>
         /// Sends an event with the specified duration added as a measurement
         /// </summary>
@@ -175,29 +199,6 @@ This extension collect usage data in order to help us improve your experience. T
             }
         }
 
-        /// <summary>
-        /// Sends an error event for the given exception information
-        /// </summary>
-        /// <param name="errorName">A generic name identifying where the error occured (e.g. Upsert)</param>
-        /// <param name="properties"></param>
-        /// <param name="measurements"></param>
-        public void TrackError(TelemetryErrorName errorName, Exception ex, IDictionary<string, string> properties = null,
-            IDictionary<string, double> measurements = null)
-        {
-            try
-            {
-                properties ??= new Dictionary<string, string>();
-                properties.Add(TelemetryPropertyName.ErrorName.ToString(), errorName.ToString());
-                properties.AddExceptionProps(ex);
-                this.TrackEvent(TelemetryEventName.Error, properties, measurements);
-            }
-            catch (Exception ex2)
-            {
-                // We don't want errors sending telemetry to break the app, so just log and move on
-                Debug.Fail($"Error sending error event {errorName} : {ex2.Message}");
-            }
-        }
-
         private void TrackEventTask(
             string eventName,
             IDictionary<string, string> properties,
@@ -214,6 +215,30 @@ This extension collect usage data in order to help us improve your experience. T
                 Dictionary<string, double> eventMeasurements = this.GetEventMeasures(measurements);
 
                 this._client.TrackEvent($"{EventsNamespace}/{eventName}", eventProperties, eventMeasurements);
+                this._client.Flush();
+            }
+            catch (Exception e)
+            {
+                Debug.Fail(e.ToString());
+            }
+        }
+
+        private void TrackExceptionTask(
+            Exception exception,
+            IDictionary<string, string> properties,
+            IDictionary<string, double> measurements)
+        {
+            if (this._client is null)
+            {
+                return;
+            }
+
+            try
+            {
+                Dictionary<string, string> eventProperties = this.GetEventProperties(properties);
+                Dictionary<string, double> eventMeasurements = this.GetEventMeasures(measurements);
+
+                this._client.TrackException(exception, eventProperties, eventMeasurements);
                 this._client.Flush();
             }
             catch (Exception e)
@@ -328,6 +353,7 @@ This extension collect usage data in order to help us improve your experience. T
     public enum TelemetryErrorName
     {
         Convert,
+        FlushAsync,
         GetCaseSensitivity,
         GetColumnDefinitions,
         GetColumnDefinitionsTableDoesNotExist,

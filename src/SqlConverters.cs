@@ -55,7 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         { TelemetryPropertyName.Type.ToString(), ConvertType.SqlCommand.ToString() }
                     };
-                    TelemetryInstance.TrackError(TelemetryErrorName.Convert, ex, props);
+                    TelemetryInstance.TrackException(TelemetryErrorName.Convert, ex, props);
                     throw;
                 }
             }
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         { TelemetryPropertyName.Type.ToString(), ConvertType.IEnumerable.ToString() }
                     };
-                    TelemetryInstance.TrackError(TelemetryErrorName.Convert, ex, props);
+                    TelemetryInstance.TrackException(TelemetryErrorName.Convert, ex, props);
                     throw;
                 }
             }
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         { TelemetryPropertyName.Type.ToString(), ConvertType.Json.ToString() }
                     };
-                    TelemetryInstance.TrackError(TelemetryErrorName.Convert, ex, props);
+                    TelemetryInstance.TrackException(TelemetryErrorName.Convert, ex, props);
                     throw;
                 }
             }
@@ -174,7 +174,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         { TelemetryPropertyName.Type.ToString(), ConvertType.IAsyncEnumerable.ToString() }
                     };
-                    TelemetryInstance.TrackError(TelemetryErrorName.Convert, ex, props);
+                    TelemetryInstance.TrackException(TelemetryErrorName.Convert, ex, props);
                     throw;
                 }
             }
