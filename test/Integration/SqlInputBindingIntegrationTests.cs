@@ -99,6 +99,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         [Fact]
+        public async void GetProductsByCostTest()
+        {
+            this.StartFunctionHost(nameof(GetProductsStoredProcedureFromAppSetting));
+
+            // Generate T-SQL to insert n rows of data with cost
+            Product[] products = GetProductsWithSameCost(1, 100);
+            this.InsertProducts(products);
+
+            // Run the function
+            HttpResponseMessage response = await this.SendInputRequest("getproductsbycost");
+
+            // Verify result
+            string expectedResponse = JsonConvert.SerializeObject(products);
+            string actualResponse = await response.Content.ReadAsStringAsync();
+
+            Assert.Equal(expectedResponse, actualResponse, StringComparer.OrdinalIgnoreCase);
+        }
+
+        [Fact]
         public async void GetProductNamesViewTest()
         {
             this.StartFunctionHost(nameof(GetProductNamesView));
