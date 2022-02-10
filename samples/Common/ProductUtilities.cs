@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common
                 var product = new Product
                 {
                     ProductID = i,
-                    Cost = 100,
+                    Cost = 100 * i,
                     Name = "test"
                 };
                 products.Add(product);

@@ -3,6 +3,8 @@
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "dotnet",
-    "SqlConnectionString": ""
+    "SqlConnectionString": "",
+    "Sp_SelectCost": "SelectProductsCost",
+    "ProductCost": 100
   }
 }
