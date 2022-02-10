@@ -104,10 +104,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.StartFunctionHost(nameof(GetProductsStoredProcedureFromAppSetting));
 
             // Generate T-SQL to insert n rows of data with cost
-            Product[] productsWithCost100 = GetProductsWithSameCost(1, 100);
-            this.InsertProducts(productsWithCost100);
-            Product[] otherProducts = GetProductsWithSameCost(1, 200);
-            this.InsertProducts(otherProducts);
+            Product[] products = GetProducts(3, 100);
+            this.InsertProducts(products);
+            Product[] productsWithCost100 = GetProducts(1, 100);
 
             // Run the function
             HttpResponseMessage response = await this.SendInputRequest("getproductsbycost");
@@ -148,6 +147,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     ProductID = i,
                     Name = "test",
                     Cost = cost
+                };
+            }
+            return result;
+        }
+
+        private static Product[] GetProducts(int n, int cost)
+        {
+            var result = new Product[n];
+            for (int i = 1; i <= n; i++)
+            {
+                result[i - 1] = new Product
+                {
+                    ProductID = i,
+                    Name = "test",
+                    Cost = cost * i
                 };
             }
             return result;
