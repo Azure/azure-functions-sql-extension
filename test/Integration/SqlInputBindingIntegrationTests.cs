@@ -99,6 +99,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         [Fact]
+        public async void GetProductsByCostTest()
+        {
+            this.StartFunctionHost(nameof(GetProductsStoredProcedureFromAppSetting));
+
+            // Generate T-SQL to insert n rows of data with cost
+            Product[] products = GetProducts(3, 100);
+            this.InsertProducts(products);
+            Product[] productsWithCost100 = GetProducts(1, 100);
+
+            // Run the function
+            HttpResponseMessage response = await this.SendInputRequest("getproductsbycost");
+
+            // Verify result
+            string expectedResponse = JsonConvert.SerializeObject(productsWithCost100);
+            string actualResponse = await response.Content.ReadAsStringAsync();
+
+            Assert.Equal(expectedResponse, actualResponse, StringComparer.OrdinalIgnoreCase);
+        }
+
+        [Fact]
         public async void GetProductNamesViewTest()
         {
             this.StartFunctionHost(nameof(GetProductNamesView));
@@ -127,6 +147,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     ProductID = i,
                     Name = "test",
                     Cost = cost
+                };
+            }
+            return result;
+        }
+
+        private static Product[] GetProducts(int n, int cost)
+        {
+            var result = new Product[n];
+            for (int i = 1; i <= n; i++)
+            {
+                result[i - 1] = new Product
+                {
+                    ProductID = i,
+                    Name = "test",
+                    Cost = cost * i
                 };
             }
             return result;

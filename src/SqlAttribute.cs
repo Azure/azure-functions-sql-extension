@@ -40,6 +40,7 @@ namespace Microsoft.Azure.WebJobs
         /// For an input binding, either a SQL query or stored procedure that will be run in the database referred to in the ConnectionString.
         /// For an output binding, the table name.
         /// </summary>
+        [AutoResolve]
         public string CommandText { get; }
 
         /// <summary>
