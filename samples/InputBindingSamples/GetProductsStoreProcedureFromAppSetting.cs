@@ -10,8 +10,8 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples
 {
     /// <summary>
-    /// This shows an example of a SQL Input binding that uses a store procedure from app setting
-    /// to query Products with specific cost.
+    /// This shows an example of a SQL Input binding that uses a stored procedure 
+    /// from an app setting value to query for Products with a specific cost that is also defined as an app setting value.
     /// </summary>
     public static class GetProductsStoredProcedureFromAppSetting
     {
