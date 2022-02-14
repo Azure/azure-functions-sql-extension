@@ -1,9 +1,8 @@
 # SQL binding extension for Azure Functions
 
-Azure SQL bindings in Azure Functions supports input and output bindings for the Azure SQL and SQL Server products.
+Azure SQL bindings for Azure Functions adds input and output bindings for Azure SQL and SQL Server products.
 - **Input Binding**: takes a SQL query to run and returns the output of the query in the function.
 - **Output Binding**: takes a list of rows and upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
-
 
 Get started quickly with the samples available in our [repository](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples)
 
