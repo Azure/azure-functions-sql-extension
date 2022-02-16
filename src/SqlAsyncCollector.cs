@@ -214,6 +214,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     { TelemetryMeasureName.CommandDurationMs.ToString(), commandSw.ElapsedMilliseconds }
                 };
                 TelemetryInstance.TrackEvent(TelemetryEventName.UpsertEnd, props, measures);
+                this._logger.LogInformation($"Upserted {rows.Count()} row(s) into database: {connection.Database} and table: {fullTableName}.");
             }
             catch (Exception ex)
             {

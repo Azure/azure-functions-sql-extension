@@ -51,9 +51,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             FluentBindingRule<SqlAttribute> inputOutputRule = context.AddBindingRule<SqlAttribute>();
             var converter = new SqlConverter(this._configuration);
             inputOutputRule.BindToInput(converter);
-            inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), this._configuration);
+            inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), this._configuration, this._loggerFactory);
             inputOutputRule.BindToCollector<OpenType>(typeof(SqlAsyncCollectorBuilder<>), this._configuration, this._loggerFactory);
-            inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), this._configuration);
+            inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), this._configuration, this._loggerFactory);
         }
     }
 }
