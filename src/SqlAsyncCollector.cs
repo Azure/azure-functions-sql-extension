@@ -11,7 +11,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
-using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -72,11 +71,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <exception cref="ArgumentNullException">
         /// Thrown if either configuration or attribute is null
         /// </exception>
-        public SqlAsyncCollector(IConfiguration configuration, SqlAttribute attribute, ILoggerFactory loggerFactory)
+        public SqlAsyncCollector(IConfiguration configuration, SqlAttribute attribute, ILogger logger)
         {
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             this._attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
-            this._logger = loggerFactory?.CreateLogger(LogCategories.Bindings) ?? throw new ArgumentNullException(nameof(loggerFactory));
+            this._logger = logger;
             TelemetryInstance.TrackCreate(CreateType.SqlAsyncCollector);
         }
 

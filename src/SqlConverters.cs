@@ -12,7 +12,6 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Microsoft.Extensions.Logging;
-using Microsoft.Azure.WebJobs.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -76,14 +75,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// Initializes a new instance of the <see cref="SqlGenericsConverter<typeparamref name="T"/>"/> class.
             /// </summary>
             /// <param name="configuration"></param>
-            /// <param name="loggerFactory">Logger Factory for creating an ILogger</param>
+            /// <param name="logger">ILogger used to log information and warnings</param>
             /// <exception cref="ArgumentNullException">
             /// Thrown if the configuration is null
             /// </exception>
-            public SqlGenericsConverter(IConfiguration configuration, ILoggerFactory loggerFactory)
+            public SqlGenericsConverter(IConfiguration configuration, ILogger logger)
             {
                 this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-                this._logger = loggerFactory?.CreateLogger(LogCategories.Bindings) ?? throw new ArgumentNullException(nameof(loggerFactory));
+                this._logger = logger;
                 TelemetryInstance.TrackCreate(CreateType.SqlGenericsConverter);
             }
 
@@ -164,7 +163,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 await connection.OpenAsync();
                 var dataTable = new DataTable();
                 adapter.Fill(dataTable);
-                this._logger.LogInformation($"{dataTable.Rows.Count} row(s) queried from database: '{connection.Database}' using Command: '{command.CommandText}'");
+                this._logger.LogInformation($"{dataTable.Rows.Count} row(s) queried from database: {connection.Database} using Command: {command.CommandText}");
                 return JsonConvert.SerializeObject(dataTable);
             }
 

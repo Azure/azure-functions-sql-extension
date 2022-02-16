@@ -9,6 +9,7 @@ using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Azure.WebJobs.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -46,14 +47,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 throw new ArgumentNullException(nameof(context));
             }
-            TelemetryInstance.Initialize(this._configuration, this._loggerFactory);
+            ILogger logger = this._loggerFactory.CreateLogger(LogCategories.Bindings);
+            TelemetryInstance.Initialize(this._configuration, logger);
 #pragma warning disable CS0618 // Fine to use this for our stuff
             FluentBindingRule<SqlAttribute> inputOutputRule = context.AddBindingRule<SqlAttribute>();
             var converter = new SqlConverter(this._configuration);
             inputOutputRule.BindToInput(converter);
-            inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), this._configuration, this._loggerFactory);
-            inputOutputRule.BindToCollector<OpenType>(typeof(SqlAsyncCollectorBuilder<>), this._configuration, this._loggerFactory);
-            inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), this._configuration, this._loggerFactory);
+            inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), this._configuration, logger);
+            inputOutputRule.BindToCollector<OpenType>(typeof(SqlAsyncCollectorBuilder<>), this._configuration, logger);
+            inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), this._configuration, logger);
         }
     }
 }

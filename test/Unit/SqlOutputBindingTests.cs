@@ -4,23 +4,24 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 using Xunit;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 {
     public class SqlOutputBindingTests
     {
         private static readonly Mock<IConfiguration> config = new Mock<IConfiguration>();
+        private static readonly Mock<ILogger> logger = new Mock<ILogger>();
 
         [Fact]
         public void TestNullCollectorConstructorArguments()
         {
             var arg = new SqlAttribute(string.Empty);
-            Assert.Throws<ArgumentNullException>(() => new SqlAsyncCollector<string>(config.Object, null, NullLoggerFactory.Instance));
-            Assert.Throws<ArgumentNullException>(() => new SqlAsyncCollector<string>(null, arg, NullLoggerFactory.Instance));
+            Assert.Throws<ArgumentNullException>(() => new SqlAsyncCollector<string>(config.Object, null, logger.Object));
+            Assert.Throws<ArgumentNullException>(() => new SqlAsyncCollector<string>(null, arg, logger.Object));
         }
 
         [Fact]
@@ -29,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
             // Really a pretty silly test. Just confirms that the SQL connection is only opened when FlushAsync is called,
             // because otherwise we would get an exception in AddAsync (since the SQL connection in the wrapper is null)
             var arg = new SqlAttribute(string.Empty);
-            var collector = new SqlAsyncCollector<TestData>(config.Object, arg, NullLoggerFactory.Instance);
+            var collector = new SqlAsyncCollector<TestData>(config.Object, arg, logger.Object);
             var data = new TestData
             {
                 ID = 1,
