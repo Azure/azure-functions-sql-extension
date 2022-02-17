@@ -10,7 +10,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Azure.WebJobs.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
 {
@@ -43,9 +42,9 @@ Telemetry
 This extension collect usage data in order to help us improve your experience. The data is anonymous and doesn't include any personal information. You can opt-out of telemetry by setting the " + TelemetryOptoutEnvVar + " environment variable or the " + TelemetryOptoutSetting + @" + app setting to '1', 'true' or 'yes';
 ";
 
-        public void Initialize(IConfiguration config, ILoggerFactory loggerFactory)
+        public void Initialize(IConfiguration config, ILogger logger)
         {
-            this._logger = loggerFactory.CreateLogger(LogCategories.Bindings);
+            this._logger = logger;
             this.Enabled = !(Utils.GetEnvironmentVariableAsBool(TelemetryOptoutEnvVar) || Utils.GetConfigSettingAsBool(TelemetryOptoutSetting, config));
             if (!this.Enabled)
             {
