@@ -1,0 +1,17 @@
+<Project>
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="4.0.3" />
+    <PackageVersion Include="Microsoft.NET.Sdk.Functions" Version="3.0.13" />
+    <PackageVersion Include="Microsoft.ApplicationInsights" Version="2.17.0" />
+    <PackageVersion Include="Microsoft.Azure.WebJobs" Version="3.0.31" />
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="3.0.1" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="1.1.1" />
+    <PackageVersion Include="morelinq" Version="3.3.2" />
+    <PackageVersion Include="System.Runtime.Caching" Version="4.7.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.0.0" />
+    <PackageVersion Include="Moq" Version="4.14.3" />
+    <PackageVersion Include="xunit" Version="2.4.0" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.4.0" />
+    <PackageVersion Include="Microsoft.NET.Sdk.Functions" Version="3.0.13" />
+  </ItemGroup>
+</Project>
