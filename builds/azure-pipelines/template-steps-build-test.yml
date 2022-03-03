@@ -2,6 +2,7 @@ parameters:
   configuration: ''
   solution: ''
   nugetVersion: ''
+  binariesVersion: ''
   testFilter: ''
   testServer: ''
 
@@ -56,7 +57,7 @@ steps:
   inputs:
     command: build
     projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=false'
+    arguments: '--configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=false -p:Version=${{ parameters.binariesVersion }}'
 
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
   inputs:
