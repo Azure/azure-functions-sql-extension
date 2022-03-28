@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-	<ProjectReference Include="..\samples\Microsoft.Azure.WebJobs.Extensions.Sql.Samples.csproj" />
+	<ProjectReference Include="..\samples\samples-csharp\Microsoft.Azure.WebJobs.Extensions.Sql.Samples.csproj" />
 	<ProjectReference Include="..\src\Microsoft.Azure.WebJobs.Extensions.Sql.csproj" />
   </ItemGroup>
 

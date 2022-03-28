@@ -95,7 +95,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 TelemetryInstance.TrackEvent(TelemetryEventName.AddAsync);
                 try
                 {
-                    this._rows.Add(item);
+                    if (item is string)
+                    {
+                        this._rows.Add(JsonConvert.DeserializeObject<T>(item.ToString()));
+                    }
+                    else
+                    {
+                        this._rows.Add(item);
+                    }
                 }
                 finally
                 {

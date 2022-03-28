@@ -48,5 +48,14 @@
     <None Include="..\lib\Microsoft.SqlServer.TransactSql.ScriptDom.dll" Pack="true" PackagePath="lib/$(TargetFramework)" />
     <None Include="..\docs\README.md" Pack="true" PackagePath=""/>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="$(USERPROFILE)\.nuget\packages\microsoft.data.sqlclient\3.0.1\runtimes\win\lib\netcoreapp2.1\Microsoft.Data.SqlClient.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <Target Name="CopyToBin" BeforeTargets="Build">
+    <Copy SourceFiles="$(USERPROFILE)\.nuget\packages\microsoft.data.sqlclient\3.0.1\runtimes\win\lib\netcoreapp2.1\Microsoft.Data.SqlClient.dll" DestinationFolder="$(OutputPath)\bin" />
+  </Target>
 
 </Project>

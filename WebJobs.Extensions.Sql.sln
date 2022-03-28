@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30204.135
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqlExtensionSamples", "samples\Microsoft.Azure.WebJobs.Extensions.Sql.Samples.csproj", "{B2E0EFB9-BEDB-48F7-BD5A-0E1010333475}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqlExtensionSamples", "samples\samples-csharp\Microsoft.Azure.WebJobs.Extensions.Sql.Samples.csproj", "{B2E0EFB9-BEDB-48F7-BD5A-0E1010333475}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.WebJobs.Extensions.Sql", "src\Microsoft.Azure.WebJobs.Extensions.Sql.csproj", "{4453B407-2CA3-4011-BDE5-247FCE5C1974}"
 EndProject
