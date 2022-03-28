@@ -1894,8 +1894,8 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.ApplicationInsights": "2.17.0",
-          "Microsoft.Azure.WebJobs": "3.0.0",
-          "Microsoft.Data.SqlClient": "3.0.0",
+          "Microsoft.Azure.WebJobs": "3.0.32",
+          "Microsoft.Data.SqlClient": "3.0.1",
           "System.Runtime.Caching": "4.7.0",
           "morelinq": "3.3.2"
         }

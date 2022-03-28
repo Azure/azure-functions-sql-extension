@@ -13,7 +13,7 @@
       },
       "Microsoft.Azure.WebJobs": {
         "type": "Direct",
-        "requested": "[3.0.*, )",
+        "requested": "[3.0.32, )",
         "resolved": "3.0.32",
         "contentHash": "uN8GsFqPFHHcSrwwj/+0tGe6F6cOwugqUiePPw7W3TL9YC594+Hw8GBK5S/fcDWXacqvRRGf9nDX8xP94/Yiyw==",
         "dependencies": {
@@ -33,7 +33,7 @@
       },
       "Microsoft.Data.SqlClient": {
         "type": "Direct",
-        "requested": "[3.0.*, )",
+        "requested": "[3.0.1, )",
         "resolved": "3.0.1",
         "contentHash": "5Jgcds8yukUeOHvc8S0rGW87rs2uYEM9/YyrYIb/0C+vqzIa2GiqbVPCDVcnApWhs67OSXLTM7lO6jro24v/rA==",
         "dependencies": {
