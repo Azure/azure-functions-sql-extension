@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Extensions.Configuration;
+using System.Globalization;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
 {
@@ -26,6 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
         private ILogger _logger;
         private bool _initialized;
         private const string InstrumentationKey = "98697a1c-1416-486a-99ac-c6c74ebe5ebd";
+        private static readonly CultureInfo ENUSCultureInfo = new CultureInfo("en-US");
         /// <summary>
         /// The environment variable used for opting out of telemetry
         /// </summary>
@@ -120,6 +122,7 @@ This extension collect usage data in order to help us improve your experience. T
                 this._logger.LogInformation($"Sending exception event: {exception.Message}");
                 properties ??= new Dictionary<string, string>();
                 properties.Add(TelemetryPropertyName.ErrorName.ToString(), errorName.ToString());
+                properties.Add(TelemetryPropertyName.ErrorCode.ToString(), ExtractErrorCode(exception));
                 //continue task in existing parallel thread
                 this._trackEventTask = this._trackEventTask.ContinueWith(
                     x => this.TrackExceptionTask(exception, properties, measurements)
@@ -276,6 +279,19 @@ This extension collect usage data in order to help us improve your experience. T
                 return this._commonProperties;
             }
         }
+
+        private static string ExtractErrorCode(Exception ex)
+        {
+            if (ex == null)
+            {
+                return string.Empty;
+            }
+            if (ex is Data.SqlClient.SqlException)
+            {
+                return (ex as Data.SqlClient.SqlException).ErrorCode.ToString(ENUSCultureInfo);
+            }
+            return string.Empty;
+        }
     }
 
     /// <summary>
@@ -330,7 +346,8 @@ This extension collect usage data in order to help us improve your experience. T
         HasIdentityColumn,
         QueryType,
         ServerVersion,
-        Type
+        Type,
+        ErrorCode
     }
 
     /// <summary>
