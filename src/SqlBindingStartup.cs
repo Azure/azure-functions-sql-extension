@@ -7,7 +7,7 @@ using Microsoft.Azure.WebJobs.Hosting;
 [assembly: WebJobsStartup(typeof(SqlBindingStartup))]
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
-    public class SqlBindingStartup : IWebJobsStartup
+    internal sealed class SqlBindingStartup : IWebJobsStartup
     {
         public void Configure(IWebJobsBuilder builder)
         {
