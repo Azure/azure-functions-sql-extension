@@ -362,7 +362,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     INNER JOIN
                         INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE ccu ON ccu.CONSTRAINT_NAME = tc.CONSTRAINT_NAME AND ccu.TABLE_NAME = tc.TABLE_NAME
                     INNER JOIN
-                        sys.columns c ON c.object_id = OBJECT_ID({table.BracketQuotedFullName.AsSingleQuotedString()}) AND c.name = ccu.COLUMN_NAME
+                        sys.columns c ON c.object_id = OBJECT_ID({table.QuotedFullName}) AND c.name = ccu.COLUMN_NAME
                     WHERE
                         tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
                     and
