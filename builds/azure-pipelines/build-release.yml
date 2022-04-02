@@ -17,7 +17,8 @@ variables:
   versionMinor: 1
   versionMajorMinor: '$(versionMajor).$(versionMinor)'  # This variable is only used for the counter so we reset properly when either major or minor is bumped
   versionPatch: $[counter(variables['versionMinor'], 0)] # This will reset when we bump minor version
-  nugetVersion: '$(versionMajor).$(versionMinor).$(versionPatch)-preview'
+  binariesVersion: '$(versionMajor).$(versionMinor).$(versionPatch)'
+  nugetVersion: '$(binariesVersion)-preview'
 
 stages:
 - stage: BuildPublish
@@ -53,6 +54,7 @@ stages:
           solution: '$(solution)'
           configuration: '$(configuration)'
           nugetVersion: '$(nugetVersion)'
+          binariesVersion: '$(binariesVersion)'
           testFilter: '$(testFilter)'
 
   - job: BuildTestPublishLinux
@@ -70,6 +72,7 @@ stages:
           solution: '$(solution)'
           configuration: '$(configuration)'
           nugetVersion: '$(nugetVersion)'
+          binariesVersion: '$(binariesVersion)'
           testFilter: ''
           testServer: ''
 
