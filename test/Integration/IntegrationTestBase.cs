@@ -10,6 +10,7 @@ using System.IO;
 using System.Net.Http;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -189,7 +190,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.FunctionHost.BeginOutputReadLine();
             this.FunctionHost.BeginErrorReadLine();
 
-            Thread.Sleep(10000);     // This is just to give some time to func host to start, maybe there's a better way to do this (check if port's open?)
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            this.FunctionHost.OutputDataReceived += (object sender, DataReceivedEventArgs e) =>
+            {
+                // This string is printed after the function host is started up - use this to ensure that we wait long enough
+                // since sometimes the host can take a little while to fully start up
+                if (e.Data == "For detailed output, run func with --verbose flag.")
+                {
+                    taskCompletionSource.SetResult(true);
+                }
+            };
+            taskCompletionSource.Task.Wait();
         }
 
         private static string GetFunctionsCoreToolsPath()
