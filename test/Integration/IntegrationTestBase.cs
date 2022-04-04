@@ -191,6 +191,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             var taskCompletionSource = new TaskCompletionSource<bool>();
             this.FunctionHost.OutputDataReceived += (object sender, DataReceivedEventArgs e) =>
             {
+                this.TestOutput.WriteLine(e.Data);
                 // This string is printed after the function host is started up - use this to ensure that we wait long enough
                 // since sometimes the host can take a little while to fully start up
                 if (e.Data == "For detailed output, run func with --verbose flag.")
@@ -198,7 +199,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     taskCompletionSource.SetResult(true);
                 }
             };
+            this.TestOutput.WriteLine($"Waiting for Azure Function host to start...");
             taskCompletionSource.Task.Wait();
+            this.TestOutput.WriteLine($"Azure Function host started!");
         }
 
         private static string GetFunctionsCoreToolsPath()
