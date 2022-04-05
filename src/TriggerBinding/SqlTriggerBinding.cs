@@ -1,4 +1,4 @@
-// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Linq;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Listeners;
@@ -50,11 +51,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </exception>
         public SqlTriggerBinding(string table, string connectionString, ParameterInfo parameter, IHostIdProvider hostIdProvider, ILogger logger)
         {
-            _table = table ?? throw new ArgumentNullException(nameof(table));
-            _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
-            _parameter = parameter ?? throw new ArgumentNullException(nameof(parameter));
-            _hostIdProvider = hostIdProvider ?? throw new ArgumentNullException(nameof(hostIdProvider));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            this._table = table ?? throw new ArgumentNullException(nameof(table));
+            this._connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+            this._parameter = parameter ?? throw new ArgumentNullException(nameof(parameter));
+            this._hostIdProvider = hostIdProvider ?? throw new ArgumentNullException(nameof(hostIdProvider));
+            this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <summary>
@@ -66,10 +67,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Returns an empty binding contract. The type that SqlTriggerAttribute is bound to is checked in 
         /// <see cref="SqlTriggerAttributeBindingProvider.TryCreateAsync(TriggerBindingProviderContext)"/>
         /// </summary>
-        public IReadOnlyDictionary<string, Type> BindingDataContract
-        {
-            get { return _emptyBindingContract; }
-        }
+        public IReadOnlyDictionary<string, Type> BindingDataContract => _emptyBindingContract;
 
         /// <summary>
         /// Binds the list of <see cref="SqlChangeTrackingEntry<typeparamref name="T"/>"/> represented by "value" with a <see cref="SimpleValueProvider"/>
@@ -88,17 +86,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </returns>
         public Task<ITriggerData> BindAsync(object value, ValueBindingContext context)
         {
-            var changeData = value as IEnumerable<SqlChangeTrackingEntry<T>>;
-
-            if (changeData == null)
+            if (!(value is IEnumerable<SqlChangeTrackingEntry<T>> changeData))
             {
                 throw new InvalidOperationException("The value passed to the SqlTrigger BindAsync must be of type IEnumerable<SqlChangeTrackingEntry<T>>");
             }
 
-            var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-            bindingData.Add("SqlTrigger", changeData);
+            var bindingData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "SqlTrigger", changeData }
+            };
 
-            return Task.FromResult<ITriggerData>(new TriggerData(new SimpleValueProvider(_parameter.ParameterType, changeData, _table), bindingData));
+            return Task.FromResult<ITriggerData>(new TriggerData(new SimpleValueProvider(this._parameter.ParameterType, changeData, this._table), bindingData));
         }
 
         /// <summary>
@@ -117,11 +115,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context", "Missing listener context");
+                throw new ArgumentNullException(nameof(context), "Missing listener context");
             }
 
-            string workerId = await GetWorkerIdAsync();
-            return new SqlTriggerListener<T>(_table, _connectionString, workerId, context.Executor, _logger);
+            string workerId = await this.GetWorkerIdAsync();
+            return new SqlTriggerListener<T>(this._table, this._connectionString, workerId, context.Executor, this._logger);
         }
 
         /// <returns> A description of the SqlTriggerParameter (<see cref="SqlTriggerParameterDescriptor"/> </returns>
@@ -129,7 +127,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             return new SqlTriggerParameterDescriptor
             {
-                Name = _parameter.Name,
+                Name = this._parameter.Name,
                 Type = "SqlTrigger",
                 TableName = _table
             };
@@ -137,13 +135,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         private async Task<string> GetWorkerIdAsync()
         {
-            string hostId = await _hostIdProvider.GetHostIdAsync(CancellationToken.None);
+            string hostId = await this._hostIdProvider.GetHostIdAsync(CancellationToken.None);
 
-            using var md5 = MD5.Create();
-            var methodInfo = (MethodInfo)_parameter.Member;
+            using var sha256 = SHA256.Create();
+            var methodInfo = (MethodInfo)this._parameter.Member;
             string functionName = $"{methodInfo.DeclaringType.FullName}.{methodInfo.Name}";
-            byte[] functionHash = md5.ComputeHash(Encoding.UTF8.GetBytes(functionName));
-            string functionId = new Guid(functionHash).ToString("N").Substring(0, 8);
+            byte[] functionHash = sha256.ComputeHash(Encoding.UTF8.GetBytes(functionName));
+            string functionId = new Guid(functionHash.Take(16).ToArray()).ToString("N")[..8];
 
             return $"{hostId}_{functionId}";
         }
@@ -153,25 +151,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         internal class SimpleValueProvider : IValueProvider
         {
-            private readonly Type _type;
             private readonly object _value;
             private readonly string _invokeString;
 
             public SimpleValueProvider(Type type, object value, string invokeString)
             {
-                _type = type;
-                _value = value;
-                _invokeString = invokeString;
+                this.Type = type;
+                this._value = value;
+                this._invokeString = invokeString;
             }
 
             /// <summary>
             /// Returns the type that the trigger binding is bound to (IEnumerable<SqlChangeTrackingEntry<typeparamref name="T"/>>)
             /// </summary>
-            public Type Type => _type;
+            public Type Type { get; }
 
             public Task<object> GetValueAsync()
             {
-                return Task.FromResult(_value);
+                return Task.FromResult(this._value);
             }
 
             /// <summary>
@@ -180,7 +177,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns></returns>
             public string ToInvokeString()
             {
-                return _invokeString;
+                return this._invokeString;
             }
         }
     }

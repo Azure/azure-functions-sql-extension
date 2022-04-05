@@ -1,4 +1,4 @@
-// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Globalization;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
@@ -24,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// data stored in SQL's internal change table, or data stored in our own worker table.
     /// </remarks>
     /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
-    internal sealed class SqlTableChangeMonitor<T>
+    internal sealed class SqlTableChangeMonitor<T> : IDisposable
     {
         public const string Schema = "az_func";
         public const int BatchSize = 10;
@@ -33,8 +34,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public const int LeaseIntervalInSeconds = 30;
         public const int PollingIntervalInSeconds = 5;
 
-        private static string[] variableLengthTypes = new string[] { "varchar", "nvarchar", "nchar", "char", "binary", "varbinary" };
-        private static string[] variablePrecisionTypes = new string[] { "numeric", "decimal" };
+        private readonly string[] variableLengthTypes = new string[] { "varchar", "nvarchar", "nchar", "char", "binary", "varbinary" };
+        private readonly string[] variablePrecisionTypes = new string[] { "numeric", "decimal" };
 
         private readonly string _workerId;
         private string _workerTable;
@@ -78,6 +79,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="executor">
         /// Used to execute the user's function when changes are detected on "table"
         /// </param>
+        /// <param name="logger">
+        /// Ilogger used to log information and warnings
+        /// </param>
         /// <exception cref="ArgumentNullException">
         /// Thrown if the executor or logger is null
         /// </exception>
@@ -87,23 +91,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public SqlTableChangeMonitor(string table, string connectionString, string workerId, ITriggeredFunctionExecutor executor, ILogger logger)
         {
             _ = !string.IsNullOrEmpty(table) ? table : throw new ArgumentNullException(nameof(table));
-            _connectionString = !string.IsNullOrEmpty(connectionString) ? connectionString : throw new ArgumentNullException(nameof(connectionString));
-            _workerId = !string.IsNullOrEmpty(workerId) ? workerId : throw new ArgumentNullException(nameof(workerId));
-            _executor = executor ?? throw new ArgumentNullException(nameof(executor));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            this._connectionString = !string.IsNullOrEmpty(connectionString) ? connectionString : throw new ArgumentNullException(nameof(connectionString));
+            this._workerId = !string.IsNullOrEmpty(workerId) ? workerId : throw new ArgumentNullException(nameof(workerId));
+            this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
+            this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            _userTable = SqlBindingUtilities.NormalizeTableName(table);
-            _globalStateTable = $"[{Schema}].[Global_State_Table]";
+            this._userTable = SqlBindingUtilities.NormalizeTableName(table);
+            this._globalStateTable = $"[{Schema}].[Global_State_Table]";
 
-            _cancellationTokenSourceExecutor = new CancellationTokenSource();
-            _cancellationTokenSourceCheckForChanges = new CancellationTokenSource();
-            _cancellationTokenSourceRenewLeases = new CancellationTokenSource();
-            _rowsLock = new SemaphoreSlim(1);
+            this._cancellationTokenSourceExecutor = new CancellationTokenSource();
+            this._cancellationTokenSourceCheckForChanges = new CancellationTokenSource();
+            this._cancellationTokenSourceRenewLeases = new CancellationTokenSource();
+            this._rowsLock = new SemaphoreSlim(1);
 
-            _rows = new List<Dictionary<string, string>>();
-            _userTableColumns = new List<string>();
-            _whereChecks = new List<string>();
-            _primaryKeys = new Dictionary<string, string>();
+            this._rows = new List<Dictionary<string, string>>();
+            this._userTableColumns = new List<string>();
+            this._whereChecks = new List<string>();
+            this._primaryKeys = new Dictionary<string, string>();
         }
 
         /// <summary>
@@ -112,13 +116,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns></returns>
         public async Task StartAsync()
         {
-            await CreateWorkerTablesAsync();
+            await this.CreateWorkerTablesAsync();
 
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-            Task.Run(() =>
+            _ = Task.Run(() =>
             {
-                CheckForChangesAsync(_cancellationTokenSourceCheckForChanges.Token);
-                RenewLeasesAsync(_cancellationTokenSourceRenewLeases.Token);
+                this.CheckForChangesAsync(this._cancellationTokenSourceCheckForChanges.Token);
+                this.RenewLeasesAsync(this._cancellationTokenSourceRenewLeases.Token);
             });
 #pragma warning restore CS4014
         }
@@ -132,7 +136,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns></returns>
         public void Stop()
         {
-            _cancellationTokenSourceCheckForChanges.Cancel();
+            this._cancellationTokenSourceCheckForChanges.Cancel();
         }
 
         /// <summary>
@@ -149,12 +153,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 while (!token.IsCancellationRequested)
                 {
-                    await _rowsLock.WaitAsync();
+                    await this._rowsLock.WaitAsync(token);
                     try
                     {
-                        if (_state == State.ProcessingChanges)
+                        if (this._state == State.ProcessingChanges)
                         {
-                            await RenewLeasesAsync();
+                            await this.RenewLeasesAsync();
                         }
                     }
                     catch (Exception e)
@@ -163,29 +167,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         // (see https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/try-finally, third paragraph)
                         // If we fail to renew the leases, multiple workers could be processing the same change data, but we have functionality
                         // in place to deal with this (see design doc)
-                        _logger.LogError($"Failed to renew leases due to error: {e.Message}");
+                        this._logger.LogError($"Failed to renew leases due to error: {e.Message}");
                     }
                     finally
                     {
-                        if (_state == State.ProcessingChanges)
+                        if (this._state == State.ProcessingChanges)
                         {
                             // Do we want to update this count even in the case of a failure to renew the leases? Probably, because
                             // the count is simply meant to indicate how much time the other thread has spent processing changes essentially
-                            _leaseRenewalCount++;
+                            this._leaseRenewalCount++;
                             // If this thread has been cancelled, then the _cancellationTokenSourceExecutor could have already been disposed so
                             // shouldn't cancel it
-                            if (_leaseRenewalCount == MaxLeaseRenewalCount && !token.IsCancellationRequested)
+                            if (this._leaseRenewalCount == MaxLeaseRenewalCount && !token.IsCancellationRequested)
                             {
                                 // If we keep renewing the leases, the thread responsible for processing the changes is stuck
                                 // If it's stuck, it has to be stuck in the function execution call (I think), so we should cancel the call
-                                _logger.LogWarning($"Call to execute the function (TryExecuteAsync) seems to be stuck, so it is being cancelled");
-                                _cancellationTokenSourceExecutor.Cancel();
-                                _cancellationTokenSourceExecutor.Dispose();
-                                _cancellationTokenSourceExecutor = new CancellationTokenSource();
+                                this._logger.LogWarning($"Call to execute the function (TryExecuteAsync) seems to be stuck, so it is being cancelled");
+                                this._cancellationTokenSourceExecutor.Cancel();
+                                this._cancellationTokenSourceExecutor.Dispose();
+                                this._cancellationTokenSourceExecutor = new CancellationTokenSource();
                             }
                         }
                         // Want to always release the lock at the end, even if renewing the leases failed
-                        _rowsLock.Release();
+                        this._rowsLock.Release();
                     }
                     // Want to make sure to renew the leases before they expire, so we renew them twice per lease period
                     await Task.Delay(TimeSpan.FromSeconds(LeaseIntervalInSeconds / 2), token);
@@ -197,12 +201,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // if it's cancelled
                 if (e.GetType() != typeof(TaskCanceledException))
                 {
-                    _logger.LogError(e.Message);
+                    this._logger.LogError(e.Message);
                 }
             }
             finally
             {
-                _cancellationTokenSourceRenewLeases.Dispose();
+                this._cancellationTokenSourceRenewLeases.Dispose();
             }
         }
 
@@ -222,14 +226,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 while (!token.IsCancellationRequested)
                 {
-                    if (_state == State.CheckingForChanges)
+                    if (this._state == State.CheckingForChanges)
                     {
                         // What should we do if this call gets stuck?
-                        await CheckForChangesAsync();
+                        await this.CheckForChangesAsync();
 
-                        if (_rows.Count > 0)
+                        if (this._rows.Count > 0)
                         {
-                            _state = State.ProcessingChanges;
+                            this._state = State.ProcessingChanges;
                             IEnumerable<SqlChangeTrackingEntry<T>> entries = null;
 
                             try
@@ -238,25 +242,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                                 // We could still try to trigger on the correctly processed entries, but that adds additional complication because
                                 // we don't want to release the leases on the incorrectly processed entries
                                 // For now, just give up I guess?
-                                entries = GetSqlChangeTrackingEntries();
+                                entries = this.GetSqlChangeTrackingEntries();
                             }
                             catch (Exception e)
                             {
-                                await ClearRows($"Failed to extract user table data from table {_userTable} associated with change metadata due to error: {e.Message}", true);
+                                await this.ClearRows($"Failed to extract user table data from table {this._userTable} associated with change metadata due to error: {e.Message}", true);
                             }
 
                             if (entries != null)
                             {
-                                FunctionResult result = await _executor.TryExecuteAsync(new TriggeredFunctionData() { TriggerValue = entries },
-                                    _cancellationTokenSourceExecutor.Token);
+                                FunctionResult result = await this._executor.TryExecuteAsync(new TriggeredFunctionData() { TriggerValue = entries },
+                                    this._cancellationTokenSourceExecutor.Token);
                                 if (result.Succeeded)
                                 {
-                                    await ReleaseLeasesAsync();
+                                    await this.ReleaseLeasesAsync();
                                 }
                                 else
                                 {
                                     // In the future might make sense to retry executing the function, but for now we just let another worker try
-                                    await ClearRows($"Failed to trigger user's function for table {_userTable} due to error: {result.Exception.Message}", true);
+                                    await this.ClearRows($"Failed to trigger user's function for table {this._userTable} due to error: {result.Exception.Message}", true);
                                 }
                             }
                         }
@@ -271,16 +275,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // if it's cancelled
                 if (e.GetType() != typeof(TaskCanceledException))
                 {
-                    _logger.LogError(e.Message);
+                    this._logger.LogError(e.Message);
                 }
             }
             finally
             {
                 // If this thread exits due to any reason, then the lease renewal thread should exit as well. Otherwise, it will keep looping
                 // perpetually. 
-                _cancellationTokenSourceRenewLeases.Cancel();
-                _cancellationTokenSourceCheckForChanges.Dispose();
-                _cancellationTokenSourceExecutor.Dispose();
+                this._cancellationTokenSourceRenewLeases.Cancel();
+                this._cancellationTokenSourceCheckForChanges.Dispose();
+                this._cancellationTokenSourceExecutor.Dispose();
             }
         }
 
@@ -292,53 +296,49 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         private async Task CreateWorkerTablesAsync()
         {
-            await GetUserTableSchemaAsync();
-            _workerTable = $"[{Schema}].[Worker_Table_{_userTableId}_{_workerId}]";
+            await this.GetUserTableSchemaAsync();
+            this._workerTable = $"[{Schema}].[Worker_Table_{this._userTableId}_{this._workerId}]";
 
-            using (var connection = new SqlConnection(_connectionString))
+            using var connection = new SqlConnection(this._connectionString);
+            await connection.OpenAsync();
+            using SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead);
+            // Create the schema where the worker tables will be located if it does not already exist
+            using (SqlCommand createSchemaCommand = BuildCreateSchemaCommand(connection, transaction))
             {
-                await connection.OpenAsync();
-                using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
+                await createSchemaCommand.ExecuteNonQueryAsync();
+            }
+
+            // Create the global state table, if one doesn't already exist for this database
+            using (SqlCommand createGlobalStateTableCommand = this.BuildCreateGlobalStateTableCommand(connection, transaction))
+            {
+                await createGlobalStateTableCommand.ExecuteNonQueryAsync();
+            }
+
+            // Insert a row into the global state table for this user table, if one doesn't already exist
+            using (SqlCommand insertRowGlobalStateTableCommand = this.BuildInsertRowGlobalStateTableCommand(connection, transaction))
+            {
+                try
                 {
-                    // Create the schema where the worker tables will be located if it does not already exist
-                    using (SqlCommand createSchemaCommand = BuildCreateSchemaCommand(connection, transaction))
-                    {
-                        await createSchemaCommand.ExecuteNonQueryAsync();
-                    }
-
-                    // Create the global state table, if one doesn't already exist for this database
-                    using (SqlCommand createGlobalStateTableCommand = BuildCreateGlobalStateTableCommand(connection, transaction))
-                    {
-                        await createGlobalStateTableCommand.ExecuteNonQueryAsync();
-                    }
-
-                    // Insert a row into the global state table for this user table, if one doesn't already exist
-                    using (SqlCommand insertRowGlobalStateTableCommand = BuildInsertRowGlobalStateTableCommand(connection, transaction))
-                    {
-                        try
-                        {
-                            await insertRowGlobalStateTableCommand.ExecuteNonQueryAsync();
-                        }
-                        // Could fail if we try to insert a NULL value into the GlobalVersionNumber, which happens when CHANGE_TRACKING_MIN_VALID_VERSION 
-                        // returns NULL for the user table, meaning that change tracking is not enabled for either the database or table (or both)
-                        catch (Exception e)
-                        {
-                            var errorMessage = $"Failed to start processing changes to table {_userTable}, potentially because change tracking was not " +
-                                $"enabled for the table or database {connection.Database}.";
-                            _logger.LogWarning(errorMessage + $" Exact exception thrown is {e.Message}");
-                            throw new InvalidOperationException(errorMessage);
-                        }
-                    }
-
-                    // Create the worker table, if one doesn't already exist for this user table
-                    using (SqlCommand createWorkerTableCommand = BuildCreateWorkerTableCommand(connection, transaction))
-                    {
-                        await createWorkerTableCommand.ExecuteNonQueryAsync();
-                    }
-
-                    await transaction.CommitAsync();
+                    await insertRowGlobalStateTableCommand.ExecuteNonQueryAsync();
+                }
+                // Could fail if we try to insert a NULL value into the GlobalVersionNumber, which happens when CHANGE_TRACKING_MIN_VALID_VERSION 
+                // returns NULL for the user table, meaning that change tracking is not enabled for either the database or table (or both)
+                catch (Exception e)
+                {
+                    string errorMessage = $"Failed to start processing changes to table {this._userTable}, potentially because change tracking was not " +
+                        $"enabled for the table or database {connection.Database}.";
+                    this._logger.LogWarning(errorMessage + $" Exact exception thrown is {e.Message}");
+                    throw new InvalidOperationException(errorMessage);
                 }
             }
+
+            // Create the worker table, if one doesn't already exist for this user table
+            using (SqlCommand createWorkerTableCommand = this.BuildCreateWorkerTableCommand(connection, transaction))
+            {
+                await createWorkerTableCommand.ExecuteNonQueryAsync();
+            }
+
+            await transaction.CommitAsync();
         }
 
         /// <summary>
@@ -353,35 +353,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </exception>
         private async Task GetUserTableSchemaAsync()
         {
-            using (var connection = new SqlConnection(_connectionString))
+            using (var connection = new SqlConnection(this._connectionString))
             {
                 // I don't think I need a transaction for this since the command just reads data
                 await connection.OpenAsync();
                 // Determine the primary keys of the user table
-                using (var getPrimaryKeysCommand = BuildGetUserTablePrimaryKeysCommand(connection))
+                using (SqlCommand getPrimaryKeysCommand = this.BuildGetUserTablePrimaryKeysCommand(connection))
                 {
-                    using (SqlDataReader reader = await getPrimaryKeysCommand.ExecuteReaderAsync())
-                    {
-                        await DeterminePrimaryKeyTypesAsync(reader);
-                    }
+                    using SqlDataReader reader = await getPrimaryKeysCommand.ExecuteReaderAsync();
+                    await this.DeterminePrimaryKeyTypesAsync(reader);
                 }
 
-                _userTableColumns.Clear();
+                this._userTableColumns.Clear();
                 // Determine the names of the user table columns
-                using (var getColumnNamesCommand = BuildGetUserTableColumnNamesCommand(connection))
+                using (SqlCommand getColumnNamesCommand = this.BuildGetUserTableColumnNamesCommand(connection))
                 {
-                    using (SqlDataReader reader = await getColumnNamesCommand.ExecuteReaderAsync())
+                    using SqlDataReader reader = await getColumnNamesCommand.ExecuteReaderAsync();
+                    while (await reader.ReadAsync())
                     {
-                        while (await reader.ReadAsync())
-                        {
-                            _userTableColumns.Add(reader.GetString(0));
-                        }
+                        this._userTableColumns.Add(reader.GetString(0));
                     }
                 }
 
-                InitializeQueryStrings();
+                this.InitializeQueryStrings();
             }
-            _userTableId = await GetUserTableIDAsync(_connectionString, _userTable);
+            this._userTableId = await GetUserTableIDAsync(this._connectionString, this._userTable);
         }
 
         /// <summary>
@@ -393,49 +389,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             try
             {
-                using (var connection = new SqlConnection(_connectionString))
+                using var connection = new SqlConnection(this._connectionString);
+                await connection.OpenAsync();
+                using SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead);
+                // Update the version number stored in the global state table if necessary before using it 
+                using (SqlCommand updateGlobalVersionNumberCommand = this.BuildUpdateGlobalVersionNumberCommand(connection, transaction))
                 {
-                    await connection.OpenAsync();
-                    using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
+                    await updateGlobalVersionNumberCommand.ExecuteNonQueryAsync();
+                }
+
+                // Use the version number to query for new changes
+                using (SqlCommand getChangesCommand = this.BuildCheckForChangesCommand(connection, transaction))
+                {
+                    using SqlDataReader reader = await getChangesCommand.ExecuteReaderAsync();
+                    var cols = new List<string>();
+                    while (await reader.ReadAsync())
                     {
-                        // Update the version number stored in the global state table if necessary before using it 
-                        using (SqlCommand updateGlobalVersionNumberCommand = BuildUpdateGlobalVersionNumberCommand(connection, transaction))
-                        {
-                            await updateGlobalVersionNumberCommand.ExecuteNonQueryAsync();
-                        }
-
-                        // Use the version number to query for new changes
-                        using (SqlCommand getChangesCommand = BuildCheckForChangesCommand(connection, transaction))
-                        {
-                            using (SqlDataReader reader = await getChangesCommand.ExecuteReaderAsync())
-                            {
-                                var cols = new List<string>();
-                                while (await reader.ReadAsync())
-                                {
-                                    _rows.Add(SqlBindingUtilities.BuildDictionaryFromSqlRow(reader, cols));
-                                }
-                            }
-                        }  
-
-                        // If changes were found, acquire leases on them
-                        if (_rows.Count != 0)
-                        {
-                            using (SqlCommand acquireLeaseCommand = BuildAcquireLeasesCommand(connection, transaction))
-                            {
-                                await acquireLeaseCommand.ExecuteNonQueryAsync();
-                            }
-                        }
-                        await transaction.CommitAsync();
+                        this._rows.Add(SqlBindingUtilities.BuildDictionaryFromSqlRow(reader, cols));
                     }
                 }
+
+                // If changes were found, acquire leases on them
+                if (this._rows.Count != 0)
+                {
+                    using SqlCommand acquireLeaseCommand = this.BuildAcquireLeasesCommand(connection, transaction);
+                    await acquireLeaseCommand.ExecuteNonQueryAsync();
+                }
+                await transaction.CommitAsync();
             }
             catch (Exception e)
             {
                 // If there's an exception in any part of the process, we want to clear all of our data in memory and retry
                 // checking for changes again
-                _rows.Clear();
-                _whereChecks.Clear();
-                _logger.LogWarning($"Failed to check {_userTable} for new changes due to error: {e.Message}");
+                this._rows.Clear();
+                this._whereChecks.Clear();
+                this._logger.LogWarning($"Failed to check {this._userTable} for new changes due to error: {e.Message}");
             }
         }
 
@@ -444,17 +432,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         private async Task RenewLeasesAsync()
         {
-            using (var connection = new SqlConnection(_connectionString))
-            {
-                await connection.OpenAsync();
-                // I don't think I need a transaction for renewing leases. If this worker reads in a row from the worker table
-                // and determines that it corresponds to its batch of changes, but then that row gets deleted by a cleanup task,
-                // it shouldn't renew its lease on it anyways
-                using (SqlCommand renewLeaseCommand = BuildRenewLeasesCommand(connection))
-                {
-                    await renewLeaseCommand.ExecuteNonQueryAsync();
-                }
-            }
+            using var connection = new SqlConnection(this._connectionString);
+            await connection.OpenAsync();
+            // I don't think I need a transaction for renewing leases. If this worker reads in a row from the worker table
+            // and determines that it corresponds to its batch of changes, but then that row gets deleted by a cleanup task,
+            // it shouldn't renew its lease on it anyways
+            using SqlCommand renewLeaseCommand = this.BuildRenewLeasesCommand(connection);
+            await renewLeaseCommand.ExecuteNonQueryAsync();
         }
 
         /// <summary>
@@ -471,14 +455,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             if (acquireLock)
             {
-                _logger.LogError(error);
-                await _rowsLock.WaitAsync();
+                this._logger.LogError(error);
+                await this._rowsLock.WaitAsync();
             }
-            _leaseRenewalCount = 0;
-            _rows.Clear();
-            _whereChecks.Clear();
-            _state = State.CheckingForChanges;
-            _rowsLock.Release();
+            this._leaseRenewalCount = 0;
+            this._rows.Clear();
+            this._whereChecks.Clear();
+            this._state = State.CheckingForChanges;
+            this._rowsLock.Release();
         }
 
         /// <summary>
@@ -488,30 +472,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private async Task ReleaseLeasesAsync()
         {
             // Don't want to change the _rows while another thread is attempting to renew leases on them
-            await _rowsLock.WaitAsync();
-            long newVersionNumber = CalculateNewVersionNumber();
+            await this._rowsLock.WaitAsync();
+            long newVersionNumber = this.CalculateNewVersionNumber();
             try
             {
-                using (var connection = new SqlConnection(_connectionString))
+                using var connection = new SqlConnection(this._connectionString);
+                await connection.OpenAsync();
+                using SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead);
+                // Release the leases held on _rows
+                using (SqlCommand releaseLeaseCommand = this.BuildReleaseLeasesCommand(connection, transaction))
                 {
-                    await connection.OpenAsync();
-                    using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
-                    {
-                        // Release the leases held on _rows
-                        using (SqlCommand releaseLeaseCommand = BuildReleaseLeasesCommand(connection, transaction))
-                        {
-                            await releaseLeaseCommand.ExecuteNonQueryAsync();
-                        }         
-
-                        // Update the global state table if we have processed all changes with version number <= newVersionNumber, and clean up the worker table
-                        // to remove all rows with VersionNumber <= newVersionNumber
-                        using (SqlCommand updateGlobalStateTableCommand = BuildUpdateGlobalStateTableCommand(connection, transaction, newVersionNumber, _rows.Count))
-                        {
-                            await updateGlobalStateTableCommand.ExecuteNonQueryAsync();
-                        }               
-                        await transaction.CommitAsync();
-                    }
+                    await releaseLeaseCommand.ExecuteNonQueryAsync();
                 }
+
+                // Update the global state table if we have processed all changes with version number <= newVersionNumber, and clean up the worker table
+                // to remove all rows with VersionNumber <= newVersionNumber
+                using (SqlCommand updateGlobalStateTableCommand = this.BuildUpdateGlobalStateTableCommand(connection, transaction, newVersionNumber))
+                {
+                    await updateGlobalStateTableCommand.ExecuteNonQueryAsync();
+                }
+                await transaction.CommitAsync();
 
             }
             catch (Exception e)
@@ -519,13 +499,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // What should we do if releasing the leases fails? We could try to release them again or just wait,
                 // since eventually the lease time will expire. Then another thread will re-process the same changes though,
                 // so less than ideal. But for now that's the functionality
-                _logger.LogError($"Failed to release leases for user table {_userTable} due to error: {e.Message}");
+                this._logger.LogError($"Failed to release leases for user table {this._userTable} due to error: {e.Message}");
             }
             finally
             {
                 // Want to do this before releasing the lock in case the renew leases thread wakes up. It will see that
                 // the state is checking for changes and not renew the (just released) leases
-                await ClearRows(string.Empty, false);
+                await this.ClearRows(string.Empty, false);
             }
         }
 
@@ -536,13 +516,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
         private SqlCommand BuildGetUserTablePrimaryKeysCommand(SqlConnection connection)
         {
-            var getUserTablePrimaryKeysQuery =
+            string getUserTablePrimaryKeysQuery =
                 $"SELECT c.name, t.name, c.max_length, c.precision, c.scale\n" +
                 $"FROM sys.indexes i\n" +
                 $"INNER JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id\n" +
                 $"INNER JOIN sys.columns c ON ic.object_id = c.object_id AND c.column_id = ic.column_id\n" +
                 $"INNER JOIN sys.types t ON c.user_type_id = t.user_type_id\n" +
-                $"WHERE i.is_primary_key = 1 and i.object_id = OBJECT_ID(N\'{_userTable}\', \'U\');";
+                $"WHERE i.is_primary_key = 1 and i.object_id = OBJECT_ID(N\'{this._userTable}\', \'U\');";
 
             return new SqlCommand(getUserTablePrimaryKeysQuery, connection);
         }
@@ -554,10 +534,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
         private SqlCommand BuildGetUserTableColumnNamesCommand(SqlConnection connection)
         {
-            var getUserTableColumnNamesQuery =
+            string getUserTableColumnNamesQuery =
                 $"SELECT name\n" +
                 $"FROM sys.columns\n" +
-                $"WHERE object_id = OBJECT_ID(\'{_userTable}\');";
+                $"WHERE object_id = OBJECT_ID(\'{this._userTable}\');";
 
             return new SqlCommand(getUserTableColumnNamesQuery, connection);
         }
@@ -574,18 +554,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string updateGlobalStateTableCommand = $@"
                 DECLARE @min_version bigint;
                 DECLARE @current_version bigint;
-                SET @min_version = CHANGE_TRACKING_MIN_VALID_VERSION({_userTableId});
-                SELECT @current_version = GlobalVersionNumber FROM {_globalStateTable} WHERE UserTableID = {_userTableId} AND WorkerID = '{_workerId}';
+                SET @min_version = CHANGE_TRACKING_MIN_VALID_VERSION({this._userTableId});
+                SELECT @current_version = GlobalVersionNumber FROM {this._globalStateTable} WHERE UserTableID = {this._userTableId} AND WorkerID = '{this._workerId}';
                 
                 IF @current_version < @min_version
-                    UPDATE {_globalStateTable} SET GlobalVersionNumber = @min_version WHERE UserTableID = {_userTableId} AND WorkerID = '{_workerId}';
+                    UPDATE {this._globalStateTable} SET GlobalVersionNumber = @min_version WHERE UserTableID = {this._userTableId} AND WorkerID = '{this._workerId}';
             ";
 
             return new SqlCommand(updateGlobalStateTableCommand, connection, transaction);
         }
 
         /// <summary>
-        /// Builds the query to check for changes on the user's table (<see cref="CheckForChangesAsync"/>)
+        /// Builds the query to check for changes on the user's table (<see cref="CheckForChangesAsync()"/>)
         /// </summary>
         /// <param name="connection">The connection to add to the returned SqlCommand</param>
         /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
@@ -594,14 +574,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             string getChangesQuery = $@"
                 DECLARE @version bigint;
-                SELECT @version = GlobalVersionNumber FROM {_globalStateTable} WHERE UserTableID = {_userTableId} AND WorkerID = '{_workerId}';
+                SELECT @version = GlobalVersionNumber FROM {this._globalStateTable} WHERE UserTableID = {this._userTableId} AND WorkerID = '{this._workerId}';
                 SELECT TOP {BatchSize} * FROM
-                    (SELECT {_primaryKeysSelectList}, {_userTableColumnsSelectList}
+                    (SELECT {this._primaryKeysSelectList}, {this._userTableColumnsSelectList}
                         c.SYS_CHANGE_VERSION, c.SYS_CHANGE_OPERATION,
                         w.VersionNumber, w.DequeueCount, w.LeaseExpirationTime
-                    FROM CHANGETABLE (CHANGES {_userTable}, @version) AS c
-                    LEFT OUTER JOIN {_workerTable} AS w with (TABLOCKX) ON {_leftOuterJoinWorkerTable}
-                    LEFT OUTER JOIN {_userTable} AS u ON {_leftOuterJoinUserTable}) AS Changes
+                    FROM CHANGETABLE (CHANGES {this._userTable}, @version) AS c
+                    LEFT OUTER JOIN {this._workerTable} AS w with (TABLOCKX) ON {this._leftOuterJoinWorkerTable}
+                    LEFT OUTER JOIN {this._userTable} AS u ON {this._leftOuterJoinUserTable}) AS Changes
                 WHERE
                     (Changes.LeaseExpirationTime IS NULL
                         AND (Changes.VersionNumber IS NULL OR Changes.VersionNumber < Changes.SYS_CHANGE_VERSION)
@@ -614,7 +594,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Builds the query to acquire leases on the rows in "_rows" if changes are detected in the user's table (<see cref="CheckForChangesAsync"/>)
+        /// Builds the query to acquire leases on the rows in "_rows" if changes are detected in the user's table (<see cref="CheckForChangesAsync()"/>)
         /// </summary>
         /// <param name="connection">The connection to add to the returned SqlCommand</param>
         /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
@@ -622,23 +602,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private SqlCommand BuildAcquireLeasesCommand(SqlConnection connection, SqlTransaction transaction)
         {
             var acquireLeasesCommand = new SqlCommand();
-            SqlBindingUtilities.AddPrimaryKeyParametersToCommand(acquireLeasesCommand, _rows, _primaryKeys.Keys);
-            var acquireLeasesCommandString = string.Empty;
-            var index = 0;
+            SqlBindingUtilities.AddPrimaryKeyParametersToCommand(acquireLeasesCommand, this._rows, this._primaryKeys.Keys);
+            string acquireLeasesCommandString = string.Empty;
+            int index = 0;
 
-            foreach (var row in _rows)
+            foreach (Dictionary<string, string> row in this._rows)
             {
-                var whereCheck = string.Join(" AND ", _primaryKeys.Keys.Select(key => $"{key} = @{key}_{index}"));
-                var valuesList = string.Join(", ", _primaryKeys.Keys.Select(key => $"@{key}_{index}"));
-                _whereChecks.Add(whereCheck);
+                string whereCheck = string.Join(" AND ", this._primaryKeys.Keys.Select(key => $"{key} = @{key}_{index}"));
+                string valuesList = string.Join(", ", this._primaryKeys.Keys.Select(key => $"@{key}_{index}"));
+                this._whereChecks.Add(whereCheck);
 
                 row.TryGetValue("SYS_CHANGE_VERSION", out string versionNumber);
                 acquireLeasesCommandString +=
-                    $"IF NOT EXISTS (SELECT * FROM {_workerTable} with (TABLOCKX) WHERE {whereCheck})\n" +
-                    $"INSERT INTO {_workerTable} with (TABLOCKX)\n" +
+                    $"IF NOT EXISTS (SELECT * FROM {this._workerTable} with (TABLOCKX) WHERE {whereCheck})\n" +
+                    $"INSERT INTO {this._workerTable} with (TABLOCKX)\n" +
                     $"VALUES ({valuesList}, DATEADD(s, {LeaseIntervalInSeconds}, SYSDATETIME()), 0, {versionNumber})\n" +
                     $"ELSE\n" +
-                    $"UPDATE {_workerTable} with (TABLOCKX)\n" +
+                    $"UPDATE {this._workerTable} with (TABLOCKX)\n" +
                     $"SET LeaseExpirationTime = DATEADD(s, {LeaseIntervalInSeconds}, SYSDATETIME()), DequeueCount = DequeueCount + 1, " +
                     $"VersionNumber = {versionNumber}\n" +
                     $"WHERE {whereCheck};\n";
@@ -659,17 +639,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
         private SqlCommand BuildRenewLeasesCommand(SqlConnection connection)
         {
-            SqlCommand renewLeasesCommand = new SqlCommand();
-            SqlBindingUtilities.AddPrimaryKeyParametersToCommand(renewLeasesCommand, _rows, _primaryKeys.Keys);
-            var renewLeasesCommandString = string.Empty;
-            var index = 0;
+            var renewLeasesCommand = new SqlCommand();
+            SqlBindingUtilities.AddPrimaryKeyParametersToCommand(renewLeasesCommand, this._rows, this._primaryKeys.Keys);
+            string renewLeasesCommandString = string.Empty;
+            int index = 0;
 
-            foreach (var row in _rows)
+            foreach (Dictionary<string, string> row in this._rows)
             {
                 renewLeasesCommandString +=
-                $"UPDATE {_workerTable} with (TABLOCKX)\n" +
+                $"UPDATE {this._workerTable} with (TABLOCKX)\n" +
                 $"SET LeaseExpirationTime = DATEADD(s, {LeaseIntervalInSeconds}, SYSDATETIME())\n" +
-                $"WHERE {_whereChecks.ElementAt(index++)};\n";
+                $"WHERE {this._whereChecks.ElementAt(index++)};\n";
             }
 
             renewLeasesCommand.CommandText = renewLeasesCommandString;
@@ -679,29 +659,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Builds the query to release leases on the rows in "_rows" after successful invocation of the user's function (<see cref="CheckForChangesAsync"/>)
+        /// Builds the query to release leases on the rows in "_rows" after successful invocation of the user's function (<see cref="CheckForChangesAsync()"/>)
         /// </summary>
         /// <param name="connection">The connection to add to the returned SqlCommand</param>
         /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
         private SqlCommand BuildReleaseLeasesCommand(SqlConnection connection, SqlTransaction transaction)
         {
-            SqlCommand releaseLeasesCommand = new SqlCommand();
-            var releaseLeasesCommandString = $"DECLARE @current_version bigint;\n";
-            SqlBindingUtilities.AddPrimaryKeyParametersToCommand(releaseLeasesCommand, _rows, _primaryKeys.Keys);
-            var index = 0;
+            var releaseLeasesCommand = new SqlCommand();
+            string releaseLeasesCommandString = $"DECLARE @current_version bigint;\n";
+            SqlBindingUtilities.AddPrimaryKeyParametersToCommand(releaseLeasesCommand, this._rows, this._primaryKeys.Keys);
+            int index = 0;
 
-            foreach (var row in _rows)
+            foreach (Dictionary<string, string> row in this._rows)
             {
-                var whereCheck = _whereChecks.ElementAt(index++);
+                string whereCheck = this._whereChecks.ElementAt(index++);
                 row.TryGetValue("SYS_CHANGE_VERSION", out string versionNumber);
 
                 releaseLeasesCommandString +=
                     $"SELECT @current_version = VersionNumber\n" +
-                    $"FROM {_workerTable} with (TABLOCKX) \n" +
+                    $"FROM {this._workerTable} with (TABLOCKX) \n" +
                     $"WHERE {whereCheck};\n" +
                     $"IF {versionNumber} >= @current_version\n" +
-                    $"UPDATE {_workerTable} with (TABLOCKX) \n" +
+                    $"UPDATE {this._workerTable} with (TABLOCKX) \n" +
                     $"SET LeaseExpirationTime = NULL, DequeueCount = 0, VersionNumber = {versionNumber}\n" +
                     $"WHERE {whereCheck};\n";
             }
@@ -722,12 +702,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private SqlCommand BuildCreateWorkerTableCommand(SqlConnection connection, SqlTransaction transaction)
         {
 
-            string primaryKeysWithTypes = string.Join(",\n", _primaryKeys.Select(pair => $"{pair.Key} {pair.Value}"));
-            string primaryKeysList = string.Join(", ", _primaryKeys.Keys);
+            string primaryKeysWithTypes = string.Join(",\n", this._primaryKeys.Select(pair => $"{pair.Key} {pair.Value}"));
+            string primaryKeysList = string.Join(", ", this._primaryKeys.Keys);
 
-            var createWorkerTableCommand =
-                $"IF OBJECT_ID(N\'{_workerTable}\', \'U\') IS NULL\n" +
-                $"CREATE TABLE {_workerTable} (\n" +
+            string createWorkerTableCommand =
+                $"IF OBJECT_ID(N\'{this._workerTable}\', \'U\') IS NULL\n" +
+                $"CREATE TABLE {this._workerTable} (\n" +
                 $"{primaryKeysWithTypes},\n" +
                 $"LeaseExpirationTime datetime2,\n" +
                 $"DequeueCount int,\n" +
@@ -744,7 +724,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="connection">The connection to attach to the returned SqlCommand</param>
         /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-        private SqlCommand BuildCreateSchemaCommand(SqlConnection connection, SqlTransaction transaction)
+        private static SqlCommand BuildCreateSchemaCommand(SqlConnection connection, SqlTransaction transaction)
         {
             string createSchemaCommand =
                 $"IF SCHEMA_ID(N\'{Schema}\') IS NULL\n" +
@@ -762,8 +742,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private SqlCommand BuildCreateGlobalStateTableCommand(SqlConnection connection, SqlTransaction transaction)
         {
             string createGlobalStateTableCommand = $@"
-                IF OBJECT_ID(N'{_globalStateTable}', N'U') IS NULL
-                    CREATE TABLE {_globalStateTable} (
+                IF OBJECT_ID(N'{this._globalStateTable}', N'U') IS NULL
+                    CREATE TABLE {this._globalStateTable} (
                         UserTableID int,
                         WorkerID char(80),
                         GlobalVersionNumber bigint NOT NULL,
@@ -783,9 +763,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private SqlCommand BuildInsertRowGlobalStateTableCommand(SqlConnection connection, SqlTransaction transaction)
         {
             string insertRowGlobalStateTableCommand = $@"
-                IF NOT EXISTS (SELECT * FROM {_globalStateTable} WHERE UserTableID = {_userTableId} AND WorkerID = '{_workerId}')
-                    INSERT INTO {_globalStateTable}
-                    VALUES ({_userTableId}, '{_workerId}', CHANGE_TRACKING_MIN_VALID_VERSION({_userTableId}));
+                IF NOT EXISTS (SELECT * FROM {this._globalStateTable} WHERE UserTableID = {this._userTableId} AND WorkerID = '{this._workerId}')
+                    INSERT INTO {this._globalStateTable}
+                    VALUES ({this._userTableId}, '{this._workerId}', CHANGE_TRACKING_MIN_VALID_VERSION({this._userTableId}));
             ";
 
             return new SqlCommand(insertRowGlobalStateTableCommand, connection, transaction);
@@ -799,24 +779,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
         /// <param name="newVersionNumber">The new GlobalVersionNumber to store in the _globalStateTable for this _userTable</param>
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-        private SqlCommand BuildUpdateGlobalStateTableCommand(SqlConnection connection, SqlTransaction transaction, long newVersionNumber, long rowsProcessed)
+        private SqlCommand BuildUpdateGlobalStateTableCommand(SqlConnection connection, SqlTransaction transaction, long newVersionNumber)
         {
+            if (connection is null)
+            {
+                throw new ArgumentNullException(nameof(connection));
+            }
+
+            if (transaction is null)
+            {
+                throw new ArgumentNullException(nameof(transaction));
+            }
+
             string updateGlobalStateTableCommand = $@"
                 DECLARE @current_version bigint;
                 DECLARE @unprocessed_changes bigint;
-                SELECT @current_version = GlobalVersionNumber FROM {_globalStateTable} WHERE UserTableID = {_userTableId} AND WorkerID = '{_workerId}';
+                SELECT @current_version = GlobalVersionNumber FROM {this._globalStateTable} WHERE UserTableID = {this._userTableId} AND WorkerID = '{this._workerId}';
 
                 SELECT @unprocessed_changes = COUNT(*) FROM
-                    (SELECT c.SYS_CHANGE_VERSION FROM CHANGETABLE(CHANGES {_userTable}, @current_version) AS c
-                    LEFT OUTER JOIN {_workerTable} AS w with (TABLOCKX) ON {_leftOuterJoinWorkerTable}
+                    (SELECT c.SYS_CHANGE_VERSION FROM CHANGETABLE(CHANGES {this._userTable}, @current_version) AS c
+                    LEFT OUTER JOIN {this._workerTable} AS w with (TABLOCKX) ON {this._leftOuterJoinWorkerTable}
                     WHERE c.SYS_CHANGE_VERSION <= {newVersionNumber}
                     AND ((w.VersionNumber IS NULL OR w.VersionNumber != c.SYS_CHANGE_VERSION OR w.LeaseExpirationTime IS NOT NULL)
                     AND (w.DequeueCount IS NULL OR w.DequeueCount < {MaxDequeueCount}))) AS Changes;
 
                 IF @unprocessed_changes = 0 AND {newVersionNumber} > @current_version
                 BEGIN
-                    UPDATE {_globalStateTable} SET GlobalVersionNumber = {newVersionNumber} WHERE UserTableID = {_userTableId} AND WorkerID = '{_workerId}';
-                    DELETE FROM {_workerTable} with (TABLOCKX) WHERE VersionNumber <= {newVersionNumber};
+                    UPDATE {this._globalStateTable} SET GlobalVersionNumber = {newVersionNumber} WHERE UserTableID = {this._userTableId} AND WorkerID = '{this._workerId}';
+                    DELETE FROM {this._workerTable} with (TABLOCKX) WHERE VersionNumber <= {newVersionNumber};
                 END
             ";
 
@@ -839,14 +829,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             // Necessary in the case that a prior attempt to start the SqlTableChangeMonitor failed.
             // Could be the case that these were partially populated, so should clear and repopulate them
-            _primaryKeys.Clear();
+            this._primaryKeys.Clear();
 
             while (await reader.ReadAsync())
             {
-                var type = reader.GetString(1);
-                if (variableLengthTypes.Contains(type))
+                string type = reader.GetString(1);
+                if (this.variableLengthTypes.Contains(type))
                 {
-                    var length = reader.GetInt16(2);
+                    short length = reader.GetInt16(2);
                     // Special "max" case. I'm actually not sure it's valid to have varchar(max) as a primary key because
                     // it exceeds the byte limit of an index field (900 bytes), but just in case
                     if (length == -1)
@@ -858,18 +848,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         type += "(" + length + ")";
                     }
                 }
-                else if (variablePrecisionTypes.Contains(type))
+                else if (this.variablePrecisionTypes.Contains(type))
                 {
-                    int precision = (int)reader.GetByte(3);
-                    int scale = (int)reader.GetByte(4);
+                    int precision = reader.GetByte(3);
+                    int scale = reader.GetByte(4);
                     type += "(" + precision + "," + scale + ")";
                 }
-                _primaryKeys.Add(reader.GetString(0), type);
+                this._primaryKeys.Add(reader.GetString(0), type);
             }
 
-            if (_primaryKeys.Count == 0)
+            if (this._primaryKeys.Count == 0)
             {
-                throw new InvalidOperationException($"Unable to determine the primary keys of user table {_userTable}. Potentially, the table does not have any primary " +
+                throw new InvalidOperationException($"Unable to determine the primary keys of user table {this._userTable}. Potentially, the table does not have any primary " +
                     $"key columns. A primary key is required for every user table for which changes are being monitored.");
             }
         }
@@ -884,19 +874,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private IEnumerable<SqlChangeTrackingEntry<T>> GetSqlChangeTrackingEntries()
         {
             var entries = new List<SqlChangeTrackingEntry<T>>();
-            foreach (var row in _rows)
+            foreach (Dictionary<string, string> row in this._rows)
             {
                 SqlChangeType changeType = GetChangeType(row);
                 // If the row has been deleted, there is no longer any data for it in the user table. The best we can do
                 // is populate the entry with the primary key values of the row
                 if (changeType == SqlChangeType.Deleted)
                 {
-                    entries.Add(new SqlChangeTrackingEntry<T>(changeType, JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(BuildDefaultDictionary(row)))));
+                    entries.Add(new SqlChangeTrackingEntry<T>(changeType, JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(this.BuildDefaultDictionary(row)))));
                 }
                 else
                 {
                     var userTableRow = new Dictionary<string, string>();
-                    foreach (var col in _userTableColumns)
+                    foreach (string col in this._userTableColumns)
                     {
                         row.TryGetValue(col, out string colVal);
                         userTableRow.Add(col, colVal);
@@ -929,15 +919,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 throw new ArgumentException($"Row does not contain the column SYS_CHANGE_OPERATION from SQL's change table: {row}");
             }
-            if (changeType.Equals("I"))
+            if (changeType.Equals("I", StringComparison.Ordinal))
             {
                 return SqlChangeType.Inserted;
             }
-            else if (changeType.Equals("U"))
+            else if (changeType.Equals("U", StringComparison.Ordinal))
             {
                 return SqlChangeType.Updated;
             }
-            else if (changeType.Equals("D"))
+            else if (changeType.Equals("D", StringComparison.Ordinal))
             {
                 return SqlChangeType.Deleted;
             }
@@ -957,7 +947,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private Dictionary<string, string> BuildDefaultDictionary(Dictionary<string, string> row)
         {
             var defaultDictionary = new Dictionary<string, string>();
-            foreach (var primaryKey in _primaryKeys.Keys)
+            foreach (string primaryKey in this._primaryKeys.Keys)
             {
                 row.TryGetValue(primaryKey, out string primaryKeyValue);
                 defaultDictionary.Add(primaryKey, primaryKeyValue);
@@ -970,12 +960,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         private void InitializeQueryStrings()
         {
-            _primaryKeysSelectList = string.Join(", ", _primaryKeys.Keys.Select(key => $"c.{key}"));
-            _leftOuterJoinWorkerTable = string.Join(" AND ", _primaryKeys.Keys.Select(key => $"c.{key} = w.{key}"));
-            _leftOuterJoinUserTable = string.Join(" AND ", _primaryKeys.Keys.Select(key => $"c.{key} = u.{key}"));
+            this._primaryKeysSelectList = string.Join(", ", this._primaryKeys.Keys.Select(key => $"c.{key}"));
+            this._leftOuterJoinWorkerTable = string.Join(" AND ", this._primaryKeys.Keys.Select(key => $"c.{key} = w.{key}"));
+            this._leftOuterJoinUserTable = string.Join(" AND ", this._primaryKeys.Keys.Select(key => $"c.{key} = u.{key}"));
 
-            List<string> nonPrimaryKeyCols = _userTableColumns.Where(col => !_primaryKeys.ContainsKey(col)).ToList();
-            _userTableColumnsSelectList =
+            var nonPrimaryKeyCols = this._userTableColumns.Where(col => !this._primaryKeys.ContainsKey(col)).ToList();
+            this._userTableColumnsSelectList =
                 string.Join(", ", nonPrimaryKeyCols.Select(col => $"u.{col}")) + (nonPrimaryKeyCols.Any() ? ", " : string.Empty);
         }
 
@@ -989,10 +979,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private long CalculateNewVersionNumber()
         {
             var versionNumbers = new SortedSet<long>();
-            foreach (var row in _rows)
+            foreach (Dictionary<string, string> row in this._rows)
             {
                 row.TryGetValue("SYS_CHANGE_VERSION", out string versionNumberString);
-                versionNumbers.Add(long.Parse(versionNumberString));
+                versionNumbers.Add(long.Parse(versionNumberString, CultureInfo.InvariantCulture));
             }
 
             // If there are at least two version numbers in this set, return the second highest one
@@ -1024,34 +1014,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </exception>
         private static async Task<int> GetUserTableIDAsync(string connectionString, string userTable)
         {
-            var getObjectIDQuery = $"SELECT OBJECT_ID(N\'{userTable}\', \'U\');";
+            string getObjectIDQuery = $"SELECT OBJECT_ID(N\'{userTable}\', \'U\');";
 
             using (var connection = new SqlConnection(connectionString))
             {
                 await connection.OpenAsync();
                 // Don't think I need a transaction for this since I'm just reading data
-                using (var getObjectIDCommand = new SqlCommand(getObjectIDQuery, connection))
+                using var getObjectIDCommand = new SqlCommand(getObjectIDQuery, connection);
+                using SqlDataReader reader = await getObjectIDCommand.ExecuteReaderAsync();
+                if (await reader.ReadAsync())
                 {
-                    using (SqlDataReader reader = await getObjectIDCommand.ExecuteReaderAsync())
+                    object userTableID = reader.GetValue(0);
+                    // Call to OBJECT_ID returned null
+                    if (userTableID is DBNull)
                     {
-                        if (await reader.ReadAsync())
-                        {
-                            var userTableID = reader.GetValue(0);
-                            // Call to OBJECT_ID returned null
-                            if (userTableID is DBNull)
-                            {
-                                throw new InvalidOperationException($"Failed to determine the OBJECT_ID of the user table {userTable}. " +
-                                    $"Possibly {userTable} does not exist in the database.");
-                            }
-                            else
-                            {
-                                return (int)userTableID;
-                            }
-                        }
+                        throw new InvalidOperationException($"Failed to determine the OBJECT_ID of the user table {userTable}. " +
+                            $"Possibly {userTable} does not exist in the database.");
+                    }
+                    else
+                    {
+                        return (int)userTableID;
                     }
                 }
             }
             throw new InvalidOperationException($"Failed to determine the OBJECT_ID of the user table {userTable}");
+        }
+
+        public void Dispose()
+        {
+            throw new NotImplementedException();
         }
     }
 }

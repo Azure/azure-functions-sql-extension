@@ -1,4 +1,4 @@
-// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
@@ -36,10 +36,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </exception>
         public SqlTriggerAttributeBindingProvider(IConfiguration configuration, IHostIdProvider hostIdProvider, ILoggerFactory loggerFactory)
         {
-            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _hostIdProvider = hostIdProvider ?? throw new ArgumentNullException(nameof(hostIdProvider));
+            this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            this._hostIdProvider = hostIdProvider ?? throw new ArgumentNullException(nameof(hostIdProvider));
             _ = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-            _logger = loggerFactory.CreateLogger(LogCategories.CreateTriggerCategory("Sql"));
+            this._logger = loggerFactory.CreateLogger(LogCategories.CreateTriggerCategory("Sql"));
         }
 
         /// <summary>
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context");
+                throw new ArgumentNullException(nameof(context));
             }
 
             ParameterInfo parameter = context.Parameter;
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             Type typeOfTriggerBinding = typeof(SqlTriggerBinding<>).MakeGenericType(type);
             ConstructorInfo constructor = typeOfTriggerBinding.GetConstructor(new Type[] { typeof(string), typeof(string), typeof(ParameterInfo), typeof(IHostIdProvider), typeof(ILogger) });
             return Task.FromResult((ITriggerBinding)constructor.Invoke(new object[] {attribute.TableName,
-                SqlBindingUtilities.GetConnectionString(attribute.ConnectionStringSetting, _configuration), parameter, _hostIdProvider, _logger }));
+                SqlBindingUtilities.GetConnectionString(attribute.ConnectionStringSetting, this._configuration), parameter, this._hostIdProvider, this._logger }));
         }
 
         /// <summary>
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 return false;
             }
-            return (typeof(IEnumerable).IsAssignableFrom(type)) && genericArguments[0].GetGenericTypeDefinition().Equals(typeof(SqlChangeTrackingEntry<>));
+            return typeof(IEnumerable).IsAssignableFrom(type) && genericArguments[0].GetGenericTypeDefinition().Equals(typeof(SqlChangeTrackingEntry<>));
         }
     }
 }
