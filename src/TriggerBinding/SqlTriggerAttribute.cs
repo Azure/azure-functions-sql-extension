@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="tableName">The name of the table to monitor for changes</param>
         public SqlTriggerAttribute(string tableName)
         {
-            TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
+            this.TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
         }
 
         /// <summary>

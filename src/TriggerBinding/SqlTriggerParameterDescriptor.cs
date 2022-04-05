@@ -1,4 +1,4 @@
-// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>A string with the reason</returns>
         public override string GetTriggerReason(IDictionary<string, string> arguments)
         {
-            return $"New changes on table {TableName} at {DateTime.UtcNow.ToString("o")}";
+            return $"New changes on table {this.TableName} at {DateTime.UtcNow:o}";
         }
     }
 }

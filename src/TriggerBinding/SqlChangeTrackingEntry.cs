@@ -1,4 +1,4 @@
-// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
@@ -6,9 +6,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// <summary>
     /// Represents a row that was changed in the user's table as well as metadata related to that change.
     /// If the row was deleted, then <see cref="Data"/> is populated only with the primary key values of the deleted row
+    /// </summary>
     /// <typeparam name="T">A user-defined POCO that represents a row of the table</typeparam>
     public sealed class SqlChangeTrackingEntry<T>
     {
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlChangeTrackingEntry<typeparamref name="T"/>"/> class.
         /// </summary>
@@ -19,10 +21,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// The current data in the user's table corresponding to the change (and only the primary key values 
         /// of the row in the case that it was deleted)
         /// </param>
+
         public SqlChangeTrackingEntry(SqlChangeType changeType, T data)
         {
-            ChangeType = changeType;
-            Data = data;
+            this.ChangeType = changeType;
+            this.Data = data;
         }
 
         /// <summary>

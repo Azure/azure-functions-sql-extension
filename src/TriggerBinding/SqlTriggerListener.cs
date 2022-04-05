@@ -1,4 +1,4 @@
-// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Threading;
@@ -31,10 +31,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="executor">
         /// Used to execute the user's function when changes are detected on "table"
         /// </param>
+        /// <param name="logger">
+        /// 
+        /// </param>
         public SqlTriggerListener(string table, string connectionString, string workerId, ITriggeredFunctionExecutor executor, ILogger logger)
         {
-            _changeMonitor = new SqlTableChangeMonitor<T>(table, connectionString, workerId, executor, logger);
-            _state = State.NotInitialized;
+            this._changeMonitor = new SqlTableChangeMonitor<T>(table, connectionString, workerId, executor, logger);
+            this._state = State.NotInitialized;
         }
 
         /// <summary>
@@ -42,7 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         public void Cancel()
         {
-            StopAsync(CancellationToken.None).Wait();
+            this.StopAsync(CancellationToken.None).Wait();
         }
 
         /// <summary>
@@ -59,10 +62,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="cancellationToken">Unused</param>
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            if (_state == State.NotInitialized)
+            if (this._state == State.NotInitialized)
             {
-                await _changeMonitor.StartAsync();
-                _state = State.Running;
+                await this._changeMonitor.StartAsync();
+                this._state = State.Running;
             }
         }
 
@@ -73,15 +76,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public Task StopAsync(CancellationToken cancellationToken)
         {
             // Nothing to stop if the change monitor has either already been stopped or hasn't been started
-            if (_state == State.Running)
+            if (this._state == State.Running)
             {
-                _changeMonitor.Stop();
-                _state = State.Stopped;
+                this._changeMonitor.Stop();
+                this._state = State.Stopped;
             }
             return Task.CompletedTask;
         }
 
-        enum State
+        private enum State
         {
             Running,
             NotInitialized,

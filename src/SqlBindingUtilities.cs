@@ -174,8 +174,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // tableNameComponents array is 2. Otherwise, the user specified a table name without the prefix so we 
             // just surround it by brackets
             string[] tableNameComponents = tableName.Split(new[] { '.' }, 2);
-            var schema = string.Empty;
-            var table = string.Empty;
+            string schema = string.Empty;
+            string table;
             if (tableNameComponents.Length == 2)
             {
                 schema = tableNameComponents[0];
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 table = $"[{table}]";
             }
 
-            if (!String.IsNullOrEmpty(schema))
+            if (!string.IsNullOrEmpty(schema))
             {
                 return $"{schema}.{table}";
             }
@@ -242,16 +242,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </remarks>
         public static void AddPrimaryKeyParametersToCommand(SqlCommand command, List<Dictionary<string, string>> rows, IEnumerable<string> primaryKeys)
         {
-            var index = 0;
-            foreach (var row in rows)
+            int index = 0;
+            foreach (Dictionary<string, string> row in rows)
             {
-                foreach (var key in primaryKeys)
+                foreach (string key in primaryKeys)
                 {
                     row.TryGetValue(key, out string primaryKeyValue);
                     command.Parameters.Add(new SqlParameter($"@{key}_{index}", primaryKeyValue));
                 }
                 index++;
             }
+        }
+
+        /// <summary>
+        /// Escape any existing closing brackets and add brackets around the string
+        /// </summary>
+        /// <param name="s">The string to bracket quote.</param>
+        /// <returns>The escaped and bracket quoted string.</returns>
+        public static string AsBracketQuotedString(this string s)
+        {
+            return $"[{s.Replace("]", "]]")}]";
+        }
+
+        /// <summary>
+        /// Escape any existing quotes and add quotes around the string.
+        /// </summary>
+        /// <param name="s">The string to quote.</param>
+        /// <returns>The escaped and quoted string.</returns>
+        public static string AsSingleQuotedString(this string s)
+        {
+            return $"'{s.AsSingleQuoteEscapedString()}'";
+        }
+
+        /// <summary>
+        /// Returns the string with any single quotes in it escaped (replaced with '')
+        /// </summary>
+        /// <param name="s">The string to escape.</param>
+        /// <returns>The escaped string.</returns>
+        public static string AsSingleQuoteEscapedString(this string s)
+        {
+            return s.Replace("'", "''");
         }
     }
 }
