@@ -91,12 +91,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public SqlTableChangeMonitor(string table, string connectionString, string workerId, ITriggeredFunctionExecutor executor, ILogger logger)
         {
             _ = !string.IsNullOrEmpty(table) ? table : throw new ArgumentNullException(nameof(table));
+            var tableObject = new SqlObject(table);
+
             this._connectionString = !string.IsNullOrEmpty(connectionString) ? connectionString : throw new ArgumentNullException(nameof(connectionString));
             this._workerId = !string.IsNullOrEmpty(workerId) ? workerId : throw new ArgumentNullException(nameof(workerId));
             this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            this._userTable = SqlBindingUtilities.NormalizeTableName(table);
+            this._userTable = tableObject.FullName;
             this._globalStateTable = $"[{Schema}].[Global_State_Table]";
 
             this._cancellationTokenSourceExecutor = new CancellationTokenSource();
@@ -246,7 +248,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             }
                             catch (Exception e)
                             {
-                                await this.ClearRows($"Failed to extract user table data from table {this._userTable} associated with change metadata due to error: {e.Message}", true);
+                                await this.ClearRowsAsync($"Failed to extract user table data from table {this._userTable} associated with change metadata due to error: {e.Message}", true);
                             }
 
                             if (entries != null)
@@ -260,7 +262,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                                 else
                                 {
                                     // In the future might make sense to retry executing the function, but for now we just let another worker try
-                                    await this.ClearRows($"Failed to trigger user's function for table {this._userTable} due to error: {result.Exception.Message}", true);
+                                    await this.ClearRowsAsync($"Failed to trigger user's function for table {this._userTable} due to error: {result.Exception.Message}", true);
                                 }
                             }
                         }
@@ -448,10 +450,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// The error messages the logger will report describing the reason function execution failed (used only in the case of a failure)
         /// </param>
         /// <param name="acquireLock">
-        /// True if ClearRows should acquire the _rowsLock (only true in the case of a failure)
+        /// True if ClearRowsAsync should acquire the _rowsLock (only true in the case of a failure)
         /// </param>
         /// <returns></returns>
-        private async Task ClearRows(string error, bool acquireLock)
+        private async Task ClearRowsAsync(string error, bool acquireLock)
         {
             if (acquireLock)
             {
@@ -505,7 +507,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 // Want to do this before releasing the lock in case the renew leases thread wakes up. It will see that
                 // the state is checking for changes and not renew the (just released) leases
-                await this.ClearRows(string.Empty, false);
+                await this.ClearRowsAsync(string.Empty, false);
             }
         }
 
@@ -879,7 +881,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 SqlChangeType changeType = GetChangeType(row);
                 // If the row has been deleted, there is no longer any data for it in the user table. The best we can do
                 // is populate the entry with the primary key values of the row
-                if (changeType == SqlChangeType.Deleted)
+                if (changeType == SqlChangeType.Delete)
                 {
                     entries.Add(new SqlChangeTrackingEntry<T>(changeType, JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(this.BuildDefaultDictionary(row)))));
                 }
@@ -910,8 +912,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Thrown if the value of the "SYS_CHANGE_OPERATION" column is none of "I", "U", or "D"
         /// </exception>
         /// <returns>
-        /// SqlChangeType.Created for an insert, SqlChangeType.Changed for an update,
-        /// and SqlChangeType.Deleted for a delete 
+        /// SqlChangeType.Insert for an insert, SqlChangeType.Update for an update,
+        /// and SqlChangeType.Delete for a delete 
         /// </returns>
         private static SqlChangeType GetChangeType(Dictionary<string, string> row)
         {
@@ -921,15 +923,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             if (changeType.Equals("I", StringComparison.Ordinal))
             {
-                return SqlChangeType.Inserted;
+                return SqlChangeType.Insert;
             }
             else if (changeType.Equals("U", StringComparison.Ordinal))
             {
-                return SqlChangeType.Updated;
+                return SqlChangeType.Update;
             }
             else if (changeType.Equals("D", StringComparison.Ordinal))
             {
-                return SqlChangeType.Deleted;
+                return SqlChangeType.Delete;
             }
             else
             {

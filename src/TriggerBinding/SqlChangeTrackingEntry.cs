@@ -30,9 +30,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         /// <summary>
         /// Specifies the type of change that occurred to the row. 
-        /// <see cref="SqlChangeType.Updated"/> corresponds to an update, 
-        /// <see cref="SqlChangeType.Inserted"/> corresponds to an insert, 
-        /// <see cref="SqlChangeType.Deleted"/> corresponds to a delete
+        /// <see cref="SqlChangeType.Update"/> corresponds to an update, 
+        /// <see cref="SqlChangeType.Insert"/> corresponds to an insert, 
+        /// <see cref="SqlChangeType.Delete"/> corresponds to a delete
         /// </summary>
         public SqlChangeType ChangeType { get; }
 
@@ -46,8 +46,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
     public enum SqlChangeType
     {
-        Inserted,
-        Updated,
-        Deleted
+        Insert,
+        Update,
+        Delete
     }
 }
