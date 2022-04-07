@@ -1,6 +1,7 @@
 module.exports = async function (context, req, product) {
     context.log('JavaScript HTTP trigger function processed a request.');
-    if (!product)
+    context.log(context.bindings);
+    if (product.length === 0)
     {
         context.log("Product not found");
     }
@@ -12,9 +13,5 @@ module.exports = async function (context, req, product) {
     const responseMessage = name
         ? "Hello, " + name + ". This HTTP triggered function executed successfully."
         : "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response.";
-
-    context.res = {
-        // status: 200, /* Defaults to 200 */
-        body: responseMessage
-    };
+    return { status: 201, body: product };
 }

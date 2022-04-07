@@ -2,19 +2,6 @@
   "version": 2,
   "dependencies": {
     ".NETCoreApp,Version=v3.1": {
-      "Microsoft.Azure.WebJobs.Extensions.Sql": {
-        "type": "Direct",
-        "requested": "[0.1.223-preview, )",
-        "resolved": "0.1.223-preview",
-        "contentHash": "cTh1SPpycc7/wVrSco6Kzx5Vg0zth07AyXCnZvgIXbes216ecz7FxJSTMznc1RCi3CzjFCrcqWJQLv4atceAkQ==",
-        "dependencies": {
-          "Microsoft.ApplicationInsights": "2.17.0",
-          "Microsoft.Azure.WebJobs": "3.0.31",
-          "Microsoft.Data.SqlClient": "3.0.1",
-          "System.Runtime.Caching": "4.7.0",
-          "morelinq": "3.3.2"
-        }
-      },
       "Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator": {
         "type": "Direct",
         "requested": "[1.2.2, )",
@@ -1667,6 +1654,16 @@
         "dependencies": {
           "NETStandard.Library": "1.6.1",
           "Newtonsoft.Json": "10.0.2"
+        }
+      },
+      "microsoft.azure.webjobs.extensions.sql": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.ApplicationInsights": "2.17.0",
+          "Microsoft.Azure.WebJobs": "3.0.31",
+          "Microsoft.Data.SqlClient": "3.0.1",
+          "System.Runtime.Caching": "4.7.0",
+          "morelinq": "3.3.2"
         }
       },
       "Microsoft.ApplicationInsights": {

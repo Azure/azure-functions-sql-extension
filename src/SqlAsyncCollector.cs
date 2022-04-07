@@ -99,6 +99,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         this._rows.Add(JsonConvert.DeserializeObject<T>(item.ToString()));
                     }
+                    else if (item is byte[])
+                    {
+                        string convertedItem = (string)Convert.ChangeType(item, typeof(string), null);
+                        this._rows.Add(JsonConvert.DeserializeObject<T>(convertedItem));
+                    }
                     else
                     {
                         this._rows.Add(item);
