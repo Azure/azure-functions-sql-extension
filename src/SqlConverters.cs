@@ -66,7 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
         internal class SqlGenericsConverter<T> : IAsyncConverter<SqlAttribute, IEnumerable<T>>, IConverter<SqlAttribute, IAsyncEnumerable<T>>,
-            IAsyncConverter<SqlAttribute, string>
+            IAsyncConverter<SqlAttribute, string>, IAsyncConverter<SqlAttribute, JArray>
         {
             private readonly IConfiguration _configuration;
 
@@ -186,7 +186,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
             }
 
-            /* /// <summary>
+            /// <summary>
             /// Opens a SqlConnection, reads in the data from the user's database, and returns it as a list of POCOs.
             /// </summary>
             /// <param name="attribute">
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     TelemetryInstance.TrackException(TelemetryErrorName.Convert, ex, props);
                     throw;
                 }
-            } */
+            }
 
         }
 

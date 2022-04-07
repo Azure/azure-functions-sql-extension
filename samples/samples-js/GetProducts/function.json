@@ -21,7 +21,7 @@
       "direction": "in",
       "commandText": "select * from Products where Cost = @Cost",
       "commandType": "Text",
-      "parameters": "Cost = 10",
+      "parameters": "@Cost = 10",
       "connectionStringSetting": "SqlConnectionString"
     }
   ]
