@@ -11,7 +11,6 @@ using System.Net.Http;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -61,8 +60,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public IntegrationTestBase(ITestOutputHelper output)
         {
             this.TestOutput = output;
-
             this.SetupDatabase();
+            this.StartAzurite();
         }
 
         /// <summary>
@@ -189,7 +188,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.FunctionHost.BeginOutputReadLine();
             this.FunctionHost.BeginErrorReadLine();
 
-            Thread.Sleep(10000);     // This is just to give some time to func host to start, maybe there's a better way to do this (check if port's open?)
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            this.FunctionHost.OutputDataReceived += (object sender, DataReceivedEventArgs e) =>
+            {
+                // This string is printed after the function host is started up - use this to ensure that we wait long enough
+                // since sometimes the host can take a little while to fully start up
+                if (e != null && !string.IsNullOrEmpty(e.Data) && e.Data.Contains($"http://localhost:{this.Port}/api"))
+                {
+                    taskCompletionSource.SetResult(true);
+                }
+            };
+            this.TestOutput.WriteLine($"Waiting for Azure Function host to start...");
+            taskCompletionSource.Task.Wait(60000);
+            this.TestOutput.WriteLine($"Azure Function host started!");
         }
 
         private static string GetFunctionsCoreToolsPath()
