@@ -102,8 +102,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public void TimerTriggerProductsTest()
         {
-            // Timer trigger function requires local storage to be running
-            this.StartAzurite();
             this.StartFunctionHost(nameof(TimerTriggerProducts));
 
             // Since this function runs on a schedule (every 5 seconds), we don't need to invoke it.
