@@ -193,13 +193,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 // This string is printed after the function host is started up - use this to ensure that we wait long enough
                 // since sometimes the host can take a little while to fully start up
-                if (e != null && !string.IsNullOrEmpty(e.Data))
+                if (e != null && !string.IsNullOrEmpty(e.Data) && e.Data.Contains("Functions:"))
                 {
-                    Console.WriteLine(e.Data);
-                    if (e.Data.Contains("Functions:"))
-                    {
-                        taskCompletionSource.SetResult(true);
-                    }
+                    taskCompletionSource.SetResult(true);
                 }
             };
             this.TestOutput.WriteLine($"Waiting for Azure Function host to start...");
