@@ -10,6 +10,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Extensions.Configuration;
+using System.Globalization;
+using Microsoft.Data.SqlClient;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
 {
@@ -120,6 +122,7 @@ This extension collect usage data in order to help us improve your experience. T
                 this._logger.LogInformation($"Sending exception event: {exception.Message}");
                 properties ??= new Dictionary<string, string>();
                 properties.Add(TelemetryPropertyName.ErrorName.ToString(), errorName.ToString());
+                properties.Add(TelemetryPropertyName.ErrorCode.ToString(), ExtractErrorCode(exception));
                 //continue task in existing parallel thread
                 this._trackEventTask = this._trackEventTask.ContinueWith(
                     x => this.TrackExceptionTask(exception, properties, measurements)
@@ -276,6 +279,18 @@ This extension collect usage data in order to help us improve your experience. T
                 return this._commonProperties;
             }
         }
+
+        /// <summary>
+        /// Extract error code from known exception types
+        /// </summary>
+        private static string ExtractErrorCode(Exception ex)
+        {
+            if (ex != null && ex is SqlException)
+            {
+                return (ex as SqlException).Number.ToString(CultureInfo.InvariantCulture);
+            }
+            return string.Empty;
+        }
     }
 
     /// <summary>
@@ -330,7 +345,8 @@ This extension collect usage data in order to help us improve your experience. T
         HasIdentityColumn,
         QueryType,
         ServerVersion,
-        Type
+        Type,
+        ErrorCode
     }
 
     /// <summary>
