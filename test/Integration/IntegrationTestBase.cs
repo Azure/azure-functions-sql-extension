@@ -60,8 +60,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public IntegrationTestBase(ITestOutputHelper output)
         {
             this.TestOutput = output;
-
             this.SetupDatabase();
+            this.StartAzurite();
         }
 
         /// <summary>
@@ -193,13 +193,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 // This string is printed after the function host is started up - use this to ensure that we wait long enough
                 // since sometimes the host can take a little while to fully start up
-                if (e.Data.Contains("Job host started"))
+                if (e != null && !string.IsNullOrEmpty(e.Data) && e.Data.Contains($"http://localhost:{this.Port}/api"))
                 {
                     taskCompletionSource.SetResult(true);
                 }
             };
             this.TestOutput.WriteLine($"Waiting for Azure Function host to start...");
-            taskCompletionSource.Task.Wait();
+            taskCompletionSource.Task.Wait(60000);
             this.TestOutput.WriteLine($"Azure Function host started!");
         }
 
