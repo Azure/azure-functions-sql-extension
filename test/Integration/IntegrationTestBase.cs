@@ -193,7 +193,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 // This string is printed after the function host is started up - use this to ensure that we wait long enough
                 // since sometimes the host can take a little while to fully start up
-                if (e != null && !string.IsNullOrEmpty(e.Data) && e.Data.Contains("Job host started"))
+                if (e != null && !string.IsNullOrEmpty(e.Data) && e.Data.Contains("Functions:"))
                 {
                     taskCompletionSource.SetResult(true);
                 }
