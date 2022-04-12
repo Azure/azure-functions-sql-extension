@@ -60,8 +60,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public IntegrationTestBase(ITestOutputHelper output)
         {
             this.TestOutput = output;
-
             this.SetupDatabase();
+            this.StartAzurite();
         }
 
         /// <summary>
