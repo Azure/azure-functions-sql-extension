@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using Microsoft.Azure.WebJobs.Description;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlConverters;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
@@ -54,8 +55,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             var converter = new SqlConverter(this._configuration);
             inputOutputRule.BindToInput(converter);
             inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), this._configuration, logger);
-            inputOutputRule.BindToCollector<OpenType>(typeof(SqlAsyncCollectorBuilder<>), this._configuration, logger);
-            inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), this._configuration, logger);
+            inputOutputRule.BindToCollector<SQLObjectOpenType>(typeof(SqlAsyncCollectorBuilder<>), this._configuration, logger);
+            inputOutputRule.BindToInput<SQLObjectOpenType>(typeof(SqlGenericsConverter<>), this._configuration, logger);
+        }
+    }
+
+    internal class SQLObjectOpenType : OpenType.Poco
+    {
+        public override bool IsMatch(Type type, OpenTypeMatchContext context)
+        {
+            if (type.IsGenericType
+                && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            {
+                return false;
+            }
+
+            if (type.FullName == "System.Object")
+            {
+                return true;
+            }
+
+            return base.IsMatch(type, context);
         }
     }
 }

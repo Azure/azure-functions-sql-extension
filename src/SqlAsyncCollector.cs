@@ -19,6 +19,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
 using System.Diagnostics;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -99,10 +100,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         this._rows.Add(JsonConvert.DeserializeObject<T>(item.ToString()));
                     }
-                    else if (item is byte[])
+                    else if (item.GetType() == typeof(JObject))
                     {
-                        string convertedItem = (string)Convert.ChangeType(item, typeof(string), null);
-                        this._rows.Add(JsonConvert.DeserializeObject<T>(convertedItem));
+                        dynamic jsonString = JObject.Parse(item.ToString());
+                        //var jObjectItem = JObject.Parse(item.ToString());
+                        this._rows.Add(jsonString);
                     }
                     else
                     {
@@ -173,6 +175,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             if (tableInfo == null)
             {
                 TelemetryInstance.TrackEvent(TelemetryEventName.TableInfoCacheMiss, props);
+                // set the columnNames if the type is JObject since it doesn't have memeber info.
+                TableInformation.ColumnNames = this.GetColumnNamesFromPOCO();
                 tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullTableName, this._logger);
                 var policy = new CacheItemPolicy
                 {
@@ -188,7 +192,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 TelemetryInstance.TrackEvent(TelemetryEventName.TableInfoCacheHit, props);
             }
 
-            IEnumerable<string> extraProperties = GetExtraProperties(tableInfo.Columns);
+            IEnumerable<string> extraProperties = GetExtraProperties(tableInfo.Columns, rows);
             if (extraProperties.Any())
             {
                 string message = $"The following properties in {typeof(T)} do not exist in the table {fullTableName}: {string.Join(", ", extraProperties.ToArray())}.";
@@ -212,7 +216,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 foreach (IEnumerable<T> batch in rows.Batch(batchSize))
                 {
                     batchCount++;
-                    GenerateDataQueryForMerge(tableInfo, batch, out string newDataQuery, out string rowData);
+                    this.GenerateDataQueryForMerge(tableInfo, batch, out string newDataQuery, out string rowData);
                     command.CommandText = $"{newDataQuery} {tableInfo.Query};";
                     par.Value = rowData;
                     await command.ExecuteNonQueryAsync();
@@ -250,11 +254,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         /// <param name="columns"> The columns of the table to upsert to </param>
         /// <returns>List of property names that don't exist in the table</returns>
-        private static IEnumerable<string> GetExtraProperties(IDictionary<string, string> columns)
+        private static IEnumerable<string> GetExtraProperties(IDictionary<string, string> columns, IEnumerable<T> rows)
         {
+            if (typeof(T) == typeof(JObject)) {
+                var jsonObj = JObject.Parse(rows.First().ToString());
+                Dictionary<string, string> dictObj = jsonObj.ToObject<Dictionary<string, string>>();
+                return dictObj.Keys.Where(prop => !columns.ContainsKey(prop))
+                .Select(prop => prop);
+            }
             return typeof(T).GetProperties().ToList()
                 .Where(prop => !columns.ContainsKey(prop.Name))
                 .Select(prop => prop.Name);
+        }
+
+        private IEnumerable<string> GetColumnNamesFromPOCO(bool bracketed =  false) {
+            if (bracketed) {
+                 if (typeof(T) == typeof(JObject)) {
+                    var jsonObj = JObject.Parse(this._rows.First().ToString());
+                    Dictionary<string, string> dictObj = jsonObj.ToObject<Dictionary<string, string>>();
+                    return dictObj.Keys.Select(prop => prop.AsBracketQuotedString());
+                 } else {
+                    return typeof(T).GetProperties().Select(prop => prop.Name.AsBracketQuotedString());
+                 }
+            } else {
+             if (typeof(T) == typeof(JObject)) {
+                var jsonObj = JObject.Parse(this._rows.First().ToString());
+                Dictionary<string, string> dictObj = jsonObj.ToObject<Dictionary<string, string>>();
+                return dictObj.Keys;
+            }
+            return typeof(T).GetProperties().Select(prop => prop.Name);
+            }
         }
 
         /// <summary>
@@ -264,7 +293,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="table">Information about the table we will be upserting into</param>
         /// <param name="rows">Rows to be upserted</param>
         /// <returns>T-SQL containing data for merge</returns>
-        private static void GenerateDataQueryForMerge(TableInformation table, IEnumerable<T> rows, out string newDataQuery, out string rowData)
+        private void GenerateDataQueryForMerge(TableInformation table, IEnumerable<T> rows, out string newDataQuery, out string rowData)
         {
             IList<T> rowsToUpsert = new List<T>();
 
@@ -298,7 +327,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             rowData = JsonConvert.SerializeObject(rowsToUpsert, table.JsonSerializerSettings);
-            IEnumerable<string> columnNamesFromPOCO = typeof(T).GetProperties().Select(prop => prop.Name);
+            IEnumerable<string> columnNamesFromPOCO = this.GetColumnNamesFromPOCO();
             IEnumerable<string> bracketColumnDefinitionsFromPOCO = table.Columns.Where(c => columnNamesFromPOCO.Contains(c.Key, table.Comparer))
                 .Select(c => $"{c.Key.AsBracketQuotedString()} {c.Value}");
             newDataQuery = $"WITH {CteName} AS ( SELECT * FROM OPENJSON({RowDataParameter}) WITH ({string.Join(",", bracketColumnDefinitionsFromPOCO)}) )";
@@ -330,6 +359,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </summary>
             public string Query { get; }
 
+            /// <summary>
+            /// All of the column names, for SQL to use when data is passed in as JObject
+            /// </summary>
+            public static IEnumerable<string> ColumnNames { get; set; }
             /// <summary>
             /// Settings to use when serializing the POCO into SQL.
             /// Only serialize properties and fields that correspond to SQL columns.
@@ -554,8 +587,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 // Match SQL Primary Key column names to POCO field/property objects. Ensure none are missing.
                 StringComparison comparison = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+                IEnumerable<string> columnNames = typeof(T) == typeof(JObject) ? TableInformation.ColumnNames : typeof(T).GetProperties().Select(c => c.Name);
                 IEnumerable<MemberInfo> primaryKeyFields = typeof(T).GetMembers().Where(f => primaryKeys.Any(k => string.Equals(k.Name, f.Name, comparison)));
-                IEnumerable<string> primaryKeysFromPOCO = primaryKeyFields.Select(f => f.Name);
+                IEnumerable<string> primaryKeysFromPOCO = columnNames.Where(f => primaryKeys.Any(k => string.Equals(k.Name, f, comparison)));
                 IEnumerable<PrimaryKey> missingPrimaryKeysFromPOCO = primaryKeys
                     .Where(k => !primaryKeysFromPOCO.Contains(k.Name, comparer));
                 bool hasIdentityColumnPrimaryKeys = primaryKeys.Any(k => k.IsIdentity);
