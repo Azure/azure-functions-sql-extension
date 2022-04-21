@@ -252,6 +252,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// to upsert to and returns the extra property names in a List.
         /// </summary>
         /// <param name="columns"> The columns of the table to upsert to </param>
+        /// <param name="rows"> The rows to be upserted </param>
         /// <returns>List of property names that don't exist in the table</returns>
         private static IEnumerable<string> GetExtraProperties(IDictionary<string, string> columns, IEnumerable<T> rows)
         {
@@ -310,6 +311,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // If there are duplicate primary keys, we'll need to pick the LAST (most recent) row per primary key.
             foreach (T row in rows.Reverse())
             {
+                // When T is JObject, currently there isn't way to find out the Primary keys, so it'll be null, adding check.
                 if (table.PrimaryKeys.Any())
                 {
                     // SQL Server allows 900 bytes per primary key, so use that as a baseline
@@ -335,7 +337,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     }
                 }
                 else {
-                    // add check for duplicate primary keys.
+                    // ToDo: add check for duplicate primary keys once we find a way to get primary keys.
                     rowsToUpsert.Add(row);
                 }
             }

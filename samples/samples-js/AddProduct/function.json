@@ -19,7 +19,7 @@
       "name": "product",
       "type": "sql",
       "direction": "out",
-      "commandText": "[TestDB].[dbo].[Products]",
+      "commandText": "[dbo].[Products]",
       "connectionStringSetting": "SqlConnectionString"
     }
   ],

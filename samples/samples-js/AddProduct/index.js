@@ -1,7 +1,7 @@
 module.exports = async function (context) {
     context.log('JavaScript HTTP trigger function processed a request.');
 
-    const ringProduct = [{
+    const products = [{
         "productid": 1001,
         "name": "Shoes",
         "cost": "100"
@@ -11,12 +11,10 @@ module.exports = async function (context) {
         "cost": "500"
     }];
 
-    if (ringProduct) {
-        context.bindings.product = JSON.stringify(ringProduct);
-    }
+    context.bindings.product = JSON.stringify(products);
 
     return {
         status: 201,
-        body: ringProduct
+        body: products
     };
 }

@@ -60,6 +60,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
     }
 
+    /// <summary>
+    /// Wrapper around OpenType to receive data correctly from output bindings (not as byte[])
+    /// </summary>
     internal class SQLObjectOpenType : OpenType.Poco
     {
         public override bool IsMatch(Type type, OpenTypeMatchContext context)
