@@ -214,21 +214,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
         }
-
-        internal class SqlConverterJArray : IAsyncConverter<SqlAttribute, JArray>
-        {
-            private readonly SqlGenericsConverter<JToken> _builder;
-
-            public SqlConverterJArray(IConfiguration configuration, ILogger logger)
-            {
-                this._builder = new SqlGenericsConverter<JToken>(configuration, logger);
-            }
-
-            public async Task<JArray> ConvertAsync(SqlAttribute attribute, CancellationToken cancellationToken)
-            {
-                IEnumerable<JToken> results = await this._builder.ConvertAsync(attribute, cancellationToken);
-                return JArray.FromObject(results);
-            }
-        }
     }
 }
