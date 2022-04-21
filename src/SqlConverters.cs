@@ -187,7 +187,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             /// <summary>
-            /// Opens a SqlConnection, reads in the data from the user's database, and returns it as a list of POCOs.
+            /// Opens a SqlConnection, reads in the data from the user's database, and returns it as JArray.
             /// </summary>
             /// <param name="attribute">
             /// Contains the information necessary to establish a SqlConnection, and the query to be executed on the database

@@ -21,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples
             [TimerTrigger("*/5 * * * * *")] TimerInfo req, ILogger log,
             [Sql("Products", ConnectionStringSetting = "SqlConnectionString")] ICollector<Product> products)
         {
-            int totalUpserts = 100;
+            int totalUpserts = 1000;
             log.LogInformation($"{DateTime.Now} starting execution #{_executionNumber}. Rows to generate={totalUpserts}.");
 
             var sw = new Stopwatch();

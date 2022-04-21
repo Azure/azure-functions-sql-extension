@@ -336,7 +336,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         rowsToUpsert.Add(row);
                     }
                 }
-                else {
+                else
+                {
                     // ToDo: add check for duplicate primary keys once we find a way to get primary keys.
                     rowsToUpsert.Add(row);
                 }
@@ -404,7 +405,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </summary>
             public static IEnumerable<string> GetColumnNames()
             {
-                if (typeof(T) == typeof(JObject)) {
+                if (typeof(T) == typeof(JObject))
+                {
                     return ColumnNames;
                 }
                 return typeof(T).GetProperties().Select(prop => prop.Name);
