@@ -103,7 +103,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     else if (item.GetType() == typeof(JObject))
                     {
                         dynamic jsonString = JObject.Parse(item.ToString());
-                        //var jObjectItem = JObject.Parse(item.ToString());
                         this._rows.Add(jsonString);
                     }
                     else
@@ -175,7 +174,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             if (tableInfo == null)
             {
                 TelemetryInstance.TrackEvent(TelemetryEventName.TableInfoCacheMiss, props);
-                // set the columnNames if the type is JObject since it doesn't have memeber info.
+                // set the columnNames for supporting T as JObject since it doesn't have columns in the memeber info.
                 TableInformation.ColumnNames = this.GetColumnNamesFromPOCO();
                 tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullTableName, this._logger);
                 var policy = new CacheItemPolicy
@@ -396,7 +395,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     ContractResolver = new DynamicPOCOContractResolver(columns, comparer)
                 };
             }
-
+            /// <summary>
+            /// returns the properties of the object T as Column Names and
+            /// if T is JObject we access the ColumnNames porperties which has to be set
+            /// by reading the keys from the JObject.
+            /// </summary>
             public static IEnumerable<string> GetColumnNames()
             {
                 if (typeof(T) == typeof(JObject)) {
