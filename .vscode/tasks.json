@@ -76,23 +76,6 @@
 			"command": "host start",
 			"isBackground": true,
 			"problemMatcher": "$func-dotnet-watch"
-		},
-		{
-			"type": "shell",
-			"label": "npm install (functions)",
-			"command": "npm install",
-			"options": {
-				"cwd": "${workspaceFolder}/samples/samples-js"
-			}
-		},
-		{
-			"type": "shell",
-			"label": "npm prune (functions)",
-			"command": "npm prune --production",
-			"problemMatcher": [],
-			"options": {
-				"cwd": "${workspaceFolder}/samples/samples-js"
-			}
 		}
 	]
 }

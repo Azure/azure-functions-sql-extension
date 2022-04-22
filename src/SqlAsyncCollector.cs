@@ -191,7 +191,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 TelemetryInstance.TrackEvent(TelemetryEventName.TableInfoCacheHit, props);
             }
 
-            IEnumerable<string> extraProperties = GetExtraProperties(tableInfo.Columns, rows);
+            IEnumerable<string> extraProperties = GetExtraProperties(tableInfo.Columns, rows.First());
             if (extraProperties.Any())
             {
                 string message = $"The following properties in {typeof(T)} do not exist in the table {fullTableName}: {string.Join(", ", extraProperties.ToArray())}.";
@@ -252,13 +252,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// to upsert to and returns the extra property names in a List.
         /// </summary>
         /// <param name="columns"> The columns of the table to upsert to </param>
-        /// <param name="rows"> The rows to be upserted </param>
+        /// <param name="row"> First row to get the column names when T is JObject </param>
         /// <returns>List of property names that don't exist in the table</returns>
-        private static IEnumerable<string> GetExtraProperties(IDictionary<string, string> columns, IEnumerable<T> rows)
+        private static IEnumerable<string> GetExtraProperties(IDictionary<string, string> columns, T row)
         {
             if (typeof(T) == typeof(JObject))
             {
-                var jsonObj = JObject.Parse(rows.First().ToString());
+                var jsonObj = JObject.Parse(row.ToString());
                 Dictionary<string, string> dictObj = jsonObj.ToObject<Dictionary<string, string>>();
                 return dictObj.Keys.Where(prop => !columns.ContainsKey(prop))
                 .Select(prop => prop);

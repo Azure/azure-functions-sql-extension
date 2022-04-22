@@ -16,7 +16,7 @@
       "direction": "out"
     },
     {
-      "name": "product",
+      "name": "products",
       "type": "sql",
       "direction": "in",
       "commandText": "select * from Products where Cost = @Cost",
