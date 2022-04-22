@@ -98,7 +98,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     if (item is string)
                     {
-                        this._rows.Add(JsonConvert.DeserializeObject<T>(item.ToString()));
+                        this._rows.Add(JsonConvert.DeserializeObject<T>(item as string));
                     }
                     else if (item.GetType() == typeof(JObject))
                     {

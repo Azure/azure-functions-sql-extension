@@ -62,9 +62,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
     /// <summary>
     /// Wrapper around OpenType to receive data correctly from output bindings (not as byte[])
+    /// This can be used for general "T --> JObject" bindings. 
+    /// The exact definition here comes from the WebJobs v1.0 Queue binding.
+    /// refer https://github.com/Azure/azure-webjobs-sdk/blob/dev/src/Microsoft.Azure.WebJobs.Host/Bindings/OpenType.cs#L390
     /// </summary>
     internal class SQLObjectOpenType : OpenType.Poco
     {
+        // override the OpenType.Poco method to return true when type is an "System.Object"
         public override bool IsMatch(Type type, OpenTypeMatchContext context)
         {
             if (type.IsGenericType
