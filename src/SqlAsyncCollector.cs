@@ -270,29 +270,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         private IEnumerable<string> GetColumnNamesFromPOCO(bool bracketed = false)
         {
-            if (bracketed)
-            {
-                if (typeof(T) == typeof(JObject))
-                {
-                    var jsonObj = JObject.Parse(this._rows.First().ToString());
-                    Dictionary<string, string> dictObj = jsonObj.ToObject<Dictionary<string, string>>();
-                    return dictObj.Keys.Select(prop => prop.AsBracketQuotedString());
-                }
-                else
-                {
-                    return typeof(T).GetProperties().Select(prop => prop.Name.AsBracketQuotedString());
-                }
-            }
-            else
-            {
-                if (typeof(T) == typeof(JObject))
+            if (typeof(T) == typeof(JObject))
                 {
                     var jsonObj = JObject.Parse(this._rows.First().ToString());
                     Dictionary<string, string> dictObj = jsonObj.ToObject<Dictionary<string, string>>();
                     return dictObj.Keys;
                 }
-                return typeof(T).GetProperties().Select(prop => prop.Name);
-            }
+            return typeof(T).GetProperties().Select(prop => bracketed ? prop.Name.AsBracketQuotedString() : prop.Name);
         }
 
         /// <summary>
