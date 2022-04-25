@@ -19,7 +19,7 @@
 
   <Target Name="CopySamples" AfterTargets="Build">
     <ItemGroup>
-      <_CopyItems Include="..\samples\bin\$(Configuration)\$(TargetFramework)\**\*.*" />
+      <_CopyItems Include="..\samples\samples-csharp\bin\$(Configuration)\$(TargetFramework)\**\*.*" />
     </ItemGroup>
     <Copy SourceFiles="@(_CopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\%(RecursiveDir)" />
     <Message Text="Copied Samples output to $(OutDir)\SqlExtensionSamples" Importance="high" />
