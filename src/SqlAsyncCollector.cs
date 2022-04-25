@@ -96,11 +96,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 TelemetryInstance.TrackEvent(TelemetryEventName.AddAsync);
                 try
                 {
-                    if (item is string)
+                    if (typeof(T) == typeof(string))
                     {
                         this._rows.Add(JsonConvert.DeserializeObject<T>(item as string));
                     }
-                    else if (item.GetType() == typeof(JObject))
+                    else if (typeof(T) == typeof(JObject))
                     {
                         dynamic itemAsJObject = JObject.Parse(item.ToString());
                         this._rows.Add(itemAsJObject);
@@ -251,13 +251,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// to upsert to and returns the extra property names in a List.
         /// </summary>
         /// <param name="columns"> The columns of the table to upsert to </param>
-        /// <param name="row"> Sample row used to get the column names when item is a JObject </param>
+        /// <param name="rowItem"> Sample row used to get the column names when item is a JObject </param>
         /// <returns>List of property names that don't exist in the table</returns>
-        private static IEnumerable<string> GetExtraProperties(IDictionary<string, string> columns, T row)
+        private static IEnumerable<string> GetExtraProperties(IDictionary<string, string> columns, T rowItem)
         {
             if (typeof(T) == typeof(JObject))
             {
-                Dictionary<string, string> dictObj = (row as JObject).ToObject<Dictionary<string, string>>();
+                Dictionary<string, string> dictObj = (rowItem as JObject).ToObject<Dictionary<string, string>>();
                 return dictObj.Keys.Where(prop => !columns.ContainsKey(prop))
                 .Select(prop => prop);
             }
