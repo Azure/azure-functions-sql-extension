@@ -1763,7 +1763,7 @@
       },
       "Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator": {
         "type": "CentralTransitive",
-        "requested": "[1.2.2, )",
+        "requested": "[1.2.3, )",
         "resolved": "1.2.2",
         "contentHash": "vpiNt3JM1pt/WrDIkg7G2DHhIpI4t5I+R9rmXCxIGiby5oPGEolyfiYZdEf2kMMN3SbWzVAbk4Q3jKgFhO9MaQ==",
         "dependencies": {
