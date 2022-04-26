@@ -281,7 +281,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // If there are duplicate primary keys, we'll need to pick the LAST (most recent) row per primary key.
             foreach (T row in rows.Reverse())
             {
-                // When T is JObject, currently there isn't way to find out the Primary keys, so it'll be null, adding check.
                 if (typeof(T) != typeof(JObject))
                 {
                     // SQL Server allows 900 bytes per primary key, so use that as a baseline
@@ -570,14 +569,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // Match SQL Primary Key column names to POCO field/property objects. Ensure none are missing.
                 StringComparison comparison = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
                 IEnumerable<MemberInfo> primaryKeyFields = typeof(T).GetMembers().Where(f => primaryKeys.Any(k => string.Equals(k.Name, f.Name, comparison)));
-                // When T is JObject, primaryKeyFields cannot be used to get the column names, so use the passed in columnNames variable
-                if (typeof(T) != typeof(JObject))
-                {
-                    columnNames = primaryKeyFields.Select(f => f.Name);
-                }
-                IEnumerable<string> primaryKeysFromPOCO = columnNames.Where(f => primaryKeys.Any(k => string.Equals(k.Name, f, comparison)));
+                IEnumerable<string> primaryKeysFromItem = columnNames.Where(f => primaryKeys.Any(k => string.Equals(k.Name, f, comparison)));
                 IEnumerable<PrimaryKey> missingPrimaryKeysFromPOCO = primaryKeys
-                    .Where(k => !primaryKeysFromPOCO.Contains(k.Name, comparer));
+                    .Where(k => !primaryKeysFromItem.Contains(k.Name, comparer));
                 bool hasIdentityColumnPrimaryKeys = primaryKeys.Any(k => k.IsIdentity);
                 // If none of the primary keys are an identity column then we require that all primary keys be present in the POCO so we can
                 // generate the MERGE statement correctly
