@@ -100,11 +100,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         this._rows.Add(JsonConvert.DeserializeObject<T>(item as string));
                     }
-                    else if (typeof(T) == typeof(JObject))
-                    {
-                        dynamic itemAsJObject = JObject.Parse(item.ToString());
-                        this._rows.Add(itemAsJObject);
-                    }
                     else
                     {
                         this._rows.Add(item);
