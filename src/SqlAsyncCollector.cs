@@ -96,14 +96,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 TelemetryInstance.TrackEvent(TelemetryEventName.AddAsync);
                 try
                 {
-                    if (typeof(T) == typeof(string))
-                    {
-                        this._rows.Add(JsonConvert.DeserializeObject<T>(item as string));
-                    }
-                    else
-                    {
-                        this._rows.Add(item);
-                    }
+                    this._rows.Add(item);
                 }
                 finally
                 {
@@ -289,7 +282,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             foreach (T row in rows.Reverse())
             {
                 // When T is JObject, currently there isn't way to find out the Primary keys, so it'll be null, adding check.
-                if (table.PrimaryKeys.Any())
+                if (typeof(T) != typeof(JObject))
                 {
                     // SQL Server allows 900 bytes per primary key, so use that as a baseline
                     var combinedPrimaryKey = new StringBuilder(900 * table.PrimaryKeys.Count());
@@ -478,6 +471,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <param name="sqlConnection">An open connection with which to query SQL against</param>
             /// <param name="fullName">Full name of table, including schema (if exists).</param>
             /// <param name="logger">ILogger used to log any errors or warnings.</param>
+            /// <param name="columnNames">Column names of the table</param>
             /// <returns>TableInformation object containing primary keys, column types, etc.</returns>
             public static async Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName, ILogger logger, IEnumerable<string> columnNames)
             {
@@ -576,7 +570,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // Match SQL Primary Key column names to POCO field/property objects. Ensure none are missing.
                 StringComparison comparison = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
                 IEnumerable<MemberInfo> primaryKeyFields = typeof(T).GetMembers().Where(f => primaryKeys.Any(k => string.Equals(k.Name, f.Name, comparison)));
-                if (!columnNames.Any())
+                // When T is JObject, primaryKeyFields cannot be used to get the column names, so use the passed in columnNames variable
+                if (typeof(T) != typeof(JObject))
                 {
                     columnNames = primaryKeyFields.Select(f => f.Name);
                 }
