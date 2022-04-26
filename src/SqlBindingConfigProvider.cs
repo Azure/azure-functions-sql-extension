@@ -68,7 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// </summary>
     internal class SQLObjectOpenType : OpenType.Poco
     {
-        // override the OpenType.Poco method to return true when type is an "System.Object"
+        // return true when type is an "System.Object" to enable Object binding.
         public override bool IsMatch(Type type, OpenTypeMatchContext context)
         {
             if (type.IsGenericType
