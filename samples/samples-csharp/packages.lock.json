@@ -352,14 +352,6 @@
           "WindowsAzure.Storage": "9.3.1"
         }
       },
-      "Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator": {
-        "type": "Transitive",
-        "resolved": "1.2.2",
-        "contentHash": "vpiNt3JM1pt/WrDIkg7G2DHhIpI4t5I+R9rmXCxIGiby5oPGEolyfiYZdEf2kMMN3SbWzVAbk4Q3jKgFhO9MaQ==",
-        "dependencies": {
-          "System.Runtime.Loader": "4.3.0"
-        }
-      },
       "Microsoft.Bcl.AsyncInterfaces": {
         "type": "Transitive",
         "resolved": "1.0.0",
@@ -1767,6 +1759,15 @@
           "Newtonsoft.Json": "11.0.2",
           "System.Memory.Data": "1.0.1",
           "System.Threading.Tasks.Dataflow": "4.8.0"
+        }
+      },
+      "Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator": {
+        "type": "CentralTransitive",
+        "requested": "[1.2.3, )",
+        "resolved": "1.2.2",
+        "contentHash": "vpiNt3JM1pt/WrDIkg7G2DHhIpI4t5I+R9rmXCxIGiby5oPGEolyfiYZdEf2kMMN3SbWzVAbk4Q3jKgFhO9MaQ==",
+        "dependencies": {
+          "System.Runtime.Loader": "4.3.0"
         }
       },
       "Microsoft.Data.SqlClient": {

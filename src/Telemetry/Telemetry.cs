@@ -311,7 +311,8 @@ This extension collect usage data in order to help us improve your experience. T
         IAsyncEnumerable,
         IEnumerable,
         Json,
-        SqlCommand
+        SqlCommand,
+        JArray
     }
 
     /// <summary>

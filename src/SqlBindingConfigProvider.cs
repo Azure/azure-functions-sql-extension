@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using Microsoft.Azure.WebJobs.Description;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlConverters;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
@@ -54,8 +55,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             var converter = new SqlConverter(this._configuration);
             inputOutputRule.BindToInput(converter);
             inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), this._configuration, logger);
-            inputOutputRule.BindToCollector<OpenType>(typeof(SqlAsyncCollectorBuilder<>), this._configuration, logger);
+            inputOutputRule.BindToCollector<SQLObjectOpenType>(typeof(SqlAsyncCollectorBuilder<>), this._configuration, logger);
             inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), this._configuration, logger);
+        }
+    }
+
+    /// <summary>
+    /// Wrapper around OpenType to receive data correctly from output bindings (not as byte[])
+    /// This can be used for general "T --> JObject" bindings. 
+    /// The exact definition here comes from the WebJobs v1.0 Queue binding.
+    /// refer https://github.com/Azure/azure-webjobs-sdk/blob/dev/src/Microsoft.Azure.WebJobs.Host/Bindings/OpenType.cs#L390
+    /// </summary>
+    internal class SQLObjectOpenType : OpenType.Poco
+    {
+        // return true when type is an "System.Object" to enable Object binding.
+        public override bool IsMatch(Type type, OpenTypeMatchContext context)
+        {
+            if (type.IsGenericType
+                && type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            {
+                return false;
+            }
+
+            if (type.FullName == "System.Object")
+            {
+                return true;
+            }
+
+            return base.IsMatch(type, context);
         }
     }
 }
