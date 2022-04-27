@@ -253,7 +253,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 .Where(prop => !columns.ContainsKey(prop.Name))
                 .Select(prop => prop.Name);
         }
-
+        /// <summary>
+        /// Gets the column names from PropertyInfo when T is POCO
+        /// and when T is JObject, parses the data to get column names
+        /// </summary>
+        /// <param name="row"> Sample row used to get the column names when item is a JObject </param>
+        /// <returns>List of column names in the table</returns>
         private static IEnumerable<string> GetColumnNamesFromItem(T row)
         {
             if (typeof(T) == typeof(JObject))
