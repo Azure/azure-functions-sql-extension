@@ -254,15 +254,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 .Select(prop => prop.Name);
         }
 
-        private static IEnumerable<string> GetColumnNamesFromPOCO(T row, bool bracketed = false)
+        private static IEnumerable<string> GetColumnNamesFromPOCO(T row)
         {
             if (typeof(T) == typeof(JObject))
             {
                 var jsonObj = JObject.Parse(row.ToString());
                 Dictionary<string, string> dictObj = jsonObj.ToObject<Dictionary<string, string>>();
-                return bracketed ? dictObj.Keys.Select(key => key.AsBracketQuotedString()) : dictObj.Keys;
+                return dictObj.Keys;
             }
-            return typeof(T).GetProperties().Select(prop => bracketed ? prop.Name.AsBracketQuotedString() : prop.Name);
+            return typeof(T).GetProperties().Select(prop => prop.Name);
         }
 
         /// <summary>
@@ -569,15 +569,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // Match SQL Primary Key column names to POCO field/property objects. Ensure none are missing.
                 StringComparison comparison = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
                 IEnumerable<MemberInfo> primaryKeyFields = typeof(T).GetMembers().Where(f => primaryKeys.Any(k => string.Equals(k.Name, f.Name, comparison)));
-                IEnumerable<string> primaryKeysFromItem = columnNames.Where(f => primaryKeys.Any(k => string.Equals(k.Name, f, comparison)));
-                IEnumerable<PrimaryKey> missingPrimaryKeysFromPOCO = primaryKeys
-                    .Where(k => !primaryKeysFromItem.Contains(k.Name, comparer));
+                IEnumerable<string> primaryKeysFromObject = columnNames.Where(f => primaryKeys.Any(k => string.Equals(k.Name, f, comparison)));
+                IEnumerable<PrimaryKey> missingPrimaryKeysFromObject = primaryKeys
+                    .Where(k => !primaryKeysFromObject.Contains(k.Name, comparer));
                 bool hasIdentityColumnPrimaryKeys = primaryKeys.Any(k => k.IsIdentity);
                 // If none of the primary keys are an identity column then we require that all primary keys be present in the POCO so we can
                 // generate the MERGE statement correctly
-                if (!hasIdentityColumnPrimaryKeys && missingPrimaryKeysFromPOCO.Any())
+                if (!hasIdentityColumnPrimaryKeys && missingPrimaryKeysFromObject.Any())
                 {
-                    string message = $"All primary keys for SQL table {table} need to be found in '{typeof(T)}.' Missing primary keys: [{string.Join(",", missingPrimaryKeysFromPOCO)}]";
+                    string message = $"All primary keys for SQL table {table} need to be found in '{typeof(T)}.' Missing primary keys: [{string.Join(",", missingPrimaryKeysFromObject)}]";
                     var ex = new InvalidOperationException(message);
                     TelemetryInstance.TrackException(TelemetryErrorName.MissingPrimaryKeys, ex, sqlConnProps);
                     throw ex;
@@ -585,7 +585,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 // If any identity columns aren't included in the object then we have to generate a basic insert since the merge statement expects all primary key
                 // columns to exist. (the merge statement can handle nullable columns though if those exist)
-                bool usingInsertQuery = hasIdentityColumnPrimaryKeys && missingPrimaryKeysFromPOCO.Any();
+                bool usingInsertQuery = hasIdentityColumnPrimaryKeys && missingPrimaryKeysFromObject.Any();
                 string query = usingInsertQuery ? GetInsertQuery(table) : GetMergeQuery(primaryKeys, table, comparison, columnNames);
 
                 tableInfoSw.Stop();
