@@ -78,7 +78,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             string testServer = Environment.GetEnvironmentVariable("TEST_SERVER");
             if (string.IsNullOrEmpty(testServer))
             {
-                testServer = "localhost";
+                testServer = "localhost\\SQL2019";
             }
 
             // First connect to master to create the database
