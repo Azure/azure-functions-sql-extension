@@ -164,13 +164,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </remarks>
         protected void StartFunctionHost(string functionName, bool useTestFolder = false)
         {
+            string workingDirectory = useTestFolder ? GetPathToBin() : Path.Combine(GetPathToBin(), "SqlExtensionSamples");
+            if (!Directory.Exists(workingDirectory))
+            {
+                throw new FileNotFoundException("Working directory not found at " + workingDirectory);
+            }
             var startInfo = new ProcessStartInfo
             {
                 // The full path to the Functions CLI is required in the ProcessStartInfo because UseShellExecute is set to false.
                 // We cannot both use shell execute and redirect output at the same time: https://docs.microsoft.com//dotnet/api/system.diagnostics.processstartinfo.redirectstandardoutput#remarks
                 FileName = GetFunctionsCoreToolsPath(),
                 Arguments = $"start --verbose --port {this.Port} --functions {functionName}",
-                WorkingDirectory = useTestFolder ? GetPathToBin() : Path.Combine(GetPathToBin(), "SqlExtensionSamples"),
+                WorkingDirectory = workingDirectory,
                 WindowStyle = ProcessWindowStyle.Hidden,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,

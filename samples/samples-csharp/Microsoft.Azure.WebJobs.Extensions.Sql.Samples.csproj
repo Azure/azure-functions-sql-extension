@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Microsoft.Azure.WebJobs.Extensions.Sql.csproj" />
+    <ProjectReference Include="../../src/Microsoft.Azure.WebJobs.Extensions.Sql.csproj" />
   </ItemGroup>
 
   <ItemGroup>
