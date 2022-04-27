@@ -318,10 +318,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             rowData = JsonConvert.SerializeObject(rowsToUpsert, table.JsonSerializerSettings);
-            IEnumerable<string> columnNamesFromPOCO = GetColumnNamesFromItem(rows.First());
-            IEnumerable<string> bracketColumnDefinitionsFromPOCO = table.Columns.Where(c => columnNamesFromPOCO.Contains(c.Key, table.Comparer))
+            IEnumerable<string> columnNamesFromItem = GetColumnNamesFromItem(rows.First());
+            IEnumerable<string> bracketColumnDefinitionsFromItem = table.Columns.Where(c => columnNamesFromItem.Contains(c.Key, table.Comparer))
                 .Select(c => $"{c.Key.AsBracketQuotedString()} {c.Value}");
-            newDataQuery = $"WITH {CteName} AS ( SELECT * FROM OPENJSON({RowDataParameter}) WITH ({string.Join(",", bracketColumnDefinitionsFromPOCO)}) )";
+            newDataQuery = $"WITH {CteName} AS ( SELECT * FROM OPENJSON({RowDataParameter}) WITH ({string.Join(",", bracketColumnDefinitionsFromItem)}) )";
         }
 
         public class TableInformation
@@ -475,7 +475,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <param name="sqlConnection">An open connection with which to query SQL against</param>
             /// <param name="fullName">Full name of table, including schema (if exists).</param>
             /// <param name="logger">ILogger used to log any errors or warnings.</param>
-            /// <param name="columnNames">Column names of the table</param>
+            /// <param name="columnNames">Column names from the object</param>
             /// <returns>TableInformation object containing primary keys, column types, etc.</returns>
             public static async Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName, ILogger logger, IEnumerable<string> columnNames)
             {
