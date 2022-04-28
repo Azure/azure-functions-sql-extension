@@ -8,7 +8,8 @@
       "methods": [
         "get",
         "post"
-      ]
+      ],
+      "route": "getproducts/{cost}"
     },
     {
       "name": "$return",
@@ -21,7 +22,7 @@
       "direction": "in",
       "commandText": "select * from Products where Cost = @Cost",
       "commandType": "Text",
-      "parameters": "@Cost=100",
+      "parameters": "@Cost={cost}",
       "connectionStringSetting": "SqlConnectionString"
     }
   ],

@@ -3,13 +3,12 @@
     {
       "authLevel": "anonymous",
       "name": "req",
-      "direction": "in",
       "type": "httpTrigger",
+      "direction": "in",
       "methods": [
         "get",
         "post"
-      ],
-      "route": "addproducts"
+      ]
     },
     {
       "name": "$return",
@@ -19,8 +18,10 @@
     {
       "name": "products",
       "type": "sql",
-      "direction": "out",
-      "commandText": "[dbo].[Products]",
+      "direction": "in",
+      "commandText": "SelectProductsCost",
+      "commandType": "StoredProcedure",
+      "parameters": "@Cost=100",
       "connectionStringSetting": "SqlConnectionString"
     }
   ],
