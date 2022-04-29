@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <Description>SQL binding extension for Azure Functions</Description>
     <Company>Microsoft</Company>
     <Authors>Microsoft</Authors>
