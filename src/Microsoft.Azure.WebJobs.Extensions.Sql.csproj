@@ -6,6 +6,7 @@
     <Authors>Microsoft</Authors>
     <Product>SQL Binding Extension</Product>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <Version>99.99.99</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <DebugSymbols>true</DebugSymbols>
