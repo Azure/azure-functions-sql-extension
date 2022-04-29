@@ -120,7 +120,7 @@ This extension collect usage data in order to help us improve your experience. T
                     return;
                 }
                 this._logger.LogInformation($"Sending exception event: {exception.Message}");
-                properties ??= new Dictionary<string, string>();
+                properties = properties ?? new Dictionary<string, string>();
                 properties.Add(TelemetryPropertyName.ErrorName.ToString(), errorName.ToString());
                 properties.Add(TelemetryPropertyName.ErrorCode.ToString(), ExtractErrorCode(exception));
                 //continue task in existing parallel thread
@@ -147,7 +147,7 @@ This extension collect usage data in order to help us improve your experience. T
         {
             try
             {
-                measurements ??= new Dictionary<string, double>();
+                measurements = measurements ?? new Dictionary<string, double>();
                 measurements.Add(TelemetryMeasureName.DurationMs.ToString(), durationMs);
                 this.TrackEvent(eventName, properties, measurements);
             }
@@ -169,7 +169,7 @@ This extension collect usage data in order to help us improve your experience. T
         {
             try
             {
-                properties ??= new Dictionary<string, string>();
+                properties = properties ?? new Dictionary<string, string>();
                 properties.Add(TelemetryPropertyName.Type.ToString(), type.ToString());
                 this.TrackEvent(TelemetryEventName.Create, properties, measurements);
             }
@@ -191,7 +191,7 @@ This extension collect usage data in order to help us improve your experience. T
         {
             try
             {
-                properties ??= new Dictionary<string, string>();
+                properties = properties ?? new Dictionary<string, string>();
                 properties.Add(TelemetryPropertyName.Type.ToString(), type.ToString());
                 this.TrackEvent(TelemetryEventName.Convert, properties, measurements);
             }
