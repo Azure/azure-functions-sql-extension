@@ -9,7 +9,7 @@
         "get",
         "post"
       ],
-      "route":"getproducts-namenull/{name}"
+      "route":"getproducts-namesview/{name}"
     },
     {
       "name": "$return",
