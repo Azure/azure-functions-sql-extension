@@ -14,6 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
         private readonly string _productVersion;
         private readonly string _azureFunctionsEnvironment;
         private readonly bool _hasWebsiteInstanceId;
+        private readonly string _functionsWorkerRuntime;
 
         public TelemetryCommonProperties(string productVersion, TelemetryClient telemetryClient, IConfiguration config)
         {
@@ -21,6 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
             this._userLevelCacheWriter = new UserLevelCacheWriter(telemetryClient);
             this._azureFunctionsEnvironment = config.GetValue(AZURE_FUNCTIONS_ENVIRONMENT_KEY, "");
             this._hasWebsiteInstanceId = config.GetValue(WEBSITE_INSTANCE_ID_KEY, "") != "";
+            this._functionsWorkerRuntime = config.GetValue(FUNCTIONS_WORKER_RUNTIME_KEY, "");
         }
 
         private readonly UserLevelCacheWriter _userLevelCacheWriter;
@@ -30,9 +32,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
         private const string MachineId = "MachineId";
         private const string AzureFunctionsEnvironment = "AzureFunctionsEnvironment";
         private const string HasWebsiteInstanceId = "HasWebsiteInstanceId";
+        private const string FunctionsWorkerRuntime = "FunctionsWorkerRuntime";
 
         private const string AZURE_FUNCTIONS_ENVIRONMENT_KEY = "AZURE_FUNCTIONS_ENVIRONMENT";
         private const string WEBSITE_INSTANCE_ID_KEY = "WEBSITE_INSTANCE_ID";
+        private const string FUNCTIONS_WORKER_RUNTIME_KEY = "FUNCTIONS_WORKER_RUNTIME";
 
         public Dictionary<string, string> GetTelemetryCommonProperties()
         {
@@ -42,7 +46,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
                 {ProductVersion, this._productVersion},
                 {MachineId, this.GetMachineId()},
                 {AzureFunctionsEnvironment, this._azureFunctionsEnvironment},
-                {HasWebsiteInstanceId, this._hasWebsiteInstanceId.ToString()}
+                {HasWebsiteInstanceId, this._hasWebsiteInstanceId.ToString()},
+                {FunctionsWorkerRuntime, this._functionsWorkerRuntime}
             };
         }
 
