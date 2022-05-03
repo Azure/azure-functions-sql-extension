@@ -231,6 +231,59 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             return funcPath;
         }
 
+        /// <summary>
+        /// This starts the Javascript Functions runtime with the specified function(s).
+        /// </summary>
+        /// <remarks>
+        /// - The functionName is different than its route.<br/>
+        /// - You can start multiple functions by passing in a space-separated list of function names.<br/>
+        /// </remarks>
+        protected void StartJSFunctionHost(string functionName)
+        {
+            string jsSamplesDirectory = Path.Combine(GetPathToBin(), @"..\..\..\..\samples\samples-js");
+            if (!Directory.Exists(jsSamplesDirectory))
+            {
+                throw new FileNotFoundException("Working directory not found at " + jsSamplesDirectory);
+            }
+            var startInfo = new ProcessStartInfo
+            {
+                // The full path to the Functions CLI is required in the ProcessStartInfo because UseShellExecute is set to false.
+                // We cannot both use shell execute and redirect output at the same time: https://docs.microsoft.com//dotnet/api/system.diagnostics.processstartinfo.redirectstandardoutput#remarks
+                FileName = GetFunctionsCoreToolsPath(),
+                Arguments = $"start --verbose --port {this.Port} --functions {functionName}",
+                WorkingDirectory = jsSamplesDirectory,
+                WindowStyle = ProcessWindowStyle.Hidden,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false
+            };
+            this.TestOutput.WriteLine($"Starting {startInfo.FileName} {startInfo.Arguments} in {startInfo.WorkingDirectory}");
+            this.FunctionHost = new Process
+            {
+                StartInfo = startInfo
+            };
+            this.FunctionHost.OutputDataReceived += this.TestOutputHandler;
+            this.FunctionHost.ErrorDataReceived += this.TestOutputHandler;
+
+            this.FunctionHost.Start();
+            this.FunctionHost.BeginOutputReadLine();
+            this.FunctionHost.BeginErrorReadLine();
+
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            this.FunctionHost.OutputDataReceived += (object sender, DataReceivedEventArgs e) =>
+            {
+                // This string is printed after the function host is started up - use this to ensure that we wait long enough
+                // since sometimes the host can take a little while to fully start up
+                if (e != null && !string.IsNullOrEmpty(e.Data) && e.Data.Contains($"http://localhost:{this.Port}/api"))
+                {
+                    taskCompletionSource.SetResult(true);
+                }
+            };
+            this.TestOutput.WriteLine($"Waiting for Azure Function host to start...");
+            taskCompletionSource.Task.Wait(60000);
+            this.TestOutput.WriteLine($"Azure Function host started!");
+        }
+
         private void TestOutputHandler(object sender, DataReceivedEventArgs e)
         {
             if (e != null && !string.IsNullOrEmpty(e.Data))

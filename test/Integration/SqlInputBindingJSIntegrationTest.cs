@@ -54,7 +54,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [InlineData(100, 999)]
         public async void GetProductsStoredProcedureTest(int n, int cost)
         {
-            this.StartJSFunctionHost("GetProductsStoredProcedure");
+            this.StartFunctionHost("GetProductsStoredProcedure");
 
             // Generate T-SQL to insert n rows of data with cost
             Product[] products = GetProductsWithSameCost(n, cost);

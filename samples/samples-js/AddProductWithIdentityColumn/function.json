@@ -9,7 +9,7 @@
         "get",
         "post"
       ],
-      "route": "addproduct"
+      "route": "addproductwithidentitycolumn"
     },
     {
       "name": "$return",
@@ -20,7 +20,7 @@
       "name": "products",
       "type": "sql",
       "direction": "out",
-      "commandText": "[dbo].[Products]",
+      "commandText": "[dbo].[ProductsWithIdentity]",
       "connectionStringSetting": "SqlConnectionString"
     }
   ],

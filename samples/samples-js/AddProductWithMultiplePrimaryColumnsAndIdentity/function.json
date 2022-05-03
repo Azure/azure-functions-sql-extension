@@ -9,7 +9,7 @@
         "get",
         "post"
       ],
-      "route": "addproduct"
+      "route": "addproductwithmultipleprimarycolumnsandidentity"
     },
     {
       "name": "$return",
@@ -17,10 +17,10 @@
       "direction": "out"
     },
     {
-      "name": "products",
+      "name": "product",
       "type": "sql",
       "direction": "out",
-      "commandText": "[dbo].[Products]",
+      "commandText": "[dbo].[ProductsWithMultiplePrimaryColumnsAndIdentity]",
       "connectionStringSetting": "SqlConnectionString"
     }
   ],

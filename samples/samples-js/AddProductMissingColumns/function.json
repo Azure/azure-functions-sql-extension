@@ -9,7 +9,7 @@
         "get",
         "post"
       ],
-      "route": "addproduct"
+      "route": "addproduct-missingcolumns"
     },
     {
       "name": "$return",
