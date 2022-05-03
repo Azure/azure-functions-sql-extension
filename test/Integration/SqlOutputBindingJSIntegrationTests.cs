@@ -145,7 +145,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public void AddProductWithIdentity_MultiplePrimaryColumns()
         {
             this.StartJSFunctionHost("AddProductWithMultiplePrimaryColumnsAndIdentity");
-            string productJson = string.Format("\"externalId\":101,\"name\":\"MyProduct\",\"cost\":1");
+            string productJson = string.Format("\"externalid\":101,\"name\":\"MyProduct\",\"cost\":1");
             var query = new Dictionary<string, string>()
             {
                 { "item", string.Concat("{", productJson, "}") }

@@ -2,6 +2,7 @@ module.exports = async function (context, request) {
     context.log('JavaScript HTTP trigger function processed a request.');
 
     const testProduct = {
+        "externalid": 101,
         "name": "TestItem",
         "cost": "100"
     };
