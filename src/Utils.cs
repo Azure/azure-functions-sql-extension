@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Linq;
 using Microsoft.Extensions.Configuration;
 using MoreLinq;
 using Newtonsoft.Json.Linq;
@@ -85,7 +86,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="obj">The JObject to convert</param>
         public static void LowercasePropertyNames(this JObject obj)
         {
-            foreach (JProperty property in obj.Properties())
+            foreach (JProperty property in obj.Properties().ToList())
             {
                 property.Value.LowercasePropertyNames();
                 // properties are read-only, so we have to replace them
