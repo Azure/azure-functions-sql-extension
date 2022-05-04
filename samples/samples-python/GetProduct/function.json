@@ -1,0 +1,28 @@
+{
+  "scriptFile": "__init__.py",
+  "bindings": [
+    {
+      "authLevel": "function",
+      "type": "httpTrigger",
+      "direction": "in",
+      "name": "req",
+      "methods": [
+        "get",
+        "post"
+      ]
+    },
+    {
+      "type": "http",
+      "direction": "out",
+      "name": "$return"
+    },
+    {
+      "name": "rowList",
+      "type": "sql",
+      "direction": "in",
+      "commandText": "SELECT * FROM [dbo].[Products]",
+      "commandType": "Text",
+      "connectionStringSetting": "SqlConnectionString"
+    }
+  ]
+}
