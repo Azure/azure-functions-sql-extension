@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using System.IO;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -15,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     [Collection("IntegrationTests")]
     public class SqlOutputBindingJSIntegrationTests : IntegrationTestBase
     {
-        private readonly string workingDirectoryFolder = string.Format("..{0}..{0}..{0}..{0}samples{0}samples-js", Path.DirectorySeparatorChar);
+        private readonly string workingDirectoryFolder = "samples-js";
         public SqlOutputBindingJSIntegrationTests(ITestOutputHelper output) : base(output)
         {
         }
