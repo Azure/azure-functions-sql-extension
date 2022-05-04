@@ -313,21 +313,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 else
                 {
                     // ToDo: add check for duplicate primary keys once we find a way to get primary keys.
-                    // lower case the keys if sql is case insensitive
-                    if (table.Comparer == StringComparer.OrdinalIgnoreCase)
-                    {
-                        Dictionary<string, string> rowAsDictionary = (row as JObject).ToObject<Dictionary<string, string>>();
-                        var lowercasedKeys = rowAsDictionary.Select(x => new KeyValuePair<string, string>(x.Key.ToLowerInvariant(), x.Value)).ToDictionary<string, string>();
-                        // convert the dictionary with lowercased keys to json string
-                        string rowAsJsonStr = string.Concat("{", string.Join(",", lowercasedKeys.Select(d =>
-        string.Format(null, "\"{0}\": \"{1}\"", d.Key, d.Value))), "}");
-                        // convert the json string back to T and add it to rowsToUpsert
-                        rowsToUpsert.Add((T)Convert.ChangeType(JObject.Parse(rowAsJsonStr), typeof(T), null));
-                    }
-                    else
-                    {
-                        rowsToUpsert.Add(row);
-                    }
+                    rowsToUpsert.Add(row);
                 }
             }
 
