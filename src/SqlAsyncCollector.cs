@@ -333,7 +333,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             foreach (JProperty property in jsonObject.Properties().ToList())
             {
-                if (property.Value.Type == JTokenType.Object)
+                if (property.Value.GetType() == typeof(JObject))
                 {
                     ChangePropertiesToLowerCase((JObject)property.Value);
                 }
