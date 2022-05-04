@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -14,6 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     [Collection("IntegrationTests")]
     public class SqlOutputBindingJSIntegrationTests : IntegrationTestBase
     {
+        private readonly string workingDirectoryFolder = string.Format("..{0}..{0}..{0}..{0}samples{0}samples-js", Path.DirectorySeparatorChar);
         public SqlOutputBindingJSIntegrationTests(ITestOutputHelper output) : base(output)
         {
         }
@@ -37,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [InlineData(-500, "ABCD", 580)]
         public void AddProductTest(int id, string name, int cost)
         {
-            this.StartJSFunctionHost("AddProduct");
+            this.StartFunctionHost("AddProduct", false, this.workingDirectoryFolder);
 
             string productJson = string.Format("\"productid\":{0},\"name\":\"{1}\",\"cost\":{2}", id.ToString(), name, cost.ToString());
             var query = new Dictionary<string, string>()
@@ -59,7 +61,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public void UpsertProductsTest()
         {
-            this.StartJSFunctionHost("UpsertProducts");
+            this.StartFunctionHost("UpsertProducts", false, this.workingDirectoryFolder);
 
             // First insert some test data
             this.ExecuteNonQuery("INSERT INTO Products VALUES (1, 'test', 100)");
@@ -78,7 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public void AddProductExtraColumnsTest()
         {
-            this.StartJSFunctionHost("AddProductExtraColumns");
+            this.StartFunctionHost("AddProductExtraColumns", false, this.workingDirectoryFolder);
 
             // Since ProductExtraColumns has columns that does not exist in the table,
             // no rows should be added to the table.
@@ -89,7 +91,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public void AddProductMissingColumnsTest()
         {
-            this.StartJSFunctionHost("AddProductMissingColumns");
+            this.StartFunctionHost("AddProductMissingColumns", false, this.workingDirectoryFolder);
 
             // Even though the ProductMissingColumns object is missing the Cost column,
             // the row should still be added successfully since Cost can be null.
@@ -100,7 +102,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public void AddProductMissingColumnsNotNullTest()
         {
-            this.StartJSFunctionHost("AddProductMissingColumnsExceptionFunction");
+            this.StartFunctionHost("AddProductMissingColumnsExceptionFunction", false, this.workingDirectoryFolder);
 
             // Since the Sql table does not allow null for the Cost column,
             // inserting a row without a Cost value should throw an Exception.
@@ -110,7 +112,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public void AddProductNoPartialUpsertTest()
         {
-            this.StartJSFunctionHost("AddProductsNoPartialUpsert");
+            this.StartFunctionHost("AddProductsNoPartialUpsert", false, this.workingDirectoryFolder);
 
             Assert.Throws<AggregateException>(() => this.SendOutputRequest("addproducts-nopartialupsert").Wait());
             // No rows should be upserted since there was a row with an invalid value
@@ -123,7 +125,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public void AddProductWithIdentity()
         {
-            this.StartJSFunctionHost("AddProductWithIdentityColumn");
+            this.StartFunctionHost("AddProductWithIdentityColumn", false, this.workingDirectoryFolder);
             // Identity column (ProductID) is left out for new items
             string productJson = string.Format("\"name\":\"MyProduct\",\"cost\":1");
             var query = new Dictionary<string, string>()
@@ -144,7 +146,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public void AddProductWithIdentity_MultiplePrimaryColumns()
         {
-            this.StartJSFunctionHost("AddProductWithMultiplePrimaryColumnsAndIdentity");
+            this.StartFunctionHost("AddProductWithMultiplePrimaryColumnsAndIdentity", false, this.workingDirectoryFolder);
             string productJson = string.Format("\"externalid\":101,\"name\":\"MyProduct\",\"cost\":1");
             var query = new Dictionary<string, string>()
             {
@@ -162,7 +164,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public void AddProductWithIdentity_NoIdentityColumn()
         {
-            this.StartJSFunctionHost("AddProductWithIdentityColumnIncluded");
+            this.StartFunctionHost("AddProductWithIdentityColumnIncluded", false, this.workingDirectoryFolder);
             // ProductId column is missing
             string productJson = string.Format("\"name\":\"MyProduct1\",\"cost\":1");
             var query = new Dictionary<string, string>()
@@ -190,7 +192,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public void AddProductWithIdentity_MissingPrimaryColumn()
         {
-            this.StartJSFunctionHost("AddProductWithMultiplePrimaryColumnsAndIdentity");
+            this.StartFunctionHost("AddProductWithMultiplePrimaryColumnsAndIdentity", false, this.workingDirectoryFolder);
             // Missing externalId
             string productJson = string.Format("\"name\":\"MyProduct\",\"cost\":1");
             var query = new Dictionary<string, string>()
@@ -210,7 +212,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public void AddProductCaseSensitiveTest()
         {
-            this.StartJSFunctionHost("AddProduct");
+            this.StartFunctionHost("AddProduct", false, this.workingDirectoryFolder);
 
             // Change database collation to case sensitive
             this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS");

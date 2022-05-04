@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.IO;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,6 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     [Collection("IntegrationTests")]
     public class SqlInputBindingJSIntegrationTests : IntegrationTestBase
     {
+        private readonly string workingDirectoryFolder = string.Format("..{0}..{0}..{0}..{0}samples{0}samples-js", Path.DirectorySeparatorChar);
         public SqlInputBindingJSIntegrationTests(ITestOutputHelper output) : base(output)
         {
         }
@@ -32,7 +34,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [InlineData(100, 500)]
         public async void GetProductsTest(int n, int cost)
         {
-            this.StartJSFunctionHost("GetProductsByCost");
+            this.StartFunctionHost("GetProductsByCost", false, this.workingDirectoryFolder);
 
             // Generate T-SQL to insert n rows of data with cost
             Product[] products = GetProductsWithSameCost(n, cost);
@@ -54,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [InlineData(100, 999)]
         public async void GetProductsStoredProcedureTest(int n, int cost)
         {
-            this.StartFunctionHost("GetProductsStoredProcedure");
+            this.StartFunctionHost("GetProductsStoredProcedure", false, this.workingDirectoryFolder);
 
             // Generate T-SQL to insert n rows of data with cost
             Product[] products = GetProductsWithSameCost(n, cost);
@@ -73,7 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public async void GetProductsByNameTest()
         {
-            this.StartJSFunctionHost("GetProductsByName");
+            this.StartFunctionHost("GetProductsByName", false, this.workingDirectoryFolder);
 
             // Insert one row of data into Product table
             Product[] products = GetProductsWithSameName(1, "same");
