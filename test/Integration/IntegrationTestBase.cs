@@ -240,7 +240,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </remarks>
         protected void StartJSFunctionHost(string functionName)
         {
-            string jsSamplesDirectory = Path.Combine(GetPathToBin(), @"..\..\..\..\samples\samples-js");
+            string jsSamplesDirectory = Path.Combine(GetPathToBin(), string.Format("..{0}..{0}..{0}..{0}samples{0}samples-js", Path.DirectorySeparatorChar));
             if (!Directory.Exists(jsSamplesDirectory))
             {
                 throw new FileNotFoundException("Working directory not found at " + jsSamplesDirectory);
