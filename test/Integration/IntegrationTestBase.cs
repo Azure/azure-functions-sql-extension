@@ -78,7 +78,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             string testServer = Environment.GetEnvironmentVariable("TEST_SERVER");
             if (string.IsNullOrEmpty(testServer))
             {
-                testServer = "localhost";
+                testServer = "localhost\\SQL2019";
             }
 
             // First connect to master to create the database
@@ -169,6 +169,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 throw new FileNotFoundException("Working directory not found at " + workingDirectory);
             }
+            if (!workingDirectory.Contains("SqlExtensionSamples"))
+            {
+                this.SyncExtension(workingDirectory);
+            }
             var startInfo = new ProcessStartInfo
             {
                 // The full path to the Functions CLI is required in the ProcessStartInfo because UseShellExecute is set to false.
@@ -208,6 +212,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.TestOutput.WriteLine($"Azure Function host started!");
         }
 
+        private void SyncExtension(string workingDirectory)
+        {
+            if (!string.IsNullOrEmpty(workingDirectory))
+            {
+                var startInfo = new ProcessStartInfo
+                {
+                    // The full path to the Functions CLI is required in the ProcessStartInfo because UseShellExecute is set to false.
+                    // We cannot both use shell execute and redirect output at the same time: https://docs.microsoft.com//dotnet/api/system.diagnostics.processstartinfo.redirectstandardoutput#remarks
+                    FileName = GetFunctionsCoreToolsPath(),
+                    Arguments = $"func extensions sync",
+                    WorkingDirectory = workingDirectory,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false
+                };
+                var extensionSync = new Process
+                {
+                    StartInfo = startInfo
+                };
+                extensionSync.OutputDataReceived += this.TestOutputHandler;
+                extensionSync.ErrorDataReceived += this.TestOutputHandler;
+
+                extensionSync.Start();
+                extensionSync.BeginOutputReadLine();
+                extensionSync.BeginErrorReadLine();
+
+                var taskCompletionSource = new TaskCompletionSource<bool>();
+                extensionSync.OutputDataReceived += (object sender, DataReceivedEventArgs e) =>
+                {
+                    // This string is printed after the function host is started up - use this to ensure that we wait long enough
+                    // since sometimes the host can take a little while to fully start up
+                    if (e != null && !string.IsNullOrEmpty(e.Data) && e.Data.Contains("Build succeeded"))
+                    {
+                        taskCompletionSource.SetResult(true);
+                    }
+                };
+                this.TestOutput.WriteLine($"Waiting for syncing the extension package...");
+                taskCompletionSource.Task.Wait(60000);
+                this.TestOutput.WriteLine($"Extension package sync complete!");
+            }
+        }
         private static string GetFunctionsCoreToolsPath()
         {
             // Determine npm install path from either env var set by pipeline or OS defaults
