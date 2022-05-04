@@ -147,90 +147,92 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="configuration"> Used to build up the connection </param>
         private async Task UpsertRowsAsync(IEnumerable<T> rows, SqlAttribute attribute, IConfiguration configuration)
         {
-            using SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, configuration);
-            await connection.OpenAsync();
-            Dictionary<string, string> props = connection.AsConnectionProps();
-
-            string fullTableName = attribute.CommandText;
-
-            // Include the connection string hash as part of the key in case this customer has the same table in two different Sql Servers
-            string cacheKey = $"{connection.ConnectionString.GetHashCode()}-{fullTableName}";
-
-            ObjectCache cachedTables = MemoryCache.Default;
-            var tableInfo = cachedTables[cacheKey] as TableInformation;
-
-            if (tableInfo == null)
+            using (SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
-                TelemetryInstance.TrackEvent(TelemetryEventName.TableInfoCacheMiss, props);
-                // set the columnNames for supporting T as JObject since it doesn't have columns in the memeber info.
-                tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullTableName, this._logger, GetColumnNamesFromItem(rows.First()));
-                var policy = new CacheItemPolicy
+                await connection.OpenAsync();
+                Dictionary<string, string> props = connection.AsConnectionProps();
+
+                string fullTableName = attribute.CommandText;
+
+                // Include the connection string hash as part of the key in case this customer has the same table in two different Sql Servers
+                string cacheKey = $"{connection.ConnectionString.GetHashCode()}-{fullTableName}";
+
+                ObjectCache cachedTables = MemoryCache.Default;
+                var tableInfo = cachedTables[cacheKey] as TableInformation;
+
+                if (tableInfo == null)
                 {
-                    // Re-look up the primary key(s) after 10 minutes (they should not change very often!)
-                    AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(10)
-                };
+                    TelemetryInstance.TrackEvent(TelemetryEventName.TableInfoCacheMiss, props);
+                    // set the columnNames for supporting T as JObject since it doesn't have columns in the memeber info.
+                    tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullTableName, this._logger, GetColumnNamesFromItem(rows.First()));
+                    var policy = new CacheItemPolicy
+                    {
+                        // Re-look up the primary key(s) after 10 minutes (they should not change very often!)
+                        AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(10)
+                    };
 
-                this._logger.LogInformation($"DB and Table: {connection.Database}.{fullTableName}. Primary keys: [{string.Join(",", tableInfo.PrimaryKeys.Select(pk => pk.Name))}]. SQL Column and Definitions:  [{string.Join(",", tableInfo.ColumnDefinitions)}]");
-                cachedTables.Set(cacheKey, tableInfo, policy);
-            }
-            else
-            {
-                TelemetryInstance.TrackEvent(TelemetryEventName.TableInfoCacheHit, props);
-            }
-
-            IEnumerable<string> extraProperties = GetExtraProperties(tableInfo.Columns, rows.First());
-            if (extraProperties.Any())
-            {
-                string message = $"The following properties in {typeof(T)} do not exist in the table {fullTableName}: {string.Join(", ", extraProperties.ToArray())}.";
-                var ex = new InvalidOperationException(message);
-                TelemetryInstance.TrackException(TelemetryErrorName.PropsNotExistOnTable, ex, props);
-                throw ex;
-            }
-
-            TelemetryInstance.TrackEvent(TelemetryEventName.UpsertStart, props);
-            var transactionSw = Stopwatch.StartNew();
-            int batchSize = 1000;
-            SqlTransaction transaction = connection.BeginTransaction();
-            try
-            {
-                SqlCommand command = connection.CreateCommand();
-                command.Connection = connection;
-                command.Transaction = transaction;
-                SqlParameter par = command.Parameters.Add(RowDataParameter, SqlDbType.NVarChar, -1);
-                int batchCount = 0;
-                var commandSw = Stopwatch.StartNew();
-                foreach (IEnumerable<T> batch in rows.Batch(batchSize))
-                {
-                    batchCount++;
-                    GenerateDataQueryForMerge(tableInfo, batch, out string newDataQuery, out string rowData);
-                    command.CommandText = $"{newDataQuery} {tableInfo.Query};";
-                    par.Value = rowData;
-                    await command.ExecuteNonQueryAsync();
+                    this._logger.LogInformation($"DB and Table: {connection.Database}.{fullTableName}. Primary keys: [{string.Join(",", tableInfo.PrimaryKeys.Select(pk => pk.Name))}]. SQL Column and Definitions:  [{string.Join(",", tableInfo.ColumnDefinitions)}]");
+                    cachedTables.Set(cacheKey, tableInfo, policy);
                 }
-                transaction.Commit();
-                var measures = new Dictionary<string, double>()
+                else
+                {
+                    TelemetryInstance.TrackEvent(TelemetryEventName.TableInfoCacheHit, props);
+                }
+
+                IEnumerable<string> extraProperties = GetExtraProperties(tableInfo.Columns, rows.First());
+                if (extraProperties.Any())
+                {
+                    string message = $"The following properties in {typeof(T)} do not exist in the table {fullTableName}: {string.Join(", ", extraProperties.ToArray())}.";
+                    var ex = new InvalidOperationException(message);
+                    TelemetryInstance.TrackException(TelemetryErrorName.PropsNotExistOnTable, ex, props);
+                    throw ex;
+                }
+
+                TelemetryInstance.TrackEvent(TelemetryEventName.UpsertStart, props);
+                var transactionSw = Stopwatch.StartNew();
+                int batchSize = 1000;
+                SqlTransaction transaction = connection.BeginTransaction();
+                try
+                {
+                    SqlCommand command = connection.CreateCommand();
+                    command.Connection = connection;
+                    command.Transaction = transaction;
+                    SqlParameter par = command.Parameters.Add(RowDataParameter, SqlDbType.NVarChar, -1);
+                    int batchCount = 0;
+                    var commandSw = Stopwatch.StartNew();
+                    foreach (IEnumerable<T> batch in rows.Batch(batchSize))
+                    {
+                        batchCount++;
+                        GenerateDataQueryForMerge(tableInfo, batch, out string newDataQuery, out string rowData);
+                        command.CommandText = $"{newDataQuery} {tableInfo.Query};";
+                        par.Value = rowData;
+                        await command.ExecuteNonQueryAsync();
+                    }
+                    transaction.Commit();
+                    var measures = new Dictionary<string, double>()
                 {
                     { TelemetryMeasureName.BatchCount.ToString(), batchCount },
                     { TelemetryMeasureName.TransactionDurationMs.ToString(), transactionSw.ElapsedMilliseconds },
                     { TelemetryMeasureName.CommandDurationMs.ToString(), commandSw.ElapsedMilliseconds }
                 };
-                TelemetryInstance.TrackEvent(TelemetryEventName.UpsertEnd, props, measures);
-                this._logger.LogInformation($"Upserted {rows.Count()} row(s) into database: {connection.Database} and table: {fullTableName}.");
-            }
-            catch (Exception ex)
-            {
-                try
-                {
-                    TelemetryInstance.TrackException(TelemetryErrorName.Upsert, ex, props);
-                    transaction.Rollback();
+                    TelemetryInstance.TrackEvent(TelemetryEventName.UpsertEnd, props, measures);
+                    this._logger.LogInformation($"Upserted {rows.Count()} row(s) into database: {connection.Database} and table: {fullTableName}.");
                 }
-                catch (Exception ex2)
+                catch (Exception ex)
                 {
-                    TelemetryInstance.TrackException(TelemetryErrorName.UpsertRollback, ex2, props);
-                    string message2 = $"Encountered exception during upsert and rollback.";
-                    throw new AggregateException(message2, new List<Exception> { ex, ex2 });
+                    try
+                    {
+                        TelemetryInstance.TrackException(TelemetryErrorName.Upsert, ex, props);
+                        transaction.Rollback();
+                    }
+                    catch (Exception ex2)
+                    {
+                        TelemetryInstance.TrackException(TelemetryErrorName.UpsertRollback, ex2, props);
+                        string message2 = $"Encountered exception during upsert and rollback.";
+                        throw new AggregateException(message2, new List<Exception> { ex, ex2 });
+                    }
+                    throw;
                 }
-                throw;
             }
         }
 
@@ -382,7 +384,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             public static string GetDatabaseCollationQuery(SqlConnection sqlConnection)
             {
                 return $@"
-                    SELECT 
+                    SELECT
                         DATABASEPROPERTYEX('{sqlConnection.Database}', '{Collation}') AS {Collation};";
             }
 
@@ -460,7 +462,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
 
                 string columnMatchingQuery = columnMatchingQueryBuilder.ToString().TrimEnd(',');
-                return @$"
+                return $@"
                     MERGE INTO {table.BracketQuotedFullName} WITH (HOLDLOCK)
                         AS ExistingData
                     USING {CteName}
@@ -496,17 +498,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 try
                 {
                     var cmdCollation = new SqlCommand(GetDatabaseCollationQuery(sqlConnection), sqlConnection);
-                    using SqlDataReader rdr = await cmdCollation.ExecuteReaderAsync();
-                    while (await rdr.ReadAsync())
+                    using (SqlDataReader rdr = await cmdCollation.ExecuteReaderAsync())
                     {
-                        caseSensitive = GetCaseSensitivityFromCollation(rdr[Collation].ToString());
+                        while (await rdr.ReadAsync())
+                        {
+                            caseSensitive = GetCaseSensitivityFromCollation(rdr[Collation].ToString());
+                        }
+                        caseSensitiveSw.Stop();
+                        TelemetryInstance.TrackDuration(TelemetryEventName.GetCaseSensitivity, caseSensitiveSw.ElapsedMilliseconds, sqlConnProps);
                     }
-                    caseSensitiveSw.Stop();
-                    TelemetryInstance.TrackDuration(TelemetryEventName.GetCaseSensitivity, caseSensitiveSw.ElapsedMilliseconds, sqlConnProps);
                 }
                 catch (Exception ex)
                 {
-                    // Since this doesn't rethrow make sure we stop here too (don't use finally because we want the execution time to be the same here and in the 
+                    // Since this doesn't rethrow make sure we stop here too (don't use finally because we want the execution time to be the same here and in the
                     // overall event but we also only want to send the GetCaseSensitivity event if it succeeds)
                     caseSensitiveSw.Stop();
                     TelemetryInstance.TrackException(TelemetryErrorName.GetCaseSensitivity, ex, sqlConnProps);
@@ -521,14 +525,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 try
                 {
                     var cmdColDef = new SqlCommand(GetColumnDefinitionsQuery(table), sqlConnection);
-                    using SqlDataReader rdr = await cmdColDef.ExecuteReaderAsync();
-                    while (await rdr.ReadAsync())
+                    using (SqlDataReader rdr = await cmdColDef.ExecuteReaderAsync())
                     {
-                        string columnName = caseSensitive ? rdr[ColumnName].ToString() : rdr[ColumnName].ToString().ToLowerInvariant();
-                        columnDefinitionsFromSQL.Add(columnName, rdr[ColumnDefinition].ToString());
+                        while (await rdr.ReadAsync())
+                        {
+                            string columnName = caseSensitive ? rdr[ColumnName].ToString() : rdr[ColumnName].ToString().ToLowerInvariant();
+                            columnDefinitionsFromSQL.Add(columnName, rdr[ColumnDefinition].ToString());
+                        }
+                        columnDefinitionsSw.Stop();
+                        TelemetryInstance.TrackDuration(TelemetryEventName.GetColumnDefinitions, columnDefinitionsSw.ElapsedMilliseconds, sqlConnProps);
                     }
-                    columnDefinitionsSw.Stop();
-                    TelemetryInstance.TrackDuration(TelemetryEventName.GetColumnDefinitions, columnDefinitionsSw.ElapsedMilliseconds, sqlConnProps);
+
                 }
                 catch (Exception ex)
                 {
@@ -552,14 +559,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 try
                 {
                     var cmd = new SqlCommand(GetPrimaryKeysQuery(table), sqlConnection);
-                    using SqlDataReader rdr = await cmd.ExecuteReaderAsync();
-                    while (await rdr.ReadAsync())
+                    using (SqlDataReader rdr = await cmd.ExecuteReaderAsync())
                     {
-                        string columnName = caseSensitive ? rdr[ColumnName].ToString() : rdr[ColumnName].ToString().ToLowerInvariant();
-                        primaryKeys.Add(new PrimaryKey(columnName, bool.Parse(rdr[IsIdentity].ToString())));
+                        while (await rdr.ReadAsync())
+                        {
+                            string columnName = caseSensitive ? rdr[ColumnName].ToString() : rdr[ColumnName].ToString().ToLowerInvariant();
+                            primaryKeys.Add(new PrimaryKey(columnName, bool.Parse(rdr[IsIdentity].ToString())));
+                        }
+                        primaryKeysSw.Stop();
+                        TelemetryInstance.TrackDuration(TelemetryEventName.GetPrimaryKeys, primaryKeysSw.ElapsedMilliseconds, sqlConnProps);
                     }
-                    primaryKeysSw.Stop();
-                    TelemetryInstance.TrackDuration(TelemetryEventName.GetPrimaryKeys, primaryKeysSw.ElapsedMilliseconds, sqlConnProps);
                 }
                 catch (Exception ex)
                 {
