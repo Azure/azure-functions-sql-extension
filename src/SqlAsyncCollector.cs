@@ -313,6 +313,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 else
                 {
                     // ToDo: add check for duplicate primary keys once we find a way to get primary keys.
+                    if (table.Comparer == StringComparer.OrdinalIgnoreCase)
+                    {
+                        ChangePropertiesToLowerCase(JObject.Parse(row.ToString()));
+                    }
                     rowsToUpsert.Add(row);
                 }
             }
@@ -322,6 +326,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             IEnumerable<string> bracketColumnDefinitionsFromItem = table.Columns.Where(c => columnNamesFromItem.Contains(c.Key, table.Comparer))
                 .Select(c => $"{c.Key.AsBracketQuotedString()} {c.Value}");
             newDataQuery = $"WITH {CteName} AS ( SELECT * FROM OPENJSON({RowDataParameter}) WITH ({string.Join(",", bracketColumnDefinitionsFromItem)}) )";
+        }
+
+        private static void ChangePropertiesToLowerCase(JObject jsonObject)
+        {
+            foreach (JProperty property in jsonObject.Properties().ToList())
+            {
+                if (property.Value.Type == JTokenType.Object)
+                {
+                    ChangePropertiesToLowerCase((JObject)property.Value);
+                }
+                property.Replace(new JProperty(property.Name.ToLowerInvariant(), property.Value));// properties are read-only, so we have to replace them
+            }
         }
 
         public class TableInformation
