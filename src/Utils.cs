@@ -2,7 +2,10 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Linq;
 using Microsoft.Extensions.Configuration;
+using MoreLinq;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -58,6 +61,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     return false;
                 default:
                     return defaultValue;
+            }
+        }
+
+        /// <summary>
+        /// Recursively converts the property names for a JObject to lowercase
+        /// </summary>
+        /// <param name="obj">The JToken to convert</param>
+        public static void LowercasePropertyNames(this JToken token)
+        {
+            if (token is JObject jObj)
+            {
+                token.LowercasePropertyNames();
+            }
+            else if (token is JArray jArray)
+            {
+                token.ForEach(x => x.LowercasePropertyNames());
+            }
+        }
+
+        /// <summary>
+        /// Recursively converts the property names for a JObject to lowercase
+        /// </summary>
+        /// <param name="obj">The JObject to convert</param>
+        public static void LowercasePropertyNames(this JObject obj)
+        {
+            foreach (JProperty property in obj.Properties())
+            {
+                property.Value.LowercasePropertyNames();
+                // properties are read-only, so we have to replace them
+                property.Replace(new JProperty(property.Name.ToLowerInvariant(), property.Value));
             }
         }
     }

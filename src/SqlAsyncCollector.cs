@@ -313,10 +313,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 else
                 {
                     // ToDo: add check for duplicate primary keys once we find a way to get primary keys.
-                    // lower case the json keys if sql table is case insensitive since the query we built expects everything lowercased.
+                    // JObjects ignore serializer settings (https://web.archive.org/web/20171005181503/http://json.codeplex.com/workitem/23853)
+                    // so we have to manually convert property names to lower case before inserting into the query in that case
                     if (table.Comparer == StringComparer.OrdinalIgnoreCase)
                     {
-                        ChangePropertiesToLowerCase(row as JObject);
+                        (row as JObject).LowercasePropertyNames();
                     }
                     rowsToUpsert.Add(row);
                 }
@@ -327,18 +328,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             IEnumerable<string> bracketColumnDefinitionsFromItem = table.Columns.Where(c => columnNamesFromItem.Contains(c.Key, table.Comparer))
                 .Select(c => $"{c.Key.AsBracketQuotedString()} {c.Value}");
             newDataQuery = $"WITH {CteName} AS ( SELECT * FROM OPENJSON({RowDataParameter}) WITH ({string.Join(",", bracketColumnDefinitionsFromItem)}) )";
-        }
-
-        private static void ChangePropertiesToLowerCase(JObject jsonObject)
-        {
-            foreach (JProperty property in jsonObject.Properties().ToList())
-            {
-                if (property.Value.GetType() == typeof(JObject))
-                {
-                    ChangePropertiesToLowerCase((JObject)property.Value);
-                }
-                property.Replace(new JProperty(property.Name.ToLowerInvariant(), property.Value));// properties are read-only, so we have to replace them
-            }
         }
 
         public class TableInformation
