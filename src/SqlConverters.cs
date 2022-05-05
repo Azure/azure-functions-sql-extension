@@ -154,18 +154,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns></returns>
             public virtual async Task<string> BuildItemFromAttributeAsync(SqlAttribute attribute)
             {
-                using SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, this._configuration);
+                using (SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, this._configuration))
                 // Ideally, we would like to move away from using SqlDataAdapter both here and in the
                 // SqlAsyncCollector since it does not support asynchronous operations.
-                // There is a GitHub issue open to track this
-                using var adapter = new SqlDataAdapter();
-                using SqlCommand command = SqlBindingUtilities.BuildCommand(attribute, connection);
-                adapter.SelectCommand = command;
-                await connection.OpenAsync();
-                var dataTable = new DataTable();
-                adapter.Fill(dataTable);
-                this._logger.LogInformation($"{dataTable.Rows.Count} row(s) queried from database: {connection.Database} using Command: {command.CommandText}");
-                return JsonConvert.SerializeObject(dataTable);
+                using (var adapter = new SqlDataAdapter())
+                using (SqlCommand command = SqlBindingUtilities.BuildCommand(attribute, connection))
+                {
+                    adapter.SelectCommand = command;
+                    await connection.OpenAsync();
+                    var dataTable = new DataTable();
+                    adapter.Fill(dataTable);
+                    this._logger.LogInformation($"{dataTable.Rows.Count} row(s) queried from database: {connection.Database} using Command: {command.CommandText}");
+                    return JsonConvert.SerializeObject(dataTable);
+                }
+
             }
 
             IAsyncEnumerable<T> IConverter<SqlAttribute, IAsyncEnumerable<T>>.Convert(SqlAttribute attribute)

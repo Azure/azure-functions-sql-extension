@@ -1,11 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <Description>SQL binding extension for Azure Functions</Description>
     <Company>Microsoft</Company>
     <Authors>Microsoft</Authors>
     <Product>SQL Binding Extension</Product>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <!-- Default Version for dev -->
+    <Version>99.99.99</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <DebugSymbols>true</DebugSymbols>
