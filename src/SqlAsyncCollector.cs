@@ -315,6 +315,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 else
                 {
                     // ToDo: add check for duplicate primary keys once we find a way to get primary keys.
+                    // JObjects ignore serializer settings (https://web.archive.org/web/20171005181503/http://json.codeplex.com/workitem/23853)
+                    // so we have to manually convert property names to lower case before inserting into the query in that case
+                    if (table.Comparer == StringComparer.OrdinalIgnoreCase)
+                    {
+                        (row as JObject).LowercasePropertyNames();
+                    }
                     rowsToUpsert.Add(row);
                 }
             }
