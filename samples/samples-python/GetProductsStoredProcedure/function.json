@@ -7,13 +7,15 @@
       "direction": "in",
       "name": "req",
       "authLevel": "anonymous",
-      "route": "addproducts-array"
+      "route": "getproducts-storedprocedure/{cost}"
     },
     {
-      "direction": "out",
+      "direction": "in",
       "type": "sql",
-      "name": "rows",
-      "commandText": "Products",
+      "name": "rowList",
+      "commandText": "SelectProductsCost",
+      "commandType": "StoredProcedure",
+      "parameters": "@Cost={cost}",
       "connectionStringSetting": "SqlConnectionString"
     },
     {

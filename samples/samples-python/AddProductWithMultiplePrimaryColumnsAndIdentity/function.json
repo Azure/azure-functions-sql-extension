@@ -7,13 +7,13 @@
       "direction": "in",
       "name": "req",
       "authLevel": "anonymous",
-      "route": "addproducts-array"
+      "route": "addproductwithmultipleprimarycolumnsandidentity"
     },
     {
       "direction": "out",
       "type": "sql",
-      "name": "rows",
-      "commandText": "Products",
+      "name": "row",
+      "commandText": "dbo.ProductsWithMultiplePrimaryColumnsAndIdentity",
       "connectionStringSetting": "SqlConnectionString"
     },
     {

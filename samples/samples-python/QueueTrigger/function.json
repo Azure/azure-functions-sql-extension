@@ -1,0 +1,19 @@
+{
+  "scriptFile": "__init__.py",
+  "bindings": [
+    {
+      "name": "msg",
+      "type": "queueTrigger",
+      "direction": "in",
+      "queueName": "testqueue",
+      "connection": "AzureWebJobsStorage"
+    },
+    {
+      "direction": "out",
+      "type": "sql",
+      "name": "rowList",
+      "commandText": "dbo.Products",
+      "connectionStringSetting": "SqlConnectionString"
+    }
+  ]
+}

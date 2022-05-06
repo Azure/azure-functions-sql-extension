@@ -7,13 +7,15 @@
       "direction": "in",
       "name": "req",
       "authLevel": "anonymous",
-      "route": "addproducts-array"
+      "route": "getproducts-storedprocedurefromappsetting"
     },
     {
-      "direction": "out",
+      "direction": "in",
       "type": "sql",
-      "name": "rows",
-      "commandText": "Products",
+      "name": "rowList",
+      "commandText": "%Sp_SelectCost%",
+      "commandType": "StoredProcedure",
+      "parameters": "@Cost=%ProductCost%",
       "connectionStringSetting": "SqlConnectionString"
     },
     {

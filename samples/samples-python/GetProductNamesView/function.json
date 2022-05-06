@@ -7,13 +7,14 @@
       "direction": "in",
       "name": "req",
       "authLevel": "anonymous",
-      "route": "addproducts-array"
+      "route": "getproducts-namesview"
     },
     {
-      "direction": "out",
+      "direction": "in",
       "type": "sql",
-      "name": "rows",
-      "commandText": "Products",
+      "name": "rowList",
+      "commandText": "SELECT * FROM ProductNames",
+      "commandType": "Text",
       "connectionStringSetting": "SqlConnectionString"
     },
     {

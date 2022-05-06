@@ -7,13 +7,15 @@
       "direction": "in",
       "name": "req",
       "authLevel": "anonymous",
-      "route": "addproducts-array"
+      "route": "getproducts-namenull/{name}"
     },
     {
-      "direction": "out",
+      "direction": "in",
       "type": "sql",
-      "name": "rows",
-      "commandText": "Products",
+      "name": "rowList",
+      "commandText": "IF @Name IS NULL SELECT * FROM Products WHERE Name IS NULL ELSE SELECT * FROM Products WHERE Name = @Name",
+      "commandType": "Text",
+      "parameters": "@Name={name}",
       "connectionStringSetting": "SqlConnectionString"
     },
     {

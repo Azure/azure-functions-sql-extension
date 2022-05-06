@@ -7,13 +7,15 @@
       "direction": "in",
       "name": "req",
       "authLevel": "anonymous",
-      "route": "addproducts-array"
+      "route": "getproducts-nameempty/{cost}"
     },
     {
-      "direction": "out",
+      "direction": "in",
       "type": "sql",
-      "name": "rows",
-      "commandText": "Products",
+      "name": "rowList",
+      "commandText": "SELECT * FROM Products WHERE Cost = @Cost AND Name = @Name",
+      "commandType": "Text",
+      "parameters": "@Cost={cost},@Name=",
       "connectionStringSetting": "SqlConnectionString"
     },
     {
