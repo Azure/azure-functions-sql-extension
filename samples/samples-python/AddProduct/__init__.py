@@ -2,10 +2,11 @@
 # Licensed under the MIT License.
 
 import azure.functions as func
+from Common.product import Product
 
 
 def main(req: func.HttpRequest, product: func.Out[func.SqlRow]) -> func.HttpResponse:
-    row = func.SqlRow({"ProductId": req.params["id"], "Name": req.params["name"], "Cost": req.params["cost"]})
+    row = func.SqlRow(Product(req.params["id"], req.params["name"],req.params["cost"]))
     product.set(row)
     return func.HttpResponse(
         row.to_json(),

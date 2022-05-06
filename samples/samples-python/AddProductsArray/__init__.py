@@ -3,19 +3,12 @@
 
 import azure.functions as func
 import json
+from Common.product import Product
 
 def main(req: func.HttpRequest, rows: func.Out[func.SqlRowList]) -> func.HttpResponse:
     output = [
-        func.SqlRow({
-            "ProductId": 1,
-            "Name": "Cup",
-            "Cost": 2
-        }),
-        func.SqlRow({
-            "ProductId": 2,
-            "Name": "Glasses",
-            "Cost": 12
-        })
+        func.SqlRow(Product(1, "Cup", 2)),
+        func.SqlRow(Product(2, "Glasses", 12))
     ]
     rows.set(output)
     output_str = json.dumps(list(map(lambda r: json.loads(r.to_json()), output)))
