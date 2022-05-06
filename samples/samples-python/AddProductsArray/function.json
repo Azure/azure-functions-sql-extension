@@ -1,0 +1,26 @@
+{
+  "scriptFile": "__init__.py",
+
+  "bindings": [
+    {
+      "type": "httpTrigger",
+      "direction": "in",
+      "name": "req",
+      "authLevel": "anonymous",
+      "route": "addproducts-array"
+    },
+    {
+      "direction": "out",
+      "type": "sql",
+      "name": "rows",
+      "commandText": "Products",
+      "commandType": "Text",
+      "connectionStringSetting": "SqlConnectionString"
+    },
+    {
+      "type": "http",
+      "direction": "out",
+      "name": "$return"
+    }
+  ]
+}
