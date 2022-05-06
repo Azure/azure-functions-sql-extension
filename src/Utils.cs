@@ -67,7 +67,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Recursively converts the property names for a JObject to lowercase
         /// </summary>
-        /// <param name="obj">The JToken to convert</param>
+        /// <param name="token">The JToken to convert</param>
         public static void LowercasePropertyNames(this JToken token)
         {
             if (token is JObject jObj)

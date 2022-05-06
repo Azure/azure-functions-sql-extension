@@ -7,6 +7,5 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Sdk.Functions" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator" />
-    <ProjectReference Include="..\..\src\Microsoft.Azure.WebJobs.Extensions.Sql.csproj" />
   </ItemGroup>
 </Project>
