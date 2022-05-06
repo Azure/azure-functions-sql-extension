@@ -1,16 +1,11 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License.
+
 import azure.functions as func
 import json
 
 def main(req: func.HttpRequest, rowList: func.SqlRowList) -> func.HttpResponse:
-    rows = []
-
-    for row in rowList:
-        row_json = {
-           'id': row['ProductId'],
-           'name': row['Name'],
-           'cost': row['Cost']
-        }
-        rows.append(row_json)
+    rows = list(map(lambda r: json.loads(r.to_json()), rowList))
 
     return func.HttpResponse(
         json.dumps(rows),
