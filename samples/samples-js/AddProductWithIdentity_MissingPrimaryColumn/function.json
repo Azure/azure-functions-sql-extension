@@ -3,13 +3,13 @@
     {
       "authLevel": "anonymous",
       "name": "req",
-      "type": "httpTrigger",
       "direction": "in",
+      "type": "httpTrigger",
       "methods": [
         "get",
         "post"
       ],
-      "route":"getproductsbyname/{name}"
+      "route": "addproductwithmultipleprimarycolumnsandidentity"
     },
     {
       "name": "$return",
@@ -19,10 +19,8 @@
     {
       "name": "products",
       "type": "sql",
-      "direction": "in",
-      "commandText": "if @Name is null select * from Products where Name is null else select * from Products where @Name = name",
-      "commandType": "Text",
-      "parameters": "@Name={name}",
+      "direction": "out",
+      "commandText": "[dbo].[ProductsWithMultiplePrimaryColumnsAndIdentity]",
       "connectionStringSetting": "SqlConnectionString"
     }
   ],

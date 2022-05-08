@@ -14,12 +14,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct")]
             HttpRequest req,
-            [Sql("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] out Product product)
+            [Sql("dbo.Products", CommandType = System.Data.CommandType.Text, ConnectionStringSetting = "SqlConnectionString")] out Product product)
         {
             product = new Product
             {
                 Name = req.Query["name"],
-                ProductID = int.Parse(req.Query["id"]),
+                ProductID = int.Parse(req.Query["productid"]),
                 Cost = int.Parse(req.Query["cost"])
             };
             return new CreatedResult($"/api/addproduct", product);

@@ -162,7 +162,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// - The functionName is different than its route.<br/>
         /// - You can start multiple functions by passing in a space-separated list of function names.<br/>
         /// </remarks>
-        protected void StartFunctionHost(string functionName, bool useTestFolder = false, string workingDirectoryFolder = "SqlExtensionSamples")
+        protected void StartFunctionHost(string functionName, string workingDirectoryFolder, bool useTestFolder = false)
         {
             string workingDirectory = useTestFolder ? GetPathToBin() : Path.Combine(GetPathToBin(), workingDirectoryFolder);
             if (!Directory.Exists(workingDirectory))
@@ -207,7 +207,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             taskCompletionSource.Task.Wait(60000);
             this.TestOutput.WriteLine($"Azure Function host started!");
         }
-
         private static string GetFunctionsCoreToolsPath()
         {
             // Determine npm install path from either env var set by pipeline or OS defaults
