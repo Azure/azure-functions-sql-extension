@@ -105,12 +105,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.MasterConnectionString = connectionStringBuilder.ToString();
 
             // Create database
+            // Retry this in case the server isn't fully initialized yet
             this.DatabaseName = TestUtils.GetUniqueDBName("SqlBindingsTest");
-            using (var masterConnection = new SqlConnection(this.MasterConnectionString))
+            TestUtils.Retry(() =>
             {
+                using var masterConnection = new SqlConnection(this.MasterConnectionString);
                 masterConnection.Open();
                 TestUtils.ExecuteNonQuery(masterConnection, $"CREATE DATABASE [{this.DatabaseName}]");
-            }
+            });
 
             // Setup connection
             connectionStringBuilder.InitialCatalog = this.DatabaseName;
