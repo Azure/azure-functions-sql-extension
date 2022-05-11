@@ -9,7 +9,7 @@
         "get",
         "post"
       ],
-      "route": "addproductwithmultipleprimarycolumnsandidentity"
+      "route": "addproduct/{productid}/{name}/{cost}"
     },
     {
       "name": "$return",
@@ -20,7 +20,8 @@
       "name": "products",
       "type": "sql",
       "direction": "out",
-      "commandText": "[dbo].[ProductsWithMultiplePrimaryColumnsAndIdentity]",
+      "commandText": "[dbo].[Products]",
+      "parameters": "@ProductId={productid},@Name={name},@Cost={cost}",
       "connectionStringSetting": "SqlConnectionString"
     }
   ],

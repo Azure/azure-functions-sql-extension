@@ -68,6 +68,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         [Theory]
+        [InlineData(1, "Test", 5, "samples-js")]
+        [InlineData(0, "", 0, "samples-js")]
+        [InlineData(-500, "ABCD", 580, "samples-js")]
+        public void AddProductWithGetTest(int id, string name, int cost, string workingDirectory = "SqlExtensionSamples", bool asPost = false)
+        {
+            this.StartFunctionHost("AddProductParams", workingDirectory);
+
+            var query = new Dictionary<string, string>()
+            {
+                { "productid", id.ToString() },
+                { "name", name },
+                { "cost", cost.ToString() }
+            };
+
+            this.SendOutputRequest("AddProductParams", query, asPost).Wait();
+
+            // Verify result
+            Assert.Equal(name, this.ExecuteScalar($"select Name from Products where ProductId={id}"));
+            Assert.Equal(cost, this.ExecuteScalar($"select cost from Products where ProductId={id}"));
+        }
+
+        [Theory]
         [InlineData("SqlExtensionSamples")]
         [InlineData("samples-js")]
         public void AddProductArrayTest(string workingDirectory)
