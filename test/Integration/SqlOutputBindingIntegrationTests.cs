@@ -25,18 +25,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
 
-            if (query != null)
-            {
-                requestUri = QueryHelpers.AddQueryString(requestUri, query);
-            }
             if (asPost)
             {
-                string jsonData = query != null ? JsonConvert.SerializeObject(new Dictionary<string, IDictionary<string, string>>()
-                { ["item"] = query }) : string.Empty;
+                string jsonData = query != null ? JsonConvert.SerializeObject(query) : string.Empty;
                 return await this.SendPostRequest(requestUri, jsonData);
             }
             else
             {
+                if (query != null)
+                {
+                    requestUri = QueryHelpers.AddQueryString(requestUri, query);
+                }
                 return await this.SendGetRequest(requestUri);
             }
 
@@ -46,21 +45,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [InlineData(1, "Test", 5)]
         [InlineData(0, "", 0)]
         [InlineData(-500, "ABCD", 580)]
-        [InlineData(1, "Test", 5, "samples-js", true)]
-        [InlineData(0, "", 0, "samples-js", true)]
-        [InlineData(-500, "ABCD", 580, "samples-js", true)]
-        public void AddProductTest(int id, string name, int cost, string workingDirectory = "SqlExtensionSamples", bool asPost = false)
+        [InlineData(1, "Test", 5, "samples-js")]
+        [InlineData(0, "", 0, "samples-js")]
+        [InlineData(-500, "ABCD", 580, "samples-js")]
+        public void AddProductTest(int id, string name, int cost, string workingDirectory = "SqlExtensionSamples")
         {
             this.StartFunctionHost(nameof(AddProduct), workingDirectory);
 
             var query = new Dictionary<string, string>()
             {
-                { "productid", id.ToString() },
+                { "productId", id.ToString() },
                 { "name", name },
                 { "cost", cost.ToString() }
             };
 
-            this.SendOutputRequest(nameof(AddProduct), query, asPost).Wait();
+            this.SendOutputRequest("addproduct", query, true).Wait();
 
             // Verify result
             Assert.Equal(name, this.ExecuteScalar($"select Name from Products where ProductId={id}"));
@@ -68,15 +67,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         [Theory]
+        [InlineData(1, "Test", 5)]
+        [InlineData(0, "", 0)]
+        [InlineData(-500, "ABCD", 580)]
         [InlineData(1, "Test", 5, "samples-js")]
         [InlineData(0, "null", 0, "samples-js")]
         [InlineData(-500, "ABCD", 580, "samples-js")]
-        public void AddProductUsingGetTest(int id, string name, int cost, string workingDirectory = "SqlExtensionSamples")
+        public void AddProductQueryParametersTest(int id, string name, int cost, string workingDirectory = "SqlExtensionSamples")
         {
-            this.StartFunctionHost("AddProductParams", workingDirectory);
+            this.StartFunctionHost(nameof(AddProductParams), workingDirectory);
 
-            string requestUri = $"http://localhost:{this.Port}/api/addproduct/{id}/{name}/{cost}";
-            this.SendGetRequest(requestUri).Wait();
+            if (workingDirectory == "SqlExtensionSamples")
+            {
+                var query = new Dictionary<string, string>()
+                {
+                    { "productId", id.ToString() },
+                    { "name", name },
+                    { "cost", cost.ToString() }
+                };
+                this.SendOutputRequest("addproduct", query).Wait();
+            }
+            else
+            {
+                string requestUri = $"http://localhost:{this.Port}/api/addproduct/{id}/{name}/{cost}";
+                this.SendGetRequest(requestUri).Wait();
+            }
+
 
             // Verify result
             Assert.Equal(name, this.ExecuteScalar($"select Name from Products where ProductId={id}"));
@@ -325,7 +341,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// the POCO fields case and column names case do not match.
         /// </summary>
         [Theory]
-        [InlineData("SqlExtensionSamples")]
+        [InlineData("SqlExtensionSamples", true)]
         [InlineData("samples-js", true)]
         public void AddProductCaseSensitiveTest(string workingDirectory, bool asPost = false)
         {
@@ -343,7 +359,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // The upsert should fail since the database is case sensitive and the column name "ProductId"
             // does not match the POCO field "ProductID"
-            Assert.Throws<AggregateException>(() => this.SendOutputRequest(nameof(AddProduct), query).Wait());
+            Assert.Throws<AggregateException>(() => this.SendOutputRequest(nameof(AddProduct), query, asPost).Wait());
 
             // Change database collation back to case insensitive
             this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS");
