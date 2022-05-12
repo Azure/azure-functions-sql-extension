@@ -21,7 +21,6 @@
       "type": "sql",
       "direction": "out",
       "commandText": "[dbo].[Products]",
-      "parameters": "@ProductId={productid},@Name={name},@Cost={cost}",
       "connectionStringSetting": "SqlConnectionString"
     }
   ],
