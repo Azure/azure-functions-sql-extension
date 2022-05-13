@@ -174,6 +174,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
+        /// Tests that for tables with an identity column we are able to insert multiple items at once
+        /// </summary>
+        [Fact]
+        public void AddProductsWithIdentityColumnArray()
+        {
+            this.StartFunctionHost(nameof(AddProductsWithIdentityColumnArray));
+            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+            this.SendOutputRequest(nameof(AddProductsWithIdentityColumnArray)).Wait();
+            // Multiple items should have been inserted
+            Assert.Equal(2, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+        }
+
+        /// <summary>
         /// Tests that for tables with multiple primary columns (including an itemtity column) we are able to
         /// insert items.
         /// </summary>
