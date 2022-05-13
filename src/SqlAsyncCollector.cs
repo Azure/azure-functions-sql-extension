@@ -290,26 +290,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 if (typeof(T) != typeof(JObject))
                 {
-                    // SQL Server allows 900 bytes per primary key, so use that as a baseline
-                    var combinedPrimaryKey = new StringBuilder(900 * table.PrimaryKeys.Count());
-
-                    // Look up primary key of T. Because we're going in the same order of fields every time,
-                    // we can assume that if two rows with the same primary key are in the list, they will collide
-                    foreach (PropertyInfo primaryKey in table.PrimaryKeys)
+                    if (table.HasIdentityColumnPrimaryKeys)
                     {
-                        object value = primaryKey.GetValue(row);
-                        // Identity columns are allowed to be optional, so just skip the key if it doesn't exist
-                        if (value == null)
-                        {
-                            continue;
-                        }
-                        combinedPrimaryKey.Append(value.ToString());
-                    }
-                    // If we have already seen this unique primary key, skip this update
-                    if (uniqueUpdatedPrimaryKeys.Add(combinedPrimaryKey.ToString()))
-                    {
-                        // This is the first time we've seen this particular PK. Add this row to the upsert query.
+                        // If the table has an identity column as a primary key then
+                        // all rows are guaranteed to be unique so we can insert them all
                         rowsToUpsert.Add(row);
+                    }
+                    else
+                    {
+                        // SQL Server allows 900 bytes per primary key, so use that as a baseline
+                        var combinedPrimaryKey = new StringBuilder(900 * table.PrimaryKeys.Count());
+                        // Look up primary key of T. Because we're going in the same order of fields every time,
+                        // we can assume that if two rows with the same primary key are in the list, they will collide
+                        foreach (PropertyInfo primaryKey in table.PrimaryKeys)
+                        {
+                            object value = primaryKey.GetValue(row);
+                            // Identity columns are allowed to be optional, so just skip the key if it doesn't exist
+                            if (value == null)
+                            {
+                                continue;
+                            }
+                            combinedPrimaryKey.Append(value.ToString());
+                        }
+                        string combinedPrimaryKeyStr = combinedPrimaryKey.ToString();
+                        // If we have already seen this unique primary key, skip this update
+                        // If the combined key is empty that means
+                        if (uniqueUpdatedPrimaryKeys.Add(combinedPrimaryKeyStr))
+                        {
+                            // This is the first time we've seen this particular PK. Add this row to the upsert query.
+                            rowsToUpsert.Add(row);
+                        }
                     }
                 }
                 else
@@ -359,17 +369,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             public string Query { get; }
 
             /// <summary>
+            /// Whether at least one of the primary keys on this table is an identity column
+            /// </summary>
+            public bool HasIdentityColumnPrimaryKeys { get; }
+            /// <summary>
             /// Settings to use when serializing the POCO into SQL.
             /// Only serialize properties and fields that correspond to SQL columns.
             /// </summary>
             public JsonSerializerSettings JsonSerializerSettings { get; }
 
-            public TableInformation(IEnumerable<MemberInfo> primaryKeys, IDictionary<string, string> columns, StringComparer comparer, string query)
+            public TableInformation(IEnumerable<MemberInfo> primaryKeys, IDictionary<string, string> columns, StringComparer comparer, string query, bool hasIdentityColumnPrimaryKeys)
             {
                 this.PrimaryKeys = primaryKeys;
                 this.Columns = columns;
                 this.Comparer = comparer;
                 this.Query = query;
+                this.HasIdentityColumnPrimaryKeys = hasIdentityColumnPrimaryKeys;
 
                 this.JsonSerializerSettings = new JsonSerializerSettings
                 {
@@ -618,7 +633,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 sqlConnProps.Add(TelemetryPropertyName.QueryType.ToString(), usingInsertQuery ? "insert" : "merge");
                 sqlConnProps.Add(TelemetryPropertyName.HasIdentityColumn.ToString(), hasIdentityColumnPrimaryKeys.ToString());
                 TelemetryInstance.TrackDuration(TelemetryEventName.GetTableInfoEnd, tableInfoSw.ElapsedMilliseconds, sqlConnProps, durations);
-                return new TableInformation(primaryKeyFields, columnDefinitionsFromSQL, comparer, query);
+                return new TableInformation(primaryKeyFields, columnDefinitionsFromSQL, comparer, query, hasIdentityColumnPrimaryKeys);
             }
         }
 
