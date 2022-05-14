@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.Threading;
@@ -116,6 +117,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Retries the specified action, waiting for the specified duration in between each attempt
+        /// </summary>
+        /// <param name="action">The action to run</param>
+        /// <param name="retryCount">The max number of retries to attempt</param>
+        /// <param name="waitDurationMs">The duration in milliseconds between each attempt</param>
+        /// <exception cref="AggregateException">Aggregate of all exceptions thrown if all retries failed</exception>
+        public static void Retry(Action action, int retryCount = 3, int waitDurationMs = 10000)
+        {
+            var exceptions = new List<Exception>();
+            while (true)
+            {
+                try
+                {
+                    action();
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                    retryCount--;
+                    if (retryCount == 0)
+                    {
+                        throw new AggregateException($"Action failed all retries", exceptions);
+                    }
+                    Console.WriteLine($"Error running action, retrying after {waitDurationMs}ms. {retryCount} retries left. {ex}");
+                    Thread.Sleep(waitDurationMs);
+                }
+            }
         }
     }
 }
