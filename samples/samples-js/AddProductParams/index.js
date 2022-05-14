@@ -2,7 +2,7 @@ module.exports = async function (context, req) {
     context.log('JavaScript HTTP trigger function processed a request.');
 
     const newProduct = {
-        "productid": req.params?.productid ?? 123,
+        "productId": req.params?.productId ?? 123,
         "name": req.params?.name ?? 'new',
         "cost": req.params?.cost ?? 100
     };

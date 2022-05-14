@@ -3,7 +3,7 @@ module.exports = async function (context) {
 
     var products = [];
     for(let i = 0; i < 1000; i++) {
-        products.push(...{"productid": i,
+        products.add({"productId": i,
         "name": "test"+i,
         "cost": i});
     }
@@ -13,7 +13,7 @@ module.exports = async function (context) {
         "cost": 1000
     };
 
-    products.push(...invalidProduct);
+    products.add(invalidProduct);
 
     context.bindings.products = JSON.stringify(products);
 

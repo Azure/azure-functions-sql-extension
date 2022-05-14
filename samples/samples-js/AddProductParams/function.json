@@ -6,10 +6,9 @@
       "direction": "in",
       "type": "httpTrigger",
       "methods": [
-        "get",
-        "post"
+        "get"
       ],
-      "route": "addproduct"
+      "route": "addproduct/{productId}/{name}/{cost}"
     },
     {
       "name": "$return",
