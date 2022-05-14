@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct")]
             HttpRequest req,
-            [Sql("dbo.Products", CommandType = System.Data.CommandType.Text, ConnectionStringSetting = "SqlConnectionString")] out Product product)
+            [Sql("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] out Product product)
         {
             product = new Product
             {
