@@ -11,7 +11,7 @@ module.exports = async function (context, req) {
         "cost": 12
     }];
 
-    context.bindings.products = req["body"] ?? JSON.stringify(products);
+    context.bindings.products = JSON.stringify(products);
 
     return {
         status: 201,

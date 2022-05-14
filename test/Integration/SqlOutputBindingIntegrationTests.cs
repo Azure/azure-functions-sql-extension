@@ -8,7 +8,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples;
-using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -21,90 +20,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
         }
 
-        private async Task<HttpResponseMessage> SendOutputRequest(string functionName, IDictionary<string, string> query = null, bool asPost = false)
+        private async Task<HttpResponseMessage> SendOutputRequest(string functionName, IDictionary<string, string> query = null)
         {
             string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
 
-            if (asPost)
+            if (query != null)
             {
-                string jsonData = query != null ? JsonConvert.SerializeObject(query) : string.Empty;
-                return await this.SendPostRequest(requestUri, jsonData);
-            }
-            else
-            {
-                if (query != null)
-                {
-                    requestUri = QueryHelpers.AddQueryString(requestUri, query);
-                }
-                return await this.SendGetRequest(requestUri);
+                requestUri = QueryHelpers.AddQueryString(requestUri, query);
             }
 
+            return await this.SendGetRequest(requestUri);
         }
 
         [Theory]
         [InlineData(1, "Test", 5)]
         [InlineData(0, "", 0)]
         [InlineData(-500, "ABCD", 580)]
-        [InlineData(1, "Test", 5, "samples-js")]
-        [InlineData(0, "", 0, "samples-js")]
-        [InlineData(-500, "ABCD", 580, "samples-js")]
-        public void AddProductTest(int id, string name, int cost, string workingDirectory = "SqlExtensionSamples")
+        public void AddProductTest(int id, string name, int cost)
         {
-            this.StartFunctionHost(nameof(AddProduct), workingDirectory);
+            this.StartFunctionHost(nameof(AddProduct));
 
             var query = new Dictionary<string, string>()
             {
-                { "productId", id.ToString() },
+                { "id", id.ToString() },
                 { "name", name },
                 { "cost", cost.ToString() }
             };
 
-            this.SendOutputRequest("addproduct", query, true).Wait();
+            this.SendOutputRequest(nameof(AddProduct), query).Wait();
 
             // Verify result
             Assert.Equal(name, this.ExecuteScalar($"select Name from Products where ProductId={id}"));
             Assert.Equal(cost, this.ExecuteScalar($"select cost from Products where ProductId={id}"));
         }
 
-        [Theory]
-        [InlineData(1, "Test", 5)]
-        [InlineData(0, "", 0)]
-        [InlineData(-500, "ABCD", 580)]
-        [InlineData(1, "Test", 5, "samples-js")]
-        [InlineData(0, "null", 0, "samples-js")]
-        [InlineData(-500, "ABCD", 580, "samples-js")]
-        public void AddProductQueryParametersTest(int id, string name, int cost, string workingDirectory = "SqlExtensionSamples")
+        [Fact]
+        public void AddProductArrayTest()
         {
-            this.StartFunctionHost(nameof(AddProductParams), workingDirectory);
-
-            if (workingDirectory == "SqlExtensionSamples")
-            {
-                var query = new Dictionary<string, string>()
-                {
-                    { "productId", id.ToString() },
-                    { "name", name },
-                    { "cost", cost.ToString() }
-                };
-                this.SendOutputRequest("addproduct", query).Wait();
-            }
-            else
-            {
-                string requestUri = $"http://localhost:{this.Port}/api/addproduct/{id}/{name}/{cost}";
-                this.SendGetRequest(requestUri).Wait();
-            }
-
-
-            // Verify result
-            Assert.Equal(name, this.ExecuteScalar($"select Name from Products where ProductId={id}"));
-            Assert.Equal(cost, this.ExecuteScalar($"select cost from Products where ProductId={id}"));
-        }
-
-        [Theory]
-        [InlineData("SqlExtensionSamples")]
-        [InlineData("samples-js")]
-        public void AddProductArrayTest(string workingDirectory)
-        {
-            this.StartFunctionHost(nameof(AddProductsArray), workingDirectory);
+            this.StartFunctionHost(nameof(AddProductsArray));
 
             // First insert some test data
             this.ExecuteNonQuery("INSERT INTO Products VALUES (1, 'test', 100)");
@@ -119,11 +72,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Equal(2, this.ExecuteScalar("SELECT ProductId FROM Products WHERE Cost = 12"));
         }
 
-        [Theory]
-        [InlineData("SqlExtensionSamples")]
-        public void AddProductsCollectorTest(string workingDirectory)
+        [Fact]
+        public void AddProductsCollectorTest()
         {
-            this.StartFunctionHost(nameof(AddProductsCollector), workingDirectory);
+            this.StartFunctionHost(nameof(AddProductsCollector));
 
             // Function should add 5000 rows to the table
             this.SendOutputRequest("addproducts-collector").Wait();
@@ -131,11 +83,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Equal(5000, this.ExecuteScalar("SELECT COUNT(1) FROM Products"));
         }
 
-        [Theory]
-        [InlineData("SqlExtensionSamples")]
-        public void QueueTriggerProductsTest(string workingDirectory)
+        [Fact]
+        public void QueueTriggerProductsTest()
         {
-            this.StartFunctionHost(nameof(QueueTriggerProducts), workingDirectory);
+            this.StartFunctionHost(nameof(QueueTriggerProducts));
 
             string uri = $"http://localhost:{this.Port}/admin/functions/QueueTriggerProducts";
             string json = "{ 'input': 'Test Data' }";
@@ -151,7 +102,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public void TimerTriggerProductsTest()
         {
-            this.StartFunctionHost(nameof(TimerTriggerProducts), "SqlExtensionSamples");
+            this.StartFunctionHost(nameof(TimerTriggerProducts));
 
             // Since this function runs on a schedule (every 5 seconds), we don't need to invoke it.
             // We will wait 6 seconds to guarantee that it has been fired at least once, and check that at least 1000 rows of data has been added.
@@ -161,12 +112,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.True(rowsAdded >= 1000);
         }
 
-        [Theory]
-        [InlineData("SqlExtensionSamples", true)]
-        [InlineData("samples-js", false)]
-        public void AddProductExtraColumnsTest(string workingDirectory, bool useTestFolder)
+        [Fact]
+        public void AddProductExtraColumnsTest()
         {
-            this.StartFunctionHost(nameof(AddProductExtraColumns), workingDirectory, useTestFolder);
+            this.StartFunctionHost(nameof(AddProductExtraColumns), true);
 
             // Since ProductExtraColumns has columns that does not exist in the table,
             // no rows should be added to the table.
@@ -174,12 +123,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM Products"));
         }
 
-        [Theory]
-        [InlineData("SqlExtensionSamples", true)]
-        [InlineData("samples-js", false)]
-        public void AddProductMissingColumnsTest(string workingDirectory, bool useTestFolder)
+        [Fact]
+        public void AddProductMissingColumnsTest()
         {
-            this.StartFunctionHost(nameof(AddProductMissingColumns), workingDirectory, useTestFolder);
+            this.StartFunctionHost(nameof(AddProductMissingColumns), true);
 
             // Even though the ProductMissingColumns object is missing the Cost column,
             // the row should still be added successfully since Cost can be null.
@@ -187,24 +134,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM Products"));
         }
 
-        [Theory]
-        [InlineData("SqlExtensionSamples", true)]
-        [InlineData("samples-js", false)]
-        public void AddProductMissingColumnsNotNullTest(string workingDirectory, bool useTestFolder)
+        [Fact]
+        public void AddProductMissingColumnsNotNullTest()
         {
-            this.StartFunctionHost(nameof(AddProductMissingColumnsExceptionFunction), workingDirectory, useTestFolder);
+            this.StartFunctionHost(nameof(AddProductMissingColumnsExceptionFunction), true);
 
             // Since the Sql table does not allow null for the Cost column,
             // inserting a row without a Cost value should throw an Exception.
             Assert.Throws<AggregateException>(() => this.SendOutputRequest("addproduct-missingcolumnsexception").Wait());
         }
 
-        [Theory]
-        [InlineData("SqlExtensionSamples", true)]
-        [InlineData("samples-js", false)]
-        public void AddProductNoPartialUpsertTest(string workingDirectory, bool useTestFolder)
+        [Fact]
+        public void AddProductNoPartialUpsertTest()
         {
-            this.StartFunctionHost(nameof(AddProductsNoPartialUpsert), workingDirectory, useTestFolder);
+            this.StartFunctionHost(nameof(AddProductsNoPartialUpsert), true);
 
             Assert.Throws<AggregateException>(() => this.SendOutputRequest("addproducts-nopartialupsert").Wait());
             // No rows should be upserted since there was a row with an invalid value
@@ -214,12 +157,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Tests that for tables with an identity column we are able to insert items.
         /// </summary>
-        [Theory]
-        [InlineData("SqlExtensionSamples")]
-        [InlineData("samples-js", true)]
-        public void AddProductWithIdentity(string workingDirectory, bool asPost = false)
+        [Fact]
+        public void AddProductWithIdentity()
         {
-            this.StartFunctionHost(nameof(AddProductWithIdentityColumn), workingDirectory);
+            this.StartFunctionHost(nameof(AddProductWithIdentityColumn));
             // Identity column (ProductID) is left out for new items
             var query = new Dictionary<string, string>()
             {
@@ -227,21 +168,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "cost", "1" }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-            this.SendOutputRequest(nameof(AddProductWithIdentityColumn), query, asPost).Wait();
+            this.SendOutputRequest(nameof(AddProductWithIdentityColumn), query).Wait();
             // Product should have been inserted correctly even without an ID when there's an identity column present
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+        }
+
+        /// <summary>
+        /// Tests that for tables with an identity column we are able to insert multiple items at once
+        /// </summary>
+        [Fact]
+        public void AddProductsWithIdentityColumnArray()
+        {
+            this.StartFunctionHost(nameof(AddProductsWithIdentityColumnArray));
+            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+            this.SendOutputRequest(nameof(AddProductsWithIdentityColumnArray)).Wait();
+            // Multiple items should have been inserted
+            Assert.Equal(2, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
         }
 
         /// <summary>
         /// Tests that for tables with multiple primary columns (including an itemtity column) we are able to
         /// insert items.
         /// </summary>
-        [Theory]
-        [InlineData("SqlExtensionSamples")]
-        [InlineData("samples-js", true)]
-        public void AddProductWithIdentity_MultiplePrimaryColumns(string workingDirectory, bool asPost = false)
+        [Fact]
+        public void AddProductWithIdentity_MultiplePrimaryColumns()
         {
-            this.StartFunctionHost(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), workingDirectory);
+            this.StartFunctionHost(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity));
             var query = new Dictionary<string, string>()
             {
                 { "externalId", "101" },
@@ -249,7 +201,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "cost", "1" }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithMultiplePrimaryColumnsAndIdentity"));
-            this.SendOutputRequest(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), query, asPost).Wait();
+            this.SendOutputRequest(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), query).Wait();
             // Product should have been inserted correctly even without an ID when there's an identity column present
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithMultiplePrimaryColumnsAndIdentity"));
         }
@@ -258,12 +210,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// Tests that when using a table with an identity column that if the identity column is specified
         /// by the function we handle inserting/updating that correctly.
         /// </summary>
-        [Theory]
-        [InlineData("SqlExtensionSamples")]
-        [InlineData("samples-js", true)]
-        public void AddProductWithIdentity_SpecifyIdentityColumn(string workingDirectory, bool asPost = false)
+        [Fact]
+        public void AddProductWithIdentity_SpecifyIdentityColumn()
         {
-            this.StartFunctionHost(nameof(AddProductWithIdentityColumnIncluded), workingDirectory);
+            this.StartFunctionHost(nameof(AddProductWithIdentityColumnIncluded));
             var query = new Dictionary<string, string>()
             {
                 { "productId", "1" },
@@ -271,7 +221,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "cost", "1" }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-            this.SendOutputRequest(nameof(AddProductWithIdentityColumnIncluded), query, asPost).Wait();
+            this.SendOutputRequest(nameof(AddProductWithIdentityColumnIncluded), query).Wait();
             // New row should have been inserted
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
             query = new Dictionary<string, string>()
@@ -280,7 +230,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "name", "MyProduct2" },
                 { "cost", "1" }
             };
-            this.SendOutputRequest(nameof(AddProductWithIdentityColumnIncluded), query, asPost).Wait();
+            this.SendOutputRequest(nameof(AddProductWithIdentityColumnIncluded), query).Wait();
             // Existing row should have been updated
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity WHERE Name='MyProduct2'"));
@@ -289,12 +239,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Tests that when using a table with an identity column we can handle a null (missing) identity column
         /// </summary>
-        [Theory]
-        [InlineData("SqlExtensionSamples")]
-        [InlineData("samples-js")]
-        public void AddProductWithIdentity_NoIdentityColumn(string workingDirectory)
+        [Fact]
+        public void AddProductWithIdentity_NoIdentityColumn()
         {
-            this.StartFunctionHost(nameof(AddProductWithIdentityColumnIncluded), workingDirectory);
+            this.StartFunctionHost(nameof(AddProductWithIdentityColumnIncluded));
             var query = new Dictionary<string, string>()
             {
                 { "name", "MyProduct" },
@@ -318,12 +266,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// Tests that when using a table with an identity column along with other primary 
         /// keys an error is thrown if at least one of the primary keys is missing.
         /// </summary>
-        [Theory]
-        [InlineData("SqlExtensionSamples")]
-        [InlineData("samples-js", true)]
-        public void AddProductWithIdentity_MissingPrimaryColumn(string workingDirectory, bool asPost = false)
+        [Fact]
+        public void AddProductWithIdentity_MissingPrimaryColumn()
         {
-            this.StartFunctionHost(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), workingDirectory);
+            this.StartFunctionHost(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity));
             var query = new Dictionary<string, string>()
             {
                 // Missing externalId
@@ -331,7 +277,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "cost", "1" }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithMultiplePrimaryColumnsAndIdentity"));
-            Assert.Throws<AggregateException>(() => this.SendOutputRequest(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), query, asPost).Wait());
+            Assert.Throws<AggregateException>(() => this.SendOutputRequest(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), query).Wait());
             // Nothing should have been inserted
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithMultiplePrimaryColumnsAndIdentity"));
         }
@@ -340,31 +286,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// Tests that when using a case sensitive database, an error is thrown if 
         /// the POCO fields case and column names case do not match.
         /// </summary>
-        [Theory]
-        [InlineData("SqlExtensionSamples", true)]
-        [InlineData("samples-js", true)]
-        public void AddProductCaseSensitiveTest(string workingDirectory, bool asPost = false)
+        [Fact]
+        public void AddProductCaseSensitiveTest()
         {
-            this.StartFunctionHost(nameof(AddProduct), workingDirectory);
+            this.StartFunctionHost(nameof(AddProduct));
 
             // Change database collation to case sensitive
             this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS");
 
             var query = new Dictionary<string, string>()
             {
-                { "productid", "1" },
+                { "id", "1" },
                 { "name", "test" },
                 { "cost", "100" }
             };
 
             // The upsert should fail since the database is case sensitive and the column name "ProductId"
             // does not match the POCO field "ProductID"
-            Assert.Throws<AggregateException>(() => this.SendOutputRequest(nameof(AddProduct), query, asPost).Wait());
+            Assert.Throws<AggregateException>(() => this.SendOutputRequest(nameof(AddProduct), query).Wait());
 
             // Change database collation back to case insensitive
             this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS");
 
-            this.SendOutputRequest(nameof(AddProduct), query, asPost).Wait();
+            this.SendOutputRequest(nameof(AddProduct), query).Wait();
 
             // Verify result
             Assert.Equal("test", this.ExecuteScalar($"select Name from Products where ProductId={1}"));

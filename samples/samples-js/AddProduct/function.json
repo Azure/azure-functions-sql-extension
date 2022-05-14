@@ -1,12 +1,11 @@
 {
   "bindings": [
     {
-      "authLevel": "anonymous",
+      "authLevel": "function",
       "name": "req",
       "direction": "in",
       "type": "httpTrigger",
       "methods": [
-        "get",
         "post"
       ],
       "route": "addproduct"

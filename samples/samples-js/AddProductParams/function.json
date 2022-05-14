@@ -1,7 +1,7 @@
 {
   "bindings": [
     {
-      "authLevel": "anonymous",
+      "authLevel": "function",
       "name": "req",
       "direction": "in",
       "type": "httpTrigger",
@@ -9,7 +9,7 @@
         "get",
         "post"
       ],
-      "route": "addproduct/{productid}/{name}/{cost}"
+      "route": "addproduct"
     },
     {
       "name": "$return",

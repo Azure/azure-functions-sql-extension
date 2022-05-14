@@ -105,12 +105,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.MasterConnectionString = connectionStringBuilder.ToString();
 
             // Create database
+            // Retry this in case the server isn't fully initialized yet
             this.DatabaseName = TestUtils.GetUniqueDBName("SqlBindingsTest");
-            using (var masterConnection = new SqlConnection(this.MasterConnectionString))
+            TestUtils.Retry(() =>
             {
+                using var masterConnection = new SqlConnection(this.MasterConnectionString);
                 masterConnection.Open();
                 TestUtils.ExecuteNonQuery(masterConnection, $"CREATE DATABASE [{this.DatabaseName}]");
-            }
+            });
 
             // Setup connection
             connectionStringBuilder.InitialCatalog = this.DatabaseName;
@@ -162,9 +164,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// - The functionName is different than its route.<br/>
         /// - You can start multiple functions by passing in a space-separated list of function names.<br/>
         /// </remarks>
-        protected void StartFunctionHost(string functionName, string workingDirectoryFolder, bool useTestFolder = false)
+        protected void StartFunctionHost(string functionName, bool useTestFolder = false)
         {
-            string workingDirectory = useTestFolder ? GetPathToBin() : Path.Combine(GetPathToBin(), workingDirectoryFolder);
+            string workingDirectory = useTestFolder ? GetPathToBin() : Path.Combine(GetPathToBin(), "SqlExtensionSamples");
             if (!Directory.Exists(workingDirectory))
             {
                 throw new FileNotFoundException("Working directory not found at " + workingDirectory);
@@ -207,6 +209,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             taskCompletionSource.Task.Wait(60000);
             this.TestOutput.WriteLine($"Azure Function host started!");
         }
+
         private static string GetFunctionsCoreToolsPath()
         {
             // Determine npm install path from either env var set by pipeline or OS defaults
@@ -224,11 +227,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             if (!File.Exists(funcPath))
             {
-                throw new FileNotFoundException("Azure Function Core Tools not found at " + funcPath);
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // Search Program Files folder as well
+                    string programFilesFuncPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Microsoft", "Azure Functions Core Tools", funcExe);
+                    if (File.Exists(programFilesFuncPath))
+                    {
+                        return programFilesFuncPath;
+                    }
+                    throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath} or {programFilesFuncPath}");
+                }
+                throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath}");
             }
 
             return funcPath;
         }
+
         private void TestOutputHandler(object sender, DataReceivedEventArgs e)
         {
             if (e != null && !string.IsNullOrEmpty(e.Data))

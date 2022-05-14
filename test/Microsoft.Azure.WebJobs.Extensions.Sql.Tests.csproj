@@ -25,12 +25,4 @@
     <Message Text="Copied Samples output to $(OutDir)\SqlExtensionSamples" Importance="high" />
   </Target>
 
-  <Target Name="CopyJSSamples" AfterTargets="Build">
-    <ItemGroup>
-      <_CopyItems Include="..\samples\samples-js\**\*.*" />
-    </ItemGroup>
-    <Copy SourceFiles="@(_CopyItems)" DestinationFolder="$(OutDir)\samples-js\%(RecursiveDir)" />
-    <Message Text="Copied JS Samples output to $(OutDir)\samples-js" Importance="high" />
-  </Target>
-
 </Project>

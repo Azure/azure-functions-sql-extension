@@ -31,12 +31,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [InlineData(0, 100)]
         [InlineData(1, -500)]
         [InlineData(100, 500)]
-        [InlineData(0, 100, "samples-js")]
-        [InlineData(1, -500, "samples-js")]
-        [InlineData(100, 500, "samples-js")]
-        public async void GetProductsTest(int n, int cost, string workingDirectory = "SqlExtensionSamples")
+        public async void GetProductsTest(int n, int cost)
         {
-            this.StartFunctionHost(nameof(GetProducts), workingDirectory);
+            this.StartFunctionHost(nameof(GetProducts));
 
             // Generate T-SQL to insert n rows of data with cost
             Product[] products = GetProductsWithSameCost(n, cost);
@@ -49,19 +46,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             string expectedResponse = JsonConvert.SerializeObject(products);
             string actualResponse = await response.Content.ReadAsStringAsync();
 
-            Assert.Equal(expectedResponse, actualResponse.Trim().Replace(" ", "").Replace(Environment.NewLine, ""), StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(expectedResponse, actualResponse, StringComparer.OrdinalIgnoreCase);
         }
 
         [Theory]
         [InlineData(0, 99)]
         [InlineData(1, -999)]
         [InlineData(100, 999)]
-        [InlineData(0, 99, "samples-js")]
-        [InlineData(1, -999, "samples-js")]
-        [InlineData(100, 999, "samples-js")]
-        public async void GetProductsStoredProcedureTest(int n, int cost, string workingDirectory = "SqlExtensionSamples")
+        public async void GetProductsStoredProcedureTest(int n, int cost)
         {
-            this.StartFunctionHost(nameof(GetProductsStoredProcedure), workingDirectory);
+            this.StartFunctionHost(nameof(GetProductsStoredProcedure));
 
             // Generate T-SQL to insert n rows of data with cost
             Product[] products = GetProductsWithSameCost(n, cost);
@@ -74,19 +68,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             string expectedResponse = JsonConvert.SerializeObject(products);
             string actualResponse = await response.Content.ReadAsStringAsync();
 
-            Assert.Equal(expectedResponse, actualResponse.Trim().Replace(" ", "").Replace(Environment.NewLine, ""), StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(expectedResponse, actualResponse, StringComparer.OrdinalIgnoreCase);
         }
 
         [Theory]
         [InlineData(0, 0)]
         [InlineData(1, 20)]
         [InlineData(100, 1000)]
-        [InlineData(0, 0, "samples-js")]
-        [InlineData(1, 20, "samples-js")]
-        [InlineData(100, 1000, "samples-js")]
-        public async void GetProductsNameEmptyTest(int n, int cost, string workingDirectory = "SqlExtensionSamples")
+        public async void GetProductsNameEmptyTest(int n, int cost)
         {
-            this.StartFunctionHost(nameof(GetProductsNameEmpty), workingDirectory);
+            this.StartFunctionHost(nameof(GetProductsNameEmpty));
 
             // Add a bunch of noise data
             this.InsertProducts(GetProductsWithSameCost(n * 2, cost));
@@ -104,15 +95,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             string expectedResponse = JsonConvert.SerializeObject(products);
             string actualResponse = await response.Content.ReadAsStringAsync();
 
-            Assert.Equal(expectedResponse, actualResponse.Trim().Replace(" ", "").Replace(Environment.NewLine, ""), StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(expectedResponse, actualResponse, StringComparer.OrdinalIgnoreCase);
         }
 
-        [Theory]
-        [InlineData("SqlExtensionSamples")]
-        [InlineData("samples-js")]
-        public async void GetProductsByCostTest(string workingDirectory)
+        [Fact]
+        public async void GetProductsByCostTest()
         {
-            this.StartFunctionHost(nameof(GetProductsStoredProcedureFromAppSetting), workingDirectory);
+            this.StartFunctionHost(nameof(GetProductsStoredProcedureFromAppSetting));
 
             // Generate T-SQL to insert n rows of data with cost
             Product[] products = GetProducts(3, 100);
@@ -126,15 +115,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             string expectedResponse = JsonConvert.SerializeObject(productsWithCost100);
             string actualResponse = await response.Content.ReadAsStringAsync();
 
-            Assert.Equal(expectedResponse, actualResponse.Trim().Replace(" ", "").Replace(Environment.NewLine, ""), StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(expectedResponse, actualResponse, StringComparer.OrdinalIgnoreCase);
         }
 
-        [Theory]
-        [InlineData("SqlExtensionSamples")]
-        [InlineData("samples-js")]
-        public async void GetProductNamesViewTest(string workingDirectory)
+        [Fact]
+        public async void GetProductNamesViewTest()
         {
-            this.StartFunctionHost(nameof(GetProductNamesView), workingDirectory);
+            this.StartFunctionHost(nameof(GetProductNamesView));
 
             // Insert one row of data into Product table
             Product[] products = GetProductsWithSameCost(1, 100);
@@ -147,28 +134,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             string expectedResponse = "[{\"name\":\"test\"}]";
             string actualResponse = await response.Content.ReadAsStringAsync();
 
-            Assert.Equal(expectedResponse, actualResponse.Trim().Replace(" ", "").Replace(Environment.NewLine, ""), StringComparer.OrdinalIgnoreCase);
-        }
-
-        [Theory]
-        [InlineData("same", "samples-js")]
-        public async void GetProductsByNameTest(string name, string workingDirectory)
-        {
-            this.StartFunctionHost("GetProductsByName", workingDirectory);
-
-            // Insert one row of data into Product table
-            Product[] products = GetProductsWithSameName(1, name);
-            this.InsertProducts(products);
-
-            // Run the function that queries from the ProductName view
-            HttpResponseMessage response = await this.SendInputRequest("getproductsbyname", name);
-
-            // Verify result
-            string expectedResponse = JsonConvert.SerializeObject(products);
-            string actualResponse = await response.Content.ReadAsStringAsync();
-
-            Assert.Equal(expectedResponse, actualResponse.Trim().Replace(" ", "").Replace(Environment.NewLine, ""), StringComparer.OrdinalIgnoreCase);
-
+            Assert.Equal(expectedResponse, actualResponse, StringComparer.OrdinalIgnoreCase);
         }
 
         private static Product[] GetProductsWithSameCost(int n, int cost)
@@ -215,22 +181,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
             return result;
         }
-
-        private static Product[] GetProductsWithSameName(int n, string name)
-        {
-            var result = new Product[n];
-            for (int i = 0; i < n; i++)
-            {
-                result[i] = new Product
-                {
-                    ProductID = i,
-                    Name = name,
-                    Cost = i
-                };
-            }
-            return result;
-        }
-
 
         private void InsertProducts(Product[] products)
         {
