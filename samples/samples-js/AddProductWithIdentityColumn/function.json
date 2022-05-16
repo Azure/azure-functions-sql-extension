@@ -6,8 +6,7 @@
       "direction": "in",
       "type": "httpTrigger",
       "methods": [
-        "get",
-        "post"
+        "get"
       ],
       "route": "addproductwithidentitycolumn"
     },
@@ -17,7 +16,7 @@
       "direction": "out"
     },
     {
-      "name": "products",
+      "name": "product",
       "type": "sql",
       "direction": "out",
       "commandText": "[dbo].[ProductsWithIdentity]",

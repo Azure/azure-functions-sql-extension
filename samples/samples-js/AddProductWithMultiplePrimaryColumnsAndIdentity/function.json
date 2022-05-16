@@ -6,8 +6,7 @@
       "direction": "in",
       "type": "httpTrigger",
       "methods": [
-        "get",
-        "post"
+        "get"
       ],
       "route": "addproductwithmultipleprimarycolumnsandidentity"
     },

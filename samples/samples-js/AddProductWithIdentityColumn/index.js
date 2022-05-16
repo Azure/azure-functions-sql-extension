@@ -2,10 +2,10 @@ module.exports = async function (context, req) {
     context.log('JavaScript HTTP trigger function processed a request.');
 
     const itemToInsert = {
-        "name": req.params?.name ?? "productWithIdentity",
-        "cost": req.params?.cost ?? 100
+        "name": req.params?.name,
+        "cost": req.params?.cost
     };
-    context.bindings.products = req.body ?? JSON.stringify(itemToInsert);
+    context.bindings.product =  JSON.stringify(itemToInsert);
 
     return {
         status: 201,

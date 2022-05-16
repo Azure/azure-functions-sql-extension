@@ -2,12 +2,12 @@ module.exports = async function (context, request) {
     context.log('JavaScript HTTP trigger function processed a request.');
 
     const testProduct = {
-        "externalId": req.params?.externalId ?? 101,
-        "name": req.params?.name ?? "TestItem",
-        "cost": req.params?.cost ?? "100"
+        "externalId": req.params?.externalId,
+        "name": req.params?.name,
+        "cost": req.params?.cost
     };
 
-    context.bindings.product = request.body ?? JSON.stringify(testProduct);
+    context.bindings.product = JSON.stringify(testProduct);
 
     return {
         status: 201,
