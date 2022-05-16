@@ -8,7 +8,7 @@
       "methods": [
         "get"
       ],
-      "route": "addproduct/{productId}/{name}/{cost}"
+      "route": "addproduct-params/{productId}/{name}/{cost}"
     },
     {
       "name": "$return",

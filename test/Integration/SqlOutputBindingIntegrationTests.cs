@@ -8,8 +8,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Xunit;
 using Xunit.Abstractions;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -32,6 +34,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             return await this.SendGetRequest(requestUri);
         }
 
+        private async Task<HttpResponseMessage> SendOutputPostRequest(string functionName, string query)
+        {
+            string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
+
+            return await this.SendPostRequest(requestUri, query);
+        }
+
         [Theory]
         [InlineData(1, "Test", 5)]
         [InlineData(0, "", 0)]
@@ -47,7 +56,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "cost", cost.ToString() }
             };
 
-            this.SendOutputRequest(nameof(AddProduct), query).Wait();
+            this.SendOutputPostRequest(nameof(AddProduct), JsonConvert.SerializeObject(query)).Wait();
+
+            // Verify result
+            Assert.Equal(name, this.ExecuteScalar($"select Name from Products where ProductId={id}"));
+            Assert.Equal(cost, this.ExecuteScalar($"select cost from Products where ProductId={id}"));
+        }
+
+        [Theory]
+        [InlineData(1, "Test", 5)]
+        [InlineData(0, "", 0)]
+        [InlineData(-500, "ABCD", 580)]
+        public void AddProductParamsTest(int id, string name, int cost)
+        {
+            this.StartFunctionHost(nameof(AddProductParams));
+
+            var query = new Dictionary<string, string>()
+            {
+                { "id", id.ToString() },
+                { "name", name },
+                { "cost", cost.ToString() }
+            };
+
+            this.SendOutputRequest("addproduct-params", query).Wait();
 
             // Verify result
             Assert.Equal(name, this.ExecuteScalar($"select Name from Products where ProductId={id}"));
@@ -64,7 +95,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.ExecuteNonQuery("INSERT INTO Products VALUES (2, 'test', 100)");
             this.ExecuteNonQuery("INSERT INTO Products VALUES (3, 'test', 100)");
 
-            this.SendOutputRequest("addproducts-array").Wait();
+            Product[] prods = new[]
+            {
+                new Product()
+                {
+                    ProductID = 1,
+                    Name = "Cup",
+                    Cost = 2
+                },
+                new Product
+                {
+                    ProductID = 2,
+                    Name = "Glasses",
+                    Cost = 12
+                }
+            };
+
+            this.SendOutputPostRequest("addproducts-array", JsonConvert.SerializeObject(prods)).Wait();
 
             // Function call changes first 2 rows to (1, 'Cup', 2) and (2, 'Glasses', 12)
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(1) FROM Products WHERE Cost = 100"));
@@ -289,7 +336,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public void AddProductCaseSensitiveTest()
         {
-            this.StartFunctionHost(nameof(AddProduct));
+            this.StartFunctionHost(nameof(AddProductParams));
 
             // Change database collation to case sensitive
             this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS");
@@ -303,12 +350,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // The upsert should fail since the database is case sensitive and the column name "ProductId"
             // does not match the POCO field "ProductID"
-            Assert.Throws<AggregateException>(() => this.SendOutputRequest(nameof(AddProduct), query).Wait());
+            Assert.Throws<AggregateException>(() => this.SendOutputRequest("addproduct-params", query).Wait());
 
             // Change database collation back to case insensitive
             this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS");
 
-            this.SendOutputRequest(nameof(AddProduct), query).Wait();
+            this.SendOutputRequest("addproduct-params", query).Wait();
 
             // Verify result
             Assert.Equal("test", this.ExecuteScalar($"select Name from Products where ProductId={1}"));
