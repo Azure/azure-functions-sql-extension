@@ -8,7 +8,7 @@
       "methods": [
         "get"
       ],
-      "route": "addproductwithidentitycolumn/{productId}/{name}/{cost}"
+      "route": "addproductwithidentitycolumn"
     },
     {
       "name": "$return",

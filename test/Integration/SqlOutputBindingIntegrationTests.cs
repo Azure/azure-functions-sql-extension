@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
         }
 
-        private async Task<HttpResponseMessage> SendOutputGetRequest(string functionName, IDictionary<string, string> query = null)
+        private Task<HttpResponseMessage> SendOutputGetRequest(string functionName, IDictionary<string, string> query = null)
         {
             string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
 
@@ -31,14 +31,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 requestUri = QueryHelpers.AddQueryString(requestUri, query);
             }
 
-            return await this.SendGetRequest(requestUri);
+            return this.SendGetRequest(requestUri);
         }
 
-        private async Task<HttpResponseMessage> SendOutputPostRequest(string functionName, string query)
+        private Task<HttpResponseMessage> SendOutputPostRequest(string functionName, string query)
         {
             string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
 
-            return await this.SendPostRequest(requestUri, query);
+            return this.SendPostRequest(requestUri, query);
         }
 
         [Theory]
