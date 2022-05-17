@@ -6,8 +6,7 @@
       "type": "httpTrigger",
       "direction": "in",
       "methods": [
-        "get",
-        "post"
+        "get"
       ],
       "route": "getproducts/{cost}"
     },

@@ -3,8 +3,8 @@ module.exports = async function (context, req) {
 
     const itemToInsert = {
         "productId" : req.params?.productId,
-        "name": req.params?.name ?? "productWithoutIdentity",
-        "cost": req.params?.cost ?? 100
+        "name": req.params?.name,
+        "cost": req.params?.cost
     };
 
     context.bindings.product = JSON.stringify(itemToInsert);

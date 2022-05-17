@@ -16,9 +16,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples
             [FromBody] List<Product> products,
             [Sql("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] out Product[] output)
         {
-            // Suppose that the ProductID column is the primary key in the Products table, and the
-            // table already contains a row with ProductID = 1. In that case, the row will be updated
-            // instead of inserted to have values Name = "Cup" and Cost = 2.
+            // Upsert the products, which will insert them into the Products table if the primary key (ProductId) for that item doesn't exist. 
+            // If it does then update it to have the new name and cost
             output = products.ToArray();
             return new CreatedResult($"/api/addproducts-array", output);
         }

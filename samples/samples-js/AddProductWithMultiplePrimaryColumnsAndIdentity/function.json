@@ -8,7 +8,7 @@
       "methods": [
         "get"
       ],
-      "route": "addproductwithmultipleprimarycolumnsandidentity"
+      "route": "addproductwithmultipleprimarycolumnsandidentity/{externalId}/{name}/{cost}"
     },
     {
       "name": "$return",
