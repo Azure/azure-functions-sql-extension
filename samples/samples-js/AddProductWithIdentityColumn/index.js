@@ -9,6 +9,6 @@ module.exports = async function (context, req) {
 
     return {
         status: 201,
-        body: context.bindings.products
+        body: context.bindings.product
     };
 }
