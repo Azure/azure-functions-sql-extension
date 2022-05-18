@@ -8,8 +8,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Xunit;
 using Xunit.Abstractions;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -20,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
         }
 
-        private async Task<HttpResponseMessage> SendOutputRequest(string functionName, IDictionary<string, string> query = null)
+        private Task<HttpResponseMessage> SendOutputGetRequest(string functionName, IDictionary<string, string> query = null)
         {
             string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
 
@@ -29,7 +31,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 requestUri = QueryHelpers.AddQueryString(requestUri, query);
             }
 
-            return await this.SendGetRequest(requestUri);
+            return this.SendGetRequest(requestUri);
+        }
+
+        private Task<HttpResponseMessage> SendOutputPostRequest(string functionName, string query)
+        {
+            string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
+
+            return this.SendPostRequest(requestUri, query);
         }
 
         [Theory]
@@ -42,12 +51,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             var query = new Dictionary<string, string>()
             {
-                { "id", id.ToString() },
+                { "productId", id.ToString() },
                 { "name", name },
                 { "cost", cost.ToString() }
             };
 
-            this.SendOutputRequest(nameof(AddProduct), query).Wait();
+            this.SendOutputPostRequest("addproduct", JsonConvert.SerializeObject(query)).Wait();
+
+            // Verify result
+            Assert.Equal(name, this.ExecuteScalar($"select Name from Products where ProductId={id}"));
+            Assert.Equal(cost, this.ExecuteScalar($"select cost from Products where ProductId={id}"));
+        }
+
+        [Theory]
+        [InlineData(1, "Test", 5)]
+        [InlineData(0, "", 0)]
+        [InlineData(-500, "ABCD", 580)]
+        public void AddProductParamsTest(int id, string name, int cost)
+        {
+            this.StartFunctionHost(nameof(AddProductParams));
+
+            var query = new Dictionary<string, string>()
+            {
+                { "productId", id.ToString() },
+                { "name", name },
+                { "cost", cost.ToString() }
+            };
+
+            this.SendOutputGetRequest("addproduct-params", query).Wait();
 
             // Verify result
             Assert.Equal(name, this.ExecuteScalar($"select Name from Products where ProductId={id}"));
@@ -64,7 +95,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.ExecuteNonQuery("INSERT INTO Products VALUES (2, 'test', 100)");
             this.ExecuteNonQuery("INSERT INTO Products VALUES (3, 'test', 100)");
 
-            this.SendOutputRequest("addproducts-array").Wait();
+            Product[] prods = new[]
+            {
+                new Product()
+                {
+                    ProductID = 1,
+                    Name = "Cup",
+                    Cost = 2
+                },
+                new Product
+                {
+                    ProductID = 2,
+                    Name = "Glasses",
+                    Cost = 12
+                }
+            };
+
+            this.SendOutputPostRequest("addproducts-array", JsonConvert.SerializeObject(prods)).Wait();
 
             // Function call changes first 2 rows to (1, 'Cup', 2) and (2, 'Glasses', 12)
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(1) FROM Products WHERE Cost = 100"));
@@ -78,7 +125,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.StartFunctionHost(nameof(AddProductsCollector));
 
             // Function should add 5000 rows to the table
-            this.SendOutputRequest("addproducts-collector").Wait();
+            this.SendOutputGetRequest("addproducts-collector").Wait();
 
             Assert.Equal(5000, this.ExecuteScalar("SELECT COUNT(1) FROM Products"));
         }
@@ -119,7 +166,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // Since ProductExtraColumns has columns that does not exist in the table,
             // no rows should be added to the table.
-            Assert.Throws<AggregateException>(() => this.SendOutputRequest("addproduct-extracolumns").Wait());
+            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-extracolumns").Wait());
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM Products"));
         }
 
@@ -130,7 +177,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // Even though the ProductMissingColumns object is missing the Cost column,
             // the row should still be added successfully since Cost can be null.
-            this.SendOutputRequest("addproduct-missingcolumns").Wait();
+            this.SendOutputGetRequest("addproduct-missingcolumns").Wait();
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM Products"));
         }
 
@@ -141,7 +188,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // Since the Sql table does not allow null for the Cost column,
             // inserting a row without a Cost value should throw an Exception.
-            Assert.Throws<AggregateException>(() => this.SendOutputRequest("addproduct-missingcolumnsexception").Wait());
+            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-missingcolumnsexception").Wait());
         }
 
         [Fact]
@@ -149,7 +196,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             this.StartFunctionHost(nameof(AddProductsNoPartialUpsert), true);
 
-            Assert.Throws<AggregateException>(() => this.SendOutputRequest("addproducts-nopartialupsert").Wait());
+            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproducts-nopartialupsert").Wait());
             // No rows should be upserted since there was a row with an invalid value
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsNameNotNull"));
         }
@@ -168,7 +215,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "cost", "1" }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-            this.SendOutputRequest(nameof(AddProductWithIdentityColumn), query).Wait();
+            this.SendOutputGetRequest(nameof(AddProductWithIdentityColumn), query).Wait();
             // Product should have been inserted correctly even without an ID when there's an identity column present
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
         }
@@ -181,7 +228,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             this.StartFunctionHost(nameof(AddProductsWithIdentityColumnArray));
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-            this.SendOutputRequest(nameof(AddProductsWithIdentityColumnArray)).Wait();
+            this.SendOutputGetRequest(nameof(AddProductsWithIdentityColumnArray)).Wait();
             // Multiple items should have been inserted
             Assert.Equal(2, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
         }
@@ -201,7 +248,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "cost", "1" }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithMultiplePrimaryColumnsAndIdentity"));
-            this.SendOutputRequest(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), query).Wait();
+            this.SendOutputGetRequest(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), query).Wait();
             // Product should have been inserted correctly even without an ID when there's an identity column present
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithMultiplePrimaryColumnsAndIdentity"));
         }
@@ -221,7 +268,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "cost", "1" }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-            this.SendOutputRequest(nameof(AddProductWithIdentityColumnIncluded), query).Wait();
+            this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query).Wait();
             // New row should have been inserted
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
             query = new Dictionary<string, string>()
@@ -230,7 +277,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "name", "MyProduct2" },
                 { "cost", "1" }
             };
-            this.SendOutputRequest(nameof(AddProductWithIdentityColumnIncluded), query).Wait();
+            this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query).Wait();
             // Existing row should have been updated
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity WHERE Name='MyProduct2'"));
@@ -249,7 +296,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "cost", "1" }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-            this.SendOutputRequest(nameof(AddProductWithIdentityColumnIncluded), query).Wait();
+            this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query).Wait();
             // New row should have been inserted
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
             query = new Dictionary<string, string>()
@@ -257,7 +304,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "name", "MyProduct2" },
                 { "cost", "1" }
             };
-            this.SendOutputRequest(nameof(AddProductWithIdentityColumnIncluded), query).Wait();
+            this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query).Wait();
             // Another new row should have been inserted
             Assert.Equal(2, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
         }
@@ -277,7 +324,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "cost", "1" }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithMultiplePrimaryColumnsAndIdentity"));
-            Assert.Throws<AggregateException>(() => this.SendOutputRequest(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), query).Wait());
+            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), query).Wait());
             // Nothing should have been inserted
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithMultiplePrimaryColumnsAndIdentity"));
         }
@@ -289,26 +336,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public void AddProductCaseSensitiveTest()
         {
-            this.StartFunctionHost(nameof(AddProduct));
+            this.StartFunctionHost(nameof(AddProductParams));
 
             // Change database collation to case sensitive
             this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS");
 
             var query = new Dictionary<string, string>()
             {
-                { "id", "1" },
+                { "productId", "1" },
                 { "name", "test" },
                 { "cost", "100" }
             };
 
             // The upsert should fail since the database is case sensitive and the column name "ProductId"
             // does not match the POCO field "ProductID"
-            Assert.Throws<AggregateException>(() => this.SendOutputRequest(nameof(AddProduct), query).Wait());
+            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-params", query).Wait());
 
             // Change database collation back to case insensitive
             this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS");
 
-            this.SendOutputRequest(nameof(AddProduct), query).Wait();
+            this.SendOutputGetRequest("addproduct-params", query).Wait();
 
             // Verify result
             Assert.Equal("test", this.ExecuteScalar($"select Name from Products where ProductId={1}"));

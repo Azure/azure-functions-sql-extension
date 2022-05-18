@@ -1,0 +1,27 @@
+{
+  "bindings": [
+    {
+      "authLevel": "function",
+      "name": "req",
+      "direction": "in",
+      "type": "httpTrigger",
+      "methods": [
+        "post"
+      ],
+      "route": "addproduct"
+    },
+    {
+      "name": "$return",
+      "type": "http",
+      "direction": "out"
+    },
+    {
+      "name": "product",
+      "type": "sql",
+      "direction": "out",
+      "commandText": "[dbo].[Products]",
+      "connectionStringSetting": "SqlConnectionString"
+    }
+  ],
+  "disabled": false
+}
