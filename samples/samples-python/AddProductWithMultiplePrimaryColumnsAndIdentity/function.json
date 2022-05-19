@@ -1,25 +1,28 @@
-{
-  "scriptFile": "__init__.py",
 
-  "bindings": [
-    {
-      "type": "httpTrigger",
-      "direction": "in",
-      "name": "req",
-      "authLevel": "anonymous",
-      "route": "addproductwithmultipleprimarycolumnsandidentity"
-    },
-    {
-      "direction": "out",
-      "type": "sql",
-      "name": "row",
-      "commandText": "dbo.ProductsWithMultiplePrimaryColumnsAndIdentity",
-      "connectionStringSetting": "SqlConnectionString"
-    },
-    {
-      "type": "http",
-      "direction": "out",
-      "name": "$return"
-    }
-  ]
-}
+{
+    "bindings": [
+      {
+        "authLevel": "function",
+        "name": "req",
+        "direction": "in",
+        "type": "httpTrigger",
+        "methods": [
+          "get"
+        ],
+        "route": "addproductwithmultipleprimarycolumnsandidentity"
+      },
+      {
+        "name": "$return",
+        "type": "http",
+        "direction": "out"
+      },
+      {
+        "name": "product",
+        "type": "sql",
+        "direction": "out",
+        "commandText": "[dbo].[ProductsWithMultiplePrimaryColumnsAndIdentity]",
+        "connectionStringSetting": "SqlConnectionString"
+      }
+    ],
+    "disabled": false
+  }

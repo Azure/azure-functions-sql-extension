@@ -7,9 +7,9 @@
       "direction": "in",
       "type": "httpTrigger",
       "methods": [
-        "post"
+        "get"
       ],
-      "route": "addproduct"
+      "route": "addproduct-params"
     },
     {
       "name": "$return",

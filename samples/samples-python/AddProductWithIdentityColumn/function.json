@@ -1,25 +1,27 @@
 {
-  "scriptFile": "__init__.py",
-
-  "bindings": [
-    {
-      "type": "httpTrigger",
-      "direction": "in",
-      "name": "req",
-      "authLevel": "anonymous",
-      "route": "addproductwithidentitycolumn"
-    },
-    {
-      "direction": "out",
-      "type": "sql",
-      "name": "row",
-      "commandText": "dbo.ProductsWithIdentity",
-      "connectionStringSetting": "SqlConnectionString"
-    },
-    {
-      "type": "http",
-      "direction": "out",
-      "name": "$return"
-    }
-  ]
-}
+    "bindings": [
+      {
+        "authLevel": "function",
+        "name": "req",
+        "direction": "in",
+        "type": "httpTrigger",
+        "methods": [
+          "get"
+        ],
+        "route": "addproductwithidentitycolumn"
+      },
+      {
+        "name": "$return",
+        "type": "http",
+        "direction": "out"
+      },
+      {
+        "name": "product",
+        "type": "sql",
+        "direction": "out",
+        "commandText": "[dbo].[ProductsWithIdentity]",
+        "connectionStringSetting": "SqlConnectionString"
+      }
+    ],
+    "disabled": false
+  }

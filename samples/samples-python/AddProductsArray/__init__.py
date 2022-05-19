@@ -3,17 +3,20 @@
 
 import azure.functions as func
 import json
-from Common.product import Product
 
-def main(req: func.HttpRequest, rows: func.Out[func.SqlRowList]) -> func.HttpResponse:
-    output = [
-        func.SqlRow(Product(1, "Cup", 2)),
-        func.SqlRow(Product(2, "Glasses", 12))
-    ]
-    rows.set(output)
-    output_str = json.dumps(list(map(lambda r: json.loads(r.to_json()), output)))
+def main(req: func.HttpRequest, products: func.Out[func.SqlRowList]) -> func.HttpResponse:
+    """This function upserts the products, which will insert them into the Products table if the primary key (ProductId) for that item doesn't exist.
+    If it does then update it to have the new name and cost.
+    """
+
+    # Note that this expects the body to be an array of JSON objects which
+    # have a property matching each of the columns in the table to upsert to.
+    body = json.loads(req.get_body())
+    rows = func.SqlRowList(map(lambda r: func.SqlRow.from_dict(r), body))
+    products.set(rows)
+
     return func.HttpResponse(
-        body=output_str,
+        body=req.get_body(),
         status_code=201,
         mimetype="application/json"
     )
