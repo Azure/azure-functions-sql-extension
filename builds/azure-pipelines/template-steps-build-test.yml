@@ -62,7 +62,7 @@ steps:
 - script: |
     npm install
     npm run lint
-  workingDirectory: $(Build.SourcesDirectory)\samples\samples-js
+  workingDirectory: $(Build.SourcesDirectory)/samples/samples-js
   displayName: Lint samples-js
 
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
