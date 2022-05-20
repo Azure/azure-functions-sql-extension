@@ -59,6 +59,12 @@ steps:
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=false -p:Version=${{ parameters.binariesVersion }}'
 
+- script: |
+    npm install
+    npm run lint
+  workingDirectory: $(Build.SourcesDirectory)/samples/samples-js
+  displayName: Lint samples-js
+
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
   inputs:
     InputType: 'CommandLine'
