@@ -1,0 +1,29 @@
+{
+    "bindings": [
+      {
+        "authLevel": "function",
+        "name": "req",
+        "type": "httpTrigger",
+        "direction": "in",
+        "methods": [
+          "get"
+        ],
+        "route":"getproducts-nameempty/{cost}"
+      },
+      {
+        "name": "$return",
+        "type": "http",
+        "direction": "out"
+      },
+      {
+        "name": "products",
+        "type": "sql",
+        "direction": "in",
+        "commandText": "select * from Products where Cost = @Cost and Name = @Name",
+        "commandType": "Text",
+        "parameters": "@Cost={cost},@Name=",
+        "connectionStringSetting": "SqlConnectionString"
+      }
+    ],
+    "disabled": false
+  }
