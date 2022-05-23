@@ -1,0 +1,27 @@
+{
+    "bindings": [
+      {
+        "authLevel": "function",
+        "name": "req",
+        "direction": "in",
+        "type": "httpTrigger",
+        "methods": [
+          "get"
+        ],
+        "route": "addproductwithidentitycolumn"
+      },
+      {
+        "name": "$return",
+        "type": "http",
+        "direction": "out"
+      },
+      {
+        "name": "product",
+        "type": "sql",
+        "direction": "out",
+        "commandText": "[dbo].[ProductsWithIdentity]",
+        "connectionStringSetting": "SqlConnectionString"
+      }
+    ],
+    "disabled": false
+  }
