@@ -65,6 +65,19 @@ steps:
   workingDirectory: $(Build.SourcesDirectory)/samples/samples-js
   displayName: Lint samples-js
 
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.9' 
+    addToPath: true 
+    architecture: 'x64'
+
+  - script: |
+    pip3 install pylint
+    pip3 install pylintfileheader
+    pylint *.py
+  workingDirectory: $(Build.SourcesDirectory)/samples/samples-python
+  displayName: Lint samples-python
+
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
   inputs:
     InputType: 'CommandLine'
