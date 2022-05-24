@@ -71,7 +71,7 @@ steps:
     addToPath: true 
     architecture: 'x64'
 
-  - script: |
+- script: |
     pip3 install pylint
     pip3 install pylintfileheader
     pylint *.py
