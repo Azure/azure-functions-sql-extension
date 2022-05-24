@@ -10,4 +10,5 @@ def main(req: func.HttpRequest, products: func.SqlRowList) -> func.HttpResponse:
     return func.HttpResponse(
         json.dumps(rows),
         status_code=200,
-        mimetype='application/json')
+        mimetype="application/json"
+    )
