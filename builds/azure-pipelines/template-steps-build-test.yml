@@ -74,7 +74,7 @@ steps:
 - script: |
     pip3 install pylint
     pip3 install pylintfileheader
-    pylint *.py
+    pylint --recursive=y .
   workingDirectory: $(Build.SourcesDirectory)/samples/samples-python
   displayName: Lint samples-python
 
