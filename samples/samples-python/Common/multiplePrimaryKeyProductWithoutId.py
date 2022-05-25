@@ -9,3 +9,4 @@ class MultiplePrimaryKeyProductWithoutId(collections.UserDict):
         self['ExternalId'] = externalId
         self['Name'] = name
         self['Cost'] = cost
+        

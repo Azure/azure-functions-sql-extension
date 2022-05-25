@@ -9,3 +9,4 @@ class Product(collections.UserDict):
         self['ProductId'] = productId
         self['Name'] = name
         self['Cost'] = cost
+        

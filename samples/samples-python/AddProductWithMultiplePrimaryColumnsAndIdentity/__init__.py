@@ -12,7 +12,8 @@ def main(req: func.HttpRequest, product: func.Out[func.SqlRow]) -> func.HttpResp
     All other primary key columns are required to be in the object.
     """
 
-    row_obj = func.SqlRow(MultiplePrimaryKeyProductWithoutId(req.params["externalId"], req.params["name"], req.params["cost"]))
+    row_obj = func.SqlRow(MultiplePrimaryKeyProductWithoutId(req.params["externalId"],
+        req.params["name"], req.params["cost"]))
     product.set(row_obj)
 
     return func.HttpResponse(
@@ -20,3 +21,4 @@ def main(req: func.HttpRequest, product: func.Out[func.SqlRow]) -> func.HttpResp
         status_code=201,
         mimetype="application/json"
     )
+    
