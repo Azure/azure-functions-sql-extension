@@ -8,3 +8,4 @@ class ProductWithoutId(collections.UserDict):
         super().__init__()
         self['Name'] = name
         self['Cost'] = cost
+        

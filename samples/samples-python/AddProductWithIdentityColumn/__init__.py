@@ -13,7 +13,7 @@ def main(req: func.HttpRequest, product: func.Out[func.SqlRow]) -> func.HttpResp
 
     row_obj = func.SqlRow(ProductWithoutId(req.params["name"],req.params["cost"]))
     product.set(row_obj)
-    
+
     return func.HttpResponse(
         body=row_obj.to_json(),
         status_code=201,
