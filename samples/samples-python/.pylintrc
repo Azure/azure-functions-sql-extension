@@ -6,7 +6,7 @@ ignore=.venv
 # usually to register additional checkers.
 load-plugins=pylintfileheader
 
-file-header=# Copyright \(c\) Microsoft Corporation\. All rights reserved\.\r\n# Licensed under the MIT License\.
+file-header=# Copyright \(c\) Microsoft Corporation\. All rights reserved\.[\r\n]+# Licensed under the MIT License\.
 
 [MESSAGES CONTROL]
 # Disable the message, report, category or checker with the given id(s). You
