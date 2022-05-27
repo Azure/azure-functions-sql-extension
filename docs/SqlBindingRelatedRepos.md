@@ -1,14 +1,20 @@
 # Azure SQL Bindings for Azure Functions 
+This document contains a list of all repositories related to SQL Bindings.
  
 ## Docs 
-[Azure SQL bindings for Functions | Microsoft Docs ](https://docs.microsoft.com/en-us/azure/azure-functions/functions-bindings-azure-sql?tabs=in-process%2Cextensionv3&pivots=programming-language-csharp)
+[Azure SQL bindings for Functions | Microsoft Docs ](https://aka.ms/sqlbindings)
   
 ## SQL Bindings VSCode Extension 
+This extension enables users to develop Azure Functions with SQL Bindings.
+
 [azuredatastudio/extensions/sql-bindings at main · microsoft/azuredatastudio (github.com)](https://github.com/microsoft/azuredatastudio/tree/main/extensions/sql-bindings)
+
+STS contains the logic for adding a SQL binding to an existing Azure Function.
+
 [sqltoolsservice/src/Microsoft.SqlTools.ServiceLayer/AzureFunctions at main · microsoft/sqltoolsservice (github.com)](https://github.com/microsoft/sqltoolsservice/tree/main/src/Microsoft.SqlTools.ServiceLayer/AzureFunctions)
  
 ## Templates 
-Currently we have templates for C#, JS, TS, and Python. 
+Contains templates for the various types of bindings and supported languages, each under a Sql* folder.
 
 [azure-functions-templates/Functions.Templates/Templates at dev · Azure/azure-functions-templates (github.com)](https://github.com/Azure/azure-functions-templates/tree/dev/Functions.Templates/Templates)
  
@@ -29,7 +35,7 @@ We define SqlRow and SqlRowList in _sql.py and the SqlConverter in sql.py. 
 [Azure/azure-functions-python-library: Azure Functions Python SDK (github.com)](https://github.com/Azure/azure-functions-python-library)
  
 ### Python Worker  
-Need to add end to end tests for SQL Bindings here. 
+End to end tests for SQL Bindings in the Python Worker.
 
 [Azure/azure-functions-python-worker: Python worker for Azure Functions. (github.com)](https://github.com/Azure/azure-functions-python-worker)
  
