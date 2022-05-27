@@ -3,7 +3,7 @@
 ## Docs 
 [Azure SQL bindings for Functions | Microsoft Docs ](https://docs.microsoft.com/en-us/azure/azure-functions/functions-bindings-azure-sql?tabs=in-process%2Cextensionv3&pivots=programming-language-csharp)
   
-## SQL Binding VSCode Extension 
+## SQL Bindings VSCode Extension 
 [azuredatastudio/extensions/sql-bindings at main · microsoft/azuredatastudio (github.com)](https://github.com/microsoft/azuredatastudio/tree/main/extensions/sql-bindings)
 [sqltoolsservice/src/Microsoft.SqlTools.ServiceLayer/AzureFunctions at main · microsoft/sqltoolsservice (github.com)](https://github.com/microsoft/sqltoolsservice/tree/main/src/Microsoft.SqlTools.ServiceLayer/AzureFunctions)
  
@@ -29,7 +29,7 @@ We define SqlRow and SqlRowList in _sql.py and the SqlConverter in sql.py. 
 [Azure/azure-functions-python-library: Azure Functions Python SDK (github.com)](https://github.com/Azure/azure-functions-python-library)
  
 ### Python Worker  
-Need to add end to end tests for Sql Bindings here. 
+Need to add end to end tests for SQL Bindings here. 
 
 [Azure/azure-functions-python-worker: Python worker for Azure Functions. (github.com)](https://github.com/Azure/azure-functions-python-worker)
  
