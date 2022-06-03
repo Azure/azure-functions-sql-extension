@@ -4,12 +4,17 @@
 
 ## Introduction
 
-This repository contains the Azure SQL binding for Azure Functions extension code as well as a quick start tutorial and samples illustrating how to use the binding in different ways.  A high level explanation of the bindings is provided below. Additional information for each is in their respective sample sections.
+This repository contains the Azure SQL bindings for Azure Functions extension code as well as a quick start tutorial and samples illustrating how to use the binding in different ways.  A high level explanation of the bindings is provided below. Additional information for each is in their respective sample sections.
 
-- **Input Binding**: takes a SQL query to run and returns the output of the query in the function.
-- **Output Binding**: takes a list of rows and upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
+- [**Input Binding**](#input-binding-tutorial): takes a SQL query to run and returns the output of the query in the function.
+- [**Output Binding**](#output-binding-tutorial): takes a list of rows and upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
 
 Further information on the Azure SQL binding for Azure Functions is also available in the [Azure Functions docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
+
+Azure SQL bindings for Azure Functions are supported for:
+- .NET functions (C# in-process)
+- NodeJS functions (JavaScript/TypeScript)
+- Python functions
 
 ## Table of Contents
 
@@ -21,11 +26,12 @@ Further information on the Azure SQL binding for Azure Functions is also availab
       - [Docker container](#docker-container)
       - [Azure SQL Database](#azure-sql-database)
     - [SQL Setup](#sql-setup)
-    - [Create .NET Function App](#create-net-function-app)
+    - [Create a Function App](#create-a-function-app)
     - [Configure Function App](#configure-function-app)
   - [Tutorials](#tutorials)
-    - [Input Binding Tutorial](#input-binding-tutorial)
-    - [Output Binding Tutorial](#output-binding-tutorial)
+    - [.NET functions](#net-functions)
+        - [Input Binding Tutorial](#input-binding-tutorial)
+        - [Output Binding Tutorial](#output-binding-tutorial)
   - [More Samples](#more-samples)
     - [Input Binding](#input-binding)
       - [Query String](#query-string)
@@ -86,28 +92,80 @@ ALTER TABLE ['{table_name}'] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED 
 ```
 
 
-### Create .NET Function App
+### Create a Function App
 
-Now you will need a .NET Function App to add the binding to. If you have one created already you can skip this step.
+Now you will need a a Function App to add the binding to. If you have one created already you can skip this step.
 
 These steps can be done in the Terminal/CLI or with PowerShell.
 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
-2. Create a function app.
+2. Create a function app for .NET, JavaScript, TypeScript or Python.
 
+    **.NET**
     ```bash
     mkdir MyApp
     cd MyApp
     func init --worker-runtime dotnet
     ```
 
-**Note**: Other languages are not supported at this time
+    **JavaScript (NodeJS)**
+    ```bash
+    mkdir MyApp
+    cd MyApp
+    func init --worker-runtime node --language javascript
+    ```
 
-1. Install the extension.
+    **TypeScript (NodeJS)**
+    ```bash
+    mkdir MyApp
+    cd MyApp
+    func init --worker-runtime node --language typescript
+    ```
 
+    **Python**
+
+    *See [#250](https://github.com/Azure/azure-functions-sql-extension/issues/250) before starting.*
+    ```bash
+    mkdir MyApp
+    cd MyApp
+    func init --worker-runtime python
+    ```
+
+
+3. Enable SQL bindings on the function app.
+
+    **.NET:** Install the extension.
     ```powershell
     dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql --prerelease
+    ```
+
+    **JavaScript and TypeScript:** Update the `host.json` file to the preview extension bundle.
+    ```json
+    "extensionBundle": {
+        "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
+        "version": "[3.*, 4.0.0)"
+    }
+    ```
+
+    **Python:**
+    
+    Update the `host.json` file to the preview extension bundle.
+    ```json
+    "extensionBundle": {
+        "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
+        "version": "[3.*, 4.0.0)"
+    }
+    ```
+
+    Add a preview version of the Python functions library to `requirements.txt`.
+    ```txt
+    azure-functions==1.11.3b1
+    ```
+
+    Add a setting in `local.settings.json` to isolate the worker dependencies.
+    ```json
+    "PYTHON_ISOLATE_WORKER_DEPENDENCIES": "1"
     ```
 
 ### Configure Function App
@@ -162,7 +220,9 @@ Once you have your Function App you need to configure it for use with Azure SQL 
 
 ## Tutorials
 
-### Input Binding Tutorial
+### .NET functions
+
+#### Input Binding Tutorial
 
 Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](#Create-a-SQL-Server).
 
@@ -210,7 +270,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - You should see your database output in the browser window.
 - Congratulations! You have successfully created your first SQL input binding! Checkout [Input Binding](#Input-Binding) for more information on how to use it and explore on your own!
 
-### Output Binding Tutorial
+#### Output Binding Tutorial
 
 Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](#Create-a-SQL-Server), and that you have the 'Employee.cs' class from the [Input Binding Tutorial](#Input-Binding-Tutorial).
 
@@ -255,6 +315,13 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 - Hit 'F5' to run your code. Click the link to upsert the output array values in your SQL table. Your upserted values should launch in the browser.
 - Congratulations! You have successfully created your first SQL output binding! Checkout [Output Binding](#Output-Binding) for more information on how to use it and explore on your own!
+
+
+### JavaScript functions
+
+
+### Python functions
+
 
 ## More Samples
 
