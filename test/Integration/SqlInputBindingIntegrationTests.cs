@@ -10,6 +10,7 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples;
 using Xunit;
 using Xunit.Abstractions;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -28,12 +29,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         [Theory]
-        [InlineData(0, 100)]
-        [InlineData(1, -500)]
-        [InlineData(100, 500)]
-        public async void GetProductsTest(int n, int cost)
+        [SupportedLanguages(0, 100)]
+        [SupportedLanguages(1, -500)]
+        [SupportedLanguages(100, 500)]
+        public async void GetProductsTest(int n, int cost, string lang)
         {
-            this.StartFunctionHost(nameof(GetProducts));
+            this.StartFunctionHost(nameof(GetProducts), lang);
 
             // Generate T-SQL to insert n rows of data with cost
             Product[] products = GetProductsWithSameCost(n, cost);
@@ -50,12 +51,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         [Theory]
-        [InlineData(0, 99)]
-        [InlineData(1, -999)]
-        [InlineData(100, 999)]
-        public async void GetProductsStoredProcedureTest(int n, int cost)
+        [SupportedLanguages(0, 99)]
+        [SupportedLanguages(1, -999)]
+        [SupportedLanguages(100, 999)]
+        public async void GetProductsStoredProcedureTest(int n, int cost, string lang)
         {
-            this.StartFunctionHost(nameof(GetProductsStoredProcedure));
+            this.StartFunctionHost(nameof(GetProductsStoredProcedure), lang);
 
             // Generate T-SQL to insert n rows of data with cost
             Product[] products = GetProductsWithSameCost(n, cost);
@@ -72,12 +73,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         [Theory]
-        [InlineData(0, 0)]
-        [InlineData(1, 20)]
-        [InlineData(100, 1000)]
-        public async void GetProductsNameEmptyTest(int n, int cost)
+        [SupportedLanguages(0, 0)]
+        [SupportedLanguages(1, 20)]
+        [SupportedLanguages(100, 1000)]
+        public async void GetProductsNameEmptyTest(int n, int cost, string lang)
         {
-            this.StartFunctionHost(nameof(GetProductsNameEmpty));
+            this.StartFunctionHost(nameof(GetProductsNameEmpty), lang);
 
             // Add a bunch of noise data
             this.InsertProducts(GetProductsWithSameCost(n * 2, cost));
@@ -98,10 +99,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Equal(expectedResponse, actualResponse, StringComparer.OrdinalIgnoreCase);
         }
 
-        [Fact]
-        public async void GetProductsByCostTest()
+        [Theory]
+        [SupportedLanguages()]
+        public async void GetProductsByCostTest(string lang)
         {
-            this.StartFunctionHost(nameof(GetProductsStoredProcedureFromAppSetting));
+            this.StartFunctionHost(nameof(GetProductsStoredProcedureFromAppSetting), lang);
 
             // Generate T-SQL to insert n rows of data with cost
             Product[] products = GetProducts(3, 100);
@@ -118,10 +120,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Equal(expectedResponse, actualResponse, StringComparer.OrdinalIgnoreCase);
         }
 
-        [Fact]
-        public async void GetProductNamesViewTest()
+        [Theory]
+        [SupportedLanguages()]
+        public async void GetProductNamesViewTest(string lang)
         {
-            this.StartFunctionHost(nameof(GetProductNamesView));
+            this.StartFunctionHost(nameof(GetProductNamesView), lang);
 
             // Insert one row of data into Product table
             Product[] products = GetProductsWithSameCost(1, 100);
