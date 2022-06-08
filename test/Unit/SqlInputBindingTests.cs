@@ -95,11 +95,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
                 CommandType = System.Data.CommandType.TableDirect
             };
             Assert.Throws<ArgumentException>(() => SqlBindingUtilities.BuildCommand(attribute, null));
+        }
 
+        [Fact]
+        public void TestDefaultCommandType()
+        {
+            string query = "select * from Products";
+            var attribute = new SqlAttribute(query);
+            SqlCommand command = SqlBindingUtilities.BuildCommand(attribute, null);
+            // CommandType should default to Text
+            Assert.Equal(System.Data.CommandType.Text, command.CommandType);
+            Assert.Equal(query, command.CommandText);
 
-            // Don't specify a type at all
-            attribute = new SqlAttribute("");
-            Assert.Throws<ArgumentException>(() => SqlBindingUtilities.BuildCommand(attribute, null));
         }
 
         [Fact]

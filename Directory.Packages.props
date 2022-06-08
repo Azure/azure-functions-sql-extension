@@ -1,7 +1,7 @@
 <Project>
   <ItemGroup>
     <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="5.0.0" />
-    <PackageVersion Include="Microsoft.NET.Sdk.Functions" Version="3.0.13" />
+    <PackageVersion Include="Microsoft.NET.Sdk.Functions" Version="3.1.1" />
     <PackageVersion Include="Microsoft.ApplicationInsights" Version="2.17.0" />
     <PackageVersion Include="Microsoft.Azure.WebJobs" Version="3.0.31" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="3.0.1" />
