@@ -4,8 +4,6 @@ using System;
 using System.Collections.Generic;
 using Xunit.Sdk;
 using System.Reflection;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 {
@@ -16,30 +14,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
     /// </summary>
     public class SqlInlineDataAttribute : DataAttribute
     {
-        private readonly Dictionary<string, List<List<object>>> testData = new Dictionary<string, List<List<object>>>();
-        private readonly string _propertyName = "data";
+        private readonly List<object[]> testData = new List<object[]>();
 
         /// <summary>
-        /// Load supported languages as test parameters data for the test.
-        /// </summary>
-        public SqlInlineDataAttribute()
-        {
-            var langData = new List<List<object>>();
-            foreach (string lang in Enum.GetNames(typeof(SupportedLanguages)))
-            {
-                var listOfValues = new List<object>(1) { lang };
-                langData.Add(listOfValues);
-            }
-            this.testData.Add(this._propertyName, langData);
-
-        }
-        /// <summary>
-        /// Load the test parameters data for all supported languages for inline use of the test.
+        /// Adds a language parameter to the test data which will contain the language 
+        /// that the test is currently running against from the list of supported languages
         /// </summary>
         /// <param name="args">The test parameters to insert inline for the test</param>
         public SqlInlineDataAttribute(params object[] args)
         {
-            var langData = new List<List<object>>();
             foreach (string lang in Enum.GetNames(typeof(SupportedLanguages)))
             {
                 var listOfValues = new List<object>();
@@ -48,9 +31,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
                     listOfValues.Add(val);
                 }
                 listOfValues.Add(lang);
-                langData.Add(listOfValues);
+                this.testData.Add(listOfValues.ToArray());
             }
-            this.testData.Add(this._propertyName, langData);
         }
 
         /// <inheritDoc />
@@ -62,20 +44,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
             UnsupportedLanguagesAttribute unsupportedLangAttr = testMethod.GetCustomAttribute<UnsupportedLanguagesAttribute>();
             if (unsupportedLangAttr != null)
             {
-                var unsupportedLanguages = new List<string>();
-                unsupportedLanguages.AddRange(unsupportedLangAttr.UnsuppportedLanguages);
-                foreach (string lang in unsupportedLanguages)
+                foreach (string lang in unsupportedLangAttr.UnsuppportedLanguages)
                 {
-                    List<List<object>> dataList = this.testData.GetValueOrDefault(this._propertyName);
-                    dataList.RemoveAll(l => l.Contains(lang));
-                    this.testData[this._propertyName] = dataList;
+                    this.testData.RemoveAll(l => Array.IndexOf(l, lang) > -1);
                 }
             }
-
-            string serializedData = JsonConvert.SerializeObject(this.testData);
-            var allData = JObject.Parse(serializedData);
-            JToken data = allData[this._propertyName];
-            return data.ToObject<List<object[]>>();
+            return this.testData;
         }
     }
 
@@ -94,8 +68,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
             }
         }
     }
-
-    [Flags]
     public enum SupportedLanguages
     {
         CSharp
