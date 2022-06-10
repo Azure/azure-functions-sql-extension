@@ -16,8 +16,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
     /// </summary>
     public class SqlInlineDataAttribute : DataAttribute
     {
-        protected readonly Dictionary<string, List<List<object>>> testData = new Dictionary<string, List<List<object>>>();
-        protected readonly string _propertyName = "data";
+        private readonly Dictionary<string, List<List<object>>> testData = new Dictionary<string, List<List<object>>>();
+        private readonly string _propertyName = "data";
 
         /// <summary>
         /// Load supported languages as test parameters data for the test.
