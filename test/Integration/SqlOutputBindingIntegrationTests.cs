@@ -43,9 +43,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         [Theory]
-        [SupportedLanguages(1, "Test", 5)]
-        [SupportedLanguages(0, "", 0)]
-        [SupportedLanguages(-500, "ABCD", 580)]
+        [SqlInlineData(1, "Test", 5)]
+        [SqlInlineData(0, "", 0)]
+        [SqlInlineData(-500, "ABCD", 580)]
         public void AddProductTest(int id, string name, int cost, string lang)
         {
             this.StartFunctionHost(nameof(AddProduct), lang);
@@ -65,9 +65,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         [Theory]
-        [SupportedLanguages(1, "Test", 5)]
-        [SupportedLanguages(0, "", 0)]
-        [SupportedLanguages(-500, "ABCD", 580)]
+        [SqlInlineData(1, "Test", 5)]
+        [SqlInlineData(0, "", 0)]
+        [SqlInlineData(-500, "ABCD", 580)]
         public void AddProductParamsTest(int id, string name, int cost, string lang)
         {
             this.StartFunctionHost(nameof(AddProductParams), lang);
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         [Theory]
-        [SupportedLanguages()]
+        [SqlInlineData()]
         public void AddProductArrayTest(string lang)
         {
             this.StartFunctionHost(nameof(AddProductsArray), lang);
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         [Theory]
-        [SupportedLanguages()]
+        [SqlInlineData()]
         public void AddProductsCollectorTest(string lang)
         {
             this.StartFunctionHost(nameof(AddProductsCollector), lang);
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         [Theory]
-        [SupportedLanguages()]
+        [SqlInlineData()]
         public void QueueTriggerProductsTest(string lang)
         {
             this.StartFunctionHost(nameof(QueueTriggerProducts), lang);
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         [Theory]
-        [SupportedLanguages()]
+        [SqlInlineData()]
         public void TimerTriggerProductsTest(string lang)
         {
             this.StartFunctionHost(nameof(TimerTriggerProducts), lang);
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         [Theory]
-        [SupportedLanguages()]
+        [SqlInlineData()]
         public void AddProductExtraColumnsTest(string lang)
         {
             this.StartFunctionHost(nameof(AddProductExtraColumns), lang, true);
@@ -177,7 +177,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         [Theory]
-        [SupportedLanguages()]
+        [SqlInlineData()]
         public void AddProductMissingColumnsTest(string lang)
         {
             this.StartFunctionHost(nameof(AddProductMissingColumns), lang, true);
@@ -189,7 +189,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         [Theory]
-        [SupportedLanguages()]
+        [SqlInlineData()]
         public void AddProductMissingColumnsNotNullTest(string lang)
         {
             this.StartFunctionHost(nameof(AddProductMissingColumnsExceptionFunction), lang, true);
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         [Theory]
-        [SupportedLanguages()]
+        [SqlInlineData()]
         public void AddProductNoPartialUpsertTest(string lang)
         {
             this.StartFunctionHost(nameof(AddProductsNoPartialUpsert), lang, true);
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// Tests that for tables with an identity column we are able to insert items.
         /// </summary>
         [Theory]
-        [SupportedLanguages()]
+        [SqlInlineData()]
         public void AddProductWithIdentity(string lang)
         {
             this.StartFunctionHost(nameof(AddProductWithIdentityColumn), lang);
@@ -234,7 +234,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// Tests that for tables with an identity column we are able to insert multiple items at once
         /// </summary>
         [Theory]
-        [SupportedLanguages()]
+        [SqlInlineData()]
         public void AddProductsWithIdentityColumnArray(string lang)
         {
             this.StartFunctionHost(nameof(AddProductsWithIdentityColumnArray), lang);
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// insert items.
         /// </summary>
         [Theory]
-        [SupportedLanguages()]
+        [SqlInlineData()]
         public void AddProductWithIdentity_MultiplePrimaryColumns(string lang)
         {
             this.StartFunctionHost(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), lang);
@@ -270,7 +270,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// by the function we handle inserting/updating that correctly.
         /// </summary>
         [Theory]
-        [SupportedLanguages()]
+        [SqlInlineData()]
         public void AddProductWithIdentity_SpecifyIdentityColumn(string lang)
         {
             this.StartFunctionHost(nameof(AddProductWithIdentityColumnIncluded), lang);
@@ -300,7 +300,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// Tests that when using a table with an identity column we can handle a null (missing) identity column
         /// </summary>
         [Theory]
-        [SupportedLanguages()]
+        [SqlInlineData()]
         public void AddProductWithIdentity_NoIdentityColumn(string lang)
         {
             this.StartFunctionHost(nameof(AddProductWithIdentityColumnIncluded), lang);
@@ -328,7 +328,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// keys an error is thrown if at least one of the primary keys is missing.
         /// </summary>
         [Theory]
-        [SupportedLanguages()]
+        [SqlInlineData()]
         public void AddProductWithIdentity_MissingPrimaryColumn(string lang)
         {
             this.StartFunctionHost(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), lang);
@@ -349,7 +349,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// the POCO fields case and column names case do not match.
         /// </summary>
         [Theory]
-        [SupportedLanguages()]
+        [SqlInlineData()]
         public void AddProductCaseSensitiveTest(string lang)
         {
             this.StartFunctionHost(nameof(AddProductParams), lang);
