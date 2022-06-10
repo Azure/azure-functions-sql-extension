@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(1, "Test", 5)]
         [SqlInlineData(0, "", 0)]
         [SqlInlineData(-500, "ABCD", 580)]
-        public void AddProductTest(int id, string name, int cost, string lang)
+        public void AddProductTest(int id, string name, int cost, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProduct), lang);
 
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(1, "Test", 5)]
         [SqlInlineData(0, "", 0)]
         [SqlInlineData(-500, "ABCD", 580)]
-        public void AddProductParamsTest(int id, string name, int cost, string lang)
+        public void AddProductParamsTest(int id, string name, int cost, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductParams), lang);
 
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        public void AddProductArrayTest(string lang)
+        public void AddProductArrayTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsArray), lang);
 
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        public void AddProductsCollectorTest(string lang)
+        public void AddProductsCollectorTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsCollector), lang);
 
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        public void QueueTriggerProductsTest(string lang)
+        public void QueueTriggerProductsTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(QueueTriggerProducts), lang);
 
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        public void TimerTriggerProductsTest(string lang)
+        public void TimerTriggerProductsTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(TimerTriggerProducts), lang);
 
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        public void AddProductExtraColumnsTest(string lang)
+        public void AddProductExtraColumnsTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductExtraColumns), lang, true);
 
@@ -178,7 +178,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        public void AddProductMissingColumnsTest(string lang)
+        public void AddProductMissingColumnsTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductMissingColumns), lang, true);
 
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        public void AddProductMissingColumnsNotNullTest(string lang)
+        public void AddProductMissingColumnsNotNullTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductMissingColumnsExceptionFunction), lang, true);
 
@@ -201,7 +201,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        public void AddProductNoPartialUpsertTest(string lang)
+        public void AddProductNoPartialUpsertTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsNoPartialUpsert), lang, true);
 
@@ -215,7 +215,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        public void AddProductWithIdentity(string lang)
+        public void AddProductWithIdentity(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithIdentityColumn), lang);
             // Identity column (ProductID) is left out for new items
@@ -235,7 +235,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        public void AddProductsWithIdentityColumnArray(string lang)
+        public void AddProductsWithIdentityColumnArray(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsWithIdentityColumnArray), lang);
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        public void AddProductWithIdentity_MultiplePrimaryColumns(string lang)
+        public void AddProductWithIdentity_MultiplePrimaryColumns(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), lang);
             var query = new Dictionary<string, string>()
@@ -271,7 +271,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        public void AddProductWithIdentity_SpecifyIdentityColumn(string lang)
+        public void AddProductWithIdentity_SpecifyIdentityColumn(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithIdentityColumnIncluded), lang);
             var query = new Dictionary<string, string>()
@@ -301,7 +301,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        public void AddProductWithIdentity_NoIdentityColumn(string lang)
+        public void AddProductWithIdentity_NoIdentityColumn(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithIdentityColumnIncluded), lang);
             var query = new Dictionary<string, string>()
@@ -329,7 +329,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        public void AddProductWithIdentity_MissingPrimaryColumn(string lang)
+        public void AddProductWithIdentity_MissingPrimaryColumn(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), lang);
             var query = new Dictionary<string, string>()
@@ -350,7 +350,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        public void AddProductCaseSensitiveTest(string lang)
+        public void AddProductCaseSensitiveTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductParams), lang);
 

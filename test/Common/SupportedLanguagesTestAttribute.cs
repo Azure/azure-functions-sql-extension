@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         /// <param name="args">The test parameters to insert inline for the test</param>
         public SqlInlineDataAttribute(params object[] args)
         {
-            foreach (string lang in Enum.GetNames(typeof(SupportedLanguages)))
+            foreach (SupportedLanguages lang in Enum.GetValues(typeof(SupportedLanguages)))
             {
                 var listOfValues = new List<object>();
                 foreach (object val in args)
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
             UnsupportedLanguagesAttribute unsupportedLangAttr = testMethod.GetCustomAttribute<UnsupportedLanguagesAttribute>();
             if (unsupportedLangAttr != null)
             {
-                foreach (string lang in unsupportedLangAttr.UnsuppportedLanguages)
+                foreach (SupportedLanguages lang in unsupportedLangAttr.UnsuppportedLanguages)
                 {
                     this.testData.RemoveAll(l => Array.IndexOf(l, lang) > -1);
                 }
@@ -56,16 +56,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
     [AttributeUsage(AttributeTargets.Method)]
     public class UnsupportedLanguagesAttribute : Attribute
     {
-        public List<string> UnsuppportedLanguages { get; set; } = new List<string>();
+        public List<SupportedLanguages> UnsuppportedLanguages { get; set; } = new List<SupportedLanguages>();
         /// <summary>
         /// Load only supported languages excluding the ones from the provided parameters.
         /// </summary>
         public UnsupportedLanguagesAttribute(params SupportedLanguages[] argsWithUnsupportedLangs)
         {
-            foreach (SupportedLanguages s in argsWithUnsupportedLangs)
-            {
-                this.UnsuppportedLanguages.Add(s.ToString());
-            }
+            this.UnsuppportedLanguages.AddRange(argsWithUnsupportedLangs);
         }
     }
     public enum SupportedLanguages

@@ -32,7 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(0, 100)]
         [SqlInlineData(1, -500)]
         [SqlInlineData(100, 500)]
-        public async void GetProductsTest(int n, int cost, string lang)
+        public async void GetProductsTest(int n, int cost, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProducts), lang);
 
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(0, 99)]
         [SqlInlineData(1, -999)]
         [SqlInlineData(100, 999)]
-        public async void GetProductsStoredProcedureTest(int n, int cost, string lang)
+        public async void GetProductsStoredProcedureTest(int n, int cost, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsStoredProcedure), lang);
 
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(0, 0)]
         [SqlInlineData(1, 20)]
         [SqlInlineData(100, 1000)]
-        public async void GetProductsNameEmptyTest(int n, int cost, string lang)
+        public async void GetProductsNameEmptyTest(int n, int cost, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsNameEmpty), lang);
 
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        public async void GetProductsByCostTest(string lang)
+        public async void GetProductsByCostTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsStoredProcedureFromAppSetting), lang);
 
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        public async void GetProductNamesViewTest(string lang)
+        public async void GetProductNamesViewTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductNamesView), lang);
 
