@@ -33,6 +33,11 @@
     </ItemGroup>
     <Copy SourceFiles="@(_CopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\JavaScript\" />
     <Message Text="Copied host.json to $(OutDir)\SqlExtensionSamples\JavaScript" Importance="high" />
+    <ItemGroup>
+      <_CopyItems Include="samples-js-extra\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_CopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\JavaScript\%(RecursiveDir)" />
+    <Message Text="Copied extra samples to $(OutDir)\SqlExtensionSamples\JavaScript" Importance="high" />
   </Target>
 
 </Project>
