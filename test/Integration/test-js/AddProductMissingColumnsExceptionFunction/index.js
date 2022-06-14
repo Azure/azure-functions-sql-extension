@@ -1,6 +1,6 @@
+// This output binding should throw an error since the ProductsCostNotNull table does not
+// allows rows without a Cost value.
 module.exports = async function (context) {
-    context.log('JavaScript HTTP trigger function processed a request.');
-
     const products = [{
         "productId": 1,
         "name": "MissingCost"

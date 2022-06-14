@@ -1,6 +1,6 @@
+// This output binding should throw an Exception because the ProductExtraColumns object has 
+// two properties that do not exist as columns in the SQL table (ExtraInt and ExtraString).
 module.exports = async function (context) {
-    context.log('JavaScript HTTP trigger function processed a request.');
-
     const products = [{
         "productId": 1001,
         "name": "Shoes",

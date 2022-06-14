@@ -1,11 +1,11 @@
+// This output binding should throw an error since the ProductsNameNotNull table does not 
+// allows rows without a Name value. No rows should be upserted to the Sql table.
 module.exports = async function (context) {
-    context.log('JavaScript HTTP trigger function processed a request.');
-
     var products = [];
     for(let i = 0; i < 1000; i++) {
         products.add({"productId": i,
-        "name": "test"+i,
-        "cost": i});
+        "name": "test",
+        "cost": 100 * i});
     }
     const invalidProduct = {
         "productid": 1000,
