@@ -123,6 +123,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.JavaScript)]
         public void AddProductsCollectorTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsCollector), lang);
@@ -135,6 +136,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.JavaScript)]
         public void QueueTriggerProductsTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(QueueTriggerProducts), lang);
@@ -152,6 +154,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.JavaScript)]
         public void TimerTriggerProductsTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(TimerTriggerProducts), lang);
@@ -166,6 +169,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.JavaScript)]
         public void AddProductExtraColumnsTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductExtraColumns), lang, true);
@@ -178,6 +182,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.JavaScript)]
         public void AddProductMissingColumnsTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductMissingColumns), lang, true);
@@ -190,6 +195,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.JavaScript)]
         public void AddProductMissingColumnsNotNullTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductMissingColumnsExceptionFunction), lang, true);
@@ -201,6 +207,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.JavaScript)]
         public void AddProductNoPartialUpsertTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsNoPartialUpsert), lang, true);
@@ -235,6 +242,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.JavaScript)]
         public void AddProductsWithIdentityColumnArray(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsWithIdentityColumnArray), lang);
@@ -329,6 +337,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.JavaScript)]
         public void AddProductWithIdentity_MissingPrimaryColumn(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), lang);

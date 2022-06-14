@@ -67,6 +67,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
     }
     public enum SupportedLanguages
     {
-        CSharp
+        CSharp,
+        JavaScript
     };
 }

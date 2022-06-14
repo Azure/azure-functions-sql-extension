@@ -47,7 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             string expectedResponse = JsonConvert.SerializeObject(products);
             string actualResponse = await response.Content.ReadAsStringAsync();
 
-            Assert.Equal(expectedResponse, actualResponse, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(expectedResponse, TestUtils.TrimJSONString(actualResponse), StringComparer.OrdinalIgnoreCase);
         }
 
         [Theory]
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             string expectedResponse = JsonConvert.SerializeObject(products);
             string actualResponse = await response.Content.ReadAsStringAsync();
 
-            Assert.Equal(expectedResponse, actualResponse, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(expectedResponse, TestUtils.TrimJSONString(actualResponse), StringComparer.OrdinalIgnoreCase);
         }
 
         [Theory]
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             string expectedResponse = JsonConvert.SerializeObject(products);
             string actualResponse = await response.Content.ReadAsStringAsync();
 
-            Assert.Equal(expectedResponse, actualResponse, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(expectedResponse, TestUtils.TrimJSONString(actualResponse), StringComparer.OrdinalIgnoreCase);
         }
 
         [Theory]
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             string expectedResponse = JsonConvert.SerializeObject(productsWithCost100);
             string actualResponse = await response.Content.ReadAsStringAsync();
 
-            Assert.Equal(expectedResponse, actualResponse, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(expectedResponse, TestUtils.TrimJSONString(actualResponse), StringComparer.OrdinalIgnoreCase);
         }
 
         [Theory]
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             string expectedResponse = "[{\"name\":\"test\"}]";
             string actualResponse = await response.Content.ReadAsStringAsync();
 
-            Assert.Equal(expectedResponse, actualResponse, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(expectedResponse, TestUtils.TrimJSONString(actualResponse), StringComparer.OrdinalIgnoreCase);
         }
 
         private static Product[] GetProductsWithSameCost(int n, int cost)

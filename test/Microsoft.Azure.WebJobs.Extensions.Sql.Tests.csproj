@@ -23,6 +23,16 @@
     </ItemGroup>
     <Copy SourceFiles="@(_CopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\CSharp\%(RecursiveDir)" />
     <Message Text="Copied Samples output to $(OutDir)\SqlExtensionSamples" Importance="high" />
+    <ItemGroup>
+      <_CopyItems Include="..\samples\samples-js\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_CopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\JavaScript\%(RecursiveDir)" />
+    <Message Text="Copied JS Samples output to $(OutDir)\samples-js" Importance="high" />
+    <ItemGroup>
+      <_CopyItems Include="host.json" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_CopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\JavaScript\" />
+    <Message Text="Copied host.json to $(OutDir)\SqlExtensionSamples\JavaScript" Importance="high" />
   </Target>
 
 </Project>
