@@ -47,7 +47,7 @@ namespace Microsoft.Azure.WebJobs
         /// Specifies whether <see cref="CommandText"/> refers to a stored procedure or SQL query string.
         /// Use <see cref="CommandType.StoredProcedure"/> for the former, <see cref="CommandType.Text"/> for the latter
         /// </summary>
-        public CommandType CommandType { get; set; }
+        public CommandType CommandType { get; set; } = CommandType.Text;
 
         /// <summary>
         /// Specifies the parameters that will be used to execute the SQL query or stored procedure specified in <see cref="CommandText"/>.
