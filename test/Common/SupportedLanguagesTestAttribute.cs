@@ -25,6 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         {
             // Add each supported language to the args and add the newly created list of args
             // with the language parameter to the testData
+            // [a, b, c] -> [[a, b, c, SupportedLang1], [a, b,  c, SupportedLang2], ..]
             foreach (SupportedLanguages lang in Enum.GetValues(typeof(SupportedLanguages)))
             {
                 var listOfValues = new List<object>();
