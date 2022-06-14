@@ -23,6 +23,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         /// <param name="args">The test parameters to insert inline for the test</param>
         public SqlInlineDataAttribute(params object[] args)
         {
+            // Add each supported language to the args and add the newly created list of args
+            // with the language parameter to the testData
             foreach (SupportedLanguages lang in Enum.GetValues(typeof(SupportedLanguages)))
             {
                 var listOfValues = new List<object>();
