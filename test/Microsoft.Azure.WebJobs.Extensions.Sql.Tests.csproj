@@ -25,19 +25,15 @@
     <Message Text="Copied Samples output to $(OutDir)\SqlExtensionSamples" Importance="high" />
     <ItemGroup>
       <_JsCopyItems Include="..\samples\samples-js\**\*.*" />
+      <_JsCopyItems Include="Integration\test-js\**\*.*" />
     </ItemGroup>
     <Copy SourceFiles="@(_JsCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\JavaScript\%(RecursiveDir)" />
-    <Message Text="Copied JS Samples output to $(OutDir)\samples-js" Importance="high" />
+    <Message Text="Copied JS Samples output to $(OutDir)\SqlExtensionSamples\JavaScript" Importance="high" />
     <ItemGroup>
       <_HostCopyItems Include="host.json" />
     </ItemGroup>
     <Copy SourceFiles="@(_HostCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\JavaScript\" />
     <Message Text="Copied host.json to $(OutDir)\SqlExtensionSamples\JavaScript" Importance="high" />
-    <ItemGroup>
-      <_JsCopyItems Include="Integration\test-js\**\*.*" />
-    </ItemGroup>
-    <Copy SourceFiles="@(_JsCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\JavaScript\%(RecursiveDir)" />
-    <Message Text="Copied extra samples to $(OutDir)\SqlExtensionSamples\JavaScript" Importance="high" />
   </Target>
 
 </Project>

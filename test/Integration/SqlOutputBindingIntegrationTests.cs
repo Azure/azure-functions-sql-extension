@@ -124,6 +124,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Theory]
         [SqlInlineData()]
         [UnsupportedLanguages(SupportedLanguages.JavaScript)]
+        // Collectors are CSharp specific and are not relevant for JavaScript
         public void AddProductsCollectorTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsCollector), lang);
