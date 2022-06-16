@@ -8,15 +8,15 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
-    public static class AddProductMissingColumnsExceptionFunction
+    public static class AddProductMissingColumns
     {
-        // This output binding should throw an error since the ProductsCostNotNull table does not
-        // allows rows without a Cost value.
-        [FunctionName("AddProductMissingColumnsExceptionFunction")]
+        // This output binding should successfully add the ProductMissingColumns object
+        // to the SQL table.
+        [FunctionName("AddProductMissingColumns")]
         public static IActionResult Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct-missingcolumnsexception")]
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "addproduct-missingcolumns")]
             HttpRequest req,
-            [Sql("dbo.ProductsCostNotNull", ConnectionStringSetting = "SqlConnectionString")] out ProductMissingColumns product)
+            [Sql("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] out ProductMissingColumns product)
         {
             product = new ProductMissingColumns
             {
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 ProductID = 1
                 // Cost is missing
             };
-            return new CreatedResult($"/api/addproduct-missingcolumnsexception", product);
+            return new CreatedResult($"/api/addproduct-missingcolumns", product);
         }
     }
 }

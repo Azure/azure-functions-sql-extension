@@ -123,6 +123,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.JavaScript)] // Collectors are only available in C#
         public void AddProductsCollectorTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsCollector), lang);
@@ -184,7 +185,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // Even though the ProductMissingColumns object is missing the Cost column,
             // the row should still be added successfully since Cost can be null.
-            this.SendOutputGetRequest("addproduct-missingcolumns").Wait();
+            this.SendOutputPostRequest("addproduct-missingcolumns", string.Empty).Wait();
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM Products"));
         }
 
@@ -196,7 +197,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // Since the Sql table does not allow null for the Cost column,
             // inserting a row without a Cost value should throw an Exception.
-            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-missingcolumnsexception").Wait());
+            Assert.Throws<AggregateException>(() => this.SendOutputPostRequest("addproduct-missingcolumnsexception", string.Empty).Wait());
         }
 
         [Theory]
@@ -205,7 +206,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             this.StartFunctionHost(nameof(AddProductsNoPartialUpsert), lang, true);
 
-            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproducts-nopartialupsert").Wait());
+            Assert.Throws<AggregateException>(() => this.SendOutputPostRequest("addproducts-nopartialupsert", string.Empty).Wait());
             // No rows should be upserted since there was a row with an invalid value
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsNameNotNull"));
         }
