@@ -22,7 +22,7 @@
       <_CSharpCopyItems Include="..\samples\samples-csharp\bin\$(Configuration)\$(TargetFramework)\**\*.*" />
     </ItemGroup>
     <Copy SourceFiles="@(_CSharpCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\CSharp\%(RecursiveDir)" />
-    <Message Text="Copied Samples output to $(OutDir)\SqlExtensionSamples" Importance="high" />
+    <Message Text="Copied C# Samples output to $(OutDir)\SqlExtensionSamples\CSharp" Importance="high" />
     <ItemGroup>
       <_JsCopyItems Include="..\samples\samples-js\**\*.*" />
       <_JsCopyItems Include="Integration\test-js\**\*.*" />

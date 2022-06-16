@@ -123,8 +123,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.JavaScript)]
-        // Collectors are CSharp specific and are not relevant for JavaScript
+        [UnsupportedLanguages(SupportedLanguages.JavaScript)] // Collectors are only available in C#
         public void AddProductsCollectorTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsCollector), lang);
@@ -208,7 +207,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.StartFunctionHost(nameof(AddProductsNoPartialUpsert), lang, true);
 
             Assert.Throws<AggregateException>(() => this.SendOutputPostRequest("addproducts-nopartialupsert", string.Empty).Wait());
-            // No rows should be upserted since there was a row with SendOutputPostRequestan invalid value
+            // No rows should be upserted since there was a row with an invalid value
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsNameNotNull"));
         }
 

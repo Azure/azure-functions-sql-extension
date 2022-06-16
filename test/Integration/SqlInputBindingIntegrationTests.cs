@@ -117,7 +117,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             string expectedResponse = JsonConvert.SerializeObject(productsWithCost100);
             string actualResponse = await response.Content.ReadAsStringAsync();
 
-            Assert.Equal(expectedResponse, actualResponse, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(expectedResponse, TestUtils.CleanJsonString(actualResponse), StringComparer.OrdinalIgnoreCase);
         }
 
         [Theory]
