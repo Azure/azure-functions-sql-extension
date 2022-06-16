@@ -154,7 +154,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         /// Removes spaces, tabs and new lines from the JSON string.
         /// </summary>
         /// <param name="jsonStr">The json string for trimming</param>
-        public static string TrimJSONString(string jsonStr)
+        public static string CleanJsonString(string jsonStr)
         {
             return jsonStr.Trim().Replace(" ", "").Replace(Environment.NewLine, "");
         }
