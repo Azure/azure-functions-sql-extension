@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         // two properties that do not exist as columns in the SQL table (ExtraInt and ExtraString).
         [FunctionName("AddProductExtraColumns")]
         public static IActionResult Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct-extracolumns")]
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "addproduct-extracolumns")]
             HttpRequest req,
             [Sql("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] out ProductExtraColumns product)
         {
