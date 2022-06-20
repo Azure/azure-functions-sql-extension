@@ -17,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         // allows rows without a Name value. No rows should be upserted to the Sql table.
         [FunctionName("AddProductsNoPartialUpsert")]
         public static IActionResult Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproducts-nopartialupsert")]
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "addproducts-nopartialupsert")]
             HttpRequest req,
             [Sql("dbo.ProductsNameNotNull", ConnectionStringSetting = "SqlConnectionString")] ICollector<Product> products)
         {

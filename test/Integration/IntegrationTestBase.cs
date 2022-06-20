@@ -164,9 +164,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// - The functionName is different than its route.<br/>
         /// - You can start multiple functions by passing in a space-separated list of function names.<br/>
         /// </remarks>
-        protected void StartFunctionHost(string functionName, bool useTestFolder = false)
+        protected void StartFunctionHost(string functionName, SupportedLanguages language, bool useTestFolder = false)
         {
-            string workingDirectory = useTestFolder ? GetPathToBin() : Path.Combine(GetPathToBin(), "SqlExtensionSamples");
+            string workingDirectory = useTestFolder ? GetPathToBin() : Path.Combine(GetPathToBin(), "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), language));
             if (!Directory.Exists(workingDirectory))
             {
                 throw new FileNotFoundException("Working directory not found at " + workingDirectory);

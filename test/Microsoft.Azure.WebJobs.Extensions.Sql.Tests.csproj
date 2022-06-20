@@ -19,10 +19,16 @@
 
   <Target Name="CopySamples" AfterTargets="Build">
     <ItemGroup>
-      <_CopyItems Include="..\samples\samples-csharp\bin\$(Configuration)\$(TargetFramework)\**\*.*" />
+      <_CSharpCopyItems Include="..\samples\samples-csharp\bin\$(Configuration)\$(TargetFramework)\**\*.*" />
     </ItemGroup>
-    <Copy SourceFiles="@(_CopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\%(RecursiveDir)" />
-    <Message Text="Copied Samples output to $(OutDir)\SqlExtensionSamples" Importance="high" />
+    <Copy SourceFiles="@(_CSharpCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\CSharp\%(RecursiveDir)" />
+    <Message Text="Copied C# Samples output to $(OutDir)\SqlExtensionSamples\CSharp" Importance="high" />
+    <ItemGroup>
+      <_JsCopyItems Include="..\samples\samples-js\**\*.*" />
+      <_JsCopyItems Include="Integration\test-js\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_JsCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\JavaScript\%(RecursiveDir)" />
+    <Message Text="Copied JS Samples output to $(OutDir)\SqlExtensionSamples\JavaScript" Importance="high" />
   </Target>
 
 </Project>

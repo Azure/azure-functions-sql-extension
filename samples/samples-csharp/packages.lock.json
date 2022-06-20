@@ -14,9 +14,9 @@
       },
       "Microsoft.NET.Sdk.Functions": {
         "type": "Direct",
-        "requested": "[3.0.13, )",
-        "resolved": "3.0.13",
-        "contentHash": "8BEt6I6OLm7fo9bh8VGI7Mkc7xs/vI/KDira8MQcfZIA+K+lmDRb2PAL/+728eYfXI4SVrGs4MLhUZvKtpWfvQ==",
+        "requested": "[3.1.1, )",
+        "resolved": "3.1.1",
+        "contentHash": "sPPLAjDYroeuIDKwff5B1XrwvGzJm9K9GabXurmfpaXa3M4POy7ngLcG5mm+2pwjTA7e870pIjt1N2DqVQS4yA==",
         "dependencies": {
           "Microsoft.Azure.Functions.Analyzers": "[1.0.0, 2.0.0)",
           "Microsoft.Azure.WebJobs": "[3.0.23, 3.1.0)",
