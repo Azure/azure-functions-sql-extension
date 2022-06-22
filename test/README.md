@@ -28,51 +28,57 @@ Our integration tests are based on functions from the samples project. To run in
 
  ## Adding New Integration Tests
 
-    When addiing a new integration test for a function, make sure to add the function in all supported languages (Under samples\/samples-\<language\> in samples project) unless the test is specific to some language(s). All Integration tests must have atleast a SupportedLanguage input parameter that specifies the language the test runs against.
+    When adding a new integration test for a function follow these steps:
+
+    1. First decide where the function being used for the test is going to go. If this is demonstrating valid functionality that customers may find useful then it should go under the samples folder. If it is demonstrating an error case or something similar then it should go under the test/Integration folder
+    2. Within either of those folders are a number of sub-folders with the name samples-\<language> or test-\<language>. You will need to make a version of the function for each of the currently supported languages - skipping any that don't apply to your sample (for example if you're verifying a language feature that only exists in one particular language. These functions should all be functionally identical - given the same input they should return the same output
+    3. The function should have the FunctionName be the same as the class name
+    4. After the functions are created then add the test itself to either SqlInputBindingIntegrationTests.ts or SqlOutputBindingIntegrationTests.ts. See below for the various attributes, parameters and setup that are required for each test
 
      ### SqlInlineData attribute:
      
-     SqlInlineData attribute is a custom attribute derived from Xunit Data attribute and it supplies the SupportedLanguage parameter to the test for the test to run against. By default any test decorated with the [SqlInline] attribute will be run against each supported language in the SupportedLanguages enum.
+     SqlInlineData attribute is a custom attribute derived from Xunit Data attribute and it supplies the SupportedLanguage parameter to the test for the test to run against in addition to any other data parameters included. By default any test decorated with the [SqlInlineData] attribute will be run against each supported language in the SupportedLanguages enum.
 
-      ### UnsupportedLanguages attribute:
-      UnsupportedLanguages attribute accepts a list of coma separated languages that are not supported for the test. For example, if a test is not relevant to a specific language or if the function is not yet available in the samples-\<language>, we should use UnsupportedLanguages attribute and specify the language(s) for exclusion.
-
-      Below are some examples on how to use the attributes.
-
-    1. Use [Theory] and [SqlInlineData] attributes over the test and pass in the test variables except the language variable.
+     How to use: Add [Theory] and [SqlInlineData] attributes over the test and pass in the test variables except the language variable.
      [SqlInlineData] runs the test with the given parameters against all supported languages.
-     Ex: When the test doesn't have any input paraneters:
+
+     Ex: When the test doesn't have any input parameters:
      ```
         [Theory]
         [SqlInlineData()]
         public async void GetProductsByCostTest(SupportedLanguages lang)
         {
-            // test code
-            // test assertions
-            // Assert.Equal(expectedResponse, actualResponse, StringComparer.OrdinalIgnoreCase);
+               this.StartFunctionHost(nameof(<FUNCTIONNAME>), lang); // Replace <FUNCTIONNAME> with the class name of the function this test is running against
+            // test code here
         }
-        ```
-      Ex: When the test has paramters:
-       ```
+    ```  
+      Ex: When the test has parameters:
+
+    ```
         [Theory]
         [SqlInlineData(0, 0)]
         public async void GetProductsByCostTest(int n, int cost, SupportedLanguages lang)
         {
-            // test code
-            // test assertions ->
-            // Assert.Equal(expectedResponse, actualResponse, StringComparer.OrdinalIgnoreCase);
+            this.StartFunctionHost(nameof(<FUNCTIONNAME>), lang); // Replace <FUNCTIONNAME> with the class name of the function this test is running against
+            // test code here
         }
-        ```
-    2. Use [UnsupportedLanguages] attribute over the test to specify the list of languages that the test must not run against.
-    Ex:
     ```
-    [Theory]
+
+    ### UnsupportedLanguages attribute:
+
+    UnsupportedLanguages attribute accepts a list of coma separated languages that are not supported for the test. For example, if a test is not relevant to a specific language or if the function is not yet available in the samples-\<language>, we should use UnsupportedLanguages attribute and specify the language(s) for exclusion.
+
+    Below is an example on how to use the attribute.
+
+    Use [UnsupportedLanguages] attribute over the test to specify the list of languages that the test must not run against  and add a comment on why the language is not supported.
+
+    ```
+        [Theory]
         [SqlInlineData()]
         [UnsupportedLanguages(SupportedLanguages.JavaScript)] // Collectors are only available in C#
         public void AddProductsCollectorTest(SupportedLanguages lang)
         {
-            // test code
-            // test assertions ->
-        // Assert.Equal(5000, this.ExecuteScalar("SELECT COUNT(1) FROM Products"));
+            this.StartFunctionHost(nameof(<FUNCTIONNAME>), lang); // Replace <FUNCTIONNAME> with the class name of the function this test is running against
+            // test code here
         }
-    ```
+     ```
