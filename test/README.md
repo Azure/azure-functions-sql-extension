@@ -65,7 +65,7 @@ Our integration tests are based on functions from the samples project. To run in
 
    ### UnsupportedLanguages attribute:
 
-   UnsupportedLanguages attribute accepts a list of coma separated languages that are not supported for the test. For example, if a test is not relevant to a specific language or if the function is not yet available in the samples-\<language>, we should use UnsupportedLanguages attribute and specify the language(s) for exclusion.
+   UnsupportedLanguages attribute accepts a list of comma separated languages that are not supported for the test. For example, if a test is not relevant to a specific language or if the function is not yet available in the samples-\<language>, we should use UnsupportedLanguages attribute and specify the language(s) for exclusion.
 
    Below is an example on how to use the attribute.
 
