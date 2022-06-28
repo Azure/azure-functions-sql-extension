@@ -26,6 +26,12 @@
           "Newtonsoft.Json": "11.0.2"
         }
       },
+      "Newtonsoft.Json": {
+        "type": "Direct",
+        "requested": "[13.0.1, )",
+        "resolved": "13.0.1",
+        "contentHash": "ppPFpBcvxdsfUonNcvITKqLl3bqxWbDCZIzDWHzjpdAHRFfZe0Dw9HmA0+za13IdyrgJwpkDTDA9fHaxOrt20A=="
+      },
       "Azure.Core": {
         "type": "Transitive",
         "resolved": "1.19.0",
@@ -740,11 +746,6 @@
           "System.Xml.ReaderWriter": "4.3.0",
           "System.Xml.XDocument": "4.3.0"
         }
-      },
-      "Newtonsoft.Json": {
-        "type": "Transitive",
-        "resolved": "11.0.2",
-        "contentHash": "IvJe1pj7JHEsP8B8J8DwlMEx8UInrs/x+9oVY+oCD13jpLu4JbJU2WCIsMRn5C4yW9+DgkaO8uiVE5VHKjpmdQ=="
       },
       "Newtonsoft.Json.Bson": {
         "type": "Transitive",
@@ -1728,6 +1729,7 @@
           "Microsoft.ApplicationInsights": "2.17.0",
           "Microsoft.Azure.WebJobs": "3.0.31",
           "Microsoft.Data.SqlClient": "3.0.1",
+          "Newtonsoft.Json": "13.0.1",
           "System.Runtime.Caching": "4.7.0",
           "morelinq": "3.3.2"
         }
