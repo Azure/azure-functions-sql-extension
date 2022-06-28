@@ -234,3 +234,8 @@ steps:
     docker rm sql1
   displayName: 'Stop and Remove SQL Server Image'
   condition: eq(variables['Agent.OS'], 'linux')
+
+- task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
+  displayName: 'Component Detection'
+  inputs:
+    failOnAlert: true
