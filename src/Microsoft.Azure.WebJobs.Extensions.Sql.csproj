@@ -32,6 +32,7 @@
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
     <PackageReference Include="morelinq" />
     <PackageReference Include="System.Runtime.Caching" />
+    <PackageReference Include="Newtonsoft.Json" />
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>Microsoft.Azure.WebJobs.Extensions.Sql.Tests</_Parameter1>
     </AssemblyAttribute>
