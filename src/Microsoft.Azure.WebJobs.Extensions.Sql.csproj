@@ -33,6 +33,7 @@
     <PackageReference Include="morelinq" />
     <PackageReference Include="System.Runtime.Caching" />
     <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="Microsoft.AspNetCore.Http" />
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>Microsoft.Azure.WebJobs.Extensions.Sql.Tests</_Parameter1>
     </AssemblyAttribute>
