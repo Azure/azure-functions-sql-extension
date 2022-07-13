@@ -52,6 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
             {
                 throw new ArgumentNullException(nameof(commandText));
             }
+            Console.WriteLine("USING THIS CONNECTION STRING: " + connection.ConnectionString);
 
             using (IDbCommand cmd = connection.CreateCommand())
             {

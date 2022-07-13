@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>    
+    <!-- Need to set root namespace to empty for IDE0130 to work properly - otherwise it errors out on top-level namespaces for some reason -->
+    <RootNamespace></RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<ProjectReference Include="..\test\Microsoft.Azure.WebJobs.Extensions.Sql.Tests.csproj" />
+	<ProjectReference Include="..\samples\Microsoft.Azure.WebJobs.Extensions.Sql.Samples.csproj" />
+  </ItemGroup>
+
+</Project>
