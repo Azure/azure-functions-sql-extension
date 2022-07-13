@@ -57,7 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         protected int Port { get; private set; } = 7071;
 
-        public IntegrationTestBase(ITestOutputHelper output)
+        public IntegrationTestBase(ITestOutputHelper output = null)
         {
             this.TestOutput = output;
             this.SetupDatabase();
@@ -72,20 +72,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// By default, integrated authentication will be used to connect to the server, unless the env variable "SA_PASSWORD" is set.
         /// In this case, connection will be made using SQL login with user "SA" and the provided password.
         /// </remarks>
-        private void SetupDatabase()
+        protected void SetupDatabase()
         {
             // Get the test server name from environment variable "TEST_SERVER", default to localhost if not set
             string testServer = Environment.GetEnvironmentVariable("TEST_SERVER");
             if (string.IsNullOrEmpty(testServer))
             {
-                testServer = "localhost";
+                testServer = "localhost\\SQLEXPRESS";
             }
 
             // First connect to master to create the database
             var connectionStringBuilder = new SqlConnectionStringBuilder()
             {
                 DataSource = testServer,
-                InitialCatalog = "master",
+                InitialCatalog = "Contact",
                 Pooling = false
             };
 
@@ -166,7 +166,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </remarks>
         protected void StartFunctionHost(string functionName, SupportedLanguages language, bool useTestFolder = false)
         {
-            string workingDirectory = useTestFolder ? GetPathToBin() : Path.Combine(GetPathToBin(), "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), language));
+            // string workingDirectory = useTestFolder ? GetPathToBin() : Path.Combine(GetPathToBin(), "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), language));
+            Console.WriteLine("IGNORE: " + language.ToString());
+            Console.WriteLine("IGNORE: " + useTestFolder);
+            string workingDirectory = "C:\\Users\\luczhan\\GitProjects\\azure-functions-sql-extension\\test\\bin\\Debug\\netcoreapp3.1\\SqlExtensionSamples\\CSharp";
             if (!Directory.Exists(workingDirectory))
             {
                 throw new FileNotFoundException("Working directory not found at " + workingDirectory);
@@ -179,11 +182,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 Arguments = $"start --verbose --port {this.Port} --functions {functionName}",
                 WorkingDirectory = workingDirectory,
                 WindowStyle = ProcessWindowStyle.Hidden,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false
+                RedirectStandardOutput = false,
+                RedirectStandardError = false,
+                UseShellExecute = true
             };
-            this.TestOutput.WriteLine($"Starting {startInfo.FileName} {startInfo.Arguments} in {startInfo.WorkingDirectory}");
+            Console.WriteLine($"Starting {startInfo.FileName} {startInfo.Arguments} in {startInfo.WorkingDirectory}");
             this.FunctionHost = new Process
             {
                 StartInfo = startInfo
@@ -192,8 +195,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.FunctionHost.ErrorDataReceived += this.TestOutputHandler;
 
             this.FunctionHost.Start();
-            this.FunctionHost.BeginOutputReadLine();
-            this.FunctionHost.BeginErrorReadLine();
+            // this.FunctionHost.BeginOutputReadLine();
+            // this.FunctionHost.BeginErrorReadLine();
 
             var taskCompletionSource = new TaskCompletionSource<bool>();
             this.FunctionHost.OutputDataReceived += (object sender, DataReceivedEventArgs e) =>
@@ -203,28 +206,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 if (e != null && !string.IsNullOrEmpty(e.Data) && e.Data.Contains($"http://localhost:{this.Port}/api"))
                 {
                     taskCompletionSource.SetResult(true);
+                    Console.WriteLine("-----Azure Function host started-----");
                 }
             };
-            this.TestOutput.WriteLine($"Waiting for Azure Function host to start...");
+            Console.WriteLine($"Waiting for Azure Function host to start...");
             taskCompletionSource.Task.Wait(60000);
-            this.TestOutput.WriteLine($"Azure Function host started!");
+            Console.WriteLine($"Azure Function host started!");
         }
 
         private static string GetFunctionsCoreToolsPath()
         {
             // Determine npm install path from either env var set by pipeline or OS defaults
             // Pipeline env var is needed as the Windows hosted agents installs to a non-traditional location
-            string nodeModulesPath = Environment.GetEnvironmentVariable("NODE_MODULES_PATH");
-            if (string.IsNullOrEmpty(nodeModulesPath))
-            {
-                nodeModulesPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
-                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\node_modules\") :
-                    @"/usr/local/lib/node_modules";
-            }
+            // string nodeModulesPath = Environment.GetEnvironmentVariable("NODE_MODULES_PATH");
+            // if (string.IsNullOrEmpty(nodeModulesPath))
+            // {
+            //     nodeModulesPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
+            //         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\node_modules\") :
+            //         @"/usr/local/lib/node_modules";
+            // }
 
             string funcExe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "func.exe" : "func";
-            string funcPath = Path.Combine(nodeModulesPath, "azure-functions-core-tools", "bin", funcExe);
+            // string funcPath = Path.Combine(nodeModulesPath, "azure-functions-core-tools", "bin", funcExe);
 
+            string funcPath = "C:\\Program Files\\nodejs\\node_modules\\azure-functions-core-tools\\bin\\func.exe";
             if (!File.Exists(funcPath))
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -247,14 +252,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             if (e != null && !string.IsNullOrEmpty(e.Data))
             {
-                this.TestOutput.WriteLine(e.Data);
+                this.TestOutput?.WriteLine(e.Data);
             }
         }
 
         protected async Task<HttpResponseMessage> SendGetRequest(string requestUri, bool verifySuccess = true)
         {
             string timeStamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", System.Globalization.CultureInfo.InvariantCulture);
-            this.TestOutput.WriteLine($"[{timeStamp}] Sending GET request: {requestUri}");
+            this.TestOutput?.WriteLine($"[{timeStamp}] Sending GET request: {requestUri}");
+            Console.WriteLine($"[{timeStamp}] Sending GET request: {requestUri}");
 
             if (string.IsNullOrEmpty(requestUri))
             {
@@ -274,7 +280,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         protected async Task<HttpResponseMessage> SendPostRequest(string requestUri, string json, bool verifySuccess = true)
         {
-            this.TestOutput.WriteLine("Sending POST request: " + requestUri);
+            this.TestOutput?.WriteLine("Sending POST request: " + requestUri);
 
             if (string.IsNullOrEmpty(requestUri))
             {
@@ -322,7 +328,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
             catch (Exception e1)
             {
-                this.TestOutput.WriteLine($"Failed to close connection. Error: {e1.Message}");
+                this.TestOutput?.WriteLine($"Failed to close connection. Error: {e1.Message}");
             }
             try
             {
@@ -333,7 +339,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
             catch (Exception e2)
             {
-                this.TestOutput.WriteLine($"Failed to drop {this.DatabaseName}, Error: {e2.Message}");
+                this.TestOutput?.WriteLine($"Failed to drop {this.DatabaseName}, Error: {e2.Message}");
             }
             finally
             {
@@ -347,7 +353,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 }
                 catch (Exception e3)
                 {
-                    this.TestOutput.WriteLine($"Failed to stop function host, Error: {e3.Message}");
+                    this.TestOutput?.WriteLine($"Failed to stop function host, Error: {e3.Message}");
                 }
 
                 try
@@ -357,7 +363,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 }
                 catch (Exception e4)
                 {
-                    this.TestOutput.WriteLine($"Failed to stop Azurite, Error: {e4.Message}");
+                    this.TestOutput?.WriteLine($"Failed to stop Azurite, Error: {e4.Message}");
                 }
             }
             GC.SuppressFinalize(this);
