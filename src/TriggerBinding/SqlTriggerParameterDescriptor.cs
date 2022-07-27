@@ -7,22 +7,23 @@ using Microsoft.Azure.WebJobs.Host.Protocols;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
+    /// <summary>
+    /// Trigger parameter descriptor for <see cref="SqlTriggerBinding">.
+    /// </summary>
     internal sealed class SqlTriggerParameterDescriptor : TriggerParameterDescriptor
     {
         /// <summary>
-        /// Name of the table being monitored
+        /// Name of the user table.
         /// </summary>
-        public string TableName { get; set; }
+        public string TableName { private get; set; }
 
         /// <summary>
-        /// The reason the user's function was triggered. Specifies the table name that experienced changes
-        /// as well as the time the changes were detected
+        /// Returns descriptive reason for why the user function was triggered.
         /// </summary>
-        /// <param name="arguments">Unused</param>
-        /// <returns>A string with the reason</returns>
+        /// <param name="arguments">Collection of function arguments (unused)</param>
         public override string GetTriggerReason(IDictionary<string, string> arguments)
         {
-            return $"New changes on table {this.TableName} at {DateTime.UtcNow:o}";
+            return $"New change detected on table '{this.TableName}' at {DateTime.UtcNow:o}.";
         }
     }
 }

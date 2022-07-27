@@ -295,7 +295,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
                 IReadOnlyList<SqlChange<Employee>> changes,
                 ILogger logger)
             {
-                foreach (var change in changes)
+                foreach (SqlChange<Employee> change in changes)
                 {
                     Employee employee = change.Item;
                     logger.LogInformation($"Change operation: {change.Operation}");
@@ -613,9 +613,9 @@ The trigger binding takes two [arguments](https://github.com/Azure/azure-functio
 - **TableName**: Passed as a constructor argument to the binding. Represents the name of the table to be monitored for changes.
 - **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
 
-The trigger binding can bind to type `IReadOnlyList<SqlChange\<T\>>`:
+The trigger binding can bind to type `IReadOnlyList<SqlChange<T>>`:
 
-- **IReadOnlyList<SqlChange\<T\>>**: If there are multiple rows updated in the SQL table, the user function will get invoked with a batch of changes, where each element is a `SqlChange` object. Here 'T' is a generic type-argument that can be substituted with a user-defined POCO, or Plain Old C# Object, representing the user table row. The POCO should therefore follow the schema of the queried table. See the [Query String](#query-string) section for an example of what the POCO should look like. The two properties of class `SqlChange<T>` are `Item` of type `T` which represents the table row and `Operation` of type `SqlChangeOperation` which indicates the kind of row operation (insert, update, or delete) that triggered the user function.
+- **IReadOnlyList<SqlChange\<T\>>**: If there are multiple rows updated in the SQL table, the user function will get invoked with a batch of changes, where each element is a `SqlChange` object. Here `T` is a generic type-argument that can be substituted with a user-defined POCO, or Plain Old C# Object, representing the user table row. The POCO should therefore follow the schema of the queried table. See the [Query String](#query-string) section for an example of what the POCO should look like. The two properties of class `SqlChange<T>` are `Item` of type `T` which represents the table row and `Operation` of type `SqlChangeOperation` which indicates the kind of row operation (insert, update, or delete) that triggered the user function.
 
 Note that for insert and update operations, the user function receives POCO object containing the latest values of table columns. For delete operation, only the properties corresponding to the primary keys of the row are populated. 
 
@@ -628,11 +628,11 @@ public static void Run(
     IReadOnlyList<SqlChange<Product>> changes,
     ILogger logger)
 {
-    foreach (var change in changes)
+    foreach (SqlChange<Product> change in changes)
     {
         Product product = change.Item;
-        logger.LogInformation($"Change occurred to Products table row: {change.Operation}");
-        logger.LogInformation($"ProductID: {product.ProductID}, Name: {product.Name}, Price: {product.Cost}");
+        logger.LogInformation($"Change operation: {change.Operation}");
+        logger.LogInformation($"ProductID: {product.ProductID}, Name: {product.Name}, Cost: {product.Cost}");
     }
 }
 ```

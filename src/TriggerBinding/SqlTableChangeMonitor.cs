@@ -3,16 +3,16 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Globalization;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using System.Text;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -126,14 +126,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// currently executing a set of changes, it is only stopped once execution is finished and the user's function
         /// is triggered (whether or not the trigger is successful).
         /// </summary>
-        public void Stop()
-        {
-            this._cancellationTokenSourceCheckForChanges.Cancel();
-        }
-
         public void Dispose()
         {
-            throw new NotImplementedException();
+            this._cancellationTokenSourceCheckForChanges.Cancel();
         }
 
         /// <summary>

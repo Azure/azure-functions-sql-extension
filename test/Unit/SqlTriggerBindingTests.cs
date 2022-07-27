@@ -2,105 +2,85 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using System.Reflection;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading;
-using Microsoft.Extensions.Configuration;
+using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Triggers;
-using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Xunit;
 using Moq;
+using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 {
-    public class TriggerBindingTests
+    public class SqlTriggerBindingTests
     {
-        private static readonly Mock<IConfiguration> config = new Mock<IConfiguration>();
-        private static readonly Mock<IHostIdProvider> hostIdProvider = new Mock<IHostIdProvider>();
-        private static readonly Mock<ILoggerFactory> loggerFactory = new Mock<ILoggerFactory>();
-        private static readonly Mock<ITriggeredFunctionExecutor> mockExecutor = new Mock<ITriggeredFunctionExecutor>();
-        private static readonly Mock<ILogger> logger = new Mock<ILogger>();
-        private static readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-
         [Fact]
-        public void TestTriggerBindingProviderNullConfig()
+        public async Task SqlTriggerBindingProvider_ReturnsNullBindingForParameterWithoutAttribute()
         {
-            Assert.Throws<ArgumentNullException>(() => new SqlTriggerAttributeBindingProvider(null, hostIdProvider.Object, loggerFactory.Object));
-            Assert.Throws<ArgumentNullException>(() => new SqlTriggerAttributeBindingProvider(config.Object, null, loggerFactory.Object));
-            Assert.Throws<ArgumentNullException>(() => new SqlTriggerAttributeBindingProvider(config.Object, hostIdProvider.Object, null));
+            Type parameterType = typeof(IReadOnlyList<SqlChange<object>>);
+            ITriggerBinding binding = await CreateTriggerBindingAsync(parameterType, nameof(UserFunctionWithoutAttribute));
+            Assert.Null(binding);
         }
 
         [Fact]
-        public async void TestTriggerAttributeBindingProviderNullContext()
+        public async Task SqlTriggerBindingProvider_ThrowsForMissingConnectionString()
         {
-            var configProvider = new SqlTriggerAttributeBindingProvider(config.Object, hostIdProvider.Object, loggerFactory.Object);
-            await Assert.ThrowsAsync<ArgumentNullException>(() => configProvider.TryCreateAsync(null));
+            Type parameterType = typeof(IReadOnlyList<SqlChange<object>>);
+            Task testCode() { return CreateTriggerBindingAsync(parameterType, nameof(UserFunctionWithoutConnectionString)); }
+            ArgumentException exception = await Assert.ThrowsAsync<ArgumentException>(testCode);
+
+            Assert.Equal(
+                "Must specify ConnectionStringSetting, which should refer to the name of an app setting that contains a SQL connection string",
+                exception.Message);
+        }
+
+        [Theory]
+        [InlineData(typeof(object))]
+        [InlineData(typeof(SqlChange<object>))]
+        [InlineData(typeof(IEnumerable<SqlChange<object>>))]
+        [InlineData(typeof(IReadOnlyList<object>))]
+        [InlineData(typeof(IReadOnlyList<IReadOnlyList<object>>))]
+        public async Task SqlTriggerBindingProvider_ThrowsForInvalidTriggerParameterType(Type parameterType)
+        {
+            Task testCode() { return CreateTriggerBindingAsync(parameterType, nameof(UserFunctionWithoutConnectionString)); }
+            InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(testCode);
+
+            Assert.Equal(
+                $"Can't bind SqlTriggerAttribute to type {parameterType}. Only IReadOnlyList<SqlChange<T>> is supported, where T is the type of user-defined POCO that matches the schema of the user table",
+                exception.Message);
         }
 
         [Fact]
-        public void TestTriggerListenerNullConfig()
+        public async Task SqlTriggerBindingProvider_ReturnsBindingForValidTriggerParameterType()
         {
-            string connectionString = "testConnectionString";
-            string tableName = "testTableName";
-            string userFunctionId = "testUserFunctionId";
-
-            Assert.Throws<ArgumentNullException>(() => new SqlTriggerListener<TestData>(null, tableName, userFunctionId, mockExecutor.Object, logger.Object));
-            Assert.Throws<ArgumentNullException>(() => new SqlTriggerListener<TestData>(connectionString, null, userFunctionId, mockExecutor.Object, logger.Object));
-            Assert.Throws<ArgumentNullException>(() => new SqlTriggerListener<TestData>(connectionString, tableName, null, mockExecutor.Object, logger.Object));
-            Assert.Throws<ArgumentNullException>(() => new SqlTriggerListener<TestData>(connectionString, tableName, userFunctionId, null, logger.Object));
-            Assert.Throws<ArgumentNullException>(() => new SqlTriggerListener<TestData>(connectionString, tableName, userFunctionId, mockExecutor.Object, null));
+            Type parameterType = typeof(IReadOnlyList<SqlChange<object>>);
+            ITriggerBinding binding = await CreateTriggerBindingAsync(parameterType, nameof(UserFunctionWithAttribute));
+            Assert.NotNull(binding);
         }
 
-        [Fact]
-        public void TestTriggerBindingNullConfig()
+        private static async Task<ITriggerBinding> CreateTriggerBindingAsync(Type parameterType, string methodName)
         {
-            string connectionString = "testConnectionString";
-            string tableName = "testTableName";
+            var provider = new SqlTriggerBindingProvider(
+                Mock.Of<IConfiguration>(c => c["dummyConnectionStringSetting"] == "dummyConnectionString"),
+                Mock.Of<IHostIdProvider>(),
+                Mock.Of<ILoggerFactory>(f => f.CreateLogger(It.IsAny<string>()) == Mock.Of<ILogger>()));
 
-            Assert.Throws<ArgumentNullException>(() => new SqlTriggerBinding<TestData>(null, connectionString, TriggerBindingFunctionTest.GetParamForChanges(), hostIdProvider.Object, logger.Object));
-            Assert.Throws<ArgumentNullException>(() => new SqlTriggerBinding<TestData>(tableName, null, TriggerBindingFunctionTest.GetParamForChanges(), hostIdProvider.Object, logger.Object));
-            Assert.Throws<ArgumentNullException>(() => new SqlTriggerBinding<TestData>(tableName, connectionString, null, hostIdProvider.Object, logger.Object));
-            Assert.Throws<ArgumentNullException>(() => new SqlTriggerBinding<TestData>(tableName, connectionString, TriggerBindingFunctionTest.GetParamForChanges(), null, logger.Object));
-            Assert.Throws<ArgumentNullException>(() => new SqlTriggerBinding<TestData>(tableName, connectionString, TriggerBindingFunctionTest.GetParamForChanges(), hostIdProvider.Object, null));
+            // Possibly the simplest way to construct a ParameterInfo object.
+            ParameterInfo parameter = typeof(SqlTriggerBindingTests)
+                .GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Static)
+                .MakeGenericMethod(parameterType)
+                .GetParameters()[0];
+
+            return await provider.TryCreateAsync(new TriggerBindingProviderContext(parameter, CancellationToken.None));
         }
 
-        [Fact]
-        public async void TestTriggerBindingProviderWithInvalidParameter()
-        {
-            var triggerBindingProviderContext = new TriggerBindingProviderContext(TriggerBindingFunctionTest.GetParamForChanges(), cancellationTokenSource.Token);
-            var triggerAttributeBindingProvider = new SqlTriggerAttributeBindingProvider(config.Object, hostIdProvider.Object, loggerFactory.Object);
+        private static void UserFunctionWithoutAttribute<T>(T _) { }
 
-            //Trying to create a SqlTriggerBinding with IEnumerable<SqlChange<T>> type for the changes
-            //This is expected to throw an exception as the type expected for receiving the changes is IReadOnlyList<SqlChange<T>>
-            await Assert.ThrowsAsync<InvalidOperationException>(() => triggerAttributeBindingProvider.TryCreateAsync(triggerBindingProviderContext));
-        }
+        private static void UserFunctionWithoutConnectionString<T>([SqlTrigger("dummyTableName")] T _) { }
 
-        ///<summary>
-        /// Creating a function using trigger with wrong parameter for changes field.
-        ///</summary>
-        private static class TriggerBindingFunctionTest
-        {
-            ///<summary>
-            ///Example function created with wrong parameter
-            ///</summary>
-            public static void InvalidParameterType(
-            [SqlTrigger("[dbo].[Employees]", ConnectionStringSetting = "SqlConnectionString")]
-            IEnumerable<SqlChange<TestData>> changes,
-            ILogger logger)
-            {
-                logger.LogInformation(changes.ToString());
-            }
-            ///<summary>
-            ///Gets the parameter info for changes in the function
-            ///</summary>
-            public static ParameterInfo GetParamForChanges()
-            {
-                MethodInfo methodInfo = typeof(TriggerBindingFunctionTest).GetMethod("InvalidParameterType", BindingFlags.Public | BindingFlags.Static);
-                ParameterInfo[] parameters = methodInfo.GetParameters();
-                return parameters[^2];
-            }
-        }
+        private static void UserFunctionWithAttribute<T>([SqlTrigger("dummyTableName", ConnectionStringSetting = "dummyConnectionStringSetting")] T _) { }
     }
 }

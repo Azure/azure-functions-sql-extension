@@ -1,14 +1,15 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using System.Diagnostics;
-using System.Text;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.TriggerBindingSamples;
+using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
-using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.TriggerBindingSamples;
-using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -17,159 +18,151 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     {
         public SqlTriggerBindingIntegrationTests(ITestOutputHelper output) : base(output)
         {
+            this.EnableChangeTrackingForDatabase();
         }
 
-        /// <summary>
-        /// Tests for insertion of products triggering the function.
-        /// </summary>
         [Fact]
-        public async void InsertProductsTest()
+        public async void BasicTriggerTest()
         {
-            int countInsert = 0;
-            this.EnableChangeTracking();
+            this.EnableChangeTrackingForTable("Products");
             this.StartFunctionHost(nameof(ProductsTrigger), Common.SupportedLanguages.CSharp);
-            this.FunctionHost.OutputDataReceived += (object sender, DataReceivedEventArgs e) =>
-            {
-                if (e != null && !string.IsNullOrEmpty(e.Data) && e.Data.Contains($"Change occurred to Products table row"))
-                {
-                    countInsert++;
-                }
-            };
 
-            Product[] products = GetProducts(3, 100);
-            this.InsertProducts(products);
-            await Task.Delay(5000);
+            var changes = new List<SqlChange<Product>>();
+            this.MonitorProductChanges(changes);
 
-            Assert.Equal(3, countInsert);
+            // Considering the polling interval of 5 seconds and batch-size of 10, it should take around 15 seconds to
+            // process 30 insert operations. Similar reasoning is used to set delays for update and delete operations.
+            this.InsertProducts(1, 30);
+            await Task.Delay(TimeSpan.FromSeconds(16));
+            ValidateProductChanges(changes, 1, 30, SqlChangeOperation.Insert, id => $"Product {id}", id => id * 100);
+            changes.Clear();
 
+            // All table columns (not just the columns that were updated) would be returned for update operation.
+            this.UpdateProducts(1, 20);
+            await Task.Delay(TimeSpan.FromSeconds(11));
+            ValidateProductChanges(changes, 1, 20, SqlChangeOperation.Update, id => $"Updated Product {id}", id => id * 100);
+            changes.Clear();
+
+            // The properties corresponding to non-primary key columns would be set to the C# type's default values
+            // (null and 0) for delete operation.
+            this.DeleteProducts(11, 30);
+            await Task.Delay(TimeSpan.FromSeconds(11));
+            ValidateProductChanges(changes, 11, 30, SqlChangeOperation.Delete, _ => null, _ => 0);
+            changes.Clear();
         }
 
-        /// <summary>
-        /// Tests insertion into table with multiple primary key columns.
-        /// </summary>
+
         [Fact]
-        public void InsertMultiplePrimaryKeyColumnsTest()
+        public async void MultiOperationTriggerTest()
         {
-            this.EnableChangeTracking();
-            this.StartFunctionHost(nameof(ProductsWithMultiplePrimaryColumnsTrigger), Common.SupportedLanguages.CSharp);
-            var taskCompletionSource = new TaskCompletionSource<bool>();
-            this.FunctionHost.OutputDataReceived += (object sender, DataReceivedEventArgs e) =>
-            {
-                if (e != null && !string.IsNullOrEmpty(e.Data) && e.Data.Contains($"Change occurred to ProductsWithMultiplePrimaryColumns table row"))
-                {
-                    taskCompletionSource.SetResult(true);
-                }
-            };
-
-            string query = $@"INSERT INTO dbo.ProductsWithMultiplePrimaryColumnsAndIdentity VALUES(123, 'ProductTest', 100);";
-            this.ExecuteNonQuery(query);
-            taskCompletionSource.Task.Wait(10000);
-
-            Assert.True(taskCompletionSource.Task.Result);
-
-        }
-
-        /// <summary>
-        /// Tests for behaviour of the trigger when insertion, updates, and deletes occur.
-        /// </summary>
-        [Fact]
-        public async void InsertUpdateDeleteProductsTest()
-        {
-            int countInsert = 0;
-            int countUpdate = 0;
-            int countDelete = 0;
-            this.EnableChangeTracking();
+            this.EnableChangeTrackingForTable("Products");
             this.StartFunctionHost(nameof(ProductsTrigger), Common.SupportedLanguages.CSharp);
-            this.FunctionHost.OutputDataReceived += (object sender, DataReceivedEventArgs e) =>
+
+            var changes = new List<SqlChange<Product>>();
+            this.MonitorProductChanges(changes);
+
+            // Insert + multiple updates to a row are treated as single insert with latest row values.
+            this.InsertProducts(1, 5);
+            this.UpdateProducts(1, 5);
+            this.UpdateProducts(1, 5);
+            await Task.Delay(TimeSpan.FromSeconds(6));
+            ValidateProductChanges(changes, 1, 5, SqlChangeOperation.Insert, id => $"Updated Updated Product {id}", id => id * 100);
+            changes.Clear();
+
+            // Multiple updates to a row are treated as single update with latest row values.
+            this.InsertProducts(6, 10);
+            await Task.Delay(TimeSpan.FromSeconds(6));
+            changes.Clear();
+            this.UpdateProducts(6, 10);
+            this.UpdateProducts(6, 10);
+            await Task.Delay(TimeSpan.FromSeconds(6));
+            ValidateProductChanges(changes, 6, 10, SqlChangeOperation.Update, id => $"Updated Updated Product {id}", id => id * 100);
+            changes.Clear();
+
+            // Insert + (zero or more updates) + delete to a row are treated as single delete with default values for non-primary columns.
+            this.InsertProducts(11, 20);
+            this.UpdateProducts(11, 20);
+            this.DeleteProducts(11, 20);
+            await Task.Delay(TimeSpan.FromSeconds(6));
+            ValidateProductChanges(changes, 11, 20, SqlChangeOperation.Delete, _ => null, _ => 0);
+            changes.Clear();
+        }
+
+        private void EnableChangeTrackingForDatabase()
+        {
+            this.ExecuteNonQuery($@"
+                ALTER DATABASE [{this.DatabaseName}]
+                SET CHANGE_TRACKING = ON
+                (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON);
+            ");
+        }
+
+        private void EnableChangeTrackingForTable(string tableName)
+        {
+            this.ExecuteNonQuery($@"
+                ALTER TABLE [dbo].[{tableName}]
+                ENABLE CHANGE_TRACKING
+                WITH (TRACK_COLUMNS_UPDATED = OFF);
+            ");
+        }
+
+        private void MonitorProductChanges(List<SqlChange<Product>> changes)
+        {
+            int index = 0;
+            string prefix = "SQL Changes: ";
+
+            this.FunctionHost.OutputDataReceived += (sender, e) =>
             {
-                if (e != null && !string.IsNullOrEmpty(e.Data) && e.Data.Contains($"Change occurred to Products table row: Insert"))
+                if (e.Data != null && (index = e.Data.IndexOf(prefix, StringComparison.Ordinal)) >= 0)
                 {
-                    countInsert++;
-                }
-                if (e != null && !string.IsNullOrEmpty(e.Data) && e.Data.Contains($"Change occurred to Products table row: Update"))
-                {
-                    countUpdate++;
-                }
-                if (e != null && !string.IsNullOrEmpty(e.Data) && e.Data.Contains($"Change occurred to Products table row: Delete"))
-                {
-                    countDelete++;
+                    string json = e.Data[(index + prefix.Length)..];
+                    changes.AddRange(JsonConvert.DeserializeObject<IReadOnlyList<SqlChange<Product>>>(json));
                 }
             };
-            Product[] products = GetProducts(3, 100);
-            this.InsertProducts(products);
-            await Task.Delay(500);
-            this.UpdateProducts(products.Take(2).ToArray());
-            await Task.Delay(500);
-            this.DeleteProducts(products.Take(1).ToArray());
-
-            await Task.Delay(5000);
-
-            //Since insert and update counts as a single insert and insert and delete counts as a single delete
-            Assert.Equal(2, countInsert);
-            Assert.Equal(0, countUpdate);
-            Assert.Equal(1, countDelete);
-
         }
 
-        private static Product[] GetProducts(int n, int cost)
+        private void InsertProducts(int first_id, int last_id)
         {
-            var result = new Product[n];
-            for (int i = 1; i <= n; i++)
-            {
-                result[i - 1] = new Product
-                {
-                    ProductID = i,
-                    Name = "test",
-                    Cost = cost * i
-                };
-            }
-            return result;
+            int count = last_id - first_id + 1;
+            this.ExecuteNonQuery(
+                "INSERT INTO [dbo].[Products] VALUES\n" +
+                string.Join(",\n", Enumerable.Range(first_id, count).Select(id => $"({id}, 'Product {id}', {id * 100})")) + ";");
         }
-        private void InsertProducts(Product[] products)
+
+        private void UpdateProducts(int first_id, int last_id)
         {
-            if (products.Length == 0)
-            {
-                return;
-            }
-
-            var queryBuilder = new StringBuilder();
-            foreach (Product p in products)
-            {
-                queryBuilder.AppendLine($"INSERT INTO dbo.Products VALUES({p.ProductID}, '{p.Name}', {p.Cost});");
-            }
-
-            this.ExecuteNonQuery(queryBuilder.ToString());
+            int count = last_id - first_id + 1;
+            this.ExecuteNonQuery(
+                "UPDATE [dbo].[Products]\n" +
+                "SET Name = 'Updated ' + Name\n" +
+                "WHERE ProductId IN (" + string.Join(", ", Enumerable.Range(first_id, count)) + ");");
         }
-        private void UpdateProducts(Product[] products)
+
+        private void DeleteProducts(int first_id, int last_id)
         {
-            if (products.Length == 0)
-            {
-                return;
-            }
-
-            var queryBuilder = new StringBuilder();
-            foreach (Product p in products)
-            {
-                string newName = p.Name + "Update";
-                queryBuilder.AppendLine($"UPDATE dbo.Products set Name = '{newName}' where ProductId = {p.ProductID};");
-            }
-
-            this.ExecuteNonQuery(queryBuilder.ToString());
+            int count = last_id - first_id + 1;
+            this.ExecuteNonQuery(
+                "DELETE FROM [dbo].[Products]\n" +
+                "WHERE ProductId IN (" + string.Join(", ", Enumerable.Range(first_id, count)) + ");");
         }
-        private void DeleteProducts(Product[] products)
+
+        private static void ValidateProductChanges(List<SqlChange<Product>> changes, int first_id, int last_id,
+            SqlChangeOperation operation, Func<int, string> getName, Func<int, int> getCost)
         {
-            if (products.Length == 0)
-            {
-                return;
-            }
+            int count = last_id - first_id + 1;
+            Assert.Equal(count, changes.Count);
 
-            var queryBuilder = new StringBuilder();
-            foreach (Product p in products)
+            int id = first_id;
+            foreach (SqlChange<Product> change in changes)
             {
-                queryBuilder.AppendLine($"DELETE from dbo.Products where ProductId = {p.ProductID};");
+                Assert.Equal(operation, change.Operation);
+                Product product = change.Item;
+                Assert.NotNull(product);
+                Assert.Equal(id, product.ProductID);
+                Assert.Equal(getName(id), product.Name);
+                Assert.Equal(getCost(id), product.Cost);
+                id += 1;
             }
-
-            this.ExecuteNonQuery(queryBuilder.ToString());
         }
     }
 }

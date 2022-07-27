@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Host process for Azure Function CLI
         /// </summary>
-        public Process FunctionHost { get; set; }
+        protected Process FunctionHost { get; private set; }
 
         /// <summary>
         /// Host process for Azurite local storage emulator. This is required for non-HTTP trigger functions:
@@ -137,24 +137,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 Console.WriteLine($"Executing script ${file}");
                 this.ExecuteNonQuery(File.ReadAllText(file));
             }
-        }
-
-        protected void EnableChangeTracking()
-        {
-            string enableChangeTrackingDatabaseQuery = $@"ALTER DATABASE [{this.DatabaseName}]
-                SET CHANGE_TRACKING = ON
-                (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON);
-                ";
-            this.ExecuteNonQuery(enableChangeTrackingDatabaseQuery);
-            string enableChangeTrackingTableQuery = $@"
-                ALTER TABLE [Products]
-                ENABLE CHANGE_TRACKING
-                WITH (TRACK_COLUMNS_UPDATED = ON);
-                ALTER TABLE [ProductsWithMultiplePrimaryColumnsAndIdentity]
-                ENABLE CHANGE_TRACKING
-                WITH (TRACK_COLUMNS_UPDATED = ON);
-                ";
-            this.ExecuteNonQuery(enableChangeTrackingTableQuery);
         }
 
         /// <summary>
@@ -334,50 +316,49 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         public void Dispose()
         {
+            // Try to clean up after test run, but don't consider it a failure if we can't for some reason
             try
             {
                 this.Connection.Close();
+                this.Connection.Dispose();
             }
             catch (Exception e1)
             {
                 this.TestOutput.WriteLine($"Failed to close connection. Error: {e1.Message}");
             }
-            finally
+
+            try
             {
-                this.Connection.Dispose();
-
-                // Try to clean up after test run, but don't consider it a failure if we can't for some reason
-                try
-                {
-                    this.FunctionHost?.Kill();
-                    this.FunctionHost?.Dispose();
-                }
-                catch (Exception e2)
-                {
-                    this.TestOutput.WriteLine($"Failed to stop function host, Error: {e2.Message}");
-                }
-
-                try
-                {
-                    this.AzuriteHost?.Kill();
-                    this.AzuriteHost?.Dispose();
-                }
-                catch (Exception e3)
-                {
-                    this.TestOutput.WriteLine($"Failed to stop Azurite, Error: {e3.Message}");
-                }
-                try
-                {
-                    // Drop the test database
-                    using var masterConnection = new SqlConnection(this.MasterConnectionString);
-                    masterConnection.Open();
-                    TestUtils.ExecuteNonQuery(masterConnection, $"DROP DATABASE IF EXISTS {this.DatabaseName}");
-                }
-                catch (Exception e4)
-                {
-                    this.TestOutput.WriteLine($"Failed to drop {this.DatabaseName}, Error: {e4.Message}");
-                }
+                this.FunctionHost?.Kill();
+                this.FunctionHost?.Dispose();
             }
+            catch (Exception e2)
+            {
+                this.TestOutput.WriteLine($"Failed to stop function host, Error: {e2.Message}");
+            }
+
+            try
+            {
+                this.AzuriteHost?.Kill();
+                this.AzuriteHost?.Dispose();
+            }
+            catch (Exception e3)
+            {
+                this.TestOutput.WriteLine($"Failed to stop Azurite, Error: {e3.Message}");
+            }
+
+            try
+            {
+                // Drop the test database
+                using var masterConnection = new SqlConnection(this.MasterConnectionString);
+                masterConnection.Open();
+                TestUtils.ExecuteNonQuery(masterConnection, $"DROP DATABASE IF EXISTS {this.DatabaseName}");
+            }
+            catch (Exception e4)
+            {
+                this.TestOutput.WriteLine($"Failed to drop {this.DatabaseName}, Error: {e4.Message}");
+            }
+
             GC.SuppressFinalize(this);
         }
     }
