@@ -72,7 +72,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// By default, integrated authentication will be used to connect to the server, unless the env variable "SA_PASSWORD" is set.
         /// In this case, connection will be made using SQL login with user "SA" and the provided password.
         /// </remarks>
-        protected void SetupDatabase()
+        private void SetupDatabase()
         {
             // Get the test server name from environment variable "TEST_SERVER", default to localhost if not set
             string testServer = Environment.GetEnvironmentVariable("TEST_SERVER");
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             foreach (string file in Directory.EnumerateFiles(folder, "*.sql"))
             {
-                Console.WriteLine($"Executing script ${file}");
+                this.LogOutput($"Executing script ${file}");
                 this.ExecuteNonQuery(File.ReadAllText(file));
             }
         }
@@ -154,7 +154,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 }
             };
 
-            this.AzuriteHost.Start();
+            // this.AzuriteHost.Start();
+            this.LogOutput(this.AzuriteHost.ToString());
         }
 
         /// <summary>
@@ -182,11 +183,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 Arguments = $"start --verbose --port {this.Port} --functions {functionName}",
                 WorkingDirectory = workingDirectory,
                 WindowStyle = ProcessWindowStyle.Hidden,
-                RedirectStandardOutput = false,
-                RedirectStandardError = false,
-                UseShellExecute = true
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false
             };
-            Console.WriteLine($"Starting {startInfo.FileName} {startInfo.Arguments} in {startInfo.WorkingDirectory}");
+            this.LogOutput($"Starting {startInfo.FileName} {startInfo.Arguments} in {startInfo.WorkingDirectory}");
             this.FunctionHost = new Process
             {
                 StartInfo = startInfo
@@ -195,8 +196,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.FunctionHost.ErrorDataReceived += this.TestOutputHandler;
 
             this.FunctionHost.Start();
-            // this.FunctionHost.BeginOutputReadLine();
-            // this.FunctionHost.BeginErrorReadLine();
+            this.FunctionHost.BeginOutputReadLine();
+            this.FunctionHost.BeginErrorReadLine();
 
             var taskCompletionSource = new TaskCompletionSource<bool>();
             this.FunctionHost.OutputDataReceived += (object sender, DataReceivedEventArgs e) =>
@@ -206,12 +207,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 if (e != null && !string.IsNullOrEmpty(e.Data) && e.Data.Contains($"http://localhost:{this.Port}/api"))
                 {
                     taskCompletionSource.SetResult(true);
-                    Console.WriteLine("-----Azure Function host started-----");
                 }
             };
-            Console.WriteLine($"Waiting for Azure Function host to start...");
+            this.LogOutput($"Waiting for Azure Function host to start...");
             taskCompletionSource.Task.Wait(60000);
-            Console.WriteLine($"Azure Function host started!");
+            this.LogOutput($"Azure Function host started!");
         }
 
         private static string GetFunctionsCoreToolsPath()
@@ -248,19 +248,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             return funcPath;
         }
 
+        private void LogOutput(String output)
+        {
+            if (this.TestOutput != null)
+            {
+                this.TestOutput.WriteLine(output);
+            }
+            else
+            {
+                Console.WriteLine(output);
+            }
+        }
+
         private void TestOutputHandler(object sender, DataReceivedEventArgs e)
         {
             if (e != null && !string.IsNullOrEmpty(e.Data))
             {
-                this.TestOutput?.WriteLine(e.Data);
+                this.LogOutput(e.Data);
             }
         }
 
         protected async Task<HttpResponseMessage> SendGetRequest(string requestUri, bool verifySuccess = true)
         {
             string timeStamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", System.Globalization.CultureInfo.InvariantCulture);
-            this.TestOutput?.WriteLine($"[{timeStamp}] Sending GET request: {requestUri}");
-            Console.WriteLine($"[{timeStamp}] Sending GET request: {requestUri}");
+            this.LogOutput($"[{timeStamp}] Sending GET request: {requestUri}");
 
             if (string.IsNullOrEmpty(requestUri))
             {
@@ -280,7 +291,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         protected async Task<HttpResponseMessage> SendPostRequest(string requestUri, string json, bool verifySuccess = true)
         {
-            this.TestOutput?.WriteLine("Sending POST request: " + requestUri);
+            this.LogOutput("Sending POST request: " + requestUri);
 
             if (string.IsNullOrEmpty(requestUri))
             {
@@ -328,7 +339,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
             catch (Exception e1)
             {
-                this.TestOutput?.WriteLine($"Failed to close connection. Error: {e1.Message}");
+                this.LogOutput($"Failed to close connection. Error: {e1.Message}");
             }
             try
             {
@@ -339,7 +350,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
             catch (Exception e2)
             {
-                this.TestOutput?.WriteLine($"Failed to drop {this.DatabaseName}, Error: {e2.Message}");
+                this.LogOutput($"Failed to drop {this.DatabaseName}, Error: {e2.Message}");
             }
             finally
             {
@@ -353,7 +364,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 }
                 catch (Exception e3)
                 {
-                    this.TestOutput?.WriteLine($"Failed to stop function host, Error: {e3.Message}");
+                    this.LogOutput($"Failed to stop function host, Error: {e3.Message}");
                 }
 
                 try
@@ -363,7 +374,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 }
                 catch (Exception e4)
                 {
-                    this.TestOutput?.WriteLine($"Failed to stop Azurite, Error: {e4.Message}");
+                    this.LogOutput($"Failed to stop Azurite, Error: {e4.Message}");
                 }
             }
             GC.SuppressFinalize(this);
