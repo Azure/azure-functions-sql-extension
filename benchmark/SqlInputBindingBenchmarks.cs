@@ -16,10 +16,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Benchmark
 {
     public class InputBindingBenchmarks : IntegrationTestBase
     {
-        [GlobalSetup]
-        public void GlobalSetup()
+        public InputBindingBenchmarks() : base()
         {
-            this.SetupDatabase();
             this.StartFunctionHost(nameof(GetProducts), SupportedLanguages.CSharp);
 
             // Generate T-SQL to insert n rows of data with cost
