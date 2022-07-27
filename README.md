@@ -8,6 +8,7 @@ This repository contains the Azure SQL binding for Azure Functions extension cod
 
 - **Input Binding**: takes a SQL query to run and returns the output of the query in the function.
 - **Output Binding**: takes a list of rows and upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
+- **Trigger Binding**: monitors the user table for changes (i.e., row inserts, updates, and deletes) and invokes the function with updated rows.
 
 Further information on the Azure SQL binding for Azure Functions is also available in the [Azure Functions docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
 
@@ -26,6 +27,7 @@ Further information on the Azure SQL binding for Azure Functions is also availab
   - [Tutorials](#tutorials)
     - [Input Binding Tutorial](#input-binding-tutorial)
     - [Output Binding Tutorial](#output-binding-tutorial)
+    - [Trigger Binding Tutorial](#trigger-binding-tutorial)
   - [More Samples](#more-samples)
     - [Input Binding](#input-binding)
       - [Query String](#query-string)
@@ -38,6 +40,9 @@ Further information on the Azure SQL binding for Azure Functions is also availab
       - [Array](#array)
       - [Single Row](#single-row)
       - [Primary Keys and Identity Columns](#primary-keys-and-identity-columns)
+    - [Trigger Binding](#trigger-binding)
+      - [Change Tracking](#change-tracking)
+      - [Trigger Samples](#trigger-samples)
   - [Known Issues](#known-issues)
   - [Telemetry](#telemetry)
   - [Trademarks](#trademarks)
@@ -83,6 +88,18 @@ CREATE TABLE Employees (
 ALTER TABLE ['{table_name}'] ALTER COLUMN ['{primary_key_column_name}'] int NOT NULL
 
 ALTER TABLE ['{table_name}'] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED (['{primary_key_column_name}']);
+```
+
+3. If you plan to use the trigger support, you need to enable [change tracking](https://docs.microsoft.com/sql/relational-databases/track-changes/about-change-tracking-sql-server) on the SQL database and the SQL table. Please note that enabling change tracking will add to the cost of the SQL server.
+
+```sql
+ALTER DATABASE ['your database name']
+SET CHANGE_TRACKING = ON
+(CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON)
+
+ALTER TABLE ['your table name']
+ENABLE CHANGE_TRACKING
+WITH (TRACK_COLUMNS_UPDATED = ON)
 ```
 
 
@@ -158,7 +175,7 @@ Once you have your Function App you need to configure it for use with Azure SQL 
     }
     ```
 
-1. You have setup your local environment and are now ready to create your first SQL bindings! Continue to the [input](#Input-Binding-Tutorial) and [output](#Output-Binding-Tutorial) binding tutorials, or refer to [More Samples](#More-Samples) for information on how to use the bindings and explore on your own.
+1. You have setup your local environment and are now ready to create your first SQL bindings! Continue to the [input](#Input-Binding-Tutorial), [output](#Output-Binding-Tutorial) and [trigger](#trigger-binding-tutorial) binding tutorials, or refer to [More Samples](#More-Samples) for information on how to use the bindings and explore on your own.
 
 ## Tutorials
 
@@ -255,6 +272,46 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 - Hit 'F5' to run your code. Click the link to upsert the output array values in your SQL table. Your upserted values should launch in the browser.
 - Congratulations! You have successfully created your first SQL output binding! Checkout [Output Binding](#Output-Binding) for more information on how to use it and explore on your own!
+
+### Trigger Binding Tutorial
+
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](#create-a-sql-server), and that you have the 'Employee.cs' file from the [Input Binding Tutorial](#input-binding-tutorial).
+
+- Create a new file with the following content:
+
+    ```csharp
+    using System.Collections.Generic;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Extensions.Logging;
+    using Microsoft.Azure.WebJobs.Extensions.Sql;
+
+    namespace Company.Function
+    {
+        public static class EmployeeTrigger
+        {
+            [FunctionName("EmployeeTrigger")]
+            public static void Run(
+                [SqlTrigger("[dbo].[Employees]", ConnectionStringSetting = "SqlConnectionString")]
+                IReadOnlyList<SqlChange<Employee>> changes,
+                ILogger logger)
+            {
+                foreach (var change in changes)
+                {
+                    Employee employee = change.Item;
+                    logger.LogInformation($"Change operation: {change.Operation}");
+                    logger.LogInformation($"EmployeeID: {employee.EmployeeId}, FirstName: {employee.FirstName}, LastName: {employee.LastName}, Company: {employee.Company}, Team: {employee.Team}");
+                }
+            }
+        }
+    }
+    ```
+
+- *Skip these steps if you have not completed the output binding tutorial.*
+    - Open your output binding file and modify some of the values. For example, change the value of Team column from 'Functions' to 'Azure SQL'.
+    - Hit 'F5' to run your code. Click the link of the HTTP trigger from the output binding tutorial.
+- Update, insert, or delete rows in your SQL table while the function app is running and observe the function logs.
+- You should see the new log messages in the Visual Studio Code terminal containing the values of row-columns after the update operation.
+- Congratulations! You have successfully created your first SQL trigger binding! Checkout [Trigger Samples](#trigger-samples) for more information on how to use it and explore on your own!
 
 ## More Samples
 
@@ -401,8 +458,6 @@ public static async Task<IActionResult> Run(
 
 The output binding takes a list of rows to be upserted into a user table. If the primary key value of the row already exists in the table, the row is interpreted as an update, meaning that the values of the other columns in the table for that primary key are updated. If the primary key value does not exist in the table, the row is interpreted as an insert. The upserting of the rows is batched by the output binding code.
 
-  > **NOTE:** By default the Output binding uses the T-SQL [MERGE](https://docs.microsoft.com/sql/t-sql/statements/merge-transact-sql) statement which requires [SELECT](https://docs.microsoft.com/sql/t-sql/statements/merge-transact-sql#permissions) permissions on the target database. 
-  
 The output binding takes two [arguments](https://github.com/Azure/azure-functions-sql-extension/blob/main/src/SqlAttribute.cs):
 
 - **CommandText**: Passed as a constructor argument to the binding. Represents the name of the table into which rows will be upserted.
@@ -523,6 +578,64 @@ This changes if one of the primary key columns is an identity column though. In 
 
 1. If the identity column isn't included in the output object then a straight insert is always performed with the other column values. See [AddProductWithIdentityColumn](./samples/samples-csharp/OutputBindingSamples/AddProductWithIdentityColumn.cs) for an example.
 2. If the identity column is included (even if it's an optional nullable value) then a merge is performed similar to what happens when no identity column is present. This merge will either insert a new row or update an existing row based on the existence of a row that matches the primary keys (including the identity column). See [AddProductWithIdentityColumnIncluded](./samples/samples-csharp/OutputBindingSamples/AddProductWithIdentityColumnIncluded.cs) for an example.
+
+### Trigger Binding
+
+#### Change Tracking
+
+The trigger binding utilizes SQL [change tracking](https://docs.microsoft.com/sql/relational-databases/track-changes/about-change-tracking-sql-server) functionality to monitor the user table for changes. As such, it is necessary to enable change tracking on the SQL database and the SQL table before using the trigger support. The change tracking can be enabled through the following two queries.
+
+1. Enabling change tracking on the SQL database:
+
+    ```sql
+    ALTER DATABASE ['your database name']
+    SET CHANGE_TRACKING = ON
+    (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON)
+    ```
+
+    The `CHANGE_RETENTION` option specifies the duration for which the changes are retained in the change tracking table. This may affect the trigger functionality. For example, if the user application is turned off for several days and then resumed, it will only be able to catch the changes that occurred in past two days with the above query. Hence, please update the value of `CHANGE_RETENTION` to suit your requirements. The `AUTO_CLEANUP` option is used to enable or disable the clean-up task that removes the stale data. Please refer to SQL Server documentation [here](https://docs.microsoft.com/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server#enable-change-tracking-for-a-database) for more information.
+
+1. Enabling change tracking on the SQL table:
+
+    ```sql
+    ALTER TABLE dbo.Employees
+    ENABLE CHANGE_TRACKING
+    WITH (TRACK_COLUMNS_UPDATED = ON)
+    ```
+
+    The `TRACK_COLUMNS_UPDATED` option lets the SQL server to store information about which table columns were updated. At present, the trigger binding does not use of this information, though that functionality can be added in future. For more information, please refer to the documentation [here](https://docs.microsoft.com/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server#enable-change-tracking-for-a-table).
+
+    The trigger needs to have read access on the table being monitored for changes as well as to the change tracking system tables. It also needs write access to an `az_func` schema within the database, where it will create additional worker tables to store the trigger states and leases. Each function trigger will thus have an associated change tracking table and worker table.
+
+#### Trigger Samples
+The trigger binding takes two [arguments](https://github.com/Azure/azure-functions-sql-extension/blob/main/src/TriggerBinding/SqlTriggerAttribute.cs)
+
+- **TableName**: Passed as a constructor argument to the binding. Represents the name of the table to be monitored for changes.
+- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
+
+The trigger binding can bind to type `IReadOnlyList<SqlChange\<T\>>`:
+
+- **IReadOnlyList<SqlChange\<T\>>**: If there are multiple rows updated in the SQL table, the user function will get invoked with a batch of changes, where each element is a `SqlChange` object. Here 'T' is a generic type-argument that can be substituted with a user-defined POCO, or Plain Old C# Object, representing the user table row. The POCO should therefore follow the schema of the queried table. See the [Query String](#query-string) section for an example of what the POCO should look like. The two properties of class `SqlChange<T>` are `Item` of type `T` which represents the table row and `Operation` of type `SqlChangeOperation` which indicates the kind of row operation (insert, update, or delete) that triggered the user function.
+
+Note that for insert and update operations, the user function receives POCO object containing the latest values of table columns. For delete operation, only the properties corresponding to the primary keys of the row are populated. 
+
+Any time when the changes happen to the "Products" table, the user function will be invoked with a batch of changes. The changes are processed sequentially, so if there are a large number of changes pending to be processed, the function will be passed a batch containing the earliest changes first.
+
+```csharp
+[FunctionName("ProductsTrigger")]
+public static void Run(
+    [SqlTrigger("Products", ConnectionStringSetting = "SqlConnectionString")]
+    IReadOnlyList<SqlChange<Product>> changes,
+    ILogger logger)
+{
+    foreach (var change in changes)
+    {
+        Product product = change.Item;
+        logger.LogInformation($"Change occurred to Products table row: {change.Operation}");
+        logger.LogInformation($"ProductID: {product.ProductID}, Name: {product.Name}, Price: {product.Cost}");
+    }
+}
+```
 
 ## Known Issues
 
