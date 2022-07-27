@@ -14,9 +14,18 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
-    /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
+    /// <summary>
+    /// Represents the listener to SQL table changes.
+    /// </summary>
+    /// <typeparam name="T">POCO class representing the row in the user table</typeparam>
     internal sealed class SqlTriggerListener<T> : IListener
     {
+        private const int ListenerNotStarted = 0;
+        private const int ListenerStarting = 1;
+        private const int ListenerStarted = 2;
+        private const int ListenerStopping = 3;
+        private const int ListenerStopped = 4;
+
         private readonly SqlObject _userTable;
         private readonly string _connectionString;
         private readonly string _userFunctionId;
@@ -24,19 +33,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly ILogger _logger;
 
         private SqlTableChangeMonitor<T> _changeMonitor;
-        private State _state;
+        private int _listenerState;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SqlTriggerListener{T}" />>
+        /// Initializes a new instance of the <see cref="SqlTriggerListener{T}"/> class.
         /// </summary>
-        /// <param name="connectionString">The SQL connection string used to connect to the user's database</param>
-        /// <param name="tableName">The name of the user table whose changes are being tracked on</param>
-        /// <param name="userFunctionId">
-        /// The unique ID that identifies user function. If multiple application instances are executing the same user
-        /// function, they are all supposed to have the same user function ID.
-        /// </param>
-        /// <param name="executor">Used to execute the user's function when changes are detected on "table"</param>
-        /// <param name="logger">Ilogger used to log information and warnings</param>
+        /// <param name="connectionString">SQL connection string used to connect to user database</param>
+        /// <param name="tableName">Name of the user table</param>
+        /// <param name="userFunctionId">Unique identifier for the user function</param>
+        /// <param name="executor">Defines contract for triggering user function</param>
+        /// <param name="logger">Facilitates logging of messages</param>
         public SqlTriggerListener(string connectionString, string tableName, string userFunctionId, ITriggeredFunctionExecutor executor, ILogger logger)
         {
             _ = !string.IsNullOrEmpty(connectionString) ? true : throw new ArgumentNullException(nameof(connectionString));
@@ -50,40 +56,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._userFunctionId = userFunctionId;
             this._executor = executor;
             this._logger = logger;
-            this._state = State.NotInitialized;
+            this._listenerState = ListenerNotStarted;
         }
 
-        /// <summary>
-        /// Stops the listener which stops checking for changes on the user's table.
-        /// </summary>
         public void Cancel()
         {
             this.StopAsync(CancellationToken.None).GetAwaiter().GetResult();
         }
 
-        /// <summary>
-        /// Disposes resources held by the listener to poll for changes.
-        /// </summary>
         public void Dispose()
         {
-            this.StopAsync(CancellationToken.None).GetAwaiter().GetResult();
+            // Nothing to dispose.
         }
 
-        /// <summary>
-        /// Starts the listener if it has not yet been started, which starts polling for changes on the user's table.
-        /// </summary>
-        /// <param name="cancellationToken">The cancellation token</param>
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            if (this._state == State.NotInitialized)
+            int previousState = Interlocked.CompareExchange(ref this._listenerState, ListenerStarting, ListenerNotStarted);
+
+            switch (previousState)
+            {
+                case ListenerStarting: throw new InvalidOperationException("The listener is already starting.");
+                case ListenerStarted: throw new InvalidOperationException("The listener has already started.");
+                default: break;
+            }
+
+            try
             {
                 using (var connection = new SqlConnection(this._connectionString))
                 {
                     await connection.OpenAsync(cancellationToken);
 
                     int userTableId = await this.GetUserTableIdAsync(connection, cancellationToken);
-                    IReadOnlyList<(string name, string type)> primaryKeyColumns = await this.GetPrimaryKeyColumnsAsync(connection, cancellationToken);
-                    IReadOnlyList<string> userTableColumns = await this.GetUserTableColumnsAsync(connection, cancellationToken);
+                    IReadOnlyList<(string name, string type)> primaryKeyColumns = await this.GetPrimaryKeyColumnsAsync(connection, userTableId, cancellationToken);
+                    IReadOnlyList<string> userTableColumns = await GetUserTableColumnsAsync(connection, userTableId, cancellationToken);
 
                     string workerTableName = string.Format(CultureInfo.InvariantCulture, SqlTriggerConstants.WorkerTableNameFormat, $"{this._userFunctionId}_{userTableId}");
 
@@ -96,7 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         transaction.Commit();
                     }
 
-                    // TODO: Check if passing cancellation token would be beneficial.
+                    // TODO: Check if passing the cancellation token would be beneficial.
                     this._changeMonitor = new SqlTableChangeMonitor<T>(
                         this._connectionString,
                         userTableId,
@@ -108,53 +113,55 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         this._executor,
                         this._logger);
 
-                    this._state = State.Running;
+                    this._listenerState = ListenerStarted;
+                    this._logger.LogDebug($"Started SQL trigger listener for table: {this._userTable.FullName}, function ID: {this._userFunctionId}.");
                 }
+            }
+            catch (Exception ex)
+            {
+                this._listenerState = ListenerNotStarted;
+                this._logger.LogError($"Failed to start SQL trigger listener for table: {this._userTable.FullName}, function ID: {this._userFunctionId}. Exception: {ex}");
+
+                throw;
             }
         }
 
-        /// <summary>
-        /// Stops the listener (if it was started), which stops checking for changes on the user's table.
-        /// </summary>
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            // Nothing to stop if the change monitor has either already been stopped or hasn't been started.
-            if (this._state == State.Running)
+            int previousState = Interlocked.CompareExchange(ref this._listenerState, ListenerStopping, ListenerStarted);
+            if (previousState == ListenerStarted)
             {
-                this._changeMonitor.Stop();
-                this._state = State.Stopped;
+                this._changeMonitor.Dispose();
+
+                this._listenerState = ListenerStopped;
+                this._logger.LogDebug($"Stopped SQL trigger listener for table: {this._userTable.FullName}, function ID: {this._userFunctionId}.");
             }
+
             return Task.CompletedTask;
         }
 
         /// <summary>
-        /// Returns the OBJECT_ID of userTable
+        /// Returns the object ID of the user table.
         /// </summary>
-        /// <exception cref="InvalidOperationException">
-        /// Thrown if the query to retrieve the OBJECT_ID of the user table fails to correctly execute
-        /// This can happen if the OBJECT_ID call returns NULL, meaning that the user table might not exist in the database
-        /// </exception>
+        /// <exception cref="InvalidOperationException">Thrown in case of error when querying the object ID for the user table</exception>
         private async Task<int> GetUserTableIdAsync(SqlConnection connection, CancellationToken cancellationToken)
         {
-            string getObjectIdQuery = $"SELECT OBJECT_ID(N{this._userTable.QuotedName}, 'U');";
+            string getObjectIdQuery = $"SELECT OBJECT_ID(N{this._userTable.QuotedFullName}, 'U');";
 
             using (var getObjectIdCommand = new SqlCommand(getObjectIdQuery, connection))
             {
                 using (SqlDataReader reader = await getObjectIdCommand.ExecuteReaderAsync(cancellationToken))
                 {
-
-                    // TODO: Check if the below if-block ever gets hit.
                     if (!await reader.ReadAsync(cancellationToken))
                     {
-                        throw new InvalidOperationException($"Failed to determine the OBJECT_ID of the user table {this._userTable.FullName}");
+                        throw new InvalidOperationException($"Received empty response when querying the object ID for table: {this._userTable.FullName}.");
                     }
 
                     object userTableId = reader.GetValue(0);
 
                     if (userTableId is DBNull)
                     {
-                        throw new InvalidOperationException($"Failed to determine the OBJECT_ID of the user table {this._userTable.FullName}. " +
-                            "Possibly the table does not exist in the database.");
+                        throw new InvalidOperationException($"Could not find table: {this._userTable.FullName}.");
                     }
 
                     return (int)userTableId;
@@ -165,11 +172,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Gets the names and types of primary key columns of the user's table.
         /// </summary>
-        /// <exception cref="InvalidOperationException">
-        /// Thrown if no primary keys are found for the user table. This could be because the user table does not have
-        /// any primary key columns.
-        /// </exception>
-        private async Task<IReadOnlyList<(string name, string type)>> GetPrimaryKeyColumnsAsync(SqlConnection connection, CancellationToken cancellationToken)
+        /// <exception cref="InvalidOperationException">Thrown if there are no primary key columns present in the user table.</exception>
+        private async Task<IReadOnlyList<(string name, string type)>> GetPrimaryKeyColumnsAsync(SqlConnection connection, int userTableId, CancellationToken cancellationToken)
         {
             string getPrimaryKeyColumnsQuery = $@"
                 SELECT c.name, t.name, c.max_length, c.precision, c.scale
@@ -177,7 +181,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 INNER JOIN sys.index_columns AS ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
                 INNER JOIN sys.columns AS c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
                 INNER JOIN sys.types AS t ON c.user_type_id = t.user_type_id
-                WHERE i.is_primary_key = 1 AND i.object_id = OBJECT_ID(N{this._userTable.QuotedName}, 'U');
+                WHERE i.is_primary_key = 1 AND i.object_id = {userTableId};
             ";
 
             using (var getPrimaryKeyColumnsCommand = new SqlCommand(getPrimaryKeyColumnsQuery, connection))
@@ -226,13 +230,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Gets the column names of the user's table.
         /// </summary>
-        private async Task<IReadOnlyList<string>> GetUserTableColumnsAsync(SqlConnection connection, CancellationToken cancellationToken)
+        private static async Task<IReadOnlyList<string>> GetUserTableColumnsAsync(SqlConnection connection, int userTableId, CancellationToken cancellationToken)
         {
-            string getUserTableColumnsQuery = $@"
-                SELECT name
-                FROM sys.columns
-                WHERE object_id = OBJECT_ID(N{this._userTable.QuotedName}, 'U');
-            ";
+            string getUserTableColumnsQuery = $"SELECT name FROM sys.columns WHERE object_id = {userTableId};";
 
             using (var getUserTableColumnsCommand = new SqlCommand(getUserTableColumnsQuery, connection))
             {
@@ -336,7 +336,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string primaryKeysWithTypes = string.Join(", ", primaryKeyColumns.Select(col => $"{col.name} {col.type}"));
             string primaryKeys = string.Join(", ", primaryKeyColumns.Select(col => col.name));
 
-            // TODO: Check if some of the table columns below can have 'NOT NULL' property.
             string createWorkerTableQuery = $@"
                 IF OBJECT_ID(N'{workerTableName}', 'U') IS NULL
                     CREATE TABLE {workerTableName} (
@@ -352,13 +351,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 await createWorkerTableCommand.ExecuteNonQueryAsync(cancellationToken);
             }
-        }
-
-        private enum State
-        {
-            NotInitialized,
-            Running,
-            Stopped,
         }
     }
 }

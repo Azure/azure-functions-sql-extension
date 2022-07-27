@@ -4,23 +4,16 @@
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     /// <summary>
-    /// Represents a row that was changed in the user's table as well as metadata related to that change.
-    /// If the row was deleted, then <see cref="Item"/> is populated only with the primary key values of the deleted row
+    /// Represents the changed row in the user table.
     /// </summary>
-    /// <typeparam name="T">A user-defined POCO that represents a row of the table</typeparam>
+    /// <typeparam name="T">POCO class representing the row in the user table</typeparam>
     public sealed class SqlChange<T>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlChange{T}"/> class.
         /// </summary>
-        /// <param name="operation">
-        /// The type of change this item corresponds to.
-        /// </param>
-        /// <param name="item">
-        /// The current item in the user's table corresponding to the change (and only the primary key values of the row
-        /// in the case that it was deleted).
-        /// </param>
-
+        /// <param name="operation">Change operation</param>
+        /// <param name="item">POCO representing the row in the user table on which the change operation took place</param>
         public SqlChange(SqlChangeOperation operation, T item)
         {
             this.Operation = operation;
@@ -28,18 +21,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Specifies the type of change that occurred to the row.
+        /// Change operation (insert, update, or delete).
         /// </summary>
         public SqlChangeOperation Operation { get; }
 
         /// <summary>
-        /// A copy of the row that was updated/inserted in the user's table.
-        /// In the case that the row no longer exists in the user's table, Data is only populated with the primary key values
-        /// of the deleted row.
+        /// POCO representing the row in the user table on which the change operation took place. If the change
+        /// operation is <see cref="SqlChangeOperation.Delete">, then only the properties corresponding to the primary
+        /// keys will be populated.
         /// </summary>
         public T Item { get; }
     }
 
+    /// <summary>
+    /// Represents the type of change operation in the table row.
+    /// </summary>
     public enum SqlChangeOperation
     {
         Insert,
