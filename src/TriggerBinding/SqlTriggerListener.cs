@@ -333,8 +333,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             IReadOnlyList<(string name, string type)> primaryKeyColumns,
             CancellationToken cancellationToken)
         {
-            string primaryKeysWithTypes = string.Join(", ", primaryKeyColumns.Select(col => $"{col.name} {col.type}"));
-            string primaryKeys = string.Join(", ", primaryKeyColumns.Select(col => col.name));
+            string primaryKeysWithTypes = string.Join(", ", primaryKeyColumns.Select(col => $"{col.name.AsBracketQuotedString()} [{col.type}]"));
+            string primaryKeys = string.Join(", ", primaryKeyColumns.Select(col => col.name.AsBracketQuotedString()));
 
             string createWorkerTableQuery = $@"
                 IF OBJECT_ID(N'{workerTableName}', 'U') IS NULL
