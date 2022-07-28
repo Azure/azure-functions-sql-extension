@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,6 +42,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly string _workerTableName;
         private readonly IReadOnlyList<string> _userTableColumns;
         private readonly IReadOnlyList<string> _primaryKeyColumns;
+        private readonly IReadOnlyList<(string col, string hash)> _primaryKeyColumnHashes;
         private readonly IReadOnlyList<string> _rowMatchConditions;
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly ILogger _logger;
@@ -94,10 +96,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._workerTableName = workerTableName;
             this._userTableColumns = primaryKeyColumns.Concat(userTableColumns.Except(primaryKeyColumns)).ToList();
             this._primaryKeyColumns = primaryKeyColumns;
+            this._primaryKeyColumnHashes = primaryKeyColumns.Select(col => (col, GetColumnHash(col))).ToList();
 
             // Prep search-conditions that will be used besides WHERE clause to match table rows.
             this._rowMatchConditions = Enumerable.Range(0, BatchSize)
-                .Select(index => string.Join(" AND ", primaryKeyColumns.Select(col => $"{col} = @{col}_{index}")))
+                .Select(index => string.Join(" AND ", this._primaryKeyColumnHashes.Select(ch => $"{ch.col.AsBracketQuotedString()} = @{ch.hash}_{index}")))
                 .ToList();
 
             this._executor = executor;
@@ -541,6 +544,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
+        /// Creates GUID string from column name that can be used as name of SQL local variable. The column names
+        /// cannot be used directly as variable names as they may contain characters like ',', '.', '+', spaces, etc.
+        /// that are not allowed in variable names.
+        /// </summary>
+        private static string GetColumnHash(string columnName)
+        {
+            using (var sha256 = SHA256.Create())
+            {
+                byte[] hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(columnName));
+                return new Guid(hash.Take(16).ToArray()).ToString("N");
+            }
+        }
+
+        /// <summary>
         /// Builds the command to update the global state table in the case of a new minimum valid version number.
         /// Sets the LastSyncVersion for this _userTable to be the new minimum valid version number.
         /// </summary>
@@ -575,9 +592,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
         private SqlCommand BuildGetChangesCommand(SqlConnection connection, SqlTransaction transaction)
         {
-            string selectList = string.Join(", ", this._userTableColumns.Select(col => this._primaryKeyColumns.Contains(col) ? $"c.{col}" : $"u.{col}"));
-            string userTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col} = u.{col}"));
-            string workerTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col} = w.{col}"));
+            string selectList = string.Join(", ", this._userTableColumns.Select(col => this._primaryKeyColumns.Contains(col) ? $"c.{col.AsBracketQuotedString()}" : $"u.{col.AsBracketQuotedString()}"));
+            string userTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.AsBracketQuotedString()} = u.{col.AsBracketQuotedString()}"));
+            string workerTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.AsBracketQuotedString()} = w.{col.AsBracketQuotedString()}"));
 
             string getChangesQuery = $@"
                 DECLARE @last_sync_version bigint;
@@ -589,9 +606,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {selectList},
                     c.SYS_CHANGE_VERSION, c.SYS_CHANGE_OPERATION,
                     w.ChangeVersion, w.AttemptCount, w.LeaseExpirationTime
-                FROM CHANGETABLE (CHANGES {this._userTable.FullName}, @last_sync_version) AS c
+                FROM CHANGETABLE (CHANGES {this._userTable.BracketQuotedFullName}, @last_sync_version) AS c
                 LEFT OUTER JOIN {this._workerTableName} AS w WITH (TABLOCKX) ON {workerTableJoinCondition}
-                LEFT OUTER JOIN {this._userTable.FullName} AS u ON {userTableJoinCondition}
+                LEFT OUTER JOIN {this._userTable.BracketQuotedFullName} AS u ON {userTableJoinCondition}
                 WHERE
                     (w.LeaseExpirationTime IS NULL AND (w.ChangeVersion IS NULL OR w.ChangeVersion < c.SYS_CHANGE_VERSION) OR
                         w.LeaseExpirationTime < SYSDATETIME()) AND
@@ -615,7 +632,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             for (int index = 0; index < this._rows.Count; index++)
             {
-                string valuesList = string.Join(", ", this._primaryKeyColumns.Select(col => $"@{col}_{index}"));
+                string valuesList = string.Join(", ", this._primaryKeyColumnHashes.Select(ch => $"@{ch.hash}_{index}"));
                 string changeVersion = this._rows[index]["SYS_CHANGE_VERSION"];
 
                 acquireLeasesQuery.Append($@"
@@ -697,7 +714,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
         private SqlCommand BuildUpdateTablesPostInvocation(SqlConnection connection, SqlTransaction transaction, long newLastSyncVersion)
         {
-            string workerTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col} = w.{col}"));
+            string workerTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.AsBracketQuotedString()} = w.{col.AsBracketQuotedString()}"));
 
             // TODO: Need to think through all cases to ensure the query below is correct, especially with use of < vs <=.
             string updateTablesPostInvocationQuery = $@"
@@ -709,7 +726,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 DECLARE @unprocessed_changes bigint;
                 SELECT @unprocessed_changes = COUNT(*) FROM (
                     SELECT c.SYS_CHANGE_VERSION
-                    FROM CHANGETABLE(CHANGES {this._userTable.FullName}, @current_last_sync_version) AS c
+                    FROM CHANGETABLE (CHANGES {this._userTable.BracketQuotedFullName}, @current_last_sync_version) AS c
                     LEFT OUTER JOIN {this._workerTableName} AS w WITH (TABLOCKX) ON {workerTableJoinCondition}
                     WHERE
                         c.SYS_CHANGE_VERSION <= {newLastSyncVersion} AND
@@ -751,9 +768,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             for (int index = 0; index < this._rows.Count; index++)
             {
-                foreach (string col in this._primaryKeyColumns)
+                foreach ((string col, string hash) in this._primaryKeyColumnHashes)
                 {
-                    command.Parameters.Add(new SqlParameter($"@{col}_{index}", this._rows[index][col]));
+                    command.Parameters.Add(new SqlParameter($"@{hash}_{index}", this._rows[index][col]));
                 }
             }
 
