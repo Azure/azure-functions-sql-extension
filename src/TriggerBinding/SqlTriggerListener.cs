@@ -97,7 +97,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         await CreateSchemaAsync(connection, transaction, cancellationToken);
                         await CreateGlobalStateTableAsync(connection, transaction, cancellationToken);
                         await this.InsertGlobalStateTableRowAsync(connection, transaction, userTableId, cancellationToken);
-                        await CreateWorkerTablesAsync(connection, transaction, workerTableName, primaryKeyColumns, cancellationToken);
+                        await CreateWorkerTableAsync(connection, transaction, workerTableName, primaryKeyColumns, cancellationToken);
                         transaction.Commit();
                     }
 
@@ -326,7 +326,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Creates the worker table associated with the user's table, if one does not already exist.
         /// </summary>
-        private static async Task CreateWorkerTablesAsync(
+        private static async Task CreateWorkerTableAsync(
             SqlConnection connection,
             SqlTransaction transaction,
             string workerTableName,

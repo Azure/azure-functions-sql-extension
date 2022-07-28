@@ -101,8 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             this.ExecuteNonQuery($@"
                 ALTER TABLE [dbo].[{tableName}]
-                ENABLE CHANGE_TRACKING
-                WITH (TRACK_COLUMNS_UPDATED = OFF);
+                ENABLE CHANGE_TRACKING;
             ");
         }
 

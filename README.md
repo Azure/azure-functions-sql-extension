@@ -95,11 +95,10 @@ ALTER TABLE ['{table_name}'] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED 
 ```sql
 ALTER DATABASE ['your database name']
 SET CHANGE_TRACKING = ON
-(CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON)
+(CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON);
 
 ALTER TABLE ['your table name']
-ENABLE CHANGE_TRACKING
-WITH (TRACK_COLUMNS_UPDATED = ON)
+ENABLE CHANGE_TRACKING;
 ```
 
 
@@ -458,6 +457,8 @@ public static async Task<IActionResult> Run(
 
 The output binding takes a list of rows to be upserted into a user table. If the primary key value of the row already exists in the table, the row is interpreted as an update, meaning that the values of the other columns in the table for that primary key are updated. If the primary key value does not exist in the table, the row is interpreted as an insert. The upserting of the rows is batched by the output binding code.
 
+  > **NOTE:** By default the Output binding uses the T-SQL [MERGE](https://docs.microsoft.com/sql/t-sql/statements/merge-transact-sql) statement which requires [SELECT](https://docs.microsoft.com/sql/t-sql/statements/merge-transact-sql#permissions) permissions on the target database. 
+  
 The output binding takes two [arguments](https://github.com/Azure/azure-functions-sql-extension/blob/main/src/SqlAttribute.cs):
 
 - **CommandText**: Passed as a constructor argument to the binding. Represents the name of the table into which rows will be upserted.
@@ -581,6 +582,8 @@ This changes if one of the primary key columns is an identity column though. In 
 
 ### Trigger Binding
 
+> **NOTE:** Trigger binding support is only available for C# functions at present.
+
 #### Change Tracking
 
 The trigger binding utilizes SQL [change tracking](https://docs.microsoft.com/sql/relational-databases/track-changes/about-change-tracking-sql-server) functionality to monitor the user table for changes. As such, it is necessary to enable change tracking on the SQL database and the SQL table before using the trigger support. The change tracking can be enabled through the following two queries.
@@ -590,7 +593,7 @@ The trigger binding utilizes SQL [change tracking](https://docs.microsoft.com/sq
     ```sql
     ALTER DATABASE ['your database name']
     SET CHANGE_TRACKING = ON
-    (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON)
+    (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON);
     ```
 
     The `CHANGE_RETENTION` option specifies the duration for which the changes are retained in the change tracking table. This may affect the trigger functionality. For example, if the user application is turned off for several days and then resumed, it will only be able to catch the changes that occurred in past two days with the above query. Hence, please update the value of `CHANGE_RETENTION` to suit your requirements. The `AUTO_CLEANUP` option is used to enable or disable the clean-up task that removes the stale data. Please refer to SQL Server documentation [here](https://docs.microsoft.com/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server#enable-change-tracking-for-a-database) for more information.
@@ -599,13 +602,10 @@ The trigger binding utilizes SQL [change tracking](https://docs.microsoft.com/sq
 
     ```sql
     ALTER TABLE dbo.Employees
-    ENABLE CHANGE_TRACKING
-    WITH (TRACK_COLUMNS_UPDATED = ON)
+    ENABLE CHANGE_TRACKING;
     ```
 
-    The `TRACK_COLUMNS_UPDATED` option lets the SQL server to store information about which table columns were updated. At present, the trigger binding does not use of this information, though that functionality can be added in future. For more information, please refer to the documentation [here](https://docs.microsoft.com/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server#enable-change-tracking-for-a-table).
-
-    The trigger needs to have read access on the table being monitored for changes as well as to the change tracking system tables. It also needs write access to an `az_func` schema within the database, where it will create additional worker tables to store the trigger states and leases. Each function trigger will thus have an associated change tracking table and worker table.
+    For more information, please refer to the documentation [here](https://docs.microsoft.com/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server#enable-change-tracking-for-a-table). The trigger needs to have read access on the table being monitored for changes as well as to the change tracking system tables. It also needs write access to an `az_func` schema within the database, where it will create additional worker tables to store the trigger states and leases. Each function trigger will thus have an associated change tracking table and worker table.
 
 #### Trigger Samples
 The trigger binding takes two [arguments](https://github.com/Azure/azure-functions-sql-extension/blob/main/src/TriggerBinding/SqlTriggerAttribute.cs)
