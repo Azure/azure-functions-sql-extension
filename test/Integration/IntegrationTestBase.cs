@@ -305,22 +305,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             return response;
         }
 
-        protected void InsertProducts(Product[] products)
-        {
-            if (products.Length == 0)
-            {
-                return;
-            }
-
-            var queryBuilder = new StringBuilder();
-            foreach (Product p in products)
-            {
-                queryBuilder.AppendLine($"INSERT INTO dbo.Products VALUES({p.ProductID}, '{p.Name}', {p.Cost});");
-            }
-
-            this.ExecuteNonQuery(queryBuilder.ToString());
-        }
-
         /// <summary>
         /// Executes a command against the current connection.
         /// </summary>
@@ -389,6 +373,74 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 }
             }
             GC.SuppressFinalize(this);
+        }
+
+        protected async Task<HttpResponseMessage> SendInputRequest(string functionName, string query = "")
+        {
+            string requestUri = $"http://localhost:{this.Port}/api/{functionName}/{query}";
+
+            return await this.SendGetRequest(requestUri);
+        }
+
+        protected void InsertProducts(Product[] products)
+        {
+            if (products.Length == 0)
+            {
+                return;
+            }
+
+            var queryBuilder = new StringBuilder();
+            foreach (Product p in products)
+            {
+                queryBuilder.AppendLine($"INSERT INTO dbo.Products VALUES({p.ProductID}, '{p.Name}', {p.Cost});");
+            }
+
+            this.ExecuteNonQuery(queryBuilder.ToString());
+        }
+
+        protected static Product[] GetProducts(int n, int cost)
+        {
+            var result = new Product[n];
+            for (int i = 1; i <= n; i++)
+            {
+                result[i - 1] = new Product
+                {
+                    ProductID = i,
+                    Name = "test",
+                    Cost = cost * i
+                };
+            }
+            return result;
+        }
+
+        protected static Product[] GetProductsWithSameCost(int n, int cost)
+        {
+            var result = new Product[n];
+            for (int i = 0; i < n; i++)
+            {
+                result[i] = new Product
+                {
+                    ProductID = i,
+                    Name = "test",
+                    Cost = cost
+                };
+            }
+            return result;
+        }
+
+        protected static Product[] GetProductsWithSameCostAndName(int n, int cost, string name, int offset = 0)
+        {
+            var result = new Product[n];
+            for (int i = 0; i < n; i++)
+            {
+                result[i] = new Product
+                {
+                    ProductID = i + offset,
+                    Name = name,
+                    Cost = cost
+                };
+            }
+            return result;
         }
     }
 }
