@@ -85,7 +85,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             var connectionStringBuilder = new SqlConnectionStringBuilder()
             {
                 DataSource = testServer,
-                InitialCatalog = "Contact",
+                InitialCatalog = "master",
                 Pooling = false
             };
 
@@ -154,8 +154,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 }
             };
 
-            // this.AzuriteHost.Start();
-            this.LogOutput(this.AzuriteHost.ToString());
+            this.AzuriteHost.Start();
         }
 
         /// <summary>
@@ -167,10 +166,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </remarks>
         protected void StartFunctionHost(string functionName, SupportedLanguages language, bool useTestFolder = false)
         {
-            // string workingDirectory = useTestFolder ? GetPathToBin() : Path.Combine(GetPathToBin(), "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), language));
-            Console.WriteLine("IGNORE: " + language.ToString());
-            Console.WriteLine("IGNORE: " + useTestFolder);
-            string workingDirectory = "C:\\Users\\luczhan\\GitProjects\\azure-functions-sql-extension\\test\\bin\\Debug\\netcoreapp3.1\\SqlExtensionSamples\\CSharp";
+            string workingDirectory = useTestFolder ? GetPathToBin() : Path.Combine(GetPathToBin(), "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), language));
             if (!Directory.Exists(workingDirectory))
             {
                 throw new FileNotFoundException("Working directory not found at " + workingDirectory);
@@ -218,18 +214,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             // Determine npm install path from either env var set by pipeline or OS defaults
             // Pipeline env var is needed as the Windows hosted agents installs to a non-traditional location
-            // string nodeModulesPath = Environment.GetEnvironmentVariable("NODE_MODULES_PATH");
-            // if (string.IsNullOrEmpty(nodeModulesPath))
-            // {
-            //     nodeModulesPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
-            //         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\node_modules\") :
-            //         @"/usr/local/lib/node_modules";
-            // }
+            string nodeModulesPath = Environment.GetEnvironmentVariable("NODE_MODULES_PATH");
+            if (string.IsNullOrEmpty(nodeModulesPath))
+            {
+                nodeModulesPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\node_modules\") :
+                    @"/usr/local/lib/node_modules";
+            }
 
             string funcExe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "func.exe" : "func";
-            // string funcPath = Path.Combine(nodeModulesPath, "azure-functions-core-tools", "bin", funcExe);
-
-            string funcPath = "C:\\Program Files\\nodejs\\node_modules\\azure-functions-core-tools\\bin\\func.exe";
+            string funcPath = Path.Combine(nodeModulesPath, "azure-functions-core-tools", "bin", funcExe);
             if (!File.Exists(funcPath))
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
