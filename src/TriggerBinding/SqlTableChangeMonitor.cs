@@ -18,22 +18,21 @@ using Newtonsoft.Json;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     /// <summary>
-    /// Periodically polls SQL's change table to determine if any new changes have occurred to a user's table.
+    /// Watches for changes in the user table, invokes user function if changes are found, and manages leases.
     /// </summary>
-    /// <remarks>
-    /// Note that there is no possiblity of SQL injection in the raw queries we generate. All parameters that involve
-    /// inserting data from a user table are sanitized. All other parameters are generated exclusively using information
-    /// about the user table's schema (such as primary key column names), data stored in SQL's internal change table, or
-    /// data stored in our own worker table.
-    /// </remarks>
-    /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
+    /// <typeparam name="T">POCO class representing the row in the user table</typeparam>
     internal sealed class SqlTableChangeMonitor<T> : IDisposable
     {
         public const int BatchSize = 10;
-        public const int MaxAttemptCount = 5;
-        public const int MaxLeaseRenewalCount = 5;
-        public const int LeaseIntervalInSeconds = 30;
         public const int PollingIntervalInSeconds = 5;
+        public const int MaxAttemptCount = 5;
+
+        // Leases are held for approximately (LeaseRenewalIntervalInSeconds * MaxLeaseRenewalCount) seconds. It is
+        // required to have at least one of (LeaseRenewalIntervalInSeconds / LeaseRenewalIntervalInSeconds) attempts to
+        // renew the lease succeed to prevent it from expiring.
+        public const int MaxLeaseRenewalCount = 10;
+        public const int LeaseIntervalInSeconds = 60;
+        public const int LeaseRenewalIntervalInSeconds = 15;
 
         private readonly string _connectionString;
         private readonly int _userTableId;
@@ -51,8 +50,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly CancellationTokenSource _cancellationTokenSourceRenewLeases;
         private CancellationTokenSource _cancellationTokenSourceExecutor;
 
-        // It should be impossible for multiple threads to access these at the same time because of the semaphore we use.
+        // The semaphore ensures that mutable class members such as this._rows are accessed by only one thread at a time.
         private readonly SemaphoreSlim _rowsLock;
+
         private IReadOnlyList<IReadOnlyDictionary<string, string>> _rows;
         private int _leaseRenewalCount;
         private State _state = State.CheckingForChanges;
@@ -60,15 +60,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlTableChangeMonitor{T}" />> class.
         /// </summary>
-        /// <param name="connectionString">The SQL connection string used to connect to the user's database</param>
-        /// <param name="userTableId">The OBJECT_ID of the user table whose changes are being tracked on</param>
-        /// <param name="userTableName">The name of the user table</param>
-        /// <param name="userFunctionId">The unique ID that identifies user function</param>
-        /// <param name="workerTableName">The name of the worker table</param>
+        /// <param name="connectionString">SQL connection string used to connect to user database</param>
+        /// <param name="userTableId">SQL object ID of the user table</param>
+        /// <param name="userTable"><see cref="SqlObject"> instance created with user table name</param>
+        /// <param name="userFunctionId">Unique identifier for the user function</param>
+        /// <param name="workerTableName">Name of the worker table</param>
         /// <param name="userTableColumns">List of all column names in the user table</param>
         /// <param name="primaryKeyColumns">List of primary key column names in the user table</param>
-        /// <param name="executor">Used to execute the user's function when changes are detected on "table"</param>
-        /// <param name="logger">Ilogger used to log information and warnings</param>
+        /// <param name="executor">Defines contract for triggering user function</param>
+        /// <param name="logger">Facilitates logging of messages</param>
         public SqlTableChangeMonitor(
             string connectionString,
             int userTableId,
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._userTable = userTable;
             this._userFunctionId = userFunctionId;
             this._workerTableName = workerTableName;
-            this._userTableColumns = primaryKeyColumns.Concat(userTableColumns.Except(primaryKeyColumns)).ToList();
+            this._userTableColumns = userTableColumns;
             this._primaryKeyColumns = primaryKeyColumns;
             this._primaryKeyColumnHashes = primaryKeyColumns.Select(col => (col, GetColumnHash(col))).ToList();
 
@@ -124,11 +124,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 #pragma warning restore CS4014
         }
 
-        /// <summary>
-        /// Stops the change monitor which stops polling for changes on the user's table. If the change monitor is
-        /// currently executing a set of changes, it is only stopped once execution is finished and the user's function
-        /// is triggered (whether or not the trigger is successful).
-        /// </summary>
         public void Dispose()
         {
             this._cancellationTokenSourceCheckForChanges.Cancel();
@@ -152,11 +147,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     await connection.OpenAsync(token);
 
+                    // Check for cancellation request only after a cycle of checking and processing of changes completes.
                     while (!token.IsCancellationRequested)
                     {
                         if (this._state == State.CheckingForChanges)
                         {
-                            // What should we do if this call gets stuck?
                             await this.GetChangesAsync(token);
                             await this.ProcessChangesAsync(token);
                         }
@@ -233,16 +228,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         }
                         catch (Exception ex)
                         {
-                            this._logger.LogError("Commit Exception Type: {0}", ex.GetType());
-                            this._logger.LogError("  Message: {0}", ex.Message);
+                            this._logger.LogError($"Failed to query list of changes for table '{this._userTable.FullName}' due to exception: {ex.GetType()}." +
+                                $" Exception message: {ex.Message}");
+
                             try
                             {
                                 transaction.Rollback();
                             }
                             catch (Exception ex2)
                             {
-                                this._logger.LogError("Rollback Exception Type: {0}", ex2.GetType());
-                                this._logger.LogError("  Message: {0}", ex2.Message);
+                                this._logger.LogError($"Failed to rollback transaction due to exception: {ex2.GetType()}. Exception message: {ex2.Message}");
                             }
                         }
                     }
@@ -253,7 +248,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // If there's an exception in any part of the process, we want to clear all of our data in memory and
                 // retry checking for changes again.
                 this._rows = new List<IReadOnlyDictionary<string, string>>();
-                this._logger.LogWarning($"Failed to check {this._userTable.FullName} for new changes due to error: {e.Message}");
+                this._logger.LogError($"Failed to check for changes in table '{this._userTable.FullName}' due to exception: {e.GetType()}." +
+                    $" Exception message: {e.Message}");
             }
         }
 
@@ -274,16 +270,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 catch (Exception e)
                 {
-                    await this.ClearRowsAsync(
-                        $"Failed to extract user table data from table {this._userTable.FullName} associated " +
-                        $"with change metadata due to error: {e.Message}", true);
+                    this._logger.LogError($"Failed to compose trigger parameter value for table: '{this._userTable.FullName} due to exception: {e.GetType()}." +
+                        $" Exception message: {e.Message}");
+
+                    await this.ClearRowsAsync(true);
                 }
 
                 if (changes != null)
                 {
-                    FunctionResult result = await this._executor.TryExecuteAsync(
-                        new TriggeredFunctionData() { TriggerValue = changes },
-                        this._cancellationTokenSourceExecutor.Token);
+                    var input = new TriggeredFunctionData() { TriggerValue = changes };
+                    FunctionResult result = await this._executor.TryExecuteAsync(input, this._cancellationTokenSourceExecutor.Token);
 
                     if (result.Succeeded)
                     {
@@ -293,9 +289,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         // In the future might make sense to retry executing the function, but for now we just let
                         // another worker try.
-                        await this.ClearRowsAsync(
-                            $"Failed to trigger user's function for table {this._userTable.FullName} due to " +
-                            $"error: {result.Exception.Message}", true);
+                        this._logger.LogError($"Failed to trigger user function for table: '{this._userTable.FullName} due to exception: {result.Exception.GetType()}." +
+                            $" Exception message: {result.Exception.Message}");
+
+                        await this.ClearRowsAsync(true);
                     }
                 }
             }
@@ -318,11 +315,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     while (!token.IsCancellationRequested)
                     {
                         await this._rowsLock.WaitAsync(token);
-
                         await this.RenewLeasesAsync(connection, token);
-
-                        // Want to make sure to renew the leases before they expire, so we renew them twice per lease period.
-                        await Task.Delay(TimeSpan.FromSeconds(LeaseIntervalInSeconds / 2), token);
+                        await Task.Delay(TimeSpan.FromSeconds(LeaseRenewalIntervalInSeconds), token);
                     }
                 }
             }
@@ -362,7 +356,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // (see https://docs.microsoft.com/dotnet/csharp/language-reference/keywords/try-finally, third
                 // paragraph). If we fail to renew the leases, multiple workers could be processing the same change
                 // data, but we have functionality in place to deal with this (see design doc).
-                this._logger.LogError($"Failed to renew leases due to error: {e.Message}");
+                this._logger.LogError($"Failed to renew leases due to exception: {e.GetType()}. Exception message: {e.Message}");
             }
             finally
             {
@@ -395,15 +389,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Resets the in-memory state of the change monitor and sets it to start polling for changes again.
         /// </summary>
-        /// <param name="error">
-        /// The error messages the logger will report describing the reason function execution failed (used only in the case of a failure).
-        /// </param>
         /// <param name="acquireLock">True if ClearRowsAsync should acquire the "_rowsLock" (only true in the case of a failure)</param>
-        private async Task ClearRowsAsync(string error, bool acquireLock)
+        private async Task ClearRowsAsync(bool acquireLock)
         {
             if (acquireLock)
             {
-                this._logger.LogError(error);
                 await this._rowsLock.WaitAsync();
             }
 
@@ -449,16 +439,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         }
                         catch (Exception ex)
                         {
-                            this._logger.LogError("Commit Exception Type: {0}", ex.GetType());
-                            this._logger.LogError("  Message: {0}", ex.Message);
+                            this._logger.LogError($"Failed to execute SQL commands to release leases for table '{this._userTable.FullName}' due to exception: {ex.GetType()}." +
+                                $" Exception message: {ex.Message}");
+
                             try
                             {
                                 transaction.Rollback();
                             }
                             catch (Exception ex2)
                             {
-                                this._logger.LogError("Rollback Exception Type: {0}", ex2.GetType());
-                                this._logger.LogError("  Message: {0}", ex2.Message);
+                                this._logger.LogError($"Failed to rollback transaction due to exception: {ex2.GetType()}. Exception message: {ex2.Message}");
                             }
                         }
                     }
@@ -470,21 +460,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // What should we do if releasing the leases fails? We could try to release them again or just wait,
                 // since eventually the lease time will expire. Then another thread will re-process the same changes
                 // though, so less than ideal. But for now that's the functionality.
-                this._logger.LogError($"Failed to release leases for user table {this._userTable.FullName} due to error: {e.Message}");
+                this._logger.LogError($"Failed to release leases for table '{this._userTable.FullName}' due to exception: {e.GetType()}." +
+                    $" Exception message: {e.Message}");
             }
             finally
             {
                 // Want to do this before releasing the lock in case the renew leases thread wakes up. It will see that
                 // the state is checking for changes and not renew the (just released) leases.
-                await this.ClearRowsAsync(string.Empty, false);
+                await this.ClearRowsAsync(false);
             }
         }
 
         /// <summary>
-        /// Calculates the new version number to attempt to update LastSyncVersion in global state table to. If all
-        /// version numbers in _rows are the same, use that version number. If they aren't, use the second largest
-        /// version number. For an explanation as to why this method was chosen, see 9c in Steps of Operation in this
-        /// design doc: https://microsoft-my.sharepoint.com/:w:/p/t-sotevo/EQdANWq9ZWpKm8e48TdzUwcBGZW07vJmLf8TL_rtEG8ixQ?e=owN2EX.
+        /// Computes the version number that can be potentially used as the new LastSyncVersion in the global state table.
         /// </summary>
         private long RecomputeLastSyncVersion()
         {
@@ -495,7 +483,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 changeVersionSet.Add(long.Parse(changeVersion, CultureInfo.InvariantCulture));
             }
 
-            // If there are at least two version numbers in this set, return the second highest one. Otherwise, return
+            // If there are more than one version numbers in the set, return the second highest one. Otherwise, return
             // the only version number in the set.
             return changeVersionSet.ElementAt(changeVersionSet.Count > 1 ? changeVersionSet.Count - 2 : 0);
         }
@@ -606,7 +594,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {selectList},
                     c.SYS_CHANGE_VERSION, c.SYS_CHANGE_OPERATION,
                     w.ChangeVersion, w.AttemptCount, w.LeaseExpirationTime
-                FROM CHANGETABLE (CHANGES {this._userTable.BracketQuotedFullName}, @last_sync_version) AS c
+                FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @last_sync_version) AS c
                 LEFT OUTER JOIN {this._workerTableName} AS w WITH (TABLOCKX) ON {workerTableJoinCondition}
                 LEFT OUTER JOIN {this._userTable.BracketQuotedFullName} AS u ON {userTableJoinCondition}
                 WHERE
@@ -716,7 +704,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             string workerTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.AsBracketQuotedString()} = w.{col.AsBracketQuotedString()}"));
 
-            // TODO: Need to think through all cases to ensure the query below is correct, especially with use of < vs <=.
             string updateTablesPostInvocationQuery = $@"
                 DECLARE @current_last_sync_version bigint;
                 SELECT @current_last_sync_version = LastSyncVersion
@@ -726,7 +713,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 DECLARE @unprocessed_changes bigint;
                 SELECT @unprocessed_changes = COUNT(*) FROM (
                     SELECT c.SYS_CHANGE_VERSION
-                    FROM CHANGETABLE (CHANGES {this._userTable.BracketQuotedFullName}, @current_last_sync_version) AS c
+                    FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @current_last_sync_version) AS c
                     LEFT OUTER JOIN {this._workerTableName} AS w WITH (TABLOCKX) ON {workerTableJoinCondition}
                     WHERE
                         c.SYS_CHANGE_VERSION <= {newLastSyncVersion} AND

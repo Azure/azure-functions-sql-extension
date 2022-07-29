@@ -33,20 +33,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // Considering the polling interval of 5 seconds and batch-size of 10, it should take around 15 seconds to
             // process 30 insert operations. Similar reasoning is used to set delays for update and delete operations.
             this.InsertProducts(1, 30);
-            await Task.Delay(TimeSpan.FromSeconds(16));
+            await Task.Delay(TimeSpan.FromSeconds(20));
             ValidateProductChanges(changes, 1, 30, SqlChangeOperation.Insert, id => $"Product {id}", id => id * 100);
             changes.Clear();
 
             // All table columns (not just the columns that were updated) would be returned for update operation.
             this.UpdateProducts(1, 20);
-            await Task.Delay(TimeSpan.FromSeconds(11));
+            await Task.Delay(TimeSpan.FromSeconds(15));
             ValidateProductChanges(changes, 1, 20, SqlChangeOperation.Update, id => $"Updated Product {id}", id => id * 100);
             changes.Clear();
 
             // The properties corresponding to non-primary key columns would be set to the C# type's default values
             // (null and 0) for delete operation.
             this.DeleteProducts(11, 30);
-            await Task.Delay(TimeSpan.FromSeconds(11));
+            await Task.Delay(TimeSpan.FromSeconds(15));
             ValidateProductChanges(changes, 11, 30, SqlChangeOperation.Delete, _ => null, _ => 0);
             changes.Clear();
         }
