@@ -114,13 +114,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         this._logger);
 
                     this._listenerState = ListenerStarted;
-                    this._logger.LogDebug($"Started SQL trigger listener for table: {this._userTable.FullName}, function ID: {this._userFunctionId}.");
+                    this._logger.LogDebug($"Started SQL trigger listener for table: '{this._userTable.FullName}', function ID: '{this._userFunctionId}'.");
                 }
             }
             catch (Exception ex)
             {
                 this._listenerState = ListenerNotStarted;
-                this._logger.LogError($"Failed to start SQL trigger listener for table: {this._userTable.FullName}, function ID: {this._userFunctionId}. Exception: {ex}");
+                this._logger.LogError($"Failed to start SQL trigger listener for table: '{this._userTable.FullName}', function ID: '{this._userFunctionId}'. Exception: {ex}");
 
                 throw;
             }
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 this._changeMonitor.Dispose();
 
                 this._listenerState = ListenerStopped;
-                this._logger.LogDebug($"Stopped SQL trigger listener for table: {this._userTable.FullName}, function ID: {this._userFunctionId}.");
+                this._logger.LogDebug($"Stopped SQL trigger listener for table: '{this._userTable.FullName}', function ID: '{this._userFunctionId}'.");
             }
 
             return Task.CompletedTask;
@@ -149,30 +149,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string getObjectIdQuery = $"SELECT OBJECT_ID(N{this._userTable.QuotedFullName}, 'U');";
 
             using (var getObjectIdCommand = new SqlCommand(getObjectIdQuery, connection))
+            using (SqlDataReader reader = await getObjectIdCommand.ExecuteReaderAsync(cancellationToken))
             {
-                using (SqlDataReader reader = await getObjectIdCommand.ExecuteReaderAsync(cancellationToken))
+                if (!await reader.ReadAsync(cancellationToken))
                 {
-                    if (!await reader.ReadAsync(cancellationToken))
-                    {
-                        throw new InvalidOperationException($"Received empty response when querying the object ID for table: {this._userTable.FullName}.");
-                    }
-
-                    object userTableId = reader.GetValue(0);
-
-                    if (userTableId is DBNull)
-                    {
-                        throw new InvalidOperationException($"Could not find table: {this._userTable.FullName}.");
-                    }
-
-                    return (int)userTableId;
+                    throw new InvalidOperationException($"Received empty response when querying the object ID for table: '{this._userTable.FullName}'.");
                 }
+
+                object userTableId = reader.GetValue(0);
+
+                if (userTableId is DBNull)
+                {
+                    throw new InvalidOperationException($"Could not find table: '{this._userTable.FullName}'.");
+                }
+
+                return (int)userTableId;
             }
         }
 
         /// <summary>
-        /// Gets the names and types of primary key columns of the user's table.
+        /// Gets the names and types of primary key columns of the user table.
         /// </summary>
-        /// <exception cref="InvalidOperationException">Thrown if there are no primary key columns present in the user table.</exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if there are no primary key columns present in the user table or if their names conflict with columns in worker table.
+        /// </exception>
         private async Task<IReadOnlyList<(string name, string type)>> GetPrimaryKeyColumnsAsync(SqlConnection connection, int userTableId, CancellationToken cancellationToken)
         {
             string getPrimaryKeyColumnsQuery = $@"
@@ -185,74 +185,74 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             ";
 
             using (var getPrimaryKeyColumnsCommand = new SqlCommand(getPrimaryKeyColumnsQuery, connection))
+            using (SqlDataReader reader = await getPrimaryKeyColumnsCommand.ExecuteReaderAsync(cancellationToken))
             {
-                using (SqlDataReader reader = await getPrimaryKeyColumnsCommand.ExecuteReaderAsync(cancellationToken))
+                string[] reservedColumnNames = new string[] { "ChangeVersion", "AttemptCount", "LeaseExpirationTime" };
+                string[] variableLengthTypes = new string[] { "varchar", "nvarchar", "nchar", "char", "binary", "varbinary" };
+                string[] variablePrecisionTypes = new string[] { "numeric", "decimal" };
+
+                var primaryKeyColumns = new List<(string name, string type)>();
+
+                while (await reader.ReadAsync(cancellationToken))
                 {
+                    string name = reader.GetString(0);
 
-                    string[] variableLengthTypes = new string[] { "varchar", "nvarchar", "nchar", "char", "binary", "varbinary" };
-                    string[] variablePrecisionTypes = new string[] { "numeric", "decimal" };
-
-                    var primaryKeyColumns = new List<(string name, string type)>();
-
-                    while (await reader.ReadAsync(cancellationToken))
+                    if (reservedColumnNames.Contains(name))
                     {
-                        string type = reader.GetString(1);
-
-                        if (variableLengthTypes.Contains(type))
-                        {
-                            // Special "max" case. I'm actually not sure it's valid to have varchar(max) as a primary key because
-                            // it exceeds the byte limit of an index field (900 bytes), but just in case
-                            short length = reader.GetInt16(2);
-                            type += length == -1 ? "(max)" : $"({length})";
-                        }
-                        else if (variablePrecisionTypes.Contains(type))
-                        {
-                            byte precision = reader.GetByte(3);
-                            byte scale = reader.GetByte(4);
-                            type += $"({precision},{scale})";
-                        }
-
-                        primaryKeyColumns.Add((name: reader.GetString(0), type));
+                        throw new InvalidOperationException($"Found reserved column name: '{name}' in table: '{this._userTable.FullName}'.");
                     }
 
-                    if (primaryKeyColumns.Count == 0)
+                    string type = reader.GetString(1);
+
+                    if (variableLengthTypes.Contains(type))
                     {
-                        throw new InvalidOperationException($"Unable to determine the primary keys of user table {this._userTable.FullName}. " +
-                            "Potentially, the table does not have any primary key columns. A primary key is required for every " +
-                            "user table for which changes are being monitored.");
+                        // Special "max" case. I'm actually not sure it's valid to have varchar(max) as a primary key because
+                        // it exceeds the byte limit of an index field (900 bytes), but just in case
+                        short length = reader.GetInt16(2);
+                        type += length == -1 ? "(max)" : $"({length})";
+                    }
+                    else if (variablePrecisionTypes.Contains(type))
+                    {
+                        byte precision = reader.GetByte(3);
+                        byte scale = reader.GetByte(4);
+                        type += $"({precision},{scale})";
                     }
 
-                    return primaryKeyColumns;
+                    primaryKeyColumns.Add((name: reader.GetString(0), type));
                 }
+
+                if (primaryKeyColumns.Count == 0)
+                {
+                    throw new InvalidOperationException($"Could not find primary key created in table: '{this._userTable.FullName}'.");
+                }
+
+                return primaryKeyColumns;
             }
         }
 
         /// <summary>
-        /// Gets the column names of the user's table.
+        /// Gets the column names of the user table.
         /// </summary>
         private static async Task<IReadOnlyList<string>> GetUserTableColumnsAsync(SqlConnection connection, int userTableId, CancellationToken cancellationToken)
         {
             string getUserTableColumnsQuery = $"SELECT name FROM sys.columns WHERE object_id = {userTableId};";
 
             using (var getUserTableColumnsCommand = new SqlCommand(getUserTableColumnsQuery, connection))
+            using (SqlDataReader reader = await getUserTableColumnsCommand.ExecuteReaderAsync(cancellationToken))
             {
-                using (SqlDataReader reader = await getUserTableColumnsCommand.ExecuteReaderAsync(cancellationToken))
+                var userTableColumns = new List<string>();
+
+                while (await reader.ReadAsync(cancellationToken))
                 {
-
-                    var userTableColumns = new List<string>();
-
-                    while (await reader.ReadAsync(cancellationToken))
-                    {
-                        userTableColumns.Add(reader.GetString(0));
-                    }
-
-                    return userTableColumns;
+                    userTableColumns.Add(reader.GetString(0));
                 }
+
+                return userTableColumns;
             }
         }
 
         /// <summary>
-        /// Creates the schema where the worker tables will be located if it does not already exist.
+        /// Creates the schema for global state table and worker tables, if it does not already exist.
         /// </summary>
         private static async Task CreateSchemaAsync(SqlConnection connection, SqlTransaction transaction, CancellationToken cancellationToken)
         {
@@ -289,42 +289,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Inserts row for the user table and the function inside the global state table, if one does not already exist.
+        /// Inserts row for the 'user function and table' inside the global state table, if one does not already exist.
         /// </summary>
         private async Task InsertGlobalStateTableRowAsync(SqlConnection connection, SqlTransaction transaction, int userTableId, CancellationToken cancellationToken)
         {
+            object minValidVersion;
+
+            string getMinValidVersionQuery = $"SELECT CHANGE_TRACKING_MIN_VALID_VERSION({userTableId});";
+
+            using (var getMinValidVersionCommand = new SqlCommand(getMinValidVersionQuery, connection, transaction))
+            using (SqlDataReader reader = await getMinValidVersionCommand.ExecuteReaderAsync(cancellationToken))
+            {
+                if (!await reader.ReadAsync(cancellationToken))
+                {
+                    throw new InvalidOperationException($"Received empty response when querying the 'change tracking min valid version' for table: '{this._userTable.FullName}'.");
+                }
+
+                minValidVersion = reader.GetValue(0);
+
+                if (minValidVersion is DBNull)
+                {
+                    throw new InvalidOperationException($"Could not find change tracking enabled for table: '{this._userTable.FullName}'.");
+                }
+            }
+
             string insertRowGlobalStateTableQuery = $@"
                 IF NOT EXISTS (
                     SELECT * FROM {SqlTriggerConstants.GlobalStateTableName}
                     WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {userTableId}
                 )
                     INSERT INTO {SqlTriggerConstants.GlobalStateTableName}
-                    VALUES ('{this._userFunctionId}', {userTableId}, CHANGE_TRACKING_MIN_VALID_VERSION({userTableId}));
+                    VALUES ('{this._userFunctionId}', {userTableId}, {(long)minValidVersion});
             ";
 
             using (var insertRowGlobalStateTableCommand = new SqlCommand(insertRowGlobalStateTableQuery, connection, transaction))
             {
-                try
-                {
-                    await insertRowGlobalStateTableCommand.ExecuteNonQueryAsync(cancellationToken);
-                }
-                catch (Exception e)
-                {
-                    // Could fail if we try to insert a NULL value into the LastSyncVersion, which happens when
-                    // CHANGE_TRACKING_MIN_VALID_VERSION returns NULL for the user table, meaning that change tracking is
-                    // not enabled for either the database or table (or both).
-
-                    string errorMessage = $"Failed to start processing changes to table {this._userTable.FullName}, " +
-                        $"potentially because change tracking was not enabled for the table or database {connection.Database}.";
-
-                    this._logger.LogWarning(errorMessage + $" Exact exception thrown is {e.Message}");
-                    throw new InvalidOperationException(errorMessage);
-                }
+                await insertRowGlobalStateTableCommand.ExecuteNonQueryAsync(cancellationToken);
             }
         }
 
         /// <summary>
-        /// Creates the worker table associated with the user's table, if one does not already exist.
+        /// Creates the worker table for the 'user function and table', if one does not already exist.
         /// </summary>
         private static async Task CreateWorkerTableAsync(
             SqlConnection connection,
@@ -333,7 +338,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             IReadOnlyList<(string name, string type)> primaryKeyColumns,
             CancellationToken cancellationToken)
         {
-            string primaryKeysWithTypes = string.Join(", ", primaryKeyColumns.Select(col => $"{col.name.AsBracketQuotedString()} [{col.type}]"));
+            string primaryKeysWithTypes = string.Join(",\n", primaryKeyColumns.Select(col => $"{col.name.AsBracketQuotedString()} [{col.type}]"));
             string primaryKeys = string.Join(", ", primaryKeyColumns.Select(col => col.name.AsBracketQuotedString()));
 
             string createWorkerTableQuery = $@"
