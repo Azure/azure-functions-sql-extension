@@ -24,6 +24,7 @@
     <Message Text="Copied C# Samples output to $(OutDir)\SqlExtensionSamples\CSharp" Importance="high" />
   </Target>
 
+  <!-- Copy C# Samples output to BenchmarkDotNet project bin (https://github.com/dotnet/BenchmarkDotNet/issues/946) -->
   <ItemGroup>
     <None Include="$(OutDir)\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

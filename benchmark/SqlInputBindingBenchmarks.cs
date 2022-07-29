@@ -1,16 +1,13 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using System;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 using BenchmarkDotNet.Attributes;
-
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Benchmark
 {
@@ -36,7 +33,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Benchmark
         [GlobalCleanup]
         public void GlobalCleanup()
         {
-            Console.WriteLine("-----GLOBAL CLEANUP CALLED-----");
             this.Dispose();
         }
 
@@ -60,22 +56,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Benchmark
                 };
             }
             return result;
-        }
-
-        private void InsertProducts(Product[] products)
-        {
-            if (products.Length == 0)
-            {
-                return;
-            }
-
-            var queryBuilder = new StringBuilder();
-            foreach (Product p in products)
-            {
-                queryBuilder.AppendLine($"INSERT INTO dbo.Products VALUES({p.ProductID}, '{p.Name}', {p.Cost});");
-            }
-
-            this.ExecuteNonQuery(queryBuilder.ToString());
         }
     }
 }
