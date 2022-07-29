@@ -28,7 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public const int MaxAttemptCount = 5;
 
         // Leases are held for approximately (LeaseRenewalIntervalInSeconds * MaxLeaseRenewalCount) seconds. It is
-        // required to have at least one of (LeaseRenewalIntervalInSeconds / LeaseRenewalIntervalInSeconds) attempts to
+        // required to have at least one of (LeaseIntervalInSeconds / LeaseRenewalIntervalInSeconds) attempts to
         // renew the lease succeed to prevent it from expiring.
         public const int MaxLeaseRenewalCount = 10;
         public const int LeaseIntervalInSeconds = 60;
