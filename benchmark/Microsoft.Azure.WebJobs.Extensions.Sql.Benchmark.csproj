@@ -13,7 +13,23 @@
 
   <ItemGroup>
 	<ProjectReference Include="..\test\Microsoft.Azure.WebJobs.Extensions.Sql.Tests.csproj" />
-	<ProjectReference Include="..\samples\Microsoft.Azure.WebJobs.Extensions.Sql.Samples.csproj" />
+	<ProjectReference Include="..\samples\samples-csharp\Microsoft.Azure.WebJobs.Extensions.Sql.Samples.csproj" />
+  </ItemGroup>
+
+  <Target Name="CopySamples" AfterTargets="Build">
+    <ItemGroup>
+      <_CSharpCopyItems Include="..\samples\samples-csharp\bin\$(Configuration)\$(TargetFramework)\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_CSharpCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\CSharp\%(RecursiveDir)" />
+    <Message Text="Copied C# Samples output to $(OutDir)\SqlExtensionSamples\CSharp" Importance="high" />
+  </Target>
+
+  <ItemGroup>
+    <None Include="$(OutDir)\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>%(RecursiveDir)\%(Filename)%(Extension)</Link>
+      <Visible>False</Visible>
+    </None>
   </ItemGroup>
 
 </Project>
