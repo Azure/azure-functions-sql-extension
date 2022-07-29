@@ -3,7 +3,6 @@
 
 using System;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
@@ -185,20 +184,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             return result;
         }
 
-        private void InsertProducts(Product[] products)
-        {
-            if (products.Length == 0)
-            {
-                return;
-            }
-
-            var queryBuilder = new StringBuilder();
-            foreach (Product p in products)
-            {
-                queryBuilder.AppendLine($"INSERT INTO dbo.Products VALUES({p.ProductID}, '{p.Name}', {p.Cost});");
-            }
-
-            this.ExecuteNonQuery(queryBuilder.ToString());
-        }
     }
 }

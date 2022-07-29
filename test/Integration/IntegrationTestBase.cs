@@ -78,7 +78,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             string testServer = Environment.GetEnvironmentVariable("TEST_SERVER");
             if (string.IsNullOrEmpty(testServer))
             {
-                testServer = "localhost\\SQLEXPRESS";
+                testServer = "localhost";
             }
 
             // First connect to master to create the database
@@ -224,6 +224,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             string funcExe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "func.exe" : "func";
             string funcPath = Path.Combine(nodeModulesPath, "azure-functions-core-tools", "bin", funcExe);
+
             if (!File.Exists(funcPath))
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -302,6 +303,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
 
             return response;
+        }
+
+        protected void InsertProducts(Product[] products)
+        {
+            if (products.Length == 0)
+            {
+                return;
+            }
+
+            var queryBuilder = new StringBuilder();
+            foreach (Product p in products)
+            {
+                queryBuilder.AppendLine($"INSERT INTO dbo.Products VALUES({p.ProductID}, '{p.Name}', {p.Cost});");
+            }
+
+            this.ExecuteNonQuery(queryBuilder.ToString());
         }
 
         /// <summary>
