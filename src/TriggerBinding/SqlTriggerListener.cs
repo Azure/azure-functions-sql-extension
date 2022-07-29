@@ -88,9 +88,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                     int userTableId = await this.GetUserTableIdAsync(connection, cancellationToken);
                     IReadOnlyList<(string name, string type)> primaryKeyColumns = await this.GetPrimaryKeyColumnsAsync(connection, userTableId, cancellationToken);
-                    IReadOnlyList<string> userTableColumns = await GetUserTableColumnsAsync(connection, userTableId, cancellationToken);
+                    IReadOnlyList<string> userTableColumns = await this.GetUserTableColumnsAsync(connection, userTableId, cancellationToken);
 
                     string workerTableName = string.Format(CultureInfo.InvariantCulture, SqlTriggerConstants.WorkerTableNameFormat, $"{this._userFunctionId}_{userTableId}");
+                    this._logger.LogDebug($"Worker table name: '{workerTableName}'.");
 
                     using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
                     {
@@ -100,6 +101,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         await CreateWorkerTableAsync(connection, transaction, workerTableName, primaryKeyColumns, cancellationToken);
                         transaction.Commit();
                     }
+
+                    this._logger.LogInformation($"Starting SQL trigger listener for table: '{this._userTable.FullName}', function ID: '{this._userFunctionId}'.");
 
                     // TODO: Check if passing the cancellation token would be beneficial.
                     this._changeMonitor = new SqlTableChangeMonitor<T>(
@@ -114,7 +117,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         this._logger);
 
                     this._listenerState = ListenerStarted;
-                    this._logger.LogDebug($"Started SQL trigger listener for table: '{this._userTable.FullName}', function ID: '{this._userFunctionId}'.");
+                    this._logger.LogInformation($"Started SQL trigger listener for table: '{this._userTable.FullName}', function ID: '{this._userFunctionId}'.");
                 }
             }
             catch (Exception ex)
@@ -134,7 +137,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 this._changeMonitor.Dispose();
 
                 this._listenerState = ListenerStopped;
-                this._logger.LogDebug($"Stopped SQL trigger listener for table: '{this._userTable.FullName}', function ID: '{this._userFunctionId}'.");
+                this._logger.LogInformation($"Stopped SQL trigger listener for table: '{this._userTable.FullName}', function ID: '{this._userFunctionId}'.");
             }
 
             return Task.CompletedTask;
@@ -204,7 +207,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                     string type = reader.GetString(1);
 
-                    if (variableLengthTypes.Contains(type))
+                    if (variableLengthTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
                     {
                         // Special "max" case. I'm actually not sure it's valid to have varchar(max) as a primary key because
                         // it exceeds the byte limit of an index field (900 bytes), but just in case
@@ -226,6 +229,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new InvalidOperationException($"Could not find primary key created in table: '{this._userTable.FullName}'.");
                 }
 
+                this._logger.LogDebug($"Primary key column names(types): {string.Join(", ", primaryKeyColumns.Select(col => $"'{col.name}({col.type})'"))}.");
                 return primaryKeyColumns;
             }
         }
@@ -233,7 +237,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Gets the column names of the user table.
         /// </summary>
-        private static async Task<IReadOnlyList<string>> GetUserTableColumnsAsync(SqlConnection connection, int userTableId, CancellationToken cancellationToken)
+        private async Task<IReadOnlyList<string>> GetUserTableColumnsAsync(SqlConnection connection, int userTableId, CancellationToken cancellationToken)
         {
             string getUserTableColumnsQuery = $"SELECT name FROM sys.columns WHERE object_id = {userTableId};";
 
@@ -247,6 +251,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     userTableColumns.Add(reader.GetString(0));
                 }
 
+                this._logger.LogDebug($"User table column names: {string.Join(", ", userTableColumns.Select(col => $"'{col}'"))}.");
                 return userTableColumns;
             }
         }
