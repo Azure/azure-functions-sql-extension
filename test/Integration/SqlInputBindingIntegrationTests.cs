@@ -3,7 +3,6 @@
 
 using System;
 using System.Net.Http;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples;
@@ -18,13 +17,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     {
         public SqlInputBindingIntegrationTests(ITestOutputHelper output) : base(output)
         {
-        }
-
-        private async Task<HttpResponseMessage> SendInputRequest(string functionName, string query = "")
-        {
-            string requestUri = $"http://localhost:{this.Port}/api/{functionName}/{query}";
-
-            return await this.SendGetRequest(requestUri);
         }
 
         [Theory]
@@ -138,51 +130,5 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             Assert.Equal(expectedResponse, TestUtils.CleanJsonString(actualResponse), StringComparer.OrdinalIgnoreCase);
         }
-
-        private static Product[] GetProductsWithSameCost(int n, int cost)
-        {
-            var result = new Product[n];
-            for (int i = 0; i < n; i++)
-            {
-                result[i] = new Product
-                {
-                    ProductID = i,
-                    Name = "test",
-                    Cost = cost
-                };
-            }
-            return result;
-        }
-
-        private static Product[] GetProducts(int n, int cost)
-        {
-            var result = new Product[n];
-            for (int i = 1; i <= n; i++)
-            {
-                result[i - 1] = new Product
-                {
-                    ProductID = i,
-                    Name = "test",
-                    Cost = cost * i
-                };
-            }
-            return result;
-        }
-
-        private static Product[] GetProductsWithSameCostAndName(int n, int cost, string name, int offset = 0)
-        {
-            var result = new Product[n];
-            for (int i = 0; i < n; i++)
-            {
-                result[i] = new Product
-                {
-                    ProductID = i + offset,
-                    Name = name,
-                    Cost = cost
-                };
-            }
-            return result;
-        }
-
     }
 }
