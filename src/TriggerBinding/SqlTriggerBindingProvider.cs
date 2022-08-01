@@ -57,6 +57,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             ParameterInfo parameter = context.Parameter;
             SqlTriggerAttribute attribute = parameter.GetCustomAttribute<SqlTriggerAttribute>(inherit: false);
 
+            // During application startup, the WebJobs SDK calls 'TryCreateAsync' method of all registered trigger
+            // binding providers in sequence for each parameter in the user function. A provider that finds the
+            // parameter-attribute that it can handle returns the binding object. Rest of the providers are supposed to
+            // return null. This binding object later gets used for binding before every function invocation.
             if (attribute == null)
             {
                 return Task.FromResult(default(ITriggerBinding));

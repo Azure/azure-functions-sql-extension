@@ -607,6 +607,8 @@ The trigger binding utilizes SQL [change tracking](https://docs.microsoft.com/sq
 
     For more information, please refer to the documentation [here](https://docs.microsoft.com/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server#enable-change-tracking-for-a-table). The trigger needs to have read access on the table being monitored for changes as well as to the change tracking system tables. It also needs write access to an `az_func` schema within the database, where it will create additional worker tables to store the trigger states and leases. Each function trigger will thus have an associated change tracking table and worker table.
 
+    > **NOTE:** The worker table contains all columns corresponding to the primary key from the user table and three additional columns, particularly with names: `ChangeVersion`, `AttemptCount` and `LeaseExpirationTime`. If any of the primary key columns happen to have the same name, that will result in an error message describing the name-conflict. In such case, renaming the primary key column in the user table should resolve the error.
+
 #### Trigger Samples
 The trigger binding takes two [arguments](https://github.com/Azure/azure-functions-sql-extension/blob/main/src/TriggerBinding/SqlTriggerAttribute.cs)
 
