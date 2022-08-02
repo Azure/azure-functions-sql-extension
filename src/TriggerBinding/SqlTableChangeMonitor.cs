@@ -578,7 +578,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     c.SYS_CHANGE_VERSION, c.SYS_CHANGE_OPERATION,
                     w.ChangeVersion, w.AttemptCount, w.LeaseExpirationTime
                 FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @last_sync_version) AS c
-                LEFT OUTER JOIN {this._workerTableName} AS w WITH (TABLOCKX) ON {workerTableJoinCondition}
+                LEFT OUTER JOIN {this._workerTableName} AS w ON {workerTableJoinCondition}
                 LEFT OUTER JOIN {this._userTable.BracketQuotedFullName} AS u ON {userTableJoinCondition}
                 WHERE
                     (w.LeaseExpirationTime IS NULL AND (w.ChangeVersion IS NULL OR w.ChangeVersion < c.SYS_CHANGE_VERSION) OR
@@ -607,11 +607,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 string changeVersion = this._rows[rowIndex]["SYS_CHANGE_VERSION"];
 
                 acquireLeasesQuery.Append($@"
-                    IF NOT EXISTS (SELECT * FROM {this._workerTableName} WITH (TABLOCKX) WHERE {this._rowMatchConditions[rowIndex]})
-                        INSERT INTO {this._workerTableName} WITH (TABLOCKX)
+                    IF NOT EXISTS (SELECT * FROM {this._workerTableName} WITH (XLOCK) WHERE {this._rowMatchConditions[rowIndex]})
+                        INSERT INTO {this._workerTableName}
                         VALUES ({valuesList}, {changeVersion}, 1, DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME()));
                     ELSE
-                        UPDATE {this._workerTableName} WITH (TABLOCKX)
+                        UPDATE {this._workerTableName}
                         SET
                             ChangeVersion = {changeVersion},
                             AttemptCount = AttemptCount + 1,
@@ -633,7 +633,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string matchCondition = string.Join(" OR ", this._rowMatchConditions.Take(this._rows.Count));
 
             string renewLeasesQuery = $@"
-                UPDATE {this._workerTableName} WITH (TABLOCKX)
+                UPDATE {this._workerTableName}
                 SET LeaseExpirationTime = DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME())
                 WHERE {matchCondition};
             ";
@@ -658,11 +658,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 releaseLeasesQuery.Append($@"
                     SELECT @current_change_version = ChangeVersion
-                    FROM {this._workerTableName} WITH (TABLOCKX)
+                    FROM {this._workerTableName} WITH (UPDLOCK)
                     WHERE {this._rowMatchConditions[rowIndex]};
 
                     IF @current_change_version <= {changeVersion}
-                        UPDATE {this._workerTableName} WITH (TABLOCKX) 
+                        UPDATE {this._workerTableName}
                         SET ChangeVersion = {changeVersion}, AttemptCount = 0, LeaseExpirationTime = NULL
                         WHERE {this._rowMatchConditions[rowIndex]};
                 ");
@@ -706,7 +706,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     SET LastSyncVersion = {newLastSyncVersion}
                     WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
 
-                    DELETE FROM {this._workerTableName} WITH (TABLOCKX) WHERE ChangeVersion <= {newLastSyncVersion};
+                    DELETE FROM {this._workerTableName} WHERE ChangeVersion <= {newLastSyncVersion};
                 END
             ";
 
