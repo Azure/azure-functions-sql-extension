@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,7 +40,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly string _workerTableName;
         private readonly IReadOnlyList<string> _userTableColumns;
         private readonly IReadOnlyList<string> _primaryKeyColumns;
-        private readonly IReadOnlyList<(string col, string hash)> _primaryKeyColumnHashes;
         private readonly IReadOnlyList<string> _rowMatchConditions;
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly ILogger _logger;
@@ -96,11 +94,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._workerTableName = workerTableName;
             this._userTableColumns = userTableColumns;
             this._primaryKeyColumns = primaryKeyColumns;
-            this._primaryKeyColumnHashes = primaryKeyColumns.Select(col => (col, GetColumnHash(col))).ToList();
 
             // Prep search-conditions that will be used besides WHERE clause to match table rows.
             this._rowMatchConditions = Enumerable.Range(0, BatchSize)
-                .Select(index => string.Join(" AND ", this._primaryKeyColumnHashes.Select(ch => $"{ch.col.AsBracketQuotedString()} = @{ch.hash}_{index}")))
+                .Select(rowIndex => string.Join(" AND ", this._primaryKeyColumns.Select((col, colIndex) => $"{col.AsBracketQuotedString()} = @{rowIndex}_{colIndex}")))
                 .ToList();
 
             this._executor = executor;
@@ -152,8 +149,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         if (this._state == State.CheckingForChanges)
                         {
-                            await this.GetChangesAsync(token);
-                            await this.ProcessChangesAsync(token);
+                            await this.GetTableChangesAsync(token);
+                            await this.ProcessTableChangesAsync(token);
                         }
 
                         await Task.Delay(TimeSpan.FromSeconds(PollingIntervalInSeconds), token);
@@ -183,7 +180,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Queries the change/worker tables to check for new changes on the user's table. If any are found, stores the
         /// change along with the corresponding data from the user table in "_rows".
         /// </summary>
-        private async Task GetChangesAsync(CancellationToken token)
+        private async Task GetTableChangesAsync(CancellationToken token)
         {
             try
             {
@@ -253,7 +250,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
         }
 
-        private async Task ProcessChangesAsync(CancellationToken token)
+        private async Task ProcessTableChangesAsync(CancellationToken token)
         {
             if (this._rows.Count > 0)
             {
@@ -532,20 +529,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Creates GUID string from column name that can be used as name of SQL local variable. The column names
-        /// cannot be used directly as variable names as they may contain characters like ',', '.', '+', spaces, etc.
-        /// that are not allowed in variable names.
-        /// </summary>
-        private static string GetColumnHash(string columnName)
-        {
-            using (var sha256 = SHA256.Create())
-            {
-                byte[] hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(columnName));
-                return new Guid(hash.Take(16).ToArray()).ToString("N");
-            }
-        }
-
-        /// <summary>
         /// Builds the command to update the global state table in the case of a new minimum valid version number.
         /// Sets the LastSyncVersion for this _userTable to be the new minimum valid version number.
         /// </summary>
@@ -618,13 +601,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             var acquireLeasesQuery = new StringBuilder();
 
-            for (int index = 0; index < this._rows.Count; index++)
+            for (int rowIndex = 0; rowIndex < this._rows.Count; rowIndex++)
             {
-                string valuesList = string.Join(", ", this._primaryKeyColumnHashes.Select(ch => $"@{ch.hash}_{index}"));
-                string changeVersion = this._rows[index]["SYS_CHANGE_VERSION"];
+                string valuesList = string.Join(", ", this._primaryKeyColumns.Select((_, colIndex) => $"@{rowIndex}_{colIndex}"));
+                string changeVersion = this._rows[rowIndex]["SYS_CHANGE_VERSION"];
 
                 acquireLeasesQuery.Append($@"
-                    IF NOT EXISTS (SELECT * FROM {this._workerTableName} WITH (TABLOCKX) WHERE {this._rowMatchConditions[index]})
+                    IF NOT EXISTS (SELECT * FROM {this._workerTableName} WITH (TABLOCKX) WHERE {this._rowMatchConditions[rowIndex]})
                         INSERT INTO {this._workerTableName} WITH (TABLOCKX)
                         VALUES ({valuesList}, {changeVersion}, 1, DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME()));
                     ELSE
@@ -633,7 +616,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             ChangeVersion = {changeVersion},
                             AttemptCount = AttemptCount + 1,
                             LeaseExpirationTime = DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME())
-                        WHERE {this._rowMatchConditions[index]};
+                        WHERE {this._rowMatchConditions[rowIndex]};
                 ");
             }
 
@@ -647,18 +630,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
         private SqlCommand BuildRenewLeasesCommand(SqlConnection connection)
         {
-            var renewLeasesQuery = new StringBuilder();
+            string matchCondition = string.Join(" OR ", this._rowMatchConditions.Take(this._rows.Count));
 
-            for (int index = 0; index < this._rows.Count; index++)
-            {
-                renewLeasesQuery.Append($@"
-                    UPDATE {this._workerTableName} WITH (TABLOCKX)
-                    SET LeaseExpirationTime = DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME())
-                    WHERE {this._rowMatchConditions[index]};
-                ");
-            }
+            string renewLeasesQuery = $@"
+                UPDATE {this._workerTableName} WITH (TABLOCKX)
+                SET LeaseExpirationTime = DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME())
+                WHERE {matchCondition};
+            ";
 
-            return this.GetSqlCommandWithParameters(renewLeasesQuery.ToString(), connection, null);
+            return this.GetSqlCommandWithParameters(renewLeasesQuery, connection, null);
         }
 
         /// <summary>
@@ -672,19 +652,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             var releaseLeasesQuery = new StringBuilder("DECLARE @current_change_version bigint;\n");
 
-            for (int index = 0; index < this._rows.Count; index++)
+            for (int rowIndex = 0; rowIndex < this._rows.Count; rowIndex++)
             {
-                string changeVersion = this._rows[index]["SYS_CHANGE_VERSION"];
+                string changeVersion = this._rows[rowIndex]["SYS_CHANGE_VERSION"];
 
                 releaseLeasesQuery.Append($@"
                     SELECT @current_change_version = ChangeVersion
                     FROM {this._workerTableName} WITH (TABLOCKX)
-                    WHERE {this._rowMatchConditions[index]};
+                    WHERE {this._rowMatchConditions[rowIndex]};
 
                     IF @current_change_version <= {changeVersion}
                         UPDATE {this._workerTableName} WITH (TABLOCKX) 
                         SET ChangeVersion = {changeVersion}, AttemptCount = 0, LeaseExpirationTime = NULL
-                        WHERE {this._rowMatchConditions[index]};
+                        WHERE {this._rowMatchConditions[rowIndex]};
                 ");
             }
 
@@ -753,14 +733,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             var command = new SqlCommand(commandText, connection, transaction);
 
-            for (int index = 0; index < this._rows.Count; index++)
-            {
-                foreach ((string col, string hash) in this._primaryKeyColumnHashes)
-                {
-                    command.Parameters.Add(new SqlParameter($"@{hash}_{index}", this._rows[index][col]));
-                }
-            }
+            SqlParameter[] parameters = Enumerable.Range(0, this._rows.Count)
+                .SelectMany(rowIndex => this._primaryKeyColumns.Select((col, colIndex) => new SqlParameter($"@{rowIndex}_{colIndex}", this._rows[rowIndex][col])))
+                .ToArray();
 
+            command.Parameters.AddRange(parameters);
             return command;
         }
 

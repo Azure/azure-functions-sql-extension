@@ -190,8 +190,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             using (var getPrimaryKeyColumnsCommand = new SqlCommand(getPrimaryKeyColumnsQuery, connection))
             using (SqlDataReader reader = await getPrimaryKeyColumnsCommand.ExecuteReaderAsync(cancellationToken))
             {
-                string[] variableLengthTypes = new string[] { "varchar", "nvarchar", "nchar", "char", "binary", "varbinary" };
-                string[] variablePrecisionTypes = new string[] { "numeric", "decimal" };
+                string[] variableLengthTypes = new[] { "varchar", "nvarchar", "nchar", "char", "binary", "varbinary" };
+                string[] variablePrecisionTypes = new[] { "numeric", "decimal" };
 
                 var primaryKeyColumns = new List<(string name, string type)>();
 
@@ -222,10 +222,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new InvalidOperationException($"Could not find primary key created in table: '{this._userTable.FullName}'.");
                 }
 
-                string[] reservedColumnNames = new string[] { "ChangeVersion", "AttemptCount", "LeaseExpirationTime" };
-                string[] conflictingColumnNames = primaryKeyColumns.Select(col => col.name).Intersect(reservedColumnNames).ToArray();
+                string[] reservedColumnNames = new[] { "ChangeVersion", "AttemptCount", "LeaseExpirationTime" };
+                var conflictingColumnNames = primaryKeyColumns.Select(col => col.name).Intersect(reservedColumnNames).ToList();
 
-                if (conflictingColumnNames.Length > 0)
+                if (conflictingColumnNames.Count > 0)
                 {
                     throw new InvalidOperationException($"Found reserved column name(s): '{string.Join(", ", conflictingColumnNames)}' in table: '{this._userTable.FullName}'." +
                         " Please rename them to be able to use trigger binding.");
@@ -265,7 +265,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             string createSchemaQuery = $@"
                 IF SCHEMA_ID(N'{SqlTriggerConstants.SchemaName}') IS NULL
-                    EXEC ('CREATE SCHEMA [{SqlTriggerConstants.SchemaName}]');
+                    EXEC ('CREATE SCHEMA {SqlTriggerConstants.SchemaName}');
             ";
 
             using (var createSchemaCommand = new SqlCommand(createSchemaQuery, connection, transaction))
@@ -345,7 +345,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             IReadOnlyList<(string name, string type)> primaryKeyColumns,
             CancellationToken cancellationToken)
         {
-            string primaryKeysWithTypes = string.Join(",\n", primaryKeyColumns.Select(col => $"{col.name.AsBracketQuotedString()} [{col.type}]"));
+            string primaryKeysWithTypes = string.Join(", ", primaryKeyColumns.Select(col => $"{col.name.AsBracketQuotedString()} {col.type}"));
             string primaryKeys = string.Join(", ", primaryKeyColumns.Select(col => col.name.AsBracketQuotedString()));
 
             string createWorkerTableQuery = $@"
