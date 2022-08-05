@@ -65,7 +65,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             using (var connection = new SqlConnection(connectionString))
             {
-                this._telemetryProps = connection.AsConnectionProps(),
+                connection.Open();
+                this._telemetryProps = connection.AsConnectionProps();
             };
 
             this._telemetryProps[TelemetryPropertyName.UserFunctionId.ToString()] = this._userFunctionId;
