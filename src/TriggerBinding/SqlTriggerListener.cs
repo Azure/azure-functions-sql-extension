@@ -63,11 +63,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._logger = logger;
             this._listenerState = ListenerNotStarted;
 
-            this._telemetryProps = new Dictionary<string, string>
+            using (var connection = new SqlConnection(connectionString))
             {
-                [TelemetryPropertyName.UserFunctionId.ToString()] = this._userFunctionId,
-                [TelemetryPropertyName.UserTableName.ToString()] = this._userTable.FullName,
+                this._telemetryProps = connection.AsConnectionProps(),
             };
+
+            this._telemetryProps[TelemetryPropertyName.UserFunctionId.ToString()] = this._userFunctionId;
         }
 
         public void Cancel()
@@ -131,7 +132,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         userTableColumns,
                         primaryKeyColumns.Select(col => col.name).ToList(),
                         this._executor,
-                        this._logger);
+                        this._logger,
+                        this._telemetryProps);
 
                     this._listenerState = ListenerStarted;
                     this._logger.LogInformation($"Started SQL trigger listener for table: '{this._userTable.FullName}', function ID: '{this._userFunctionId}'.");

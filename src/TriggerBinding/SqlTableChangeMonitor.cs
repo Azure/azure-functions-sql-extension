@@ -74,6 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="primaryKeyColumns">List of primary key column names in the user table</param>
         /// <param name="executor">Defines contract for triggering user function</param>
         /// <param name="logger">Facilitates logging of messages</param>
+        /// <param name="telemetryProps">Properties passed in telemetry events</param>
         public SqlTableChangeMonitor(
             string connectionString,
             int userTableId,
@@ -83,7 +84,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             IReadOnlyList<string> userTableColumns,
             IReadOnlyList<string> primaryKeyColumns,
             ITriggeredFunctionExecutor executor,
-            ILogger logger)
+            ILogger logger,
+            IDictionary<string, string> telemetryProps)
         {
             _ = !string.IsNullOrEmpty(connectionString) ? true : throw new ArgumentNullException(nameof(connectionString));
             _ = !string.IsNullOrEmpty(userTable.FullName) ? true : throw new ArgumentNullException(nameof(userTable));
@@ -115,12 +117,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._cancellationTokenSourceRenewLeases = new CancellationTokenSource();
             this._cancellationTokenSourceExecutor = new CancellationTokenSource();
 
-            this._telemetryProps = new Dictionary<string, string>
-            {
-                [TelemetryPropertyName.UserFunctionId.ToString()] = this._userFunctionId,
-                [TelemetryPropertyName.UserTableName.ToString()] = this._userTable.FullName,
-                [TelemetryPropertyName.WorkerTableName.ToString()] = this._workerTableName,
-            };
+            this._telemetryProps = telemetryProps;
 
             this._rowsLock = new SemaphoreSlim(1);
             this._rows = new List<IReadOnlyDictionary<string, string>>();
