@@ -63,13 +63,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._logger = logger;
             this._listenerState = ListenerNotStarted;
 
-            using (var connection = new SqlConnection(connectionString))
+            this._telemetryProps = new Dictionary<string, string>
             {
-                connection.Open();
-                this._telemetryProps = connection.AsConnectionProps();
+                [TelemetryPropertyName.UserFunctionId.ToString()] = this._userFunctionId,
             };
-
-            this._telemetryProps[TelemetryPropertyName.UserFunctionId.ToString()] = this._userFunctionId;
         }
 
         public void Cancel()
@@ -100,6 +97,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 using (var connection = new SqlConnection(this._connectionString))
                 {
                     await connection.OpenAsync(cancellationToken);
+                    this._telemetryProps.AddConnectionProps(connection);
 
                     int userTableId = await this.GetUserTableIdAsync(connection, cancellationToken);
                     IReadOnlyList<(string name, string type)> primaryKeyColumns = await this.GetPrimaryKeyColumnsAsync(connection, userTableId, cancellationToken);
