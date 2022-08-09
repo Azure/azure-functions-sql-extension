@@ -3,10 +3,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 using Microsoft.Data.SqlClient;
@@ -31,6 +34,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly string _userFunctionId;
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly ILogger _logger;
+
+        private readonly IDictionary<string, string> _telemetryProps;
 
         private SqlTableChangeMonitor<T> _changeMonitor;
         private int _listenerState;
@@ -57,6 +62,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._executor = executor;
             this._logger = logger;
             this._listenerState = ListenerNotStarted;
+
+            this._telemetryProps = new Dictionary<string, string>
+            {
+                [TelemetryPropertyName.UserFunctionId.ToString()] = this._userFunctionId,
+            };
         }
 
         public void Cancel()
@@ -71,6 +81,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
+            TelemetryInstance.TrackEvent(TelemetryEventName.StartListenerStart, this._telemetryProps);
+
             int previousState = Interlocked.CompareExchange(ref this._listenerState, ListenerStarting, ListenerNotStarted);
 
             switch (previousState)
@@ -85,6 +97,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 using (var connection = new SqlConnection(this._connectionString))
                 {
                     await connection.OpenAsync(cancellationToken);
+                    this._telemetryProps.AddConnectionProps(connection);
 
                     int userTableId = await this.GetUserTableIdAsync(connection, cancellationToken);
                     IReadOnlyList<(string name, string type)> primaryKeyColumns = await this.GetPrimaryKeyColumnsAsync(connection, userTableId, cancellationToken);
@@ -92,13 +105,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                     string workerTableName = string.Format(CultureInfo.InvariantCulture, SqlTriggerConstants.WorkerTableNameFormat, $"{this._userFunctionId}_{userTableId}");
                     this._logger.LogDebug($"Worker table name: '{workerTableName}'.");
+                    this._telemetryProps[TelemetryPropertyName.WorkerTableName.ToString()] = workerTableName;
+
+                    var transactionSw = Stopwatch.StartNew();
+                    long createdSchemaDurationMs = 0L, createGlobalStateTableDurationMs = 0L, insertGlobalStateTableRowDurationMs = 0L, createWorkerTableDurationMs = 0L;
 
                     using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
                     {
-                        await CreateSchemaAsync(connection, transaction, cancellationToken);
-                        await CreateGlobalStateTableAsync(connection, transaction, cancellationToken);
-                        await this.InsertGlobalStateTableRowAsync(connection, transaction, userTableId, cancellationToken);
-                        await CreateWorkerTableAsync(connection, transaction, workerTableName, primaryKeyColumns, cancellationToken);
+                        createdSchemaDurationMs = await CreateSchemaAsync(connection, transaction, cancellationToken);
+                        createGlobalStateTableDurationMs = await CreateGlobalStateTableAsync(connection, transaction, cancellationToken);
+                        insertGlobalStateTableRowDurationMs = await this.InsertGlobalStateTableRowAsync(connection, transaction, userTableId, cancellationToken);
+                        createWorkerTableDurationMs = await CreateWorkerTableAsync(connection, transaction, workerTableName, primaryKeyColumns, cancellationToken);
                         transaction.Commit();
                     }
 
@@ -114,16 +131,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         userTableColumns,
                         primaryKeyColumns.Select(col => col.name).ToList(),
                         this._executor,
-                        this._logger);
+                        this._logger,
+                        this._telemetryProps);
 
                     this._listenerState = ListenerStarted;
                     this._logger.LogInformation($"Started SQL trigger listener for table: '{this._userTable.FullName}', function ID: '{this._userFunctionId}'.");
+
+                    var measures = new Dictionary<string, double>
+                    {
+                        [TelemetryMeasureName.CreatedSchemaDurationMs.ToString()] = createdSchemaDurationMs,
+                        [TelemetryMeasureName.CreateGlobalStateTableDurationMs.ToString()] = createGlobalStateTableDurationMs,
+                        [TelemetryMeasureName.InsertGlobalStateTableRowDurationMs.ToString()] = insertGlobalStateTableRowDurationMs,
+                        [TelemetryMeasureName.CreateWorkerTableDurationMs.ToString()] = createWorkerTableDurationMs,
+                        [TelemetryMeasureName.TransactionDurationMs.ToString()] = transactionSw.ElapsedMilliseconds,
+                    };
+
+                    TelemetryInstance.TrackEvent(TelemetryEventName.StartListenerEnd, this._telemetryProps, measures);
                 }
             }
             catch (Exception ex)
             {
                 this._listenerState = ListenerNotStarted;
                 this._logger.LogError($"Failed to start SQL trigger listener for table: '{this._userTable.FullName}', function ID: '{this._userFunctionId}'. Exception: {ex}");
+                TelemetryInstance.TrackException(TelemetryErrorName.StartListener, ex, this._telemetryProps);
 
                 throw;
             }
@@ -131,6 +161,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
+            TelemetryInstance.TrackEvent(TelemetryEventName.StopListenerStart, this._telemetryProps);
+            var stopwatch = Stopwatch.StartNew();
+
             int previousState = Interlocked.CompareExchange(ref this._listenerState, ListenerStopping, ListenerStarted);
             if (previousState == ListenerStarted)
             {
@@ -140,6 +173,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 this._logger.LogInformation($"Stopped SQL trigger listener for table: '{this._userTable.FullName}', function ID: '{this._userFunctionId}'.");
             }
 
+            var measures = new Dictionary<string, double>
+            {
+                [TelemetryMeasureName.DurationMs.ToString()] = stopwatch.ElapsedMilliseconds,
+            };
+
+            TelemetryInstance.TrackEvent(TelemetryEventName.StopListenerEnd, this._telemetryProps, measures);
             return Task.CompletedTask;
         }
 
@@ -259,7 +298,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Creates the schema for global state table and worker tables, if it does not already exist.
         /// </summary>
-        private static async Task CreateSchemaAsync(SqlConnection connection, SqlTransaction transaction, CancellationToken cancellationToken)
+        private static async Task<long> CreateSchemaAsync(SqlConnection connection, SqlTransaction transaction, CancellationToken cancellationToken)
         {
             string createSchemaQuery = $@"
                 IF SCHEMA_ID(N'{SqlTriggerConstants.SchemaName}') IS NULL
@@ -268,14 +307,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             using (var createSchemaCommand = new SqlCommand(createSchemaQuery, connection, transaction))
             {
+                var stopwatch = Stopwatch.StartNew();
                 await createSchemaCommand.ExecuteNonQueryAsync(cancellationToken);
+                return stopwatch.ElapsedMilliseconds;
             }
         }
 
         /// <summary>
         /// Creates the global state table if it does not already exist.
         /// </summary>
-        private static async Task CreateGlobalStateTableAsync(SqlConnection connection, SqlTransaction transaction, CancellationToken cancellationToken)
+        private static async Task<long> CreateGlobalStateTableAsync(SqlConnection connection, SqlTransaction transaction, CancellationToken cancellationToken)
         {
             string createGlobalStateTableQuery = $@"
                 IF OBJECT_ID(N'{SqlTriggerConstants.GlobalStateTableName}', 'U') IS NULL
@@ -289,14 +330,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             using (var createGlobalStateTableCommand = new SqlCommand(createGlobalStateTableQuery, connection, transaction))
             {
+                var stopwatch = Stopwatch.StartNew();
                 await createGlobalStateTableCommand.ExecuteNonQueryAsync(cancellationToken);
+                return stopwatch.ElapsedMilliseconds;
             }
         }
 
         /// <summary>
         /// Inserts row for the 'user function and table' inside the global state table, if one does not already exist.
         /// </summary>
-        private async Task InsertGlobalStateTableRowAsync(SqlConnection connection, SqlTransaction transaction, int userTableId, CancellationToken cancellationToken)
+        private async Task<long> InsertGlobalStateTableRowAsync(SqlConnection connection, SqlTransaction transaction, int userTableId, CancellationToken cancellationToken)
         {
             object minValidVersion;
 
@@ -329,14 +372,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             using (var insertRowGlobalStateTableCommand = new SqlCommand(insertRowGlobalStateTableQuery, connection, transaction))
             {
+                var stopwatch = Stopwatch.StartNew();
                 await insertRowGlobalStateTableCommand.ExecuteNonQueryAsync(cancellationToken);
+                return stopwatch.ElapsedMilliseconds;
             }
         }
 
         /// <summary>
         /// Creates the worker table for the 'user function and table', if one does not already exist.
         /// </summary>
-        private static async Task CreateWorkerTableAsync(
+        private static async Task<long> CreateWorkerTableAsync(
             SqlConnection connection,
             SqlTransaction transaction,
             string workerTableName,
@@ -359,7 +404,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             using (var createWorkerTableCommand = new SqlCommand(createWorkerTableQuery, connection, transaction))
             {
+                var stopwatch = Stopwatch.StartNew();
                 await createWorkerTableCommand.ExecuteNonQueryAsync(cancellationToken);
+                return stopwatch.ElapsedMilliseconds;
             }
         }
     }
