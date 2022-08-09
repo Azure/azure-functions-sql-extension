@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -10,6 +11,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
@@ -53,6 +56,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         // The semaphore ensures that mutable class members such as this._rows are accessed by only one thread at a time.
         private readonly SemaphoreSlim _rowsLock;
 
+        private readonly IDictionary<string, string> _telemetryProps;
+
         private IReadOnlyList<IReadOnlyDictionary<string, string>> _rows;
         private int _leaseRenewalCount;
         private State _state = State.CheckingForChanges;
@@ -69,6 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="primaryKeyColumns">List of primary key column names in the user table</param>
         /// <param name="executor">Defines contract for triggering user function</param>
         /// <param name="logger">Facilitates logging of messages</param>
+        /// <param name="telemetryProps">Properties passed in telemetry events</param>
         public SqlTableChangeMonitor(
             string connectionString,
             int userTableId,
@@ -78,7 +84,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             IReadOnlyList<string> userTableColumns,
             IReadOnlyList<string> primaryKeyColumns,
             ITriggeredFunctionExecutor executor,
-            ILogger logger)
+            ILogger logger,
+            IDictionary<string, string> telemetryProps)
         {
             _ = !string.IsNullOrEmpty(connectionString) ? true : throw new ArgumentNullException(nameof(connectionString));
             _ = !string.IsNullOrEmpty(userTable.FullName) ? true : throw new ArgumentNullException(nameof(userTable));
@@ -110,6 +117,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._cancellationTokenSourceRenewLeases = new CancellationTokenSource();
             this._cancellationTokenSourceExecutor = new CancellationTokenSource();
 
+            this._telemetryProps = telemetryProps;
+
             this._rowsLock = new SemaphoreSlim(1);
             this._rows = new List<IReadOnlyDictionary<string, string>>();
             this._leaseRenewalCount = 0;
@@ -139,6 +148,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         private async Task RunChangeConsumptionLoopAsync()
         {
+            this._logger.LogInformation("Starting change consumption loop.");
+
             try
             {
                 CancellationToken token = this._cancellationTokenSourceCheckForChanges.Token;
@@ -166,7 +177,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // throws an exception if it's cancelled.
                 if (e.GetType() != typeof(TaskCanceledException))
                 {
-                    this._logger.LogError(e.Message);
+                    this._logger.LogError($"Exiting change consumption loop due to exception: {e.GetType()}. Exception message: {e.Message}");
+                    TelemetryInstance.TrackException(TelemetryErrorName.ConsumeChangesLoop, e, this._telemetryProps);
                 }
             }
             finally
@@ -185,11 +197,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         private async Task GetChangesAsync(CancellationToken token)
         {
+            TelemetryInstance.TrackEvent(TelemetryEventName.GetChangesStart, this._telemetryProps);
+
             try
             {
                 using (var connection = new SqlConnection(this._connectionString))
                 {
                     await connection.OpenAsync(token);
+
+                    var transactionSw = Stopwatch.StartNew();
+                    long setLastSyncVersionDurationMs = 0L, getChangesDurationMs = 0L, acquireLeasesDurationMs = 0L;
 
                     using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
                     {
@@ -198,13 +215,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             // Update the version number stored in the global state table if necessary before using it.
                             using (SqlCommand updateTablesPreInvocationCommand = this.BuildUpdateTablesPreInvocation(connection, transaction))
                             {
+                                var commandSw = Stopwatch.StartNew();
                                 await updateTablesPreInvocationCommand.ExecuteNonQueryAsync(token);
+                                setLastSyncVersionDurationMs = commandSw.ElapsedMilliseconds;
                             }
 
                             // Use the version number to query for new changes.
                             using (SqlCommand getChangesCommand = this.BuildGetChangesCommand(connection, transaction))
                             {
+                                var commandSw = Stopwatch.StartNew();
                                 var rows = new List<IReadOnlyDictionary<string, string>>();
+
                                 using (SqlDataReader reader = await getChangesCommand.ExecuteReaderAsync(token))
                                 {
                                     while (await reader.ReadAsync(token))
@@ -214,22 +235,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                                 }
 
                                 this._rows = rows;
+                                getChangesDurationMs = commandSw.ElapsedMilliseconds;
                             }
+
+                            this._logger.LogDebug($"Changed rows count: {this._rows.Count}.");
 
                             // If changes were found, acquire leases on them.
                             if (this._rows.Count > 0)
                             {
                                 using (SqlCommand acquireLeasesCommand = this.BuildAcquireLeasesCommand(connection, transaction))
                                 {
+                                    var commandSw = Stopwatch.StartNew();
                                     await acquireLeasesCommand.ExecuteNonQueryAsync(token);
+                                    acquireLeasesDurationMs = commandSw.ElapsedMilliseconds;
                                 }
                             }
+
                             transaction.Commit();
+
+                            var measures = new Dictionary<string, double>
+                            {
+                                [TelemetryMeasureName.SetLastSyncVersionDurationMs.ToString()] = setLastSyncVersionDurationMs,
+                                [TelemetryMeasureName.GetChangesDurationMs.ToString()] = getChangesDurationMs,
+                                [TelemetryMeasureName.AcquireLeasesDurationMs.ToString()] = acquireLeasesDurationMs,
+                                [TelemetryMeasureName.TransactionDurationMs.ToString()] = transactionSw.ElapsedMilliseconds,
+                                [TelemetryMeasureName.BatchCount.ToString()] = this._rows.Count,
+                            };
+
+                            TelemetryInstance.TrackEvent(TelemetryEventName.GetChangesEnd, this._telemetryProps, measures);
                         }
                         catch (Exception ex)
                         {
-                            this._logger.LogError($"Failed to query list of changes for table '{this._userTable.FullName}' due to exception: {ex.GetType()}." +
-                                $" Exception message: {ex.Message}");
+                            this._logger.LogError($"Failed to query list of changes for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
+                            TelemetryInstance.TrackException(TelemetryErrorName.GetChanges, ex, this._telemetryProps);
 
                             try
                             {
@@ -238,6 +276,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             catch (Exception ex2)
                             {
                                 this._logger.LogError($"Failed to rollback transaction due to exception: {ex2.GetType()}. Exception message: {ex2.Message}");
+                                TelemetryInstance.TrackException(TelemetryErrorName.GetChangesRollback, ex2, this._telemetryProps);
                             }
                         }
                     }
@@ -248,8 +287,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // If there's an exception in any part of the process, we want to clear all of our data in memory and
                 // retry checking for changes again.
                 this._rows = new List<IReadOnlyDictionary<string, string>>();
-                this._logger.LogError($"Failed to check for changes in table '{this._userTable.FullName}' due to exception: {e.GetType()}." +
-                    $" Exception message: {e.Message}");
+                this._logger.LogError($"Failed to check for changes in table '{this._userTable.FullName}' due to exception: {e.GetType()}. Exception message: {e.Message}");
+                TelemetryInstance.TrackException(TelemetryErrorName.GetChanges, e, this._telemetryProps);
             }
         }
 
@@ -270,27 +309,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 catch (Exception e)
                 {
-                    this._logger.LogError($"Failed to compose trigger parameter value for table: '{this._userTable.FullName} due to exception: {e.GetType()}." +
-                        $" Exception message: {e.Message}");
-
+                    this._logger.LogError($"Failed to compose trigger parameter value for table: '{this._userTable.FullName} due to exception: {e.GetType()}. Exception message: {e.Message}");
+                    TelemetryInstance.TrackException(TelemetryErrorName.ProcessChanges, e, this._telemetryProps);
                     await this.ClearRowsAsync(true);
                 }
 
                 if (changes != null)
                 {
                     var input = new TriggeredFunctionData() { TriggerValue = changes };
+
+                    TelemetryInstance.TrackEvent(TelemetryEventName.TriggerFunctionStart, this._telemetryProps);
+                    var stopwatch = Stopwatch.StartNew();
+
                     FunctionResult result = await this._executor.TryExecuteAsync(input, this._cancellationTokenSourceExecutor.Token);
+
+                    var measures = new Dictionary<string, double>
+                    {
+                        [TelemetryMeasureName.DurationMs.ToString()] = stopwatch.ElapsedMilliseconds,
+                        [TelemetryMeasureName.BatchCount.ToString()] = this._rows.Count,
+                    };
 
                     if (result.Succeeded)
                     {
+                        TelemetryInstance.TrackEvent(TelemetryEventName.TriggerFunctionEnd, this._telemetryProps, measures);
                         await this.ReleaseLeasesAsync(token);
                     }
                     else
                     {
                         // In the future might make sense to retry executing the function, but for now we just let
                         // another worker try.
-                        this._logger.LogError($"Failed to trigger user function for table: '{this._userTable.FullName} due to exception: {result.Exception.GetType()}." +
-                            $" Exception message: {result.Exception.Message}");
+                        this._logger.LogError($"Failed to trigger user function for table: '{this._userTable.FullName} due to exception: {result.Exception.GetType()}. Exception message: {result.Exception.Message}");
+                        TelemetryInstance.TrackException(TelemetryErrorName.ProcessChanges, result.Exception, this._telemetryProps, measures);
 
                         await this.ClearRowsAsync(true);
                     }
@@ -304,6 +353,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         private async void RunLeaseRenewalLoopAsync()
         {
+            this._logger.LogInformation("Starting lease renewal loop.");
+
             try
             {
                 CancellationToken token = this._cancellationTokenSourceRenewLeases.Token;
@@ -326,7 +377,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // an exception if it's cancelled.
                 if (e.GetType() != typeof(TaskCanceledException))
                 {
-                    this._logger.LogError(e.Message);
+                    this._logger.LogError($"Exiting lease renewal loop due to exception: {e.GetType()}. Exception message: {e.Message}");
+                    TelemetryInstance.TrackException(TelemetryErrorName.RenewLeasesLoop, e);
                 }
             }
             finally
@@ -346,7 +398,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     // deleted by a cleanup task, it shouldn't renew the lease on it anyways.
                     using (SqlCommand renewLeasesCommand = this.BuildRenewLeasesCommand(connection))
                     {
+                        TelemetryInstance.TrackEvent(TelemetryEventName.RenewLeasesStart, this._telemetryProps);
+                        var stopwatch = Stopwatch.StartNew();
+
                         await renewLeasesCommand.ExecuteNonQueryAsync(token);
+
+                        var measures = new Dictionary<string, double>
+                        {
+                            [TelemetryMeasureName.DurationMs.ToString()] = stopwatch.ElapsedMilliseconds,
+                        };
+
+                        TelemetryInstance.TrackEvent(TelemetryEventName.RenewLeasesEnd, this._telemetryProps, measures);
                     }
                 }
             }
@@ -357,6 +419,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // paragraph). If we fail to renew the leases, multiple workers could be processing the same change
                 // data, but we have functionality in place to deal with this (see design doc).
                 this._logger.LogError($"Failed to renew leases due to exception: {e.GetType()}. Exception message: {e.Message}");
+                TelemetryInstance.TrackException(TelemetryErrorName.RenewLeases, e, this._telemetryProps);
             }
             finally
             {
@@ -409,6 +472,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns></returns>
         private async Task ReleaseLeasesAsync(CancellationToken token)
         {
+            TelemetryInstance.TrackEvent(TelemetryEventName.ReleaseLeasesStart, this._telemetryProps);
+
             // Don't want to change the "_rows" while another thread is attempting to renew leases on them.
             await this._rowsLock.WaitAsync(token);
             long newLastSyncVersion = this.RecomputeLastSyncVersion();
@@ -418,6 +483,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 using (var connection = new SqlConnection(this._connectionString))
                 {
                     await connection.OpenAsync(token);
+
+                    var transactionSw = Stopwatch.StartNew();
+                    long releaseLeasesDurationMs = 0L, updateLastSyncVersionDurationMs = 0L;
+
                     using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
                     {
                         try
@@ -425,22 +494,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             // Release the leases held on "_rows".
                             using (SqlCommand releaseLeasesCommand = this.BuildReleaseLeasesCommand(connection, transaction))
                             {
+                                var commandSw = Stopwatch.StartNew();
                                 await releaseLeasesCommand.ExecuteNonQueryAsync(token);
+                                releaseLeasesDurationMs = commandSw.ElapsedMilliseconds;
                             }
 
                             // Update the global state table if we have processed all changes with ChangeVersion <= newLastSyncVersion,
                             // and clean up the worker table to remove all rows with ChangeVersion <= newLastSyncVersion.
                             using (SqlCommand updateTablesPostInvocationCommand = this.BuildUpdateTablesPostInvocation(connection, transaction, newLastSyncVersion))
                             {
+                                var commandSw = Stopwatch.StartNew();
                                 await updateTablesPostInvocationCommand.ExecuteNonQueryAsync(token);
+                                updateLastSyncVersionDurationMs = commandSw.ElapsedMilliseconds;
                             }
 
                             transaction.Commit();
+
+                            var measures = new Dictionary<string, double>
+                            {
+                                [TelemetryMeasureName.ReleaseLeasesDurationMs.ToString()] = releaseLeasesDurationMs,
+                                [TelemetryMeasureName.UpdateLastSyncVersionDurationMs.ToString()] = updateLastSyncVersionDurationMs,
+                            };
+
+                            TelemetryInstance.TrackEvent(TelemetryEventName.ReleaseLeasesEnd, this._telemetryProps, measures);
                         }
                         catch (Exception ex)
                         {
-                            this._logger.LogError($"Failed to execute SQL commands to release leases for table '{this._userTable.FullName}' due to exception: {ex.GetType()}." +
-                                $" Exception message: {ex.Message}");
+                            this._logger.LogError($"Failed to execute SQL commands to release leases for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
+                            TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeases, ex, this._telemetryProps);
 
                             try
                             {
@@ -449,19 +530,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             catch (Exception ex2)
                             {
                                 this._logger.LogError($"Failed to rollback transaction due to exception: {ex2.GetType()}. Exception message: {ex2.Message}");
+                                TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeasesRollback, ex2, this._telemetryProps);
                             }
                         }
                     }
                 }
-
             }
             catch (Exception e)
             {
                 // What should we do if releasing the leases fails? We could try to release them again or just wait,
                 // since eventually the lease time will expire. Then another thread will re-process the same changes
                 // though, so less than ideal. But for now that's the functionality.
-                this._logger.LogError($"Failed to release leases for table '{this._userTable.FullName}' due to exception: {e.GetType()}." +
-                    $" Exception message: {e.Message}");
+                this._logger.LogError($"Failed to release leases for table '{this._userTable.FullName}' due to exception: {e.GetType()}. Exception message: {e.Message}");
+                TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeases, e, this._telemetryProps);
             }
             finally
             {
