@@ -239,16 +239,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         private async Task<IReadOnlyList<string>> GetUserTableColumnsAsync(SqlConnection connection, int userTableId, CancellationToken cancellationToken)
         {
-            string getUserTableColumnsQuery = $"SELECT name FROM sys.columns WHERE object_id = {userTableId};";
+            string getUserTableColumnsQuery = $@"
+                SELECT c.name, t.name, t.is_assembly_type
+                FROM sys.columns AS c
+                INNER JOIN sys.types AS t ON c.user_type_id = t.user_type_id
+                WHERE c.object_id = {userTableId};
+            ";
 
             using (var getUserTableColumnsCommand = new SqlCommand(getUserTableColumnsQuery, connection))
             using (SqlDataReader reader = await getUserTableColumnsCommand.ExecuteReaderAsync(cancellationToken))
             {
                 var userTableColumns = new List<string>();
+                var userDefinedTypeColumns = new List<(string name, string type)>();
 
                 while (await reader.ReadAsync(cancellationToken))
                 {
-                    userTableColumns.Add(reader.GetString(0));
+                    string columnName = reader.GetString(0);
+                    string columnType = reader.GetString(1);
+                    bool isAssemblyType = reader.GetBoolean(2);
+
+                    userTableColumns.Add(columnName);
+
+                    if (isAssemblyType)
+                    {
+                        userDefinedTypeColumns.Add((columnName, columnType));
+                    }
+                }
+
+                if (userDefinedTypeColumns.Count > 0)
+                {
+                    string columnNamesAndTypes = string.Join(", ", userDefinedTypeColumns.Select(col => $"'{col.name}' (type: {col.type})"));
+                    throw new InvalidOperationException($"Found column(s) with unsupported type(s): {columnNamesAndTypes} in table: '{this._userTable.FullName}'.");
                 }
 
                 this._logger.LogDebug($"User table column names: {string.Join(", ", userTableColumns.Select(col => $"'{col}'"))}.");
