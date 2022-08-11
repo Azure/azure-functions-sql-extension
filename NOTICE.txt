@@ -43,7 +43,7 @@ limitations under the License.
 
 ---------------------------------------------------------
 
-Microsoft.AspNetCore.Authentication.Abstractions 2.1.1 - Apache-2.0
+Microsoft.AspNetCore.Authentication.Abstractions 2.1.0 - Apache-2.0
 
 
 (c) 2008 VeriSign, Inc.
@@ -799,7 +799,7 @@ limitations under the License.
 
 ---------------------------------------------------------
 
-Microsoft.AspNetCore.Http.Abstractions 2.1.0 - Apache-2.0
+Microsoft.AspNetCore.Http.Abstractions 2.1.1 - Apache-2.0
 
 
 (c) 2008 VeriSign, Inc.
@@ -1015,7 +1015,7 @@ limitations under the License.
 
 ---------------------------------------------------------
 
-Microsoft.AspNetCore.Http.Features 2.1.0 - Apache-2.0
+Microsoft.AspNetCore.Http.Features 2.1.1 - Apache-2.0
 
 
 (c) 2008 VeriSign, Inc.
@@ -2095,7 +2095,7 @@ limitations under the License.
 
 ---------------------------------------------------------
 
-Microsoft.Build.Tasks.Git 1.0.0 - Apache-2.0
+Microsoft.Build.Tasks.Git 1.1.1 - Apache-2.0
 
 
 (c) 2008 VeriSign, Inc.
