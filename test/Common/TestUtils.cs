@@ -60,6 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 
                     cmd.CommandText = commandText;
                     cmd.CommandType = CommandType.Text;
+                    cmd.CommandTimeout = 60000;
                     Console.WriteLine($"Executing non-query {commandText}");
                     return cmd.ExecuteNonQuery();
                 }

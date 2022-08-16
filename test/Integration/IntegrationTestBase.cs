@@ -15,6 +15,8 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
+using Microsoft.AspNetCore.WebUtilities;
+using System.Collections.Generic;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -72,37 +74,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// By default, integrated authentication will be used to connect to the server, unless the env variable "SA_PASSWORD" is set.
         /// In this case, connection will be made using SQL login with user "SA" and the provided password.
         /// </remarks>
-        private void SetupDatabase()
+        protected void SetupDatabase()
         {
-            // Get the test server name from environment variable "TEST_SERVER", default to localhost if not set
-            string testServer = Environment.GetEnvironmentVariable("TEST_SERVER");
-            if (string.IsNullOrEmpty(testServer))
+            SqlConnectionStringBuilder connectionStringBuilder;
+            string connectionString = Environment.GetEnvironmentVariable("PERF_TEST_SERVER");
+            if (connectionString != null)
             {
-                testServer = "localhost";
-            }
-
-            // First connect to master to create the database
-            var connectionStringBuilder = new SqlConnectionStringBuilder()
-            {
-                DataSource = testServer,
-                InitialCatalog = "master",
-                Pooling = false
-            };
-
-            // Either use integrated auth or SQL login depending if SA_PASSWORD is set
-            string userId = "SA";
-            string password = Environment.GetEnvironmentVariable("SA_PASSWORD");
-            if (string.IsNullOrEmpty(password))
-            {
-                connectionStringBuilder.IntegratedSecurity = true;
+                this.MasterConnectionString = connectionString;
+                connectionStringBuilder = new SqlConnectionStringBuilder(connectionString);
             }
             else
             {
-                connectionStringBuilder.UserID = userId;
-                connectionStringBuilder.Password = password;
-            }
+                // Get the test server name from environment variable "TEST_SERVER", default to localhost if not set
+                string testServer = Environment.GetEnvironmentVariable("TEST_SERVER");
+                if (string.IsNullOrEmpty(testServer))
+                {
+                    testServer = "localhost";
+                }
 
-            this.MasterConnectionString = connectionStringBuilder.ToString();
+                // First connect to master to create the database
+                connectionStringBuilder = new SqlConnectionStringBuilder()
+                {
+                    DataSource = testServer,
+                    InitialCatalog = "master",
+                    Pooling = false
+                };
+
+                // Either use integrated auth or SQL login depending if SA_PASSWORD is set
+                string userId = "SA";
+                string password = Environment.GetEnvironmentVariable("SA_PASSWORD");
+                if (string.IsNullOrEmpty(password))
+                {
+                    connectionStringBuilder.IntegratedSecurity = true;
+                }
+                else
+                {
+                    connectionStringBuilder.UserID = userId;
+                    connectionStringBuilder.Password = password;
+                }
+                this.MasterConnectionString = connectionStringBuilder.ToString();
+            }
 
             // Create database
             // Retry this in case the server isn't fully initialized yet
@@ -154,7 +165,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 }
             };
 
-            this.AzuriteHost.Start();
+            // this.AzuriteHost.Start();
+            Console.WriteLine(this.AzuriteHost.ToString());
         }
 
         /// <summary>
@@ -243,7 +255,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             return funcPath;
         }
 
-        private void LogOutput(String output)
+        private void LogOutput(string output)
         {
             if (this.TestOutput != null)
             {
@@ -380,6 +392,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             string requestUri = $"http://localhost:{this.Port}/api/{functionName}/{query}";
 
             return await this.SendGetRequest(requestUri);
+        }
+
+        protected Task<HttpResponseMessage> SendOutputGetRequest(string functionName, IDictionary<string, string> query = null)
+        {
+            string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
+
+            if (query != null)
+            {
+                requestUri = QueryHelpers.AddQueryString(requestUri, query);
+            }
+
+            return this.SendGetRequest(requestUri);
+        }
+
+        protected Task<HttpResponseMessage> SendOutputPostRequest(string functionName, string query)
+        {
+            string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
+
+            return this.SendPostRequest(requestUri, query);
         }
 
         protected void InsertProducts(Product[] products)
