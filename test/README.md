@@ -25,7 +25,7 @@ Our integration tests are based on functions from the samples project. To run in
      After the Docker image is running, you just need to set `SA_PASSWORD` environment variable to `{your_password}` and can run tests normally.
      
      Note: If `SA_PASSWORD` is not set, the tests will assume you're using a local MSSQL installation and default to using integrated auth. MSSQL on Docker does not support integrated auth by default.
-   - To use an Azure SQL Database, set the `AZURE_SQL_DB_CONNECTION_STRING` environment variable to your Azure SQL Datbase connection string.
+   - To use an Azure SQL Database, set the `AZURE_SQL_DB_CONNECTION_STRING` environment variable to your Azure SQL Database connection string.
 
  ## Adding New Integration Tests
    When adding a new integration test for a function follow these steps:
