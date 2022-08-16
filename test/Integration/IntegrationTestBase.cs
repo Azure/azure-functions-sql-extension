@@ -165,8 +165,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 }
             };
 
-            // this.AzuriteHost.Start();
-            Console.WriteLine(this.AzuriteHost.ToString());
+            this.AzuriteHost.Start();
         }
 
         /// <summary>
