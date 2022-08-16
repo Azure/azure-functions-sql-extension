@@ -1,31 +1,15 @@
 # Running Performance Tests
-To run performance tests, you will need
-1. [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools) - This is used to start the functions runtime.
 
-   Installation with npm:
-   ```
-   npm install -g azure-functions-core-tools
-   ```
-2. [Azurite Emulator for Local Azure Storage](https://docs.microsoft.com/azure/storage/common/storage-use-azurite?tabs=npm#install-and-run-azurite) - This is required to run non-HTTP binding functions.
+## Pre-requisites
+The performance tests are based on the IntegrationTestBase class. Follow the instructions to set up the pre-requisites for integration tests [here]().
 
-   Installation with npm:
-   ```
-   npm install -g azurite
-   ```
-3. A local SQL Server instance or an Azure SQL Database. You just need the server to be up and running, the tests will create the database and tables which will be cleaned up afterwards.
+## Run
+The performance tests use BenchmarkDotNet to benchmark performance for input and output bindings.
 
-   - You can either have a SQL Server installation with `localhost` available for connection via integrated security, or
-   - Start a SQL Server instance with Docker
-     ```
-     docker pull mcr.microsoft.com/mssql/server:2019-latest
-     docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD={your_password}" -e "MSSQL_PID=Express" -p 1433:1433 --name sql1 -h sql1 -d mcr.microsoft.com/mssql/server:2019-latest
-     ```
-     After the Docker image is running, you just need to set `SA_PASSWORD` environment variable to `{your_password}` and can run tests normally.
-     
-     Note: If `SA_PASSWORD` is not set, the tests will assume you're using a local MSSQL installation and default to using integrated auth. MSSQL on Docker does not support integrated auth by default.
-   - To use a Azure SQL Database, set 'AZURE_SQL_DB_CONNECTION_STRING' environment variable to your Azure SQL Database Connection String. 
-Run the performance tests
+Run the tests from the terminal.
 ```
 dotnet run
 ```
+
+## Results
 The test results will be generated in the BenchmarDotNet.Artifacts folder.

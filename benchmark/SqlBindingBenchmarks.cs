@@ -6,7 +6,7 @@ using BenchmarkDotNet.Configs;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Benchmark
 {
-    public class Program
+    public class SqlBindingBenchmarks
     {
         public static void Main()
         {
