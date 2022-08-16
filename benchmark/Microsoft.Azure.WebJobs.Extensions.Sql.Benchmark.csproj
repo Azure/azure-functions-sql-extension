@@ -27,9 +27,9 @@
   <!-- Copy C# Samples output to BenchmarkDotNet project bin (https://github.com/dotnet/BenchmarkDotNet/issues/946) -->
   <ItemGroup>
     <None Include="$(OutDir)\**\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Link>%(RecursiveDir)\%(Filename)%(Extension)</Link>
-      <Visible>False</Visible>
+      <Visible>True</Visible>
     </None>
   </ItemGroup>
 

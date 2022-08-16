@@ -10,7 +10,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Benchmark
     {
         public static void Main()
         {
-            BenchmarkRunner.Run<InputBindingBenchmarks>(
+            BenchmarkRunner.Run<SqlInputBindingBenchmarks>(
+                ManualConfig
+                    .Create(DefaultConfig.Instance)
+                    .WithOptions(ConfigOptions.DisableOptimizationsValidator));
+
+            BenchmarkRunner.Run<SqlOutputBindingBenchmarks>(
                 ManualConfig
                     .Create(DefaultConfig.Instance)
                     .WithOptions(ConfigOptions.DisableOptimizationsValidator));

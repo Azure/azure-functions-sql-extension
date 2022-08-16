@@ -4,29 +4,33 @@
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
-using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration;
 using BenchmarkDotNet.Attributes;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Benchmark
 {
-    public class InputBindingBenchmarks : IntegrationTestBase
+    public class SqlInputBindingBenchmarks : IntegrationTestBase
     {
-        public InputBindingBenchmarks() : base()
+        [GlobalSetup]
+        public void GlobalSetup()
         {
-            this.StartFunctionHost(nameof(GetProducts), SupportedLanguages.CSharp);
-
-            // Generate T-SQL to insert n rows of data with cost
-            Product[] products = GetProductsWithSameCost(10, 100);
+            this.StartFunctionHost(nameof(GetProductsTopN), SupportedLanguages.CSharp);
+            Product[] products = GetProductsWithSameCost(10000, 100);
             this.InsertProducts(products);
         }
 
         [Benchmark]
-        [Arguments("getproducts", "100")]
-        public async Task<HttpResponseMessage> GetProductsTest(string function, string args)
+        [Arguments("1")]
+        [Arguments("10")]
+        [Arguments("100")]
+        [Arguments("1000")]
+        [Arguments("10000")]
+        public async Task<HttpResponseMessage> GetProductsTest(string count)
         {
             // Run the function
-            return await this.SendInputRequest(function, args);
+            return await this.SendInputRequest("getproductstopn", count);
         }
 
         [GlobalCleanup]
