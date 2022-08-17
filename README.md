@@ -73,21 +73,21 @@ This will require connecting to and running queries - you can use [Azure Data St
     Otherwise connect to your database and run the following query to create a simple table to start with.
 
 ```sql
-CREATE TABLE Employees (
-        EmployeeId int,
-        FirstName varchar(255),
-        LastName varchar(255),
-        Company varchar(255),
-        Team varchar(255)
+CREATE TABLE Employees (
+        EmployeeId int,
+        FirstName varchar(255),
+        LastName varchar(255),
+        Company varchar(255),
+        Team varchar(255)
 );
 ```
 
 2. Next a primary key must be set in your SQL table before using the bindings. To do this, run the queries below, replacing the placeholder values for your table and column.
 
 ```sql
-ALTER TABLE ['{table_name}'] ALTER COLUMN ['{primary_key_column_name}'] int NOT NULL
+ALTER TABLE ['{table_name}'] ALTER COLUMN ['{primary_key_column_name}'] int NOT NULL
 
-ALTER TABLE ['{table_name}'] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED (['{primary_key_column_name}']);
+ALTER TABLE ['{table_name}'] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED (['{primary_key_column_name}']);
 ```
 
 3. If you plan to use the trigger support, you need to enable [change tracking](https://docs.microsoft.com/sql/relational-databases/track-changes/about-change-tracking-sql-server) on the SQL database and the SQL table. Please note that enabling change tracking will add to the cost of the SQL server.
@@ -200,7 +200,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
     }
     ```
 
-    *In the above, "select * from Employees" is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [Input Binding](#Input-Binding) section*
+    *In the above, "select * from Employees" is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [Input Binding](#Input-Binding) section*
 
 - Add 'using System.Collections.Generic;' to the namespaces list at the top of the page.
 - Currently, there is an error for the IEnumerable. We'll fix this by creating an Employee class.
@@ -208,14 +208,14 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Paste the below in the file. These are the column values of our SQL Database table.
 
     ```csharp
-    namespace Company.Function {
-        public class Employee{
-            public int EmployeeId { get; set; }
-            public string LastName { get; set; }
-            public string FirstName { get; set; }
-            public string Company { get; set; }
-            public string Team { get; set; }
-        }
+    namespace Company.Function {
+        public class Employee{
+            public int EmployeeId { get; set; }
+            public string LastName { get; set; }
+            public string FirstName { get; set; }
+            public string Company { get; set; }
+            public string Team { get; set; }
+        }
     }
     ```
 
@@ -457,8 +457,8 @@ public static async Task<IActionResult> Run(
 
 The output binding takes a list of rows to be upserted into a user table. If the primary key value of the row already exists in the table, the row is interpreted as an update, meaning that the values of the other columns in the table for that primary key are updated. If the primary key value does not exist in the table, the row is interpreted as an insert. The upserting of the rows is batched by the output binding code.
 
-  > **NOTE:** By default the Output binding uses the T-SQL [MERGE](https://docs.microsoft.com/sql/t-sql/statements/merge-transact-sql) statement which requires [SELECT](https://docs.microsoft.com/sql/t-sql/statements/merge-transact-sql#permissions) permissions on the target database. 
-  
+  > **NOTE:** By default the Output binding uses the T-SQL [MERGE](https://docs.microsoft.com/sql/t-sql/statements/merge-transact-sql) statement which requires [SELECT](https://docs.microsoft.com/sql/t-sql/statements/merge-transact-sql#permissions) permissions on the target database.
+
 The output binding takes two [arguments](https://github.com/Azure/azure-functions-sql-extension/blob/main/src/SqlAttribute.cs):
 
 - **CommandText**: Passed as a constructor argument to the binding. Represents the name of the table into which rows will be upserted.

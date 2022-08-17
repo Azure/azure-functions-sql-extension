@@ -150,7 +150,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             using (SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
                 await connection.OpenAsync();
-                Dictionary<string, string> props = connection.AsConnectionProps();
+                Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps();
 
                 string fullTableName = attribute.CommandText;
 
@@ -209,11 +209,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         await command.ExecuteNonQueryAsync();
                     }
                     transaction.Commit();
-                    var measures = new Dictionary<string, double>()
+                    var measures = new Dictionary<TelemetryMeasureName, double>()
                 {
-                    { TelemetryMeasureName.BatchCount.ToString(), batchCount },
-                    { TelemetryMeasureName.TransactionDurationMs.ToString(), transactionSw.ElapsedMilliseconds },
-                    { TelemetryMeasureName.CommandDurationMs.ToString(), commandSw.ElapsedMilliseconds }
+                    { TelemetryMeasureName.BatchCount, batchCount },
+                    { TelemetryMeasureName.TransactionDurationMs, transactionSw.ElapsedMilliseconds },
+                    { TelemetryMeasureName.CommandDurationMs, commandSw.ElapsedMilliseconds }
                 };
                     TelemetryInstance.TrackEvent(TelemetryEventName.UpsertEnd, props, measures);
                     this._logger.LogInformation($"Upserted {rows.Count()} row(s) into database: {connection.Database} and table: {fullTableName}.");
@@ -502,7 +502,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns>TableInformation object containing primary keys, column types, etc.</returns>
             public static async Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName, ILogger logger, IEnumerable<string> columnNames)
             {
-                Dictionary<string, string> sqlConnProps = sqlConnection.AsConnectionProps();
+                Dictionary<TelemetryPropertyName, string> sqlConnProps = sqlConnection.AsConnectionProps();
                 TelemetryInstance.TrackEvent(TelemetryEventName.GetTableInfoStart, sqlConnProps);
                 var table = new SqlObject(fullName);
 
@@ -624,14 +624,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 string query = usingInsertQuery ? GetInsertQuery(table) : GetMergeQuery(primaryKeys, table, comparison, columnNames);
 
                 tableInfoSw.Stop();
-                var durations = new Dictionary<string, double>()
+                var durations = new Dictionary<TelemetryMeasureName, double>()
                 {
-                    { TelemetryMeasureName.GetCaseSensitivityDurationMs.ToString(), caseSensitiveSw.ElapsedMilliseconds },
-                    { TelemetryMeasureName.GetColumnDefinitionsDurationMs.ToString(), columnDefinitionsSw.ElapsedMilliseconds },
-                    { TelemetryMeasureName.GetPrimaryKeysDurationMs.ToString(), primaryKeysSw.ElapsedMilliseconds }
+                    { TelemetryMeasureName.GetCaseSensitivityDurationMs, caseSensitiveSw.ElapsedMilliseconds },
+                    { TelemetryMeasureName.GetColumnDefinitionsDurationMs, columnDefinitionsSw.ElapsedMilliseconds },
+                    { TelemetryMeasureName.GetPrimaryKeysDurationMs, primaryKeysSw.ElapsedMilliseconds }
                 };
-                sqlConnProps.Add(TelemetryPropertyName.QueryType.ToString(), usingInsertQuery ? "insert" : "merge");
-                sqlConnProps.Add(TelemetryPropertyName.HasIdentityColumn.ToString(), hasIdentityColumnPrimaryKeys.ToString());
+                sqlConnProps.Add(TelemetryPropertyName.QueryType, usingInsertQuery ? "insert" : "merge");
+                sqlConnProps.Add(TelemetryPropertyName.HasIdentityColumn, hasIdentityColumnPrimaryKeys.ToString());
                 TelemetryInstance.TrackDuration(TelemetryEventName.GetTableInfoEnd, tableInfoSw.ElapsedMilliseconds, sqlConnProps, durations);
                 return new TableInformation(primaryKeyFields, columnDefinitionsFromSQL, comparer, query, hasIdentityColumnPrimaryKeys);
             }
