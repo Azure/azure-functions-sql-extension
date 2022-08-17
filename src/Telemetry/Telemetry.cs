@@ -87,8 +87,8 @@ This extension collect usage data in order to help us improve your experience. T
 
         public bool Enabled { get; private set; }
 
-        public void TrackEvent(TelemetryEventName eventName, IDictionary<string, string> properties = null,
-            IDictionary<string, double> measurements = null)
+        public void TrackEvent(TelemetryEventName eventName, IDictionary<TelemetryPropertyName, string> properties = null,
+            IDictionary<TelemetryMeasureName, double> measurements = null)
         {
             try
             {
@@ -110,8 +110,8 @@ This extension collect usage data in order to help us improve your experience. T
             }
         }
 
-        public void TrackException(TelemetryErrorName errorName, Exception exception, IDictionary<string, string> properties = null,
-            IDictionary<string, double> measurements = null)
+        public void TrackException(TelemetryErrorName errorName, Exception exception, IDictionary<TelemetryPropertyName, string> properties = null,
+            IDictionary<TelemetryMeasureName, double> measurements = null)
         {
             try
             {
@@ -120,9 +120,9 @@ This extension collect usage data in order to help us improve your experience. T
                     return;
                 }
                 this._logger.LogInformation($"Sending exception event: {exception.Message}");
-                properties = properties ?? new Dictionary<string, string>();
-                properties.Add(TelemetryPropertyName.ErrorName.ToString(), errorName.ToString());
-                properties.Add(TelemetryPropertyName.ErrorCode.ToString(), ExtractErrorCode(exception));
+                properties = properties ?? new Dictionary<TelemetryPropertyName, string>();
+                properties.Add(TelemetryPropertyName.ErrorName, errorName.ToString());
+                properties.Add(TelemetryPropertyName.ErrorCode, ExtractErrorCode(exception));
                 //continue task in existing parallel thread
                 this._trackEventTask = this._trackEventTask.ContinueWith(
                     x => this.TrackExceptionTask(exception, properties, measurements)
@@ -142,13 +142,13 @@ This extension collect usage data in order to help us improve your experience. T
         /// <param name="durationMs">The duration of the event</param>
         /// <param name="properties">Any other properties to send with the event</param>
         /// <param name="measurements">Any other measurements to send with the event</param>
-        public void TrackDuration(TelemetryEventName eventName, long durationMs, IDictionary<string, string> properties = null,
-            IDictionary<string, double> measurements = null)
+        public void TrackDuration(TelemetryEventName eventName, long durationMs, IDictionary<TelemetryPropertyName, string> properties = null,
+            IDictionary<TelemetryMeasureName, double> measurements = null)
         {
             try
             {
-                measurements = measurements ?? new Dictionary<string, double>();
-                measurements.Add(TelemetryMeasureName.DurationMs.ToString(), durationMs);
+                measurements = measurements ?? new Dictionary<TelemetryMeasureName, double>();
+                measurements.Add(TelemetryMeasureName.DurationMs, durationMs);
                 this.TrackEvent(eventName, properties, measurements);
             }
             catch (Exception ex)
@@ -164,13 +164,13 @@ This extension collect usage data in order to help us improve your experience. T
         /// <param name="type">The type of object being created</param>
         /// <param name="properties">Any other properties to send with the event</param>
         /// <param name="measurements">Any other measurements to send with the event</param>
-        public void TrackCreate(CreateType type, IDictionary<string, string> properties = null,
-            IDictionary<string, double> measurements = null)
+        public void TrackCreate(CreateType type, IDictionary<TelemetryPropertyName, string> properties = null,
+            IDictionary<TelemetryMeasureName, double> measurements = null)
         {
             try
             {
-                properties = properties ?? new Dictionary<string, string>();
-                properties.Add(TelemetryPropertyName.Type.ToString(), type.ToString());
+                properties = properties ?? new Dictionary<TelemetryPropertyName, string>();
+                properties.Add(TelemetryPropertyName.Type, type.ToString());
                 this.TrackEvent(TelemetryEventName.Create, properties, measurements);
             }
             catch (Exception ex)
@@ -186,13 +186,13 @@ This extension collect usage data in order to help us improve your experience. T
         /// <param name="type">The type of object we're converting to</param>
         /// <param name="properties">Any other properties to send with the event</param>
         /// <param name="measurements">Any other measurements to send with the event</param>
-        public void TrackConvert(ConvertType type, IDictionary<string, string> properties = null,
-            IDictionary<string, double> measurements = null)
+        public void TrackConvert(ConvertType type, IDictionary<TelemetryPropertyName, string> properties = null,
+            IDictionary<TelemetryMeasureName, double> measurements = null)
         {
             try
             {
-                properties = properties ?? new Dictionary<string, string>();
-                properties.Add(TelemetryPropertyName.Type.ToString(), type.ToString());
+                properties = properties ?? new Dictionary<TelemetryPropertyName, string>();
+                properties.Add(TelemetryPropertyName.Type, type.ToString());
                 this.TrackEvent(TelemetryEventName.Convert, properties, measurements);
             }
             catch (Exception ex)
@@ -204,8 +204,8 @@ This extension collect usage data in order to help us improve your experience. T
 
         private void TrackEventTask(
             string eventName,
-            IDictionary<string, string> properties,
-            IDictionary<string, double> measurements)
+            IDictionary<TelemetryPropertyName, string> properties,
+            IDictionary<TelemetryMeasureName, double> measurements)
         {
             if (this._client is null)
             {
@@ -228,8 +228,8 @@ This extension collect usage data in order to help us improve your experience. T
 
         private void TrackExceptionTask(
             Exception exception,
-            IDictionary<string, string> properties,
-            IDictionary<string, double> measurements)
+            IDictionary<TelemetryPropertyName, string> properties,
+            IDictionary<TelemetryMeasureName, double> measurements)
         {
             if (this._client is null)
             {
@@ -250,27 +250,27 @@ This extension collect usage data in order to help us improve your experience. T
             }
         }
 
-        private Dictionary<string, double> GetEventMeasures(IDictionary<string, double> measurements)
+        private Dictionary<string, double> GetEventMeasures(IDictionary<TelemetryMeasureName, double> measurements)
         {
             var eventMeasurements = new Dictionary<string, double>(this._commonMeasurements);
             if (measurements != null)
             {
-                foreach (KeyValuePair<string, double> measurement in measurements)
+                foreach (KeyValuePair<TelemetryMeasureName, double> measurement in measurements)
                 {
-                    eventMeasurements[measurement.Key] = measurement.Value;
+                    eventMeasurements[measurement.Key.ToString()] = measurement.Value;
                 }
             }
             return eventMeasurements;
         }
 
-        private Dictionary<string, string> GetEventProperties(IDictionary<string, string> properties)
+        private Dictionary<string, string> GetEventProperties(IDictionary<TelemetryPropertyName, string> properties)
         {
             if (properties != null)
             {
                 var eventProperties = new Dictionary<string, string>(this._commonProperties);
-                foreach (KeyValuePair<string, string> property in properties)
+                foreach (KeyValuePair<TelemetryPropertyName, string> property in properties)
                 {
-                    eventProperties[property.Key] = property.Value;
+                    eventProperties[property.Key.ToString()] = property.Value;
                 }
                 return eventProperties;
             }

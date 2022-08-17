@@ -56,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         // The semaphore ensures that mutable class members such as this._rows are accessed by only one thread at a time.
         private readonly SemaphoreSlim _rowsLock;
 
-        private readonly IDictionary<string, string> _telemetryProps;
+        private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps;
 
         private IReadOnlyList<IReadOnlyDictionary<string, string>> _rows;
         private int _leaseRenewalCount;
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             IReadOnlyList<string> primaryKeyColumns,
             ITriggeredFunctionExecutor executor,
             ILogger logger,
-            IDictionary<string, string> telemetryProps)
+            IDictionary<TelemetryPropertyName, string> telemetryProps)
         {
             _ = !string.IsNullOrEmpty(connectionString) ? true : throw new ArgumentNullException(nameof(connectionString));
             _ = !string.IsNullOrEmpty(userTable.FullName) ? true : throw new ArgumentNullException(nameof(userTable));
@@ -253,13 +253,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                             transaction.Commit();
 
-                            var measures = new Dictionary<string, double>
+                            var measures = new Dictionary<TelemetryMeasureName, double>
                             {
-                                [TelemetryMeasureName.SetLastSyncVersionDurationMs.ToString()] = setLastSyncVersionDurationMs,
-                                [TelemetryMeasureName.GetChangesDurationMs.ToString()] = getChangesDurationMs,
-                                [TelemetryMeasureName.AcquireLeasesDurationMs.ToString()] = acquireLeasesDurationMs,
-                                [TelemetryMeasureName.TransactionDurationMs.ToString()] = transactionSw.ElapsedMilliseconds,
-                                [TelemetryMeasureName.BatchCount.ToString()] = this._rows.Count,
+                                [TelemetryMeasureName.SetLastSyncVersionDurationMs] = setLastSyncVersionDurationMs,
+                                [TelemetryMeasureName.GetChangesDurationMs] = getChangesDurationMs,
+                                [TelemetryMeasureName.AcquireLeasesDurationMs] = acquireLeasesDurationMs,
+                                [TelemetryMeasureName.TransactionDurationMs] = transactionSw.ElapsedMilliseconds,
+                                [TelemetryMeasureName.BatchCount] = this._rows.Count,
                             };
 
                             TelemetryInstance.TrackEvent(TelemetryEventName.GetChangesEnd, this._telemetryProps, measures);
@@ -323,10 +323,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                     FunctionResult result = await this._executor.TryExecuteAsync(input, this._cancellationTokenSourceExecutor.Token);
 
-                    var measures = new Dictionary<string, double>
+                    var measures = new Dictionary<TelemetryMeasureName, double>
                     {
-                        [TelemetryMeasureName.DurationMs.ToString()] = stopwatch.ElapsedMilliseconds,
-                        [TelemetryMeasureName.BatchCount.ToString()] = this._rows.Count,
+                        [TelemetryMeasureName.DurationMs] = stopwatch.ElapsedMilliseconds,
+                        [TelemetryMeasureName.BatchCount] = this._rows.Count,
                     };
 
                     if (result.Succeeded)
@@ -403,9 +403,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                         await renewLeasesCommand.ExecuteNonQueryAsync(token);
 
-                        var measures = new Dictionary<string, double>
+                        var measures = new Dictionary<TelemetryMeasureName, double>
                         {
-                            [TelemetryMeasureName.DurationMs.ToString()] = stopwatch.ElapsedMilliseconds,
+                            [TelemetryMeasureName.DurationMs] = stopwatch.ElapsedMilliseconds,
                         };
 
                         TelemetryInstance.TrackEvent(TelemetryEventName.RenewLeasesEnd, this._telemetryProps, measures);
@@ -510,10 +510,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                             transaction.Commit();
 
-                            var measures = new Dictionary<string, double>
+                            var measures = new Dictionary<TelemetryMeasureName, double>
                             {
-                                [TelemetryMeasureName.ReleaseLeasesDurationMs.ToString()] = releaseLeasesDurationMs,
-                                [TelemetryMeasureName.UpdateLastSyncVersionDurationMs.ToString()] = updateLastSyncVersionDurationMs,
+                                [TelemetryMeasureName.ReleaseLeasesDurationMs] = releaseLeasesDurationMs,
+                                [TelemetryMeasureName.UpdateLastSyncVersionDurationMs] = updateLastSyncVersionDurationMs,
                             };
 
                             TelemetryInstance.TrackEvent(TelemetryEventName.ReleaseLeasesEnd, this._telemetryProps, measures);

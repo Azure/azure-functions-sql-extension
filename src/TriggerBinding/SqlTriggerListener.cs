@@ -35,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly ILogger _logger;
 
-        private readonly IDictionary<string, string> _telemetryProps;
+        private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps;
 
         private SqlTableChangeMonitor<T> _changeMonitor;
         private int _listenerState;
@@ -63,9 +63,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._logger = logger;
             this._listenerState = ListenerNotStarted;
 
-            this._telemetryProps = new Dictionary<string, string>
+            this._telemetryProps = new Dictionary<TelemetryPropertyName, string>
             {
-                [TelemetryPropertyName.UserFunctionId.ToString()] = this._userFunctionId,
+                [TelemetryPropertyName.UserFunctionId] = this._userFunctionId,
             };
         }
 
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                     string workerTableName = string.Format(CultureInfo.InvariantCulture, SqlTriggerConstants.WorkerTableNameFormat, $"{this._userFunctionId}_{userTableId}");
                     this._logger.LogDebug($"Worker table name: '{workerTableName}'.");
-                    this._telemetryProps[TelemetryPropertyName.WorkerTableName.ToString()] = workerTableName;
+                    this._telemetryProps[TelemetryPropertyName.WorkerTableName] = workerTableName;
 
                     var transactionSw = Stopwatch.StartNew();
                     long createdSchemaDurationMs = 0L, createGlobalStateTableDurationMs = 0L, insertGlobalStateTableRowDurationMs = 0L, createWorkerTableDurationMs = 0L;
@@ -137,13 +137,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     this._listenerState = ListenerStarted;
                     this._logger.LogInformation($"Started SQL trigger listener for table: '{this._userTable.FullName}', function ID: '{this._userFunctionId}'.");
 
-                    var measures = new Dictionary<string, double>
+                    var measures = new Dictionary<TelemetryMeasureName, double>
                     {
-                        [TelemetryMeasureName.CreatedSchemaDurationMs.ToString()] = createdSchemaDurationMs,
-                        [TelemetryMeasureName.CreateGlobalStateTableDurationMs.ToString()] = createGlobalStateTableDurationMs,
-                        [TelemetryMeasureName.InsertGlobalStateTableRowDurationMs.ToString()] = insertGlobalStateTableRowDurationMs,
-                        [TelemetryMeasureName.CreateWorkerTableDurationMs.ToString()] = createWorkerTableDurationMs,
-                        [TelemetryMeasureName.TransactionDurationMs.ToString()] = transactionSw.ElapsedMilliseconds,
+                        [TelemetryMeasureName.CreatedSchemaDurationMs] = createdSchemaDurationMs,
+                        [TelemetryMeasureName.CreateGlobalStateTableDurationMs] = createGlobalStateTableDurationMs,
+                        [TelemetryMeasureName.InsertGlobalStateTableRowDurationMs] = insertGlobalStateTableRowDurationMs,
+                        [TelemetryMeasureName.CreateWorkerTableDurationMs] = createWorkerTableDurationMs,
+                        [TelemetryMeasureName.TransactionDurationMs] = transactionSw.ElapsedMilliseconds,
                     };
 
                     TelemetryInstance.TrackEvent(TelemetryEventName.StartListenerEnd, this._telemetryProps, measures);
@@ -173,9 +173,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 this._logger.LogInformation($"Stopped SQL trigger listener for table: '{this._userTable.FullName}', function ID: '{this._userFunctionId}'.");
             }
 
-            var measures = new Dictionary<string, double>
+            var measures = new Dictionary<TelemetryMeasureName, double>
             {
-                [TelemetryMeasureName.DurationMs.ToString()] = stopwatch.ElapsedMilliseconds,
+                [TelemetryMeasureName.DurationMs] = stopwatch.ElapsedMilliseconds,
             };
 
             TelemetryInstance.TrackEvent(TelemetryEventName.StopListenerEnd, this._telemetryProps, measures);
