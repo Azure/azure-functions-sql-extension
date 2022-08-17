@@ -12,4 +12,4 @@ dotnet run
 ```
 
 ## Results
-The test results will be generated in the BenchmarDotNet.Artifacts folder.
+The test results will be generated in the BenchmarkDotNet.Artifacts folder.

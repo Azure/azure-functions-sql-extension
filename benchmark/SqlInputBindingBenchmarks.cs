@@ -29,7 +29,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Benchmark
         [Arguments("10000")]
         public async Task<HttpResponseMessage> GetProductsTest(string count)
         {
-            // Run the function
             return await this.SendInputRequest("getproductstopn", count);
         }
 

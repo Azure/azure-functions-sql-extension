@@ -74,7 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// By default, integrated authentication will be used to connect to the server, unless the env variable "SA_PASSWORD" is set.
         /// In this case, connection will be made using SQL login with user "SA" and the provided password.
         /// </remarks>
-        protected void SetupDatabase()
+        private void SetupDatabase()
         {
             SqlConnectionStringBuilder connectionStringBuilder;
             string connectionString = Environment.GetEnvironmentVariable("AZURE_SQL_DB_CONNECTION_STRING");
