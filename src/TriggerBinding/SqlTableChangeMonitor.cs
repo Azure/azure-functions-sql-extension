@@ -743,7 +743,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     WHERE {this._rowMatchConditions[rowIndex]};
 
                     IF @current_change_version <= {changeVersion}
-                        UPDATE {this._workerTableName} WITH (TABLOCKX) 
+                        UPDATE {this._workerTableName} WITH (TABLOCKX)
                         SET ChangeVersion = {changeVersion}, AttemptCount = 0, LeaseExpirationTime = NULL
                         WHERE {this._rowMatchConditions[rowIndex]};
                 ");
