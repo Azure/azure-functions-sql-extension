@@ -13,10 +13,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples
     {
         [FunctionName("GetInvoices")]
         public static IActionResult Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getinvoices")]
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getinvoices/{count}")]
             HttpRequest req,
-            [Sql("SELECT * FROM Invoices",
+            [Sql("SELECT TOP(CAST(@Count AS INT)) * FROM Invoices",
                 CommandType = System.Data.CommandType.Text,
+                Parameters = "@Count={count}",
                 ConnectionStringSetting = "SqlConnectionString")]
             IEnumerable<Invoice> invoices)
         {

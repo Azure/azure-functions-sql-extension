@@ -5,7 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
+using System.Reflection;
+using System.Text;
 using System.Threading;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 {
@@ -158,6 +161,87 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         public static string CleanJsonString(string jsonStr)
         {
             return jsonStr.Trim().Replace(" ", "").Replace(Environment.NewLine, "");
+        }
+
+        public static Invoice[] GetInvoices(int n)
+        {
+            var result = new Invoice[n];
+            for (int i = 0; i < n; i++)
+            {
+                result[i] = new Invoice
+                {
+                    InvoiceID = i,
+                    CustomerID = i,
+                    BillToCustomerID = i,
+                    OrderID = i,
+                    DeliveryMethodID = i,
+                    ContactPersonID = i,
+                    AccountsPersonID = i,
+                    SalespersonPersonID = i,
+                    PackedByPersonID = i,
+                    InvoiceDate = "test",
+                    CustomerPurchaseOrderNumber = "test",
+                    IsCreditNote = true,
+                    CreditNoteReason = "test",
+                    Comments = "test",
+                    DeliveryInstructions = "test",
+                    InternalComments = "test",
+                    TotalDryItems = i,
+                    TotalChillerItems = i,
+                    DeliveryRun = "test",
+                    RunPosition = "test",
+                    ReturnedDeliveryData = "test",
+                    ConfirmedDeliveryTime = DateTime.Now,
+                    ConfirmedReceivedBy = "test",
+                    LastEditedBy = i,
+                    LastEditedWhen = DateTime.Now,
+                    InvoiceID1 = i,
+                    CustomerID1 = i,
+                    BillToCustomerID1 = i,
+                    OrderID1 = i,
+                    DeliveryMethodID1 = i,
+                    ContactPersonID1 = i,
+                    AccountsPersonID1 = i,
+                    SalespersonPersonID1 = i,
+                    PackedByPersonID1 = i,
+                    InvoiceDate1 = "test",
+                    CustomerPurchaseOrderNumber1 = "test",
+                    IsCreditNote1 = true,
+                    CreditNoteReason1 = "test",
+                    Comments1 = "test",
+                    DeliveryInstructions1 = "test",
+                    InternalComments1 = "test",
+                    TotalDryItems1 = i,
+                    TotalChillerItems1 = i,
+                    DeliveryRun1 = "test",
+                    RunPosition1 = "test",
+                    ReturnedDeliveryData1 = "test",
+                    ConfirmedDeliveryTime1 = DateTime.Now,
+                    ConfirmedReceivedBy1 = "test",
+                    LastEditedBy1 = i,
+                    LastEditedWhen1 = DateTime.Now
+                };
+            }
+            return result;
+        }
+
+        public static string GetInsertInvoicesCommand(Invoice[] invoices)
+        {
+            var queryBuilder = new StringBuilder();
+            PropertyInfo[] propsList = typeof(Invoice).GetProperties();
+
+            foreach (Invoice invoice in invoices)
+            {
+                queryBuilder.Append("INSERT INTO dbo.Invoices VALUES(");
+                foreach (PropertyInfo property in propsList)
+                {
+                    queryBuilder.Append($"'{property.GetValue(invoice)}',");
+                }
+                // remove last comma
+                queryBuilder.Remove(queryBuilder.Length - 1, 1);
+                queryBuilder.AppendLine(");");
+            }
+            return queryBuilder.ToString();
         }
     }
 }

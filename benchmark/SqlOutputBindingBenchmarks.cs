@@ -15,10 +15,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Benchmark
 {
     public class SqlOutputBindingBenchmarks : IntegrationTestBase
     {
-        [GlobalSetup]
+        [GlobalSetup(Target = nameof(AddProductsArrayTest))]
         public void StartAddProductsArrayFunction()
         {
             this.StartFunctionHost(nameof(AddProductsArray), SupportedLanguages.CSharp);
+        }
+
+        [GlobalSetup(Target = nameof(AddInvoicesArrayTest))]
+        public void StartAddInvoicesArrayFunction()
+        {
+            this.StartFunctionHost(nameof(AddInvoicesArray), SupportedLanguages.CSharp);
         }
 
         [Benchmark]
@@ -32,11 +38,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Benchmark
             return await this.SendOutputPostRequest("addproducts-array", JsonConvert.SerializeObject(productsToAdd));
         }
 
-        [IterationCleanup]
-        public void IterationCleanup()
+        [Benchmark]
+        [Arguments(1)]
+        [Arguments(10)]
+        [Arguments(100)]
+        [Arguments(1000)]
+        public async Task<HttpResponseMessage> AddInvoicesArrayTest(int count)
+        {
+            Invoice[] invoicessToAdd = TestUtils.GetInvoices(count);
+            return await this.SendOutputPostRequest("addinvoices-array", JsonConvert.SerializeObject(invoicessToAdd));
+        }
+
+        [IterationCleanup(Target = nameof(AddProductsArrayTest))]
+        public void TruncateProductsTable()
         {
             // Delete all rows in Products table after each iteration
             this.ExecuteNonQuery("TRUNCATE TABLE Products");
+        }
+
+        [IterationCleanup(Target = nameof(AddInvoicesArrayTest))]
+        public void TruncateInvoicesTable()
+        {
+            // Delete all rows in Invoices table after each iteration
+            this.ExecuteNonQuery("TRUNCATE TABLE Invoices");
         }
 
         [GlobalCleanup]
