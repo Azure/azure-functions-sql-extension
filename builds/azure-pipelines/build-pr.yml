@@ -4,6 +4,7 @@ pr:
   branches:
     include:
     - main
+    - triggerbindings
 
 variables:
   solution: '**/*.sln'
