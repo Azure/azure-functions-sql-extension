@@ -164,7 +164,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// - The functionName is different than its route.<br/>
         /// - You can start multiple functions by passing in a space-separated list of function names.<br/>
         /// </remarks>
-        protected void StartFunctionHost(string functionName, SupportedLanguages language, bool useTestFolder = false)
+        protected void StartFunctionHost(string functionName, SupportedLanguages language, bool useTestFolder = false, DataReceivedEventHandler customOutputHandler = null)
         {
             string workingDirectory = useTestFolder ? GetPathToBin() : Path.Combine(GetPathToBin(), "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), language));
             if (!Directory.Exists(workingDirectory))
@@ -188,26 +188,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 StartInfo = startInfo
             };
+
+            // Register all handlers before starting the functions host process.
+            var taskCompletionSource = new TaskCompletionSource<bool>();
             this.FunctionHost.OutputDataReceived += this.TestOutputHandler;
+            this.FunctionHost.OutputDataReceived += SignalStartupHandler;
+            this.FunctionHost.OutputDataReceived += customOutputHandler;
+
             this.FunctionHost.ErrorDataReceived += this.TestOutputHandler;
 
             this.FunctionHost.Start();
             this.FunctionHost.BeginOutputReadLine();
             this.FunctionHost.BeginErrorReadLine();
 
-            var taskCompletionSource = new TaskCompletionSource<bool>();
-            this.FunctionHost.OutputDataReceived += (object sender, DataReceivedEventArgs e) =>
-            {
-                // This string is printed after the function host is started up - use this to ensure that we wait long enough
-                // since sometimes the host can take a little while to fully start up
-                if (e != null && !string.IsNullOrEmpty(e.Data) && e.Data.Contains($"http://localhost:{this.Port}/api"))
-                {
-                    taskCompletionSource.SetResult(true);
-                }
-            };
             this.TestOutput.WriteLine($"Waiting for Azure Function host to start...");
             taskCompletionSource.Task.Wait(60000);
             this.TestOutput.WriteLine($"Azure Function host started!");
+            this.FunctionHost.OutputDataReceived -= SignalStartupHandler;
+
+            void SignalStartupHandler(object sender, DataReceivedEventArgs e)
+            {
+                // This string is printed after the function host is started up - use this to ensure that we wait long enough
+                // since sometimes the host can take a little while to fully start up
+                if (e.Data?.Contains(" Host initialized ") == true)
+                {
+                    taskCompletionSource.SetResult(true);
+                }
+            }
         }
 
         private static string GetFunctionsCoreToolsPath()
