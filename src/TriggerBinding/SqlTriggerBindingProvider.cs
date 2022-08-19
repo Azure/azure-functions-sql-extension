@@ -63,7 +63,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // return null. This binding object later gets used for binding before every function invocation.
             if (attribute == null)
             {
-                return Task.FromResult(default(ITriggerBinding));
+                return Task.FromResult<ITriggerBinding>(null);
             }
 
             if (!IsValidTriggerParameterType(parameter.ParameterType))
