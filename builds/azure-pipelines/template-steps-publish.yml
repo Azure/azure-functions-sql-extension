@@ -6,6 +6,7 @@ steps:
   displayName: 'Install .NET Core SDK 5.0.x for CodeSign'
   inputs:
     version: '5.0.x'
+  condition: succeededOrFailed()
 
 - task: EsrpCodeSigning@1
   displayName: 'ESRP Code Signing - Nuget Package'
@@ -34,6 +35,7 @@ steps:
     SessionTimeout: '60'
     MaxConcurrency: '50'
     MaxRetryAttempts: '5'
+  condition: succeededOrFailed()
 
 - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
   displayName: 'SBOM Generation Task'
@@ -47,3 +49,4 @@ steps:
   inputs:
     targetPath: '$(Build.ArtifactStagingDirectory)'
     artifactName: 'drop'
+  condition: succeededOrFailed()
