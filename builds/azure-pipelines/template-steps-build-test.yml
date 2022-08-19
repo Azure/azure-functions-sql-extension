@@ -145,7 +145,7 @@ steps:
   condition: eq(variables['Agent.OS'], 'Darwin')
 
 - task: EsrpCodeSigning@1
-  displayName: 'ESRP CodeSigning - Binaries'
+  displayName: 'ESRP CodeSigning - Binaries (StrongNameSign)'
   inputs:
     ConnectedServiceName: 'Code Signing'
     FolderPath: '$(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}'
@@ -166,7 +166,20 @@ steps:
         "Parameters" : [],
         "ToolName" : "sign",
         "ToolVersion" : "1.0"
-       },
+       }
+     ]
+    SessionTimeout: 600
+    MaxConcurrency: 5
+
+- task: EsrpCodeSigning@1
+  displayName: 'ESRP CodeSigning - Binaries (Authenticode)'
+  inputs:
+    ConnectedServiceName: 'Code Signing'
+    FolderPath: '$(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}'
+    Pattern: 'Microsoft.Azure.WebJobs.Extensions.Sql.dll'
+    signConfigType: inlineSignParams
+    inlineOperation: |
+     [
        {
          "keyCode": "CP-230012",
          "operationSetCode": "SigntoolSign",
