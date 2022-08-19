@@ -155,14 +155,14 @@ steps:
      [
        {
         "KeyCode" : "CP-235847-SN",
-        "OperationCode" : "StrongNameSign",
+        "operationSetCode" : "StrongNameSign",
         "Parameters" : [],
         "ToolName" : "sign",
         "ToolVersion" : "1.0"
        },
        {
         "KeyCode" : "CP-235847-SN",
-        "OperationCode" : "StrongNameVerify",
+        "operationSetCode" : "StrongNameVerify",
         "Parameters" : [],
         "ToolName" : "sign",
         "ToolVersion" : "1.0"
