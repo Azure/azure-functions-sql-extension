@@ -323,7 +323,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             string createSchemaQuery = $@"
                 IF SCHEMA_ID(N'{SqlTriggerConstants.SchemaName}') IS NULL
-                    EXEC ('CREATE SCHEMA [{SqlTriggerConstants.SchemaName}]');
+                    EXEC ('CREATE SCHEMA {SqlTriggerConstants.SchemaName}');
             ";
 
             using (var createSchemaCommand = new SqlCommand(createSchemaQuery, connection, transaction))
@@ -409,7 +409,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             IReadOnlyList<(string name, string type)> primaryKeyColumns,
             CancellationToken cancellationToken)
         {
-            string primaryKeysWithTypes = string.Join(",\n", primaryKeyColumns.Select(col => $"{col.name.AsBracketQuotedString()} [{col.type}]"));
+            string primaryKeysWithTypes = string.Join(", ", primaryKeyColumns.Select(col => $"{col.name.AsBracketQuotedString()} {col.type}"));
             string primaryKeys = string.Join(", ", primaryKeyColumns.Select(col => col.name.AsBracketQuotedString()));
 
             string createWorkerTableQuery = $@"
