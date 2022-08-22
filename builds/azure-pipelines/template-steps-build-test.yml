@@ -154,29 +154,43 @@ steps:
     inlineOperation: |
      [
        {
+        "KeyCode" : "CP-235847-SN",
+        "operationSetCode" : "StrongNameSign",
+        "Parameters" : [],
+        "ToolName" : "sign",
+        "ToolVersion" : "1.0"
+       },
+       {
+        "KeyCode" : "CP-235847-SN",
+        "operationSetCode" : "StrongNameVerify",
+        "Parameters" : [],
+        "ToolName" : "sign",
+        "ToolVersion" : "1.0"
+       },
+       {
          "keyCode": "CP-230012",
          "operationSetCode": "SigntoolSign",
          "parameters": [
-         {
-           "parameterName": "OpusName",
-           "parameterValue": "Azure Functions SQL Extension"
-         },
-         {
-           "parameterName": "OpusInfo",
-           "parameterValue": "https://github.com/Azure/azure-functions-sql-extension"
-         },
-         {
-           "parameterName": "PageHash",
-           "parameterValue": "/NPH"
-         },
-         {
-           "parameterName": "FileDigest",
-           "parameterValue": "/fd sha256"
-         },
-         {
-           "parameterName": "TimeStamp",
-           "parameterValue": "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
-         }
+          {
+            "parameterName": "OpusName",
+            "parameterValue": "Azure Functions SQL Extension"
+          },
+          {
+            "parameterName": "OpusInfo",
+            "parameterValue": "https://github.com/Azure/azure-functions-sql-extension"
+          },
+          {
+            "parameterName": "PageHash",
+            "parameterValue": "/NPH"
+          },
+          {
+            "parameterName": "FileDigest",
+            "parameterValue": "/fd sha256"
+          },
+          {
+            "parameterName": "TimeStamp",
+            "parameterValue": "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+          }
          ],
          "toolName": "signtool.exe",
          "toolVersion": "6.2.9304.0"
@@ -185,11 +199,11 @@ steps:
          "keyCode": "CP-230012",
          "operationSetCode": "SigntoolVerify",
          "parameters": [
-         {
-           "parameterName": "VerifyAll",
-           "parameterValue": "/all"
-         }
-             ],
+          {
+            "parameterName": "VerifyAll",
+            "parameterValue": "/all"
+          }
+         ],
          "toolName": "signtool.exe",
          "toolVersion": "6.2.9304.0"
        }
