@@ -691,7 +691,7 @@ limitations under the License.
 
 ---------------------------------------------------------
 
-Microsoft.AspNetCore.Http 2.1.0 - Apache-2.0
+Microsoft.AspNetCore.Http 2.1.22 - Apache-2.0
 
 
 (c) 2008 VeriSign, Inc.
@@ -799,7 +799,7 @@ limitations under the License.
 
 ---------------------------------------------------------
 
-Microsoft.AspNetCore.Http.Abstractions 2.1.0 - Apache-2.0
+Microsoft.AspNetCore.Http.Abstractions 2.1.1 - Apache-2.0
 
 
 (c) 2008 VeriSign, Inc.
@@ -1015,7 +1015,7 @@ limitations under the License.
 
 ---------------------------------------------------------
 
-Microsoft.AspNetCore.Http.Features 2.1.0 - Apache-2.0
+Microsoft.AspNetCore.Http.Features 2.1.1 - Apache-2.0
 
 
 (c) 2008 VeriSign, Inc.
@@ -1987,7 +1987,7 @@ limitations under the License.
 
 ---------------------------------------------------------
 
-Microsoft.AspNetCore.WebUtilities 2.1.0 - Apache-2.0
+Microsoft.AspNetCore.WebUtilities 2.1.1 - Apache-2.0
 
 
 (c) 2008 VeriSign, Inc.
@@ -2095,7 +2095,7 @@ limitations under the License.
 
 ---------------------------------------------------------
 
-Microsoft.Build.Tasks.Git 1.0.0 - Apache-2.0
+Microsoft.Build.Tasks.Git 1.1.1 - Apache-2.0
 
 
 (c) 2008 VeriSign, Inc.
@@ -3931,7 +3931,7 @@ limitations under the License.
 
 ---------------------------------------------------------
 
-Microsoft.Extensions.ObjectPool 2.1.0 - Apache-2.0
+Microsoft.Extensions.ObjectPool 2.1.1 - Apache-2.0
 
 
 (c) 2008 VeriSign, Inc.
@@ -4363,7 +4363,7 @@ limitations under the License.
 
 ---------------------------------------------------------
 
-Microsoft.Net.Http.Headers 2.1.0 - Apache-2.0
+Microsoft.Net.Http.Headers 2.1.1 - Apache-2.0
 
 
 (c) 2008 VeriSign, Inc.
@@ -4471,7 +4471,7 @@ limitations under the License.
 
 ---------------------------------------------------------
 
-Microsoft.SourceLink.Common 1.0.0 - Apache-2.0
+Microsoft.SourceLink.Common 1.1.1 - Apache-2.0
 
 
 (c) 2008 VeriSign, Inc.
@@ -4579,7 +4579,7 @@ limitations under the License.
 
 ---------------------------------------------------------
 
-Microsoft.SourceLink.GitHub 1.0.0 - Apache-2.0
+Microsoft.SourceLink.GitHub 1.1.1 - Apache-2.0
 
 
 (c) 2008 VeriSign, Inc.
@@ -6388,7 +6388,7 @@ SOFTWARE.
 
 ---------------------------------------------------------
 
-Microsoft.Data.SqlClient 2.0.1 - MIT
+Microsoft.Data.SqlClient 3.0.1 - MIT
 
 
 (c) 2008 VeriSign, Inc.
@@ -6522,7 +6522,7 @@ SOFTWARE.
 
 ---------------------------------------------------------
 
-Microsoft.Identity.Client 4.14.0 - MIT
+Microsoft.Identity.Client 4.22.0 - MIT
 
 
 (c) 2008 VeriSign, Inc.
@@ -6542,7 +6542,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ---------------------------------------------------------
 
-Microsoft.IdentityModel.JsonWebTokens 5.6.0 - MIT
+Microsoft.IdentityModel.JsonWebTokens 6.8.0 - MIT
 
 
 (c) 2008 VeriSign, Inc.
@@ -6562,7 +6562,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ---------------------------------------------------------
 
-Microsoft.IdentityModel.Logging 5.6.0 - MIT
+Microsoft.IdentityModel.Logging 6.8.0 - MIT
 
 
 (c) 2008 VeriSign, Inc.
@@ -6602,7 +6602,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ---------------------------------------------------------
 
-Microsoft.IdentityModel.Protocols.OpenIdConnect 5.6.0 - MIT
+Microsoft.IdentityModel.Protocols.OpenIdConnect 6.8.0 - MIT
 
 
 (c) 2008 VeriSign, Inc.
@@ -6622,7 +6622,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ---------------------------------------------------------
 
-Microsoft.IdentityModel.Tokens 5.6.0 - MIT
+Microsoft.IdentityModel.Tokens 6.8.0 - MIT
 
 
 (c) 2008 VeriSign, Inc.
@@ -6642,7 +6642,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ---------------------------------------------------------
 
-Microsoft.NET.Sdk.Functions 3.0.3 - MIT
+Microsoft.NET.Sdk.Functions 3.1.1 - MIT
 
 
 (c) 2008 VeriSign, Inc.
@@ -6732,7 +6732,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ---------------------------------------------------------
 
-Newtonsoft.Json 11.0.2 - MIT
+Newtonsoft.Json 13.0.1 - MIT
 
 
 (c) 2008 VeriSign, Inc.
@@ -6841,7 +6841,7 @@ SOFTWARE.
 
 ---------------------------------------------------------
 
-System.IdentityModel.Tokens.Jwt 5.6.0 - MIT
+System.IdentityModel.Tokens.Jwt 6.8.0 - MIT
 
 
 (c) 2008 VeriSign, Inc.
@@ -7064,7 +7064,7 @@ SOFTWARE.
 
 ---------------------------------------------------------
 
-System.Runtime.CompilerServices.Unsafe 4.7.0 - MIT
+System.Runtime.CompilerServices.Unsafe 5.0.0 - MIT
 
 
 (c) 2008 VeriSign, Inc.
@@ -7328,7 +7328,7 @@ SOFTWARE.
 
 ---------------------------------------------------------
 
-System.Text.Encodings.Web 4.6.0 - MIT
+System.Text.Encodings.Web 4.7.2 - MIT
 
 
 (c) 2008 VeriSign, Inc.
