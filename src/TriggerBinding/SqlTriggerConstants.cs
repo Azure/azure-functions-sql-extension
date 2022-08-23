@@ -10,5 +10,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public const string GlobalStateTableName = "[" + SchemaName + "].[GlobalState]";
 
         public const string WorkerTableNameFormat = "[" + SchemaName + "].[Worker_{0}]";
+
+        public const string WorkerTableChangeVersionColumnName = "ChangeVersion";
+        public const string WorkerTableAttemptCountColumnName = "AttemptCount";
+        public const string WorkerTableLeaseExpirationTimeColumnName = "LeaseExpirationTime";
     }
 }
