@@ -9,12 +9,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
     public static class TableNotPresentTrigger
     {
+        /// <summary>
+        /// Used in verification of the error message when the user table is not present in the database.
+        /// </summary>
         [FunctionName(nameof(TableNotPresentTrigger))]
         public static void Run(
             [SqlTrigger("[dbo].[TableNotPresent]", ConnectionStringSetting = "SqlConnectionString")]
             IReadOnlyList<SqlChange<Product>> products)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("Associated test case should fail before the function is invoked.");
         }
     }
 }

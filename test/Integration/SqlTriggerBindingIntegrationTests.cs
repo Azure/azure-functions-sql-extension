@@ -22,6 +22,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.EnableChangeTrackingForDatabase();
         }
 
+        /// <summary>
+        /// Ensures that the user function gets invoked for each of the insert, update and delete operation, and the
+        /// changes to the user table are passed to the function in correct sequence.
+        /// </summary>
         [Fact]
         public async Task SingleOperationTriggerTest()
         {
@@ -53,6 +57,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
 
+        /// <summary>
+        /// Verifies that if several changes have happened to the table row since last invocation, then a single net
+        /// change for that row is passed to the user function.
+        /// </summary>
         [Fact]
         public async Task MultiOperationTriggerTest()
         {
@@ -89,6 +97,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             changes.Clear();
         }
 
+        /// <summary>
+        /// Tests the error message when the user table is not present in the database.
+        /// </summary>
         [Fact]
         public async Task TableNotPresentTriggerTest()
         {
@@ -98,6 +109,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 "Could not find table: 'dbo.TableNotPresent'.");
         }
 
+        /// <summary>
+        /// Tests the error message when the user table does not contain primary key.
+        /// </summary>
         [Fact]
         public async Task PrimaryKeyNotCreatedTriggerTest()
         {
@@ -107,6 +121,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 "Could not find primary key created in table: 'dbo.ProductsWithoutPrimaryKey'.");
         }
 
+        /// <summary>
+        /// Tests the error message when the user table contains one or more primary keys with names conflicting with
+        /// column names in the worker table.
+        /// </summary>
         [Fact]
         public async Task ReservedPrimaryKeyColumnNamesTriggerTest()
         {
@@ -117,6 +135,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 " Please rename them to be able to use trigger binding.");
         }
 
+        /// <summary>
+        /// Tests the error message when the user table contains columns of unsupported SQL types.
+        /// </summary>
         [Fact]
         public async Task UnsupportedColumnTypesTriggerTest()
         {
@@ -127,6 +148,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 " in table: 'dbo.ProductsWithUnsupportedColumnTypes'.");
         }
 
+        /// <summary>
+        /// Tests the error message when change tracking is not enabled on the user table.
+        /// </summary>
         [Fact]
         public async Task ChangeTrackingNotEnabledTriggerTest()
         {
@@ -212,6 +236,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
         }
 
+        /// <summary>
+        /// Launches the functions runtime host, waits for it to encounter error while starting the SQL trigger listener,
+        /// and asserts that the logged error message matches with the supplied error message.
+        /// </summary>
+        /// <param name="functionName">Name of the user function that should cause error in trigger listener</param>
+        /// <param name="useTestFolder">Whether the functions host should be launched from test folder</param>
+        /// <param name="expectedErrorMessage">Expected error message string</param>
+        /// <returns></returns>
         private async Task StartFunctionsHostAndWaitForError(string functionName, bool useTestFolder, string expectedErrorMessage)
         {
             string errorMessage = null;
@@ -231,6 +263,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 }
             };
 
+            // All trigger integration tests are only using C# functions for testing at the moment.
             this.StartFunctionHost(functionName, Common.SupportedLanguages.CSharp, useTestFolder, OutputHandler);
             Task completedTask = await Task.WhenAny(tcs.Task, Task.Delay(TimeSpan.FromSeconds(5)));
 

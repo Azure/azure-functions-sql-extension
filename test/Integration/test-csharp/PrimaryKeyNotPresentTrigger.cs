@@ -9,12 +9,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
     public static class PrimaryKeyNotPresentTrigger
     {
+        /// <summary>
+        /// Used in verification of the error message when the user table does not contain primary key.
+        /// </summary>
         [FunctionName(nameof(PrimaryKeyNotPresentTrigger))]
         public static void Run(
             [SqlTrigger("[dbo].[ProductsWithoutPrimaryKey]", ConnectionStringSetting = "SqlConnectionString")]
             IReadOnlyList<SqlChange<Product>> products)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("Associated test case should fail before the function is invoked.");
         }
     }
 }

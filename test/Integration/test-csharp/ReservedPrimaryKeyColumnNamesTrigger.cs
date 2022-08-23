@@ -9,12 +9,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
     public static class ReservedPrimaryKeyColumnNamesTrigger
     {
+        /// <summary>
+        /// Used in verification of the error message when the user table contains one or more primary keys with names
+        /// conflicting with column names in the worker table.
+        /// </summary>
         [FunctionName(nameof(ReservedPrimaryKeyColumnNamesTrigger))]
         public static void Run(
             [SqlTrigger("[dbo].[ProductsWithReservedPrimaryKeyColumnNames]", ConnectionStringSetting = "SqlConnectionString")]
             IReadOnlyList<SqlChange<Product>> products)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("Associated test case should fail before the function is invoked.");
         }
     }
 }
