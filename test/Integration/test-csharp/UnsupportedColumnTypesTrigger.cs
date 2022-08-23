@@ -5,14 +5,14 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 
-namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.TriggerBindingSamples
+namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
-    public static class TableNotPresentTrigger
+    public static class UnsupportedColumnTypesTrigger
     {
-        [FunctionName(nameof(TableNotPresentTrigger))]
+        [FunctionName(nameof(UnsupportedColumnTypesTrigger))]
         public static void Run(
-            [SqlTrigger("[dbo].[TableNotPresent]", ConnectionStringSetting = "SqlConnectionString")]
-            IReadOnlyList<SqlChange<Product>> _)
+            [SqlTrigger("[dbo].[ProductsWithUnsupportedColumnTypes]", ConnectionStringSetting = "SqlConnectionString")]
+            IReadOnlyList<SqlChange<Product>> products)
         {
             throw new NotImplementedException();
         }

@@ -5,14 +5,14 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 
-namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.TriggerBindingSamples
+namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
     public static class ReservedPrimaryKeyColumnNamesTrigger
     {
         [FunctionName(nameof(ReservedPrimaryKeyColumnNamesTrigger))]
         public static void Run(
             [SqlTrigger("[dbo].[ProductsWithReservedPrimaryKeyColumnNames]", ConnectionStringSetting = "SqlConnectionString")]
-            IReadOnlyList<SqlChange<Product>> _)
+            IReadOnlyList<SqlChange<Product>> products)
         {
             throw new NotImplementedException();
         }

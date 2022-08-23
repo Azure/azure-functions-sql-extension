@@ -92,44 +92,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public async Task TableNotPresentTriggerTest()
         {
-            string exceptionMessage = await this.AssertTriggerListenerError(nameof(TableNotPresentTrigger));
-            Assert.Equal("Could not find table: 'dbo.TableNotPresent'.", exceptionMessage);
+            await this.StartFunctionsHostAndWaitForError(
+                nameof(TableNotPresentTrigger),
+                true,
+                "Could not find table: 'dbo.TableNotPresent'.");
         }
 
         [Fact]
         public async Task PrimaryKeyNotCreatedTriggerTest()
         {
-            string exceptionMessage = await this.AssertTriggerListenerError(nameof(PrimaryKeyNotPresentTrigger));
-            Assert.Equal("Could not find primary key created in table: 'dbo.ProductsWithoutPrimaryKey'.", exceptionMessage);
+            await this.StartFunctionsHostAndWaitForError(
+                nameof(PrimaryKeyNotPresentTrigger),
+                true,
+                "Could not find primary key created in table: 'dbo.ProductsWithoutPrimaryKey'.");
         }
 
         [Fact]
         public async Task ReservedPrimaryKeyColumnNamesTriggerTest()
         {
-            string exceptionMessage = await this.AssertTriggerListenerError(nameof(ReservedPrimaryKeyColumnNamesTrigger));
-
-            Assert.Equal(
+            await this.StartFunctionsHostAndWaitForError(
+                nameof(ReservedPrimaryKeyColumnNamesTrigger),
+                true,
                 "Found reserved column name(s): 'ChangeVersion', 'AttemptCount', 'LeaseExpirationTime' in table: 'dbo.ProductsWithReservedPrimaryKeyColumnNames'." +
-                " Please rename them to be able to use trigger binding.",
-                exceptionMessage);
-        }
-
-        [Fact]
-        public async Task ChangeTrackingNotEnabledTriggerTest()
-        {
-            string exceptionMessage = await this.AssertTriggerListenerError(nameof(ProductsTrigger));
-            Assert.Equal("Could not find change tracking enabled for table: 'dbo.Products'.", exceptionMessage);
+                " Please rename them to be able to use trigger binding.");
         }
 
         [Fact]
         public async Task UnsupportedColumnTypesTriggerTest()
         {
-            string exceptionMessage = await this.AssertTriggerListenerError(nameof(UnsupportedColumnTypesTrigger));
-
-            Assert.Equal(
+            await this.StartFunctionsHostAndWaitForError(
+                nameof(UnsupportedColumnTypesTrigger),
+                true,
                 "Found column(s) with unsupported type(s): 'Location' (type: geography), 'Geometry' (type: geometry), 'Organization' (type: hierarchyid)" +
-                " in table: 'dbo.ProductsWithUnsupportedColumnTypes'.",
-                exceptionMessage);
+                " in table: 'dbo.ProductsWithUnsupportedColumnTypes'.");
+        }
+
+        [Fact]
+        public async Task ChangeTrackingNotEnabledTriggerTest()
+        {
+            await this.StartFunctionsHostAndWaitForError(
+                nameof(ProductsTrigger),
+                false,
+                "Could not find change tracking enabled for table: 'dbo.Products'.");
         }
 
         private void EnableChangeTrackingForDatabase()
@@ -208,7 +212,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
         }
 
-        private async Task<string> AssertTriggerListenerError(string functionName)
+        private async Task StartFunctionsHostAndWaitForError(string functionName, bool useTestFolder, string expectedErrorMessage)
         {
             string errorMessage = null;
             var tcs = new TaskCompletionSource<bool>();
@@ -217,26 +221,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 if (errorMessage == null && e.Data?.Contains("Failed to start SQL trigger listener") == true)
                 {
+                    // Expect exception of type InvalidOperationException only.
                     string exceptionPrefix = "Exception: System.InvalidOperationException: ";
                     int index = e.Data.IndexOf(exceptionPrefix, StringComparison.Ordinal);
                     Assert.NotEqual(-1, index);
+
                     errorMessage = e.Data[(index + exceptionPrefix.Length)..];
                     tcs.SetResult(true);
                 }
             };
 
-            this.StartFunctionHost(functionName, Common.SupportedLanguages.CSharp, false, OutputHandler);
+            this.StartFunctionHost(functionName, Common.SupportedLanguages.CSharp, useTestFolder, OutputHandler);
             Task completedTask = await Task.WhenAny(tcs.Task, Task.Delay(TimeSpan.FromSeconds(5)));
-            Assert.Equal(tcs.Task, completedTask);
-            this.FunctionHost.OutputDataReceived -= OutputHandler;
 
-            // WebJobs SDK retries forever to start the trigger-listener until it succeeds, which makes the Functions
-            // Host process never exit by itself in case of an error.
-            Assert.False(this.FunctionHost.HasExited);
+            // Following assertion will fail if the functions host does not log the failure in starting the SQL trigger
+            // listener before timeout.
+            Assert.Equal(tcs.Task, completedTask);
+
+            this.FunctionHost.OutputDataReceived -= OutputHandler;
             this.FunctionHost.Kill();
 
-            Assert.NotNull(errorMessage);
-            return errorMessage;
+            Assert.Equal(expectedErrorMessage, errorMessage);
         }
     }
 }
