@@ -101,9 +101,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// Tests the error message when the user table is not present in the database.
         /// </summary>
         [Fact]
-        public async Task TableNotPresentTriggerTest()
+        public void TableNotPresentTriggerTest()
         {
-            await this.StartFunctionsHostAndWaitForError(
+            this.StartFunctionsHostAndWaitForError(
                 nameof(TableNotPresentTrigger),
                 true,
                 "Could not find table: 'dbo.TableNotPresent'.");
@@ -113,9 +113,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// Tests the error message when the user table does not contain primary key.
         /// </summary>
         [Fact]
-        public async Task PrimaryKeyNotCreatedTriggerTest()
+        public void PrimaryKeyNotCreatedTriggerTest()
         {
-            await this.StartFunctionsHostAndWaitForError(
+            this.StartFunctionsHostAndWaitForError(
                 nameof(PrimaryKeyNotPresentTrigger),
                 true,
                 "Could not find primary key created in table: 'dbo.ProductsWithoutPrimaryKey'.");
@@ -126,9 +126,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// column names in the worker table.
         /// </summary>
         [Fact]
-        public async Task ReservedPrimaryKeyColumnNamesTriggerTest()
+        public void ReservedPrimaryKeyColumnNamesTriggerTest()
         {
-            await this.StartFunctionsHostAndWaitForError(
+            this.StartFunctionsHostAndWaitForError(
                 nameof(ReservedPrimaryKeyColumnNamesTrigger),
                 true,
                 "Found reserved column name(s): 'ChangeVersion', 'AttemptCount', 'LeaseExpirationTime' in table: 'dbo.ProductsWithReservedPrimaryKeyColumnNames'." +
@@ -139,9 +139,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// Tests the error message when the user table contains columns of unsupported SQL types.
         /// </summary>
         [Fact]
-        public async Task UnsupportedColumnTypesTriggerTest()
+        public void UnsupportedColumnTypesTriggerTest()
         {
-            await this.StartFunctionsHostAndWaitForError(
+            this.StartFunctionsHostAndWaitForError(
                 nameof(UnsupportedColumnTypesTrigger),
                 true,
                 "Found column(s) with unsupported type(s): 'Location' (type: geography), 'Geometry' (type: geometry), 'Organization' (type: hierarchyid)" +
@@ -152,9 +152,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// Tests the error message when change tracking is not enabled on the user table.
         /// </summary>
         [Fact]
-        public async Task ChangeTrackingNotEnabledTriggerTest()
+        public void ChangeTrackingNotEnabledTriggerTest()
         {
-            await this.StartFunctionsHostAndWaitForError(
+            this.StartFunctionsHostAndWaitForError(
                 nameof(ProductsTrigger),
                 false,
                 "Could not find change tracking enabled for table: 'dbo.Products'.");
@@ -243,8 +243,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <param name="functionName">Name of the user function that should cause error in trigger listener</param>
         /// <param name="useTestFolder">Whether the functions host should be launched from test folder</param>
         /// <param name="expectedErrorMessage">Expected error message string</param>
-        /// <returns></returns>
-        private async Task StartFunctionsHostAndWaitForError(string functionName, bool useTestFolder, string expectedErrorMessage)
+        private void StartFunctionsHostAndWaitForError(string functionName, bool useTestFolder, string expectedErrorMessage)
         {
             string errorMessage = null;
             var tcs = new TaskCompletionSource<bool>();
@@ -265,15 +264,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // All trigger integration tests are only using C# functions for testing at the moment.
             this.StartFunctionHost(functionName, Common.SupportedLanguages.CSharp, useTestFolder, OutputHandler);
-            Task completedTask = await Task.WhenAny(tcs.Task, Task.Delay(TimeSpan.FromSeconds(5)));
 
-            // Following assertion will fail if the functions host does not log the failure in starting the SQL trigger
-            // listener before timeout.
-            Assert.Equal(tcs.Task, completedTask);
+            // The functions host generally logs the error message within a second after starting up.
+            const int BufferTimeForErrorInSeconds = 5;
+            bool isCompleted = tcs.Task.Wait(TimeSpan.FromSeconds(BufferTimeForErrorInSeconds));
 
             this.FunctionHost.OutputDataReceived -= OutputHandler;
             this.FunctionHost.Kill();
 
+            Assert.True(isCompleted, "Functions host did not log failure to start SQL trigger listener within specified time.");
             Assert.Equal(expectedErrorMessage, errorMessage);
         }
     }

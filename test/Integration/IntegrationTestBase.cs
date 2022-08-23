@@ -202,7 +202,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.FunctionHost.BeginErrorReadLine();
 
             this.TestOutput.WriteLine($"Waiting for Azure Function host to start...");
-            taskCompletionSource.Task.Wait(60000);
+
+            const int FunctionHostStartupTimeoutInSeconds = 60;
+            bool isCompleted = taskCompletionSource.Task.Wait(TimeSpan.FromSeconds(FunctionHostStartupTimeoutInSeconds));
+            Assert.True(isCompleted, "Functions host did not start within specified time.");
+
             this.TestOutput.WriteLine($"Azure Function host started!");
             this.FunctionHost.OutputDataReceived -= SignalStartupHandler;
 
