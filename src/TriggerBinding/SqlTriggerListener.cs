@@ -29,10 +29,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const int ListenerStopping = 3;
         private const int ListenerStopped = 4;
 
-        private const string ChangeVersionColumnName = SqlTriggerConstants.WorkerTableChangeVersionColumnName;
-        private const string AttemptCountColumnName = SqlTriggerConstants.WorkerTableAttemptCountColumnName;
-        private const string LeaseExpirationTimeColumnName = SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName;
-
         private readonly SqlObject _userTable;
         private readonly string _connectionString;
         private readonly string _userFunctionId;
@@ -233,7 +229,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             using (var getPrimaryKeyColumnsCommand = new SqlCommand(getPrimaryKeyColumnsQuery, connection))
             using (SqlDataReader reader = await getPrimaryKeyColumnsCommand.ExecuteReaderAsync(cancellationToken))
             {
-                string[] reservedColumnNames = new string[] { ChangeVersionColumnName, AttemptCountColumnName, LeaseExpirationTimeColumnName };
+                string[] reservedColumnNames = new string[] { SqlTriggerConstants.WorkerTableChangeVersionColumnName, SqlTriggerConstants.WorkerTableAttemptCountColumnName, SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName };
                 string[] variableLengthTypes = new string[] { "varchar", "nvarchar", "nchar", "char", "binary", "varbinary" };
                 string[] variablePrecisionTypes = new string[] { "numeric", "decimal" };
 
@@ -420,9 +416,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 IF OBJECT_ID(N'{workerTableName}', 'U') IS NULL
                     CREATE TABLE {workerTableName} (
                         {primaryKeysWithTypes},
-                        {ChangeVersionColumnName} bigint NOT NULL,
-                        {AttemptCountColumnName} int NOT NULL,
-                        {LeaseExpirationTimeColumnName} datetime2,
+                        {SqlTriggerConstants.WorkerTableChangeVersionColumnName} bigint NOT NULL,
+                        {SqlTriggerConstants.WorkerTableAttemptCountColumnName} int NOT NULL,
+                        {SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName} datetime2,
                         PRIMARY KEY ({primaryKeys})
                     );
             ";
