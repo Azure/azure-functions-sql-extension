@@ -136,9 +136,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         /// <param name="reader">Used to determine the columns of the table as well as the next SQL row to process</param>
         /// <returns>The built dictionary</returns>
-        public static IReadOnlyDictionary<string, string> BuildDictionaryFromSqlRow(SqlDataReader reader)
+        public static IReadOnlyDictionary<string, object> BuildDictionaryFromSqlRow(SqlDataReader reader)
         {
-            return Enumerable.Range(0, reader.FieldCount).ToDictionary(reader.GetName, i => reader.GetValue(i).ToString());
+            return Enumerable.Range(0, reader.FieldCount).ToDictionary(reader.GetName, i => reader.GetValue(i));
         }
 
         /// <summary>

@@ -344,6 +344,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public class TableInformation
         {
+            private const string DATETIME_FORMAT = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff";
+
             public IEnumerable<MemberInfo> PrimaryKeys { get; }
 
             /// <summary>
@@ -388,7 +390,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 this.JsonSerializerSettings = new JsonSerializerSettings
                 {
-                    ContractResolver = new DynamicPOCOContractResolver(columns, comparer)
+                    ContractResolver = new DynamicPOCOContractResolver(columns, comparer),
+                    DateFormatString = DATETIME_FORMAT
                 };
             }
             public static bool GetCaseSensitivityFromCollation(string collation)
