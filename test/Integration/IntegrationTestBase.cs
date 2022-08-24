@@ -207,6 +207,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             bool isCompleted = taskCompletionSource.Task.Wait(TimeSpan.FromSeconds(FunctionHostStartupTimeoutInSeconds));
             Assert.True(isCompleted, "Functions host did not start within specified time.");
 
+            // Give additional time to Functions host to setup routes for the HTTP triggers so that the HTTP requests
+            // made from the test methods do not get refused.
+            const int BufferTimeInSeconds = 5;
+            Task.Delay(TimeSpan.FromSeconds(BufferTimeInSeconds)).Wait();
+
             this.TestOutput.WriteLine($"Azure Function host started!");
             this.FunctionHost.OutputDataReceived -= SignalStartupHandler;
 
