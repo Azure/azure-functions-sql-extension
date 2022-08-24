@@ -133,7 +133,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     ```
 
 
-3. Enable SQL bindings on the function app.
+3. Enable SQL bindings on the function app. More information can be found [in Microsoft Docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
 
     **.NET:** Install the extension.
     ```powershell
@@ -144,7 +144,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     ```json
     "extensionBundle": {
         "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
-        "version": "[3.*, 4.0.0)"
+        "version": "[4.*, 5.0.0)"
     }
     ```
 
@@ -154,7 +154,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     ```json
     "extensionBundle": {
         "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
-        "version": "[3.*, 4.0.0)"
+        "version": "[4.*, 5.0.0)"
     }
     ```
 
@@ -226,7 +226,7 @@ Once you have your Function App you need to configure it for use with Azure SQL 
 
 Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](#Create-a-SQL-Server).
 
-- Open your app that you created in 'Set Up Your Local Environment' in VSCode
+- Open your app that you created in [Create a Function App](#create-a-function-app) in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a function name) -> Company.namespace -> anonymous
 - In the file that opens, replace the 'public static async Task< IActionResult > Run' block with the below code.
@@ -249,7 +249,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Add 'using System.Collections.Generic;' to the namespaces list at the top of the page.
 - Currently, there is an error for the IEnumerable. We'll fix this by creating an Employee class.
 - Create a new file and call it 'Employee.cs'
-- Paste the below in the file. These are the column values of our SQL Database table.
+- Paste the below in the file. These are the column names of our SQL table.
 
     ```csharp
     namespace Company.Function {
@@ -277,7 +277,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Open your app in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger ->  (Provide a function name) -> Company.namespace is fine -> anonymous
-- In the file which opens, replace the 'public static async Task<IActionResult> Run' block with the below code
+- In the file that opens, replace the 'public static async Task<IActionResult> Run' block with the below code
 
     ```csharp
     public static IActionResult Run(
@@ -319,9 +319,189 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 ### JavaScript functions
 
+#### Input Binding Tutorial
+
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](#Create-a-SQL-Server).
+
+- Open your app that you created in [Create a Function App](#create-a-function-app) in VSCode
+- Press 'F1' and search for 'Azure Functions: Create Function'
+- Choose HttpTrigger -> (Provide a function name) -> anonymous
+- In the file that opens (index.js), replace the 'module.exports = async function (context, req)' block with the below code.
+
+    ```javascript
+    module.exports = async function (context, req, employee) {
+        return {
+            status: 200,
+            body: employee
+        };
+    }
+    ```
+
+- We also need to add the SQL input binding for the `employee` parameter. Open the function.json file.
+- Paste the below in the file as an additional entry to the "bindings": [] array.
+
+    ```json
+    {
+      "name": "employee",
+      "type": "sql",
+      "direction": "in",
+      "commandText": "select * from Employees",
+      "commandType": "Text",
+      "connectionStringSetting": "SqlConnectionString"
+    }
+    ```
+
+    *In the above, "select * from Employees" is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [Input Binding](#Input-Binding) section*
+
+- Open the local.settings.json file, and in the brackets for "Values," verify there is a 'SqlConnectionString.' If not, add it.
+- Hit 'F5' to run your code. This will start up the Functions Host with a local HTTP Trigger and SQL Input Binding.
+- Click the link that appears in your terminal.
+- You should see your database output in the browser window.
+- Congratulations! You have successfully created your first SQL input binding! Checkout [Input Binding](#Input-Binding) for more information on how to use it and explore on your own!
+
+#### Output Binding Tutorial
+
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](#Create-a-SQL-Server).
+
+- Open your app in VSCode
+- Press 'F1' and search for 'Azure Functions: Create Function'
+- Choose HttpTrigger ->  (Provide a function name) -> anonymous
+- In the file that opens (index.js), replace the 'module.exports = async function (context, req)' block with the below code.
+
+    ```javascript
+    module.exports = async function (context, req) {
+        const employees = [
+            {
+                EmployeeId = 1,
+                FirstName = "Hello",
+                LastName = "World",
+                Company = "Microsoft",
+                Team = "Functions"
+            },
+            {
+                EmployeeId = 2,
+                FirstName = "Hi",
+                LastName = "SQLupdate",
+                Company = "Microsoft",
+                Team = "Functions"
+            }
+        ];
+        context.bindings.employee = employees;
+
+        return {
+            status: 201,
+            body: employees
+        };
+    }
+    ```
+
+- We also need to add the SQL output binding for the `context.bindings.employee` property. Open the function.json file.
+- Paste the below in the file as an additional entry to the "bindings": [] array.
+
+    ```json
+    {
+      "name": "employee",
+      "type": "sql",
+      "direction": "out",
+      "commandText": "dbo.Employees",
+      "connectionStringSetting": "SqlConnectionString"
+    }
+    ```
+    *In the above, "dbo.Employees" is the name of the table our output binding is upserting into. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [Output Binding](#Output-Binding) section*
+
+- Hit 'F5' to run your code. Click the link to upsert the output array values in your SQL table. Your upserted values should launch in the browser.
+- Congratulations! You have successfully created your first SQL output binding! Checkout [Output Binding](#Output-Binding) for more information on how to use it and explore on your own!
 
 ### Python functions
 
+#### Input Binding Tutorial
+
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](#Create-a-SQL-Server).
+
+- Open your app that you created in [Create a Function App](#create-a-function-app) in VSCode
+- Press 'F1' and search for 'Azure Functions: Create Function'
+- Choose HttpTrigger -> (Provide a function name) -> anonymous
+- In the file that opens (__init__.py), replace the 'def main(req: func.HttpRequest) -> func.HttpResponse:' block with the below code.
+
+    ```python
+    def main(req: func.HttpRequest, employee: func.SqlRowList) -> func.HttpResponse:
+    rows = list(map(lambda r: json.loads(r.to_json()), employee))
+
+    return func.HttpResponse(
+        json.dumps(rows),
+        status_code=200,
+        mimetype="application/json"
+    )
+    ```
+
+- Add an import json statement to the top of the file.
+- We also need to add the SQL input binding for the `employee` parameter. Open the function.json file.
+- Paste the below in the file as an additional entry to the "bindings": [] array.
+
+    ```json
+    {
+      "name": "employee",
+      "type": "sql",
+      "direction": "in",
+      "commandText": "select * from Employees",
+      "commandType": "Text",
+      "connectionStringSetting": "SqlConnectionString"
+    }
+    ```
+
+    *In the above, "select * from Employees" is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [Input Binding](#Input-Binding) section*
+
+- Open the local.settings.json file, and in the brackets for "Values," verify there is a 'SqlConnectionString.' If not, add it.
+- Hit 'F5' to run your code. This will start up the Functions Host with a local HTTP Trigger and SQL Input Binding.
+- Click the link that appears in your terminal.
+- You should see your database output in the browser window.
+- Congratulations! You have successfully created your first SQL input binding! Checkout [Input Binding](#Input-Binding) for more information on how to use it and explore on your own!
+
+#### Output Binding Tutorial
+
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](#Create-a-SQL-Server).
+
+- Open your app in VSCode
+- Press 'F1' and search for 'Azure Functions: Create Function'
+- Choose HttpTrigger ->  (Provide a function name) -> anonymous
+- In the file that opens (__init__.py), replace the 'def main(req: func.HttpRequest) -> func.HttpResponse:' block with the below code.
+
+    ```python
+    def main(req: func.HttpRequest, employee: func.Out[func.SqlRow]) -> func.HttpResponse:
+        newEmployee = {
+            EmployeeId = 1,
+            FirstName = "Hello",
+            LastName = "World",
+            Company = "Microsoft",
+            Team = "Functions"
+        }
+        row = func.SqlRow(newEmployee)
+        employee.set(row);
+
+        return func.HttpResponse(
+            body=json.dumps(newEmployee),
+            status_code=201,
+            mimetype="application/json"
+        )
+    ```
+
+- Add an import json statement to the top of the file.
+- We also need to add the SQL output binding for the `context.bindings.employee` property. Open the function.json file.
+- Paste the below in the file as an additional entry to the "bindings": [] array.
+
+    ```json
+    {
+      "name": "employee",
+      "type": "sql",
+      "direction": "out",
+      "commandText": "dbo.Employees",
+      "connectionStringSetting": "SqlConnectionString"
+    }
+    ```
+    *In the above, "dbo.Employees" is the name of the table our output binding is upserting into. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [Output Binding](#Output-Binding) section*
+
+- Hit 'F5' to run your code. Click the link to upsert the output array values in your SQL table. Your upserted values should launch in the browser.
+- Congratulations! You have successfully created your first SQL output binding! Checkout [Output Binding](#Output-Binding) for more information on how to use it and explore on your own!
 
 ## More Samples
 
