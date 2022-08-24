@@ -229,7 +229,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             using (var getPrimaryKeyColumnsCommand = new SqlCommand(getPrimaryKeyColumnsQuery, connection))
             using (SqlDataReader reader = await getPrimaryKeyColumnsCommand.ExecuteReaderAsync(cancellationToken))
             {
-                string[] reservedColumnNames = new string[] { SqlTriggerConstants.WorkerTableChangeVersionColumnName, SqlTriggerConstants.WorkerTableAttemptCountColumnName, SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName };
+                string[] reservedColumnNames = new string[]
+                {
+                    SqlTriggerConstants.WorkerTableChangeVersionColumnName,
+                    SqlTriggerConstants.WorkerTableAttemptCountColumnName,
+                    SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName
+                };
+
                 string[] variableLengthTypes = new string[] { "varchar", "nvarchar", "nchar", "char", "binary", "varbinary" };
                 string[] variablePrecisionTypes = new string[] { "numeric", "decimal" };
 

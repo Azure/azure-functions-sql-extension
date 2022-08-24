@@ -151,8 +151,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             int count = last_id - first_id + 1;
             Assert.Equal(count, changes.Count);
 
+            // Since the table rows are changed with a single SQL statement, the changes are not guaranteed to arrive in
+            // ProductID-order. Occasionally, we find the items in the second batch are passed to the user function in
+            // reverse order, which is an expected behavior.
+            IEnumerable<SqlChange<Product>> orderedChanges = changes.OrderBy(change => change.Item.ProductID);
+
             int id = first_id;
-            foreach (SqlChange<Product> change in changes)
+            foreach (SqlChange<Product> change in orderedChanges)
             {
                 Assert.Equal(operation, change.Operation);
                 Product product = change.Item;

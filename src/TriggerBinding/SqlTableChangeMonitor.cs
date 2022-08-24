@@ -662,7 +662,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 LEFT OUTER JOIN {this._workerTableName} AS w WITH (TABLOCKX) ON {workerTableJoinCondition}
                 LEFT OUTER JOIN {this._userTable.BracketQuotedFullName} AS u ON {userTableJoinCondition}
                 WHERE
-                    (w.{SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName} IS NULL AND (w.{SqlTriggerConstants.WorkerTableChangeVersionColumnName} IS NULL OR w.{SqlTriggerConstants.WorkerTableChangeVersionColumnName} < c.SYS_CHANGE_VERSION) OR
+                    (w.{SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName} IS NULL AND
+                       (w.{SqlTriggerConstants.WorkerTableChangeVersionColumnName} IS NULL OR w.{SqlTriggerConstants.WorkerTableChangeVersionColumnName} < c.SYS_CHANGE_VERSION) OR
                         w.{SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName} < SYSDATETIME()) AND
                     (w.{SqlTriggerConstants.WorkerTableAttemptCountColumnName} IS NULL OR w.{SqlTriggerConstants.WorkerTableAttemptCountColumnName} < {MaxAttemptCount})
                 ORDER BY c.SYS_CHANGE_VERSION ASC;
@@ -744,7 +745,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                     IF @current_change_version <= {changeVersion}
                         UPDATE {this._workerTableName} WITH (TABLOCKX)
-                        SET {SqlTriggerConstants.WorkerTableChangeVersionColumnName} = {changeVersion}, {SqlTriggerConstants.WorkerTableAttemptCountColumnName} = 0, {SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName} = NULL
+                        SET
+                            {SqlTriggerConstants.WorkerTableChangeVersionColumnName} = {changeVersion},
+                            {SqlTriggerConstants.WorkerTableAttemptCountColumnName} = 0,
+                            {SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName} = NULL
                         WHERE {this._rowMatchConditions[rowIndex]};
                 ");
             }
@@ -778,7 +782,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     LEFT OUTER JOIN {this._workerTableName} AS w WITH (TABLOCKX) ON {workerTableJoinCondition}
                     WHERE
                         c.SYS_CHANGE_VERSION <= {newLastSyncVersion} AND
-                        ((w.{SqlTriggerConstants.WorkerTableChangeVersionColumnName} IS NULL OR w.{SqlTriggerConstants.WorkerTableChangeVersionColumnName} != c.SYS_CHANGE_VERSION OR w.{SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName} IS NOT NULL) AND
+                        ((w.{SqlTriggerConstants.WorkerTableChangeVersionColumnName} IS NULL OR
+                           w.{SqlTriggerConstants.WorkerTableChangeVersionColumnName} != c.SYS_CHANGE_VERSION OR
+                           w.{SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName} IS NOT NULL) AND
                         (w.{SqlTriggerConstants.WorkerTableAttemptCountColumnName} IS NULL OR w.{SqlTriggerConstants.WorkerTableAttemptCountColumnName} < {MaxAttemptCount}))) AS Changes
 
                 IF @unprocessed_changes = 0 AND @current_last_sync_version < {newLastSyncVersion}
