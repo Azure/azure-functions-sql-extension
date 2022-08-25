@@ -261,7 +261,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new InvalidOperationException($"Could not find primary key created in table: '{this._userTable.FullName}'.");
                 }
 
-                string[] reservedColumnNames = new[] { "ChangeVersion", "AttemptCount", "LeaseExpirationTime" };
+                string[] reservedColumnNames = new[]
+                {
+                    SqlTriggerConstants.WorkerTableChangeVersionColumnName,
+                    SqlTriggerConstants.WorkerTableAttemptCountColumnName,
+                    SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName
+                };
+
                 var conflictingColumnNames = primaryKeyColumns.Select(col => col.name).Intersect(reservedColumnNames).ToList();
 
                 if (conflictingColumnNames.Count > 0)
@@ -419,9 +425,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 IF OBJECT_ID(N'{workerTableName}', 'U') IS NULL
                     CREATE TABLE {workerTableName} (
                         {primaryKeysWithTypes},
-                        ChangeVersion bigint NOT NULL,
-                        AttemptCount int NOT NULL,
-                        LeaseExpirationTime datetime2,
+                        {SqlTriggerConstants.WorkerTableChangeVersionColumnName} bigint NOT NULL,
+                        {SqlTriggerConstants.WorkerTableAttemptCountColumnName} int NOT NULL,
+                        {SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName} datetime2,
                         PRIMARY KEY ({primaryKeys})
                     );
             ";
