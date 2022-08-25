@@ -229,21 +229,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             using (var getPrimaryKeyColumnsCommand = new SqlCommand(getPrimaryKeyColumnsQuery, connection))
             using (SqlDataReader reader = await getPrimaryKeyColumnsCommand.ExecuteReaderAsync(cancellationToken))
             {
-                string[] reservedColumnNames = new string[] { "ChangeVersion", "AttemptCount", "LeaseExpirationTime" };
-                string[] variableLengthTypes = new string[] { "varchar", "nvarchar", "nchar", "char", "binary", "varbinary" };
-                string[] variablePrecisionTypes = new string[] { "numeric", "decimal" };
+                string[] variableLengthTypes = new[] { "varchar", "nvarchar", "nchar", "char", "binary", "varbinary" };
+                string[] variablePrecisionTypes = new[] { "numeric", "decimal" };
 
                 var primaryKeyColumns = new List<(string name, string type)>();
 
                 while (await reader.ReadAsync(cancellationToken))
                 {
                     string name = reader.GetString(0);
-
-                    if (reservedColumnNames.Contains(name))
-                    {
-                        throw new InvalidOperationException($"Found reserved column name: '{name}' in table: '{this._userTable.FullName}'.");
-                    }
-
                     string type = reader.GetString(1);
 
                     if (variableLengthTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
@@ -260,12 +253,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         type += $"({precision},{scale})";
                     }
 
-                    primaryKeyColumns.Add((name: reader.GetString(0), type));
+                    primaryKeyColumns.Add((name, type));
                 }
 
                 if (primaryKeyColumns.Count == 0)
                 {
                     throw new InvalidOperationException($"Could not find primary key created in table: '{this._userTable.FullName}'.");
+                }
+
+                string[] reservedColumnNames = new[] { "ChangeVersion", "AttemptCount", "LeaseExpirationTime" };
+                var conflictingColumnNames = primaryKeyColumns.Select(col => col.name).Intersect(reservedColumnNames).ToList();
+
+                if (conflictingColumnNames.Count > 0)
+                {
+                    string columnNames = string.Join(", ", conflictingColumnNames.Select(col => $"'{col}'"));
+                    throw new InvalidOperationException($"Found reserved column name(s): {columnNames} in table: '{this._userTable.FullName}'." +
+                        " Please rename them to be able to use trigger binding.");
                 }
 
                 this._logger.LogDebug($"Primary key column names(types): {string.Join(", ", primaryKeyColumns.Select(col => $"'{col.name}({col.type})'"))}.");
