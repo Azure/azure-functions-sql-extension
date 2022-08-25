@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
@@ -21,8 +22,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.EnableChangeTrackingForDatabase();
         }
 
+        /// <summary>
+        /// Ensures that the user function gets invoked for each of the insert, update and delete operation, and the
+        /// changes to the user table are passed to the function in correct sequence.
+        /// </summary>
         [Fact]
-        public async void BasicTriggerTest()
+        public async Task SingleOperationTriggerTest()
         {
             this.EnableChangeTrackingForTable("Products");
             this.StartFunctionHost(nameof(ProductsTrigger), Common.SupportedLanguages.CSharp);
@@ -52,8 +57,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
 
+        /// <summary>
+        /// Verifies that if several changes have happened to the table row since last invocation, then a single net
+        /// change for that row is passed to the user function.
+        /// </summary>
         [Fact]
-        public async void MultiOperationTriggerTest()
+        public async Task MultiOperationTriggerTest()
         {
             this.EnableChangeTrackingForTable("Products");
             this.StartFunctionHost(nameof(ProductsTrigger), Common.SupportedLanguages.CSharp);
@@ -86,6 +95,69 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             await Task.Delay(TimeSpan.FromSeconds(6));
             ValidateProductChanges(changes, 11, 20, SqlChangeOperation.Delete, _ => null, _ => 0);
             changes.Clear();
+        }
+
+        /// <summary>
+        /// Tests the error message when the user table is not present in the database.
+        /// </summary>
+        [Fact]
+        public void TableNotPresentTriggerTest()
+        {
+            this.StartFunctionsHostAndWaitForError(
+                nameof(TableNotPresentTrigger),
+                true,
+                "Could not find table: 'dbo.TableNotPresent'.");
+        }
+
+        /// <summary>
+        /// Tests the error message when the user table does not contain primary key.
+        /// </summary>
+        [Fact]
+        public void PrimaryKeyNotCreatedTriggerTest()
+        {
+            this.StartFunctionsHostAndWaitForError(
+                nameof(PrimaryKeyNotPresentTrigger),
+                true,
+                "Could not find primary key created in table: 'dbo.ProductsWithoutPrimaryKey'.");
+        }
+
+        /// <summary>
+        /// Tests the error message when the user table contains one or more primary keys with names conflicting with
+        /// column names in the worker table.
+        /// </summary>
+        [Fact]
+        public void ReservedPrimaryKeyColumnNamesTriggerTest()
+        {
+            this.StartFunctionsHostAndWaitForError(
+                nameof(ReservedPrimaryKeyColumnNamesTrigger),
+                true,
+                "Found reserved column name(s): '_az_func_ChangeVersion', '_az_func_AttemptCount', '_az_func_LeaseExpirationTime' in table: 'dbo.ProductsWithReservedPrimaryKeyColumnNames'." +
+                " Please rename them to be able to use trigger binding.");
+        }
+
+        /// <summary>
+        /// Tests the error message when the user table contains columns of unsupported SQL types.
+        /// </summary>
+        [Fact]
+        public void UnsupportedColumnTypesTriggerTest()
+        {
+            this.StartFunctionsHostAndWaitForError(
+                nameof(UnsupportedColumnTypesTrigger),
+                true,
+                "Found column(s) with unsupported type(s): 'Location' (type: geography), 'Geometry' (type: geometry), 'Organization' (type: hierarchyid)" +
+                " in table: 'dbo.ProductsWithUnsupportedColumnTypes'.");
+        }
+
+        /// <summary>
+        /// Tests the error message when change tracking is not enabled on the user table.
+        /// </summary>
+        [Fact]
+        public void ChangeTrackingNotEnabledTriggerTest()
+        {
+            this.StartFunctionsHostAndWaitForError(
+                nameof(ProductsTrigger),
+                false,
+                "Could not find change tracking enabled for table: 'dbo.Products'.");
         }
 
         private void EnableChangeTrackingForDatabase()
@@ -167,6 +239,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 Assert.Equal(getCost(id), product.Cost);
                 id += 1;
             }
+        }
+
+        /// <summary>
+        /// Launches the functions runtime host, waits for it to encounter error while starting the SQL trigger listener,
+        /// and asserts that the logged error message matches with the supplied error message.
+        /// </summary>
+        /// <param name="functionName">Name of the user function that should cause error in trigger listener</param>
+        /// <param name="useTestFolder">Whether the functions host should be launched from test folder</param>
+        /// <param name="expectedErrorMessage">Expected error message string</param>
+        private void StartFunctionsHostAndWaitForError(string functionName, bool useTestFolder, string expectedErrorMessage)
+        {
+            string errorMessage = null;
+            var tcs = new TaskCompletionSource<bool>();
+
+            void OutputHandler(object sender, DataReceivedEventArgs e)
+            {
+                if (errorMessage == null && e.Data?.Contains("Failed to start SQL trigger listener") == true)
+                {
+                    // SQL trigger listener throws exception of type InvalidOperationException for all error conditions.
+                    string exceptionPrefix = "Exception: System.InvalidOperationException: ";
+                    int index = e.Data.IndexOf(exceptionPrefix, StringComparison.Ordinal);
+                    Assert.NotEqual(-1, index);
+
+                    errorMessage = e.Data[(index + exceptionPrefix.Length)..];
+                    tcs.SetResult(true);
+                }
+            };
+
+            // All trigger integration tests are only using C# functions for testing at the moment.
+            this.StartFunctionHost(functionName, Common.SupportedLanguages.CSharp, useTestFolder, OutputHandler);
+            this.FunctionHost.OutputDataReceived -= OutputHandler;
+            this.FunctionHost.Kill();
+
+            Assert.Equal(expectedErrorMessage, errorMessage);
         }
     }
 }
