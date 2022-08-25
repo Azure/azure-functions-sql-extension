@@ -10,7 +10,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.TriggerBindingSamples
 {
     public static class ProductsTrigger
     {
-        [FunctionName("ProductsTrigger")]
+        [FunctionName(nameof(ProductsTrigger))]
         public static void Run(
             [SqlTrigger("[dbo].[Products]", ConnectionStringSetting = "SqlConnectionString")]
             IReadOnlyList<SqlChange<Product>> changes,
