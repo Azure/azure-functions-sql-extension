@@ -33,4 +33,12 @@
     <Message Text="Copied JS Samples output to $(OutDir)\SqlExtensionSamples\JavaScript" Importance="high" />
   </Target>
 
+  <Target Name="CopyTestSqlFiles" AfterTargets="Build">
+    <ItemGroup>
+      <_CSharpTestSqlFiles Include="Integration\test-csharp\Database\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_CSharpTestSqlFiles)" DestinationFolder="$(OutDir)\Database\%(RecursiveDir)" />
+    <Message Text="Copied C# test SQL files to $(OutDir)\Database" Importance="high" />
+  </Target>
+
 </Project>
