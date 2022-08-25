@@ -123,7 +123,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         /// <summary>
         /// Tests the error message when the user table contains one or more primary keys with names conflicting with
-        /// column names in the worker table.
+        /// column names in the leases table.
         /// </summary>
         [Fact]
         public void ReservedPrimaryKeyColumnNamesTriggerTest()

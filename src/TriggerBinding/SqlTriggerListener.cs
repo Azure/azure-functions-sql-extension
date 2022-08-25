@@ -103,19 +103,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     IReadOnlyList<(string name, string type)> primaryKeyColumns = await this.GetPrimaryKeyColumnsAsync(connection, userTableId, cancellationToken);
                     IReadOnlyList<string> userTableColumns = await this.GetUserTableColumnsAsync(connection, userTableId, cancellationToken);
 
-                    string workerTableName = string.Format(CultureInfo.InvariantCulture, SqlTriggerConstants.WorkerTableNameFormat, $"{this._userFunctionId}_{userTableId}");
-                    this._logger.LogDebug($"Worker table name: '{workerTableName}'.");
-                    this._telemetryProps[TelemetryPropertyName.WorkerTableName] = workerTableName;
+                    string leasesTableName = string.Format(CultureInfo.InvariantCulture, SqlTriggerConstants.LeasesTableNameFormat, $"{this._userFunctionId}_{userTableId}");
+                    this._logger.LogDebug($"leases table name: '{leasesTableName}'.");
+                    this._telemetryProps[TelemetryPropertyName.LeasesTableName] = leasesTableName;
 
                     var transactionSw = Stopwatch.StartNew();
-                    long createdSchemaDurationMs = 0L, createGlobalStateTableDurationMs = 0L, insertGlobalStateTableRowDurationMs = 0L, createWorkerTableDurationMs = 0L;
+                    long createdSchemaDurationMs = 0L, createGlobalStateTableDurationMs = 0L, insertGlobalStateTableRowDurationMs = 0L, createLeasesTableDurationMs = 0L;
 
                     using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
                     {
                         createdSchemaDurationMs = await CreateSchemaAsync(connection, transaction, cancellationToken);
                         createGlobalStateTableDurationMs = await CreateGlobalStateTableAsync(connection, transaction, cancellationToken);
                         insertGlobalStateTableRowDurationMs = await this.InsertGlobalStateTableRowAsync(connection, transaction, userTableId, cancellationToken);
-                        createWorkerTableDurationMs = await CreateWorkerTableAsync(connection, transaction, workerTableName, primaryKeyColumns, cancellationToken);
+                        createLeasesTableDurationMs = await CreateLeasesTableAsync(connection, transaction, leasesTableName, primaryKeyColumns, cancellationToken);
                         transaction.Commit();
                     }
 
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         userTableId,
                         this._userTable,
                         this._userFunctionId,
-                        workerTableName,
+                        leasesTableName,
                         userTableColumns,
                         primaryKeyColumns.Select(col => col.name).ToList(),
                         this._executor,
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         [TelemetryMeasureName.CreatedSchemaDurationMs] = createdSchemaDurationMs,
                         [TelemetryMeasureName.CreateGlobalStateTableDurationMs] = createGlobalStateTableDurationMs,
                         [TelemetryMeasureName.InsertGlobalStateTableRowDurationMs] = insertGlobalStateTableRowDurationMs,
-                        [TelemetryMeasureName.CreateWorkerTableDurationMs] = createWorkerTableDurationMs,
+                        [TelemetryMeasureName.CreateLeasesTableDurationMs] = createLeasesTableDurationMs,
                         [TelemetryMeasureName.TransactionDurationMs] = transactionSw.ElapsedMilliseconds,
                     };
 
@@ -213,7 +213,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Gets the names and types of primary key columns of the user table.
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if there are no primary key columns present in the user table or if their names conflict with columns in worker table.
+        /// Thrown if there are no primary key columns present in the user table or if their names conflict with columns in leases table.
         /// </exception>
         private async Task<IReadOnlyList<(string name, string type)>> GetPrimaryKeyColumnsAsync(SqlConnection connection, int userTableId, CancellationToken cancellationToken)
         {
@@ -263,9 +263,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 string[] reservedColumnNames = new[]
                 {
-                    SqlTriggerConstants.WorkerTableChangeVersionColumnName,
-                    SqlTriggerConstants.WorkerTableAttemptCountColumnName,
-                    SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName
+                    SqlTriggerConstants.LeasesTableChangeVersionColumnName,
+                    SqlTriggerConstants.LeasesTableAttemptCountColumnName,
+                    SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName
                 };
 
                 var conflictingColumnNames = primaryKeyColumns.Select(col => col.name).Intersect(reservedColumnNames).ToList();
@@ -326,7 +326,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Creates the schema for global state table and worker tables, if it does not already exist.
+        /// Creates the schema for global state table and leases tables, if it does not already exist.
         /// </summary>
         private static async Task<long> CreateSchemaAsync(SqlConnection connection, SqlTransaction transaction, CancellationToken cancellationToken)
         {
@@ -409,33 +409,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Creates the worker table for the 'user function and table', if one does not already exist.
+        /// Creates the leases table for the 'user function and table', if one does not already exist.
         /// </summary>
-        private static async Task<long> CreateWorkerTableAsync(
+        private static async Task<long> CreateLeasesTableAsync(
             SqlConnection connection,
             SqlTransaction transaction,
-            string workerTableName,
+            string leasesTableName,
             IReadOnlyList<(string name, string type)> primaryKeyColumns,
             CancellationToken cancellationToken)
         {
             string primaryKeysWithTypes = string.Join(", ", primaryKeyColumns.Select(col => $"{col.name.AsBracketQuotedString()} {col.type}"));
             string primaryKeys = string.Join(", ", primaryKeyColumns.Select(col => col.name.AsBracketQuotedString()));
 
-            string createWorkerTableQuery = $@"
-                IF OBJECT_ID(N'{workerTableName}', 'U') IS NULL
-                    CREATE TABLE {workerTableName} (
+            string createLeasesTableQuery = $@"
+                IF OBJECT_ID(N'{leasesTableName}', 'U') IS NULL
+                    CREATE TABLE {leasesTableName} (
                         {primaryKeysWithTypes},
-                        {SqlTriggerConstants.WorkerTableChangeVersionColumnName} bigint NOT NULL,
-                        {SqlTriggerConstants.WorkerTableAttemptCountColumnName} int NOT NULL,
-                        {SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName} datetime2,
+                        {SqlTriggerConstants.LeasesTableChangeVersionColumnName} bigint NOT NULL,
+                        {SqlTriggerConstants.LeasesTableAttemptCountColumnName} int NOT NULL,
+                        {SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} datetime2,
                         PRIMARY KEY ({primaryKeys})
                     );
             ";
 
-            using (var createWorkerTableCommand = new SqlCommand(createWorkerTableQuery, connection, transaction))
+            using (var createLeasesTableCommand = new SqlCommand(createLeasesTableQuery, connection, transaction))
             {
                 var stopwatch = Stopwatch.StartNew();
-                await createWorkerTableCommand.ExecuteNonQueryAsync(cancellationToken);
+                await createLeasesTableCommand.ExecuteNonQueryAsync(cancellationToken);
                 return stopwatch.ElapsedMilliseconds;
             }
         }
