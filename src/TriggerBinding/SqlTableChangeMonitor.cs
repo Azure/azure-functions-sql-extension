@@ -160,8 +160,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         if (this._state == State.CheckingForChanges)
                         {
-                            await this.GetTableChangesAsync(token);
-                            await this.ProcessTableChangesAsync(token);
+                            await this.GetTableChangesAsync(connection, token);
+                            await this.ProcessTableChangesAsync(connection, token);
                         }
 
                         await Task.Delay(TimeSpan.FromSeconds(PollingIntervalInSeconds), token);
@@ -192,89 +192,84 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Queries the change/worker tables to check for new changes on the user's table. If any are found, stores the
         /// change along with the corresponding data from the user table in "_rows".
         /// </summary>
-        private async Task GetTableChangesAsync(CancellationToken token)
+        private async Task GetTableChangesAsync(SqlConnection connection, CancellationToken token)
         {
             TelemetryInstance.TrackEvent(TelemetryEventName.GetChangesStart, this._telemetryProps);
 
             try
             {
-                using (var connection = new SqlConnection(this._connectionString))
+                var transactionSw = Stopwatch.StartNew();
+                long setLastSyncVersionDurationMs = 0L, getChangesDurationMs = 0L, acquireLeasesDurationMs = 0L;
+
+                using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
                 {
-                    await connection.OpenAsync(token);
-
-                    var transactionSw = Stopwatch.StartNew();
-                    long setLastSyncVersionDurationMs = 0L, getChangesDurationMs = 0L, acquireLeasesDurationMs = 0L;
-
-                    using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
+                    try
                     {
+                        // Update the version number stored in the global state table if necessary before using it.
+                        using (SqlCommand updateTablesPreInvocationCommand = this.BuildUpdateTablesPreInvocation(connection, transaction))
+                        {
+                            var commandSw = Stopwatch.StartNew();
+                            await updateTablesPreInvocationCommand.ExecuteNonQueryAsync(token);
+                            setLastSyncVersionDurationMs = commandSw.ElapsedMilliseconds;
+                        }
+
+                        // Use the version number to query for new changes.
+                        using (SqlCommand getChangesCommand = this.BuildGetChangesCommand(connection, transaction))
+                        {
+                            var commandSw = Stopwatch.StartNew();
+                            var rows = new List<IReadOnlyDictionary<string, string>>();
+
+                            using (SqlDataReader reader = await getChangesCommand.ExecuteReaderAsync(token))
+                            {
+                                while (await reader.ReadAsync(token))
+                                {
+                                    rows.Add(SqlBindingUtilities.BuildDictionaryFromSqlRow(reader));
+                                }
+                            }
+
+                            this._rows = rows;
+                            getChangesDurationMs = commandSw.ElapsedMilliseconds;
+                        }
+
+                        this._logger.LogDebug($"Changed rows count: {this._rows.Count}.");
+
+                        // If changes were found, acquire leases on them.
+                        if (this._rows.Count > 0)
+                        {
+                            using (SqlCommand acquireLeasesCommand = this.BuildAcquireLeasesCommand(connection, transaction))
+                            {
+                                var commandSw = Stopwatch.StartNew();
+                                await acquireLeasesCommand.ExecuteNonQueryAsync(token);
+                                acquireLeasesDurationMs = commandSw.ElapsedMilliseconds;
+                            }
+                        }
+
+                        transaction.Commit();
+
+                        var measures = new Dictionary<TelemetryMeasureName, double>
+                        {
+                            [TelemetryMeasureName.SetLastSyncVersionDurationMs] = setLastSyncVersionDurationMs,
+                            [TelemetryMeasureName.GetChangesDurationMs] = getChangesDurationMs,
+                            [TelemetryMeasureName.AcquireLeasesDurationMs] = acquireLeasesDurationMs,
+                            [TelemetryMeasureName.TransactionDurationMs] = transactionSw.ElapsedMilliseconds,
+                            [TelemetryMeasureName.BatchCount] = this._rows.Count,
+                        };
+
+                        TelemetryInstance.TrackEvent(TelemetryEventName.GetChangesEnd, this._telemetryProps, measures);
+                    }
+                    catch (Exception ex)
+                    {
+                        this._logger.LogError($"Failed to query list of changes for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
+                        TelemetryInstance.TrackException(TelemetryErrorName.GetChanges, ex, this._telemetryProps);
+
                         try
                         {
-                            // Update the version number stored in the global state table if necessary before using it.
-                            using (SqlCommand updateTablesPreInvocationCommand = this.BuildUpdateTablesPreInvocation(connection, transaction))
-                            {
-                                var commandSw = Stopwatch.StartNew();
-                                await updateTablesPreInvocationCommand.ExecuteNonQueryAsync(token);
-                                setLastSyncVersionDurationMs = commandSw.ElapsedMilliseconds;
-                            }
-
-                            // Use the version number to query for new changes.
-                            using (SqlCommand getChangesCommand = this.BuildGetChangesCommand(connection, transaction))
-                            {
-                                var commandSw = Stopwatch.StartNew();
-                                var rows = new List<IReadOnlyDictionary<string, string>>();
-
-                                using (SqlDataReader reader = await getChangesCommand.ExecuteReaderAsync(token))
-                                {
-                                    while (await reader.ReadAsync(token))
-                                    {
-                                        rows.Add(SqlBindingUtilities.BuildDictionaryFromSqlRow(reader));
-                                    }
-                                }
-
-                                this._rows = rows;
-                                getChangesDurationMs = commandSw.ElapsedMilliseconds;
-                            }
-
-                            this._logger.LogDebug($"Changed rows count: {this._rows.Count}.");
-
-                            // If changes were found, acquire leases on them.
-                            if (this._rows.Count > 0)
-                            {
-                                using (SqlCommand acquireLeasesCommand = this.BuildAcquireLeasesCommand(connection, transaction))
-                                {
-                                    var commandSw = Stopwatch.StartNew();
-                                    await acquireLeasesCommand.ExecuteNonQueryAsync(token);
-                                    acquireLeasesDurationMs = commandSw.ElapsedMilliseconds;
-                                }
-                            }
-
-                            transaction.Commit();
-
-                            var measures = new Dictionary<TelemetryMeasureName, double>
-                            {
-                                [TelemetryMeasureName.SetLastSyncVersionDurationMs] = setLastSyncVersionDurationMs,
-                                [TelemetryMeasureName.GetChangesDurationMs] = getChangesDurationMs,
-                                [TelemetryMeasureName.AcquireLeasesDurationMs] = acquireLeasesDurationMs,
-                                [TelemetryMeasureName.TransactionDurationMs] = transactionSw.ElapsedMilliseconds,
-                                [TelemetryMeasureName.BatchCount] = this._rows.Count,
-                            };
-
-                            TelemetryInstance.TrackEvent(TelemetryEventName.GetChangesEnd, this._telemetryProps, measures);
+                            transaction.Rollback();
                         }
-                        catch (Exception ex)
+                        catch (Exception ex2)
                         {
-                            this._logger.LogError($"Failed to query list of changes for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
-                            TelemetryInstance.TrackException(TelemetryErrorName.GetChanges, ex, this._telemetryProps);
-
-                            try
-                            {
-                                transaction.Rollback();
-                            }
-                            catch (Exception ex2)
-                            {
-                                this._logger.LogError($"Failed to rollback transaction due to exception: {ex2.GetType()}. Exception message: {ex2.Message}");
-                                TelemetryInstance.TrackException(TelemetryErrorName.GetChangesRollback, ex2, this._telemetryProps);
-                            }
+                            this._logger.LogError($"Failed to rollback transaction due to exception: {ex2.GetType()}. Exception message: {ex2.Message}");
+                            TelemetryInstance.TrackException(TelemetryErrorName.GetChangesRollback, ex2, this._telemetryProps);
                         }
                     }
                 }
@@ -289,7 +284,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
         }
 
-        private async Task ProcessTableChangesAsync(CancellationToken token)
+        private async Task ProcessTableChangesAsync(SqlConnection connection, CancellationToken token)
         {
             if (this._rows.Count > 0)
             {
@@ -329,7 +324,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     if (result.Succeeded)
                     {
                         TelemetryInstance.TrackEvent(TelemetryEventName.TriggerFunctionEnd, this._telemetryProps, measures);
-                        await this.ReleaseLeasesAsync(token);
+                        await this.ReleaseLeasesAsync(connection, token);
                     }
                     else
                     {
@@ -467,7 +462,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Releases the leases held on "_rows".
         /// </summary>
         /// <returns></returns>
-        private async Task ReleaseLeasesAsync(CancellationToken token)
+        private async Task ReleaseLeasesAsync(SqlConnection connection, CancellationToken token)
         {
             TelemetryInstance.TrackEvent(TelemetryEventName.ReleaseLeasesStart, this._telemetryProps);
 
@@ -477,58 +472,53 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             try
             {
-                using (var connection = new SqlConnection(this._connectionString))
+                var transactionSw = Stopwatch.StartNew();
+                long releaseLeasesDurationMs = 0L, updateLastSyncVersionDurationMs = 0L;
+
+                using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
                 {
-                    await connection.OpenAsync(token);
-
-                    var transactionSw = Stopwatch.StartNew();
-                    long releaseLeasesDurationMs = 0L, updateLastSyncVersionDurationMs = 0L;
-
-                    using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
+                    try
                     {
+                        // Release the leases held on "_rows".
+                        using (SqlCommand releaseLeasesCommand = this.BuildReleaseLeasesCommand(connection, transaction))
+                        {
+                            var commandSw = Stopwatch.StartNew();
+                            await releaseLeasesCommand.ExecuteNonQueryAsync(token);
+                            releaseLeasesDurationMs = commandSw.ElapsedMilliseconds;
+                        }
+
+                        // Update the global state table if we have processed all changes with ChangeVersion <= newLastSyncVersion,
+                        // and clean up the worker table to remove all rows with ChangeVersion <= newLastSyncVersion.
+                        using (SqlCommand updateTablesPostInvocationCommand = this.BuildUpdateTablesPostInvocation(connection, transaction, newLastSyncVersion))
+                        {
+                            var commandSw = Stopwatch.StartNew();
+                            await updateTablesPostInvocationCommand.ExecuteNonQueryAsync(token);
+                            updateLastSyncVersionDurationMs = commandSw.ElapsedMilliseconds;
+                        }
+
+                        transaction.Commit();
+
+                        var measures = new Dictionary<TelemetryMeasureName, double>
+                        {
+                            [TelemetryMeasureName.ReleaseLeasesDurationMs] = releaseLeasesDurationMs,
+                            [TelemetryMeasureName.UpdateLastSyncVersionDurationMs] = updateLastSyncVersionDurationMs,
+                        };
+
+                        TelemetryInstance.TrackEvent(TelemetryEventName.ReleaseLeasesEnd, this._telemetryProps, measures);
+                    }
+                    catch (Exception ex)
+                    {
+                        this._logger.LogError($"Failed to execute SQL commands to release leases for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
+                        TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeases, ex, this._telemetryProps);
+
                         try
                         {
-                            // Release the leases held on "_rows".
-                            using (SqlCommand releaseLeasesCommand = this.BuildReleaseLeasesCommand(connection, transaction))
-                            {
-                                var commandSw = Stopwatch.StartNew();
-                                await releaseLeasesCommand.ExecuteNonQueryAsync(token);
-                                releaseLeasesDurationMs = commandSw.ElapsedMilliseconds;
-                            }
-
-                            // Update the global state table if we have processed all changes with ChangeVersion <= newLastSyncVersion,
-                            // and clean up the worker table to remove all rows with ChangeVersion <= newLastSyncVersion.
-                            using (SqlCommand updateTablesPostInvocationCommand = this.BuildUpdateTablesPostInvocation(connection, transaction, newLastSyncVersion))
-                            {
-                                var commandSw = Stopwatch.StartNew();
-                                await updateTablesPostInvocationCommand.ExecuteNonQueryAsync(token);
-                                updateLastSyncVersionDurationMs = commandSw.ElapsedMilliseconds;
-                            }
-
-                            transaction.Commit();
-
-                            var measures = new Dictionary<TelemetryMeasureName, double>
-                            {
-                                [TelemetryMeasureName.ReleaseLeasesDurationMs] = releaseLeasesDurationMs,
-                                [TelemetryMeasureName.UpdateLastSyncVersionDurationMs] = updateLastSyncVersionDurationMs,
-                            };
-
-                            TelemetryInstance.TrackEvent(TelemetryEventName.ReleaseLeasesEnd, this._telemetryProps, measures);
+                            transaction.Rollback();
                         }
-                        catch (Exception ex)
+                        catch (Exception ex2)
                         {
-                            this._logger.LogError($"Failed to execute SQL commands to release leases for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
-                            TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeases, ex, this._telemetryProps);
-
-                            try
-                            {
-                                transaction.Rollback();
-                            }
-                            catch (Exception ex2)
-                            {
-                                this._logger.LogError($"Failed to rollback transaction due to exception: {ex2.GetType()}. Exception message: {ex2.Message}");
-                                TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeasesRollback, ex2, this._telemetryProps);
-                            }
+                            this._logger.LogError($"Failed to rollback transaction due to exception: {ex2.GetType()}. Exception message: {ex2.Message}");
+                            TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeasesRollback, ex2, this._telemetryProps);
                         }
                     }
                 }
