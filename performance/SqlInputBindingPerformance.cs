@@ -9,9 +9,9 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration;
 using BenchmarkDotNet.Attributes;
 
-namespace Microsoft.Azure.WebJobs.Extensions.Sql.Benchmark
+namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
 {
-    public class SqlInputBindingBenchmarks : IntegrationTestBase
+    public class SqlInputBindingPerformance : IntegrationTestBase
     {
         [GlobalSetup]
         public void GlobalSetup()

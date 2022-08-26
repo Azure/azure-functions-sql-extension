@@ -16,16 +16,21 @@ Our integration tests are based on functions from the samples project. To run in
    ```
 3. A local SQL Server instance or an Azure SQL Database - This is used by tests to verify that data is correctly added/fetched from the database when a test Function is run. You just need the server to be up and running, the tests will create the database and tables which will be cleaned up afterwards.
 
-   - You can either have a SQL Server installation with `localhost` available for connection via integrated security, or
-   - Start a SQL Server instance with Docker
-     ```
-     docker pull mcr.microsoft.com/mssql/server:2019-latest
-     docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD={your_password}" -e "MSSQL_PID=Express" -p 1433:1433 --name sql1 -h sql1 -d mcr.microsoft.com/mssql/server:2019-latest
-     ```
-     After the Docker image is running, you just need to set `SA_PASSWORD` environment variable to `{your_password}` and can run tests normally.
-     
-     Note: If `SA_PASSWORD` is not set, the tests will assume you're using a local MSSQL installation and default to using integrated auth. MSSQL on Docker does not support integrated auth by default.
-   - To use an Azure SQL Database, set the `AZURE_SQL_DB_CONNECTION_STRING` environment variable to your Azure SQL Database connection string.
+### Local Install
+To use a SQL Server installation, ensure `localhost` is available for connection via integrated security.
+
+### Docker Container
+Start a SQL Server instance with Docker
+```
+docker pull mcr.microsoft.com/mssql/server:2019-latest
+docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD={your_password}" -e "MSSQL_PID=Express" -p 1433:1433 --name sql1 -h sql1 -d mcr.microsoft.com/mssql/server:2019-latest
+```
+After the Docker image is running, you just need to set `SA_PASSWORD` environment variable to `{your_password}` and can run tests normally.
+
+Note: If `SA_PASSWORD` is not set, the tests will assume you're using a local MSSQL installation and default to using integrated auth. MSSQL on Docker does not support integrated auth by default.
+
+### Azure SQL Database
+To use an Azure SQL Database, set the `AZURE_SQL_DB_CONNECTION_STRING` environment variable to your Azure SQL Database connection string.
 
  ## Adding New Integration Tests
    When adding a new integration test for a function follow these steps:

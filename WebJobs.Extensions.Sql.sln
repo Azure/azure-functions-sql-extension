@@ -20,9 +20,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.WebJobs.Extensions.Sql.Benchmark", "benchmark\Microsoft.Azure.WebJobs.Extensions.Sql.Benchmark.csproj", "{1A5148B7-F877-4813-852C-F94D6EF795E8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.WebJobs.Extensions.Sql.Performance", "performance\Microsoft.Azure.WebJobs.Extensions.Sql.Performance.csproj", "{1A5148B7-F877-4813-852C-F94D6EF795E8}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "benchmark", "benchmark", "{F0F3562F-9176-4461-98E4-13D38D3DD056}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "performance", "performance", "{F0F3562F-9176-4461-98E4-13D38D3DD056}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

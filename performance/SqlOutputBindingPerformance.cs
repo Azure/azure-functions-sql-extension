@@ -11,9 +11,9 @@ using Newtonsoft.Json;
 using BenchmarkDotNet.Attributes;
 
 
-namespace Microsoft.Azure.WebJobs.Extensions.Sql.Benchmark
+namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
 {
-    public class SqlOutputBindingBenchmarks : IntegrationTestBase
+    public class SqlOutputBindingPerformance : IntegrationTestBase
     {
         [GlobalSetup]
         public void StartAddProductsArrayFunction()

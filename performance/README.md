@@ -8,7 +8,8 @@ The performance tests use BenchmarkDotNet to benchmark performance for input and
 
 Run the tests from the terminal.
 ```
-dotnet run
+cd performance
+dotnet run -c Release
 ```
 
 ## Results
