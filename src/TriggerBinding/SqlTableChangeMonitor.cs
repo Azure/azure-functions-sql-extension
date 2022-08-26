@@ -40,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly int _userTableId;
         private readonly SqlObject _userTable;
         private readonly string _userFunctionId;
-        private readonly string _workerTableName;
+        private readonly string _leasesTableName;
         private readonly IReadOnlyList<string> _userTableColumns;
         private readonly IReadOnlyList<string> _primaryKeyColumns;
         private readonly IReadOnlyList<string> _rowMatchConditions;
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="userTableId">SQL object ID of the user table</param>
         /// <param name="userTable"><see cref="SqlObject"> instance created with user table name</param>
         /// <param name="userFunctionId">Unique identifier for the user function</param>
-        /// <param name="workerTableName">Name of the worker table</param>
+        /// <param name="leasesTableName">Name of the leases table</param>
         /// <param name="userTableColumns">List of all column names in the user table</param>
         /// <param name="primaryKeyColumns">List of primary key column names in the user table</param>
         /// <param name="executor">Defines contract for triggering user function</param>
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             int userTableId,
             SqlObject userTable,
             string userFunctionId,
-            string workerTableName,
+            string leasesTableName,
             IReadOnlyList<string> userTableColumns,
             IReadOnlyList<string> primaryKeyColumns,
             ITriggeredFunctionExecutor executor,
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             _ = !string.IsNullOrEmpty(connectionString) ? true : throw new ArgumentNullException(nameof(connectionString));
             _ = !string.IsNullOrEmpty(userTable.FullName) ? true : throw new ArgumentNullException(nameof(userTable));
             _ = !string.IsNullOrEmpty(userFunctionId) ? true : throw new ArgumentNullException(nameof(userFunctionId));
-            _ = !string.IsNullOrEmpty(workerTableName) ? true : throw new ArgumentNullException(nameof(workerTableName));
+            _ = !string.IsNullOrEmpty(leasesTableName) ? true : throw new ArgumentNullException(nameof(leasesTableName));
             _ = userTableColumns ?? throw new ArgumentNullException(nameof(userTableColumns));
             _ = primaryKeyColumns ?? throw new ArgumentNullException(nameof(primaryKeyColumns));
             _ = executor ?? throw new ArgumentNullException(nameof(executor));
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._userTableId = userTableId;
             this._userTable = userTable;
             this._userFunctionId = userFunctionId;
-            this._workerTableName = workerTableName;
+            this._leasesTableName = leasesTableName;
             this._userTableColumns = userTableColumns;
             this._primaryKeyColumns = primaryKeyColumns;
 
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         /// <summary>
         /// Executed once every <see cref="PollingIntervalInSeconds"/> period. If the state of the change monitor is
-        /// <see cref="State.CheckingForChanges"/>, then the method query the change/worker tables for changes on the
+        /// <see cref="State.CheckingForChanges"/>, then the method query the change/leases tables for changes on the
         /// user's table. If any are found, the state of the change monitor is transitioned to
         /// <see cref="State.ProcessingChanges"/> and the user's function is executed with the found changes. If the
         /// execution is successful, the leases on "_rows" are released and the state transitions to
@@ -189,7 +189,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Queries the change/worker tables to check for new changes on the user's table. If any are found, stores the
+        /// Queries the change/leases tables to check for new changes on the user's table. If any are found, stores the
         /// change along with the corresponding data from the user table in "_rows".
         /// </summary>
         private async Task GetTableChangesAsync(SqlConnection connection, CancellationToken token)
@@ -386,7 +386,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 if (this._state == State.ProcessingChanges)
                 {
                     // I don't think I need a transaction for renewing leases. If this worker reads in a row from the
-                    // worker table and determines that it corresponds to its batch of changes, but then that row gets
+                    // leases table and determines that it corresponds to its batch of changes, but then that row gets
                     // deleted by a cleanup task, it shouldn't renew the lease on it anyways.
                     using (SqlCommand renewLeasesCommand = this.BuildRenewLeasesCommand(connection))
                     {
@@ -488,7 +488,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         }
 
                         // Update the global state table if we have processed all changes with ChangeVersion <= newLastSyncVersion,
-                        // and clean up the worker table to remove all rows with ChangeVersion <= newLastSyncVersion.
+                        // and clean up the leases table to remove all rows with ChangeVersion <= newLastSyncVersion.
                         using (SqlCommand updateTablesPostInvocationCommand = this.BuildUpdateTablesPostInvocation(connection, transaction, newLastSyncVersion))
                         {
                             var commandSw = Stopwatch.StartNew();
@@ -584,7 +584,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Gets the change associated with this row (either an insert, update or delete).
         /// </summary>
-        /// <param name="row">The (combined) row from the change table and worker table</param>
+        /// <param name="row">The (combined) row from the change table and leases table</param>
         /// <exception cref="InvalidDataException">Thrown if the value of the "SYS_CHANGE_OPERATION" column is none of "I", "U", or "D"</exception>
         /// <returns>SqlChangeOperation.Insert for an insert, SqlChangeOperation.Update for an update, and SqlChangeOperation.Delete for a delete</returns>
         private static SqlChangeOperation GetChangeOperation(IReadOnlyDictionary<string, string> row)
@@ -636,7 +636,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             string selectList = string.Join(", ", this._userTableColumns.Select(col => this._primaryKeyColumns.Contains(col) ? $"c.{col.AsBracketQuotedString()}" : $"u.{col.AsBracketQuotedString()}"));
             string userTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.AsBracketQuotedString()} = u.{col.AsBracketQuotedString()}"));
-            string workerTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.AsBracketQuotedString()} = w.{col.AsBracketQuotedString()}"));
+            string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.AsBracketQuotedString()} = l.{col.AsBracketQuotedString()}"));
 
             string getChangesQuery = $@"
                 DECLARE @last_sync_version bigint;
@@ -647,15 +647,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 SELECT TOP {BatchSize}
                     {selectList},
                     c.SYS_CHANGE_VERSION, c.SYS_CHANGE_OPERATION,
-                    w.{SqlTriggerConstants.WorkerTableChangeVersionColumnName}, w.{SqlTriggerConstants.WorkerTableAttemptCountColumnName}, w.{SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName}
+                    l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName}, l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName}, l.{SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName}
                 FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @last_sync_version) AS c
-                LEFT OUTER JOIN {this._workerTableName} AS w WITH (TABLOCKX) ON {workerTableJoinCondition}
+                LEFT OUTER JOIN {this._leasesTableName} AS l WITH (TABLOCKX) ON {leasesTableJoinCondition}
                 LEFT OUTER JOIN {this._userTable.BracketQuotedFullName} AS u ON {userTableJoinCondition}
                 WHERE
-                    (w.{SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName} IS NULL AND
-                       (w.{SqlTriggerConstants.WorkerTableChangeVersionColumnName} IS NULL OR w.{SqlTriggerConstants.WorkerTableChangeVersionColumnName} < c.SYS_CHANGE_VERSION) OR
-                        w.{SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName} < SYSDATETIME()) AND
-                    (w.{SqlTriggerConstants.WorkerTableAttemptCountColumnName} IS NULL OR w.{SqlTriggerConstants.WorkerTableAttemptCountColumnName} < {MaxAttemptCount})
+                    (l.{SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} IS NULL AND
+                       (l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName} IS NULL OR l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName} < c.SYS_CHANGE_VERSION) OR
+                        l.{SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} < SYSDATETIME()) AND
+                    (l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} IS NULL OR l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} < {MaxAttemptCount})
                 ORDER BY c.SYS_CHANGE_VERSION ASC;
             ";
 
@@ -679,15 +679,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 string changeVersion = this._rows[rowIndex]["SYS_CHANGE_VERSION"];
 
                 acquireLeasesQuery.Append($@"
-                    IF NOT EXISTS (SELECT * FROM {this._workerTableName} WITH (TABLOCKX) WHERE {this._rowMatchConditions[rowIndex]})
-                        INSERT INTO {this._workerTableName} WITH (TABLOCKX)
+                    IF NOT EXISTS (SELECT * FROM {this._leasesTableName} WITH (TABLOCKX) WHERE {this._rowMatchConditions[rowIndex]})
+                        INSERT INTO {this._leasesTableName} WITH (TABLOCKX)
                         VALUES ({valuesList}, {changeVersion}, 1, DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME()));
                     ELSE
-                        UPDATE {this._workerTableName} WITH (TABLOCKX)
+                        UPDATE {this._leasesTableName} WITH (TABLOCKX)
                         SET
-                            {SqlTriggerConstants.WorkerTableChangeVersionColumnName} = {changeVersion},
-                            {SqlTriggerConstants.WorkerTableAttemptCountColumnName} = {SqlTriggerConstants.WorkerTableAttemptCountColumnName} + 1,
-                            {SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName} = DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME())
+                            {SqlTriggerConstants.LeasesTableChangeVersionColumnName} = {changeVersion},
+                            {SqlTriggerConstants.LeasesTableAttemptCountColumnName} = {SqlTriggerConstants.LeasesTableAttemptCountColumnName} + 1,
+                            {SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} = DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME())
                         WHERE {this._rowMatchConditions[rowIndex]};
                 ");
             }
@@ -705,8 +705,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string matchCondition = string.Join(" OR ", this._rowMatchConditions.Take(this._rows.Count));
 
             string renewLeasesQuery = $@"
-                UPDATE {this._workerTableName} WITH (TABLOCKX)
-                SET {SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName} = DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME())
+                UPDATE {this._leasesTableName} WITH (TABLOCKX)
+                SET {SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} = DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME())
                 WHERE {matchCondition};
             ";
 
@@ -729,16 +729,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 string changeVersion = this._rows[rowIndex]["SYS_CHANGE_VERSION"];
 
                 releaseLeasesQuery.Append($@"
-                    SELECT @current_change_version = {SqlTriggerConstants.WorkerTableChangeVersionColumnName}
-                    FROM {this._workerTableName} WITH (TABLOCKX)
+                    SELECT @current_change_version = {SqlTriggerConstants.LeasesTableChangeVersionColumnName}
+                    FROM {this._leasesTableName} WITH (TABLOCKX)
                     WHERE {this._rowMatchConditions[rowIndex]};
 
                     IF @current_change_version <= {changeVersion}
-                        UPDATE {this._workerTableName} WITH (TABLOCKX)
+                        UPDATE {this._leasesTableName} WITH (TABLOCKX)
                         SET
-                            {SqlTriggerConstants.WorkerTableChangeVersionColumnName} = {changeVersion},
-                            {SqlTriggerConstants.WorkerTableAttemptCountColumnName} = 0,
-                            {SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName} = NULL
+                            {SqlTriggerConstants.LeasesTableChangeVersionColumnName} = {changeVersion},
+                            {SqlTriggerConstants.LeasesTableAttemptCountColumnName} = 0,
+                            {SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} = NULL
                         WHERE {this._rowMatchConditions[rowIndex]};
                 ");
             }
@@ -748,7 +748,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         /// <summary>
         /// Builds the command to update the global version number in _globalStateTable after successful invocation of
-        /// the user's function. If the global version number is updated, also cleans the worker table and removes all
+        /// the user's function. If the global version number is updated, also cleans the leases table and removes all
         /// rows for which ChangeVersion <= newLastSyncVersion.
         /// </summary>
         /// <param name="connection">The connection to add to the returned SqlCommand</param>
@@ -757,7 +757,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
         private SqlCommand BuildUpdateTablesPostInvocation(SqlConnection connection, SqlTransaction transaction, long newLastSyncVersion)
         {
-            string workerTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.AsBracketQuotedString()} = w.{col.AsBracketQuotedString()}"));
+            string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.AsBracketQuotedString()} = l.{col.AsBracketQuotedString()}"));
 
             string updateTablesPostInvocationQuery = $@"
                 DECLARE @current_last_sync_version bigint;
@@ -769,13 +769,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 SELECT @unprocessed_changes = COUNT(*) FROM (
                     SELECT c.SYS_CHANGE_VERSION
                     FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @current_last_sync_version) AS c
-                    LEFT OUTER JOIN {this._workerTableName} AS w WITH (TABLOCKX) ON {workerTableJoinCondition}
+                    LEFT OUTER JOIN {this._leasesTableName} AS l WITH (TABLOCKX) ON {leasesTableJoinCondition}
                     WHERE
                         c.SYS_CHANGE_VERSION <= {newLastSyncVersion} AND
-                        ((w.{SqlTriggerConstants.WorkerTableChangeVersionColumnName} IS NULL OR
-                           w.{SqlTriggerConstants.WorkerTableChangeVersionColumnName} != c.SYS_CHANGE_VERSION OR
-                           w.{SqlTriggerConstants.WorkerTableLeaseExpirationTimeColumnName} IS NOT NULL) AND
-                        (w.{SqlTriggerConstants.WorkerTableAttemptCountColumnName} IS NULL OR w.{SqlTriggerConstants.WorkerTableAttemptCountColumnName} < {MaxAttemptCount}))) AS Changes
+                        ((l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName} IS NULL OR
+                           l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName} != c.SYS_CHANGE_VERSION OR
+                           l.{SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} IS NOT NULL) AND
+                        (l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} IS NULL OR l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} < {MaxAttemptCount}))) AS Changes
 
                 IF @unprocessed_changes = 0 AND @current_last_sync_version < {newLastSyncVersion}
                 BEGIN
@@ -783,7 +783,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     SET LastSyncVersion = {newLastSyncVersion}
                     WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
 
-                    DELETE FROM {this._workerTableName} WITH (TABLOCKX) WHERE {SqlTriggerConstants.WorkerTableChangeVersionColumnName} <= {newLastSyncVersion};
+                    DELETE FROM {this._leasesTableName} WITH (TABLOCKX) WHERE {SqlTriggerConstants.LeasesTableChangeVersionColumnName} <= {newLastSyncVersion};
                 END
             ";
 
