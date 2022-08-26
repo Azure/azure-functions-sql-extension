@@ -359,11 +359,11 @@ This extension collect usage data in order to help us improve your experience. T
         ErrorName,
         ExceptionType,
         HasIdentityColumn,
+        LeasesTableName,
         QueryType,
         ServerVersion,
         Type,
         UserFunctionId,
-        WorkerTableName,
     }
 
     /// <summary>
@@ -376,7 +376,7 @@ This extension collect usage data in order to help us improve your experience. T
         CommandDurationMs,
         CreatedSchemaDurationMs,
         CreateGlobalStateTableDurationMs,
-        CreateWorkerTableDurationMs,
+        CreateLeasesTableDurationMs,
         DurationMs,
         GetCaseSensitivityDurationMs,
         GetChangesDurationMs,
