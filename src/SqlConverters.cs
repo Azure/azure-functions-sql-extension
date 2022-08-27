@@ -162,8 +162,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     adapter.SelectCommand = command;
                     await connection.OpenAsync();
+                    Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps();
                     var dataTable = new DataTable();
                     adapter.Fill(dataTable);
+                    TelemetryInstance.TrackEvent(TelemetryEventName.BuildItemFromAttributeAsync, props);
                     this._logger.LogInformation($"{dataTable.Rows.Count} row(s) queried from database: {connection.Database} using Command: {command.CommandText}");
                     return JsonConvert.SerializeObject(dataTable);
                 }

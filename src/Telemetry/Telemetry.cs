@@ -321,6 +321,7 @@ This extension collect usage data in order to help us improve your experience. T
     public enum TelemetryEventName
     {
         AddAsync,
+        BuildItemFromAttributeAsync,
         Create,
         Convert,
         Error,
