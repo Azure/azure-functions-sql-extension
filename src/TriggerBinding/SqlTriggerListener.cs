@@ -35,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly ILogger _logger;
 
-        private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps;
+        private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps = new Dictionary<TelemetryPropertyName, string>();
 
         private SqlTableChangeMonitor<T> _changeMonitor;
         private int _listenerState;
@@ -62,11 +62,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._executor = executor;
             this._logger = logger;
             this._listenerState = ListenerNotStarted;
-
-            this._telemetryProps = new Dictionary<TelemetryPropertyName, string>
-            {
-                [TelemetryPropertyName.UserFunctionId] = this._userFunctionId,
-            };
         }
 
         public void Cancel()
@@ -81,6 +76,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
+            this.InitializeTelemetryProps();
             TelemetryInstance.TrackEvent(TelemetryEventName.StartListenerStart, this._telemetryProps);
 
             int previousState = Interlocked.CompareExchange(ref this._listenerState, ListenerStarting, ListenerNotStarted);
@@ -438,6 +434,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 await createLeasesTableCommand.ExecuteNonQueryAsync(cancellationToken);
                 return stopwatch.ElapsedMilliseconds;
             }
+        }
+
+        /// <summary>
+        /// Clears the current telemetry property dictionary and initializes the default initial properties. 
+        /// </summary>
+        private void InitializeTelemetryProps()
+        {
+            this._telemetryProps.Clear();
+            this._telemetryProps[TelemetryPropertyName.UserFunctionId] = this._userFunctionId;
         }
     }
 }
