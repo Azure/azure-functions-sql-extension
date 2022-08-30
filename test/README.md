@@ -16,21 +16,21 @@ Our integration tests are based on functions from the samples project. To run in
    ```
 3. A local SQL Server instance or an Azure SQL Database - This is used by tests to verify that data is correctly added/fetched from the database when a test Function is run. You just need the server to be up and running, the tests will create the database and tables which will be cleaned up afterwards.
 
-### Local Install
-To use a SQL Server installation, ensure `localhost` is available for connection via integrated security.
+     ### Local Install
+     To use a SQL Server installation, ensure `localhost` is available for connection via integrated security.
 
-### Docker Container
-Start a SQL Server instance with Docker
-```
-docker pull mcr.microsoft.com/mssql/server:2019-latest
-docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD={your_password}" -e "MSSQL_PID=Express" -p 1433:1433 --name sql1 -h sql1 -d mcr.microsoft.com/mssql/server:2019-latest
-```
-After the Docker image is running, you just need to set `SA_PASSWORD` environment variable to `{your_password}` and can run tests normally.
+     ### Docker Container
+     Start a SQL Server instance with Docker
+     ```
+     docker pull mcr.microsoft.com/mssql/server:2019-latest
+     docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD={your_password}" -e "MSSQL_PID=Express" -p 1433:1433 --name sql1 -h sql1 -d mcr.microsoft.com/mssql/server:2019-latest
+     ```
+     After the Docker image is running, you just need to set `SA_PASSWORD` environment variable to `{your_password}` and can run tests normally.
 
-Note: If `SA_PASSWORD` is not set, the tests will assume you're using a local MSSQL installation and default to using integrated auth. MSSQL on Docker does not support integrated auth by default.
+     Note: If `SA_PASSWORD` is not set, the tests will assume you're using a local MSSQL installation and default to using integrated auth. MSSQL on Docker does not support integrated auth by default.
 
-### Azure SQL Database
-To use an Azure SQL Database, set the `AZURE_SQL_DB_CONNECTION_STRING` environment variable to your Azure SQL Database connection string.
+     ### Azure SQL Database
+     To use an Azure SQL Database, set the `AZURE_SQL_DB_CONNECTION_STRING` environment variable to your Azure SQL Database connection string.
 
  ## Adding New Integration Tests
    When adding a new integration test for a function follow these steps:
@@ -41,7 +41,7 @@ To use an Azure SQL Database, set the `AZURE_SQL_DB_CONNECTION_STRING` environme
    4. After the functions are created then add the test itself to either SqlInputBindingIntegrationTests.ts or SqlOutputBindingIntegrationTests.ts. See below for the various attributes, parameters and setup that are required for each test
 
    ### SqlInlineData attribute:
-     
+
    SqlInlineData attribute is a custom attribute derived from Xunit Data attribute and it supplies the SupportedLanguage parameter to the test for the test to run against in addition to any other data parameters included. By default any test decorated with the [SqlInlineData] attribute will be run against each supported language in the SupportedLanguages enum.
 
    How to use: Add [Theory] and [SqlInlineData] attributes over the test and pass in the test variables except the language variable.
