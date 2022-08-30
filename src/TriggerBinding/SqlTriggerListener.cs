@@ -76,9 +76,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            this.InitializeTelemetryProps();
-            TelemetryInstance.TrackEvent(TelemetryEventName.StartListenerStart, this._telemetryProps);
-
             int previousState = Interlocked.CompareExchange(ref this._listenerState, ListenerStarting, ListenerNotStarted);
 
             switch (previousState)
@@ -87,6 +84,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 case ListenerStarted: throw new InvalidOperationException("The listener has already started.");
                 default: break;
             }
+
+            this.InitializeTelemetryProps();
+            TelemetryInstance.TrackEvent(TelemetryEventName.StartListenerStart, this._telemetryProps);
 
             try
             {
