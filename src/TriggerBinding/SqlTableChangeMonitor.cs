@@ -576,10 +576,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 string changeVersion = row["SYS_CHANGE_VERSION"];
                 changeVersionSet.Add(long.Parse(changeVersion, CultureInfo.InvariantCulture));
             }
-            long lastSyncVersion = changeVersionSet.ElementAt(changeVersionSet.Count > 1 ? changeVersionSet.Count - 2 : 0);
-            this._logger.LogDebugWithThreadId($"RecomputeLastSyncVersion. LastSyncVersion={lastSyncVersion} ChangeVersionSet={string.Join(",", changeVersionSet)}");
             // If there are more than one version numbers in the set, return the second highest one. Otherwise, return
             // the only version number in the set.
+            long lastSyncVersion = changeVersionSet.ElementAt(changeVersionSet.Count > 1 ? changeVersionSet.Count - 2 : 0);
+            this._logger.LogDebugWithThreadId($"RecomputeLastSyncVersion. LastSyncVersion={lastSyncVersion} ChangeVersionSet={string.Join(",", changeVersionSet)}");
             return lastSyncVersion;
         }
 
@@ -644,7 +644,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 SELECT @last_sync_version = LastSyncVersion
                 FROM {SqlTriggerConstants.GlobalStateTableName}
                 WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
-                
+
                 IF @last_sync_version < @min_valid_version
                     UPDATE {SqlTriggerConstants.GlobalStateTableName}
                     SET LastSyncVersion = @min_valid_version
