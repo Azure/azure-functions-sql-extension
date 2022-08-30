@@ -97,10 +97,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns>An IEnumerable containing the rows read from the user's database in the form of the user-defined POCO</returns>
             public async Task<IEnumerable<T>> ConvertAsync(SqlAttribute attribute, CancellationToken cancellationToken)
             {
-                TelemetryInstance.TrackConvert(ConvertType.IEnumerable);
                 try
                 {
-                    string json = await this.BuildItemFromAttributeAsync(attribute);
+                    string json = await this.BuildItemFromAttributeAsync(attribute, ConvertType.IEnumerable);
                     return JsonConvert.DeserializeObject<IEnumerable<T>>(json);
                 }
                 catch (Exception ex)
@@ -128,10 +127,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </returns>
             async Task<string> IAsyncConverter<SqlAttribute, string>.ConvertAsync(SqlAttribute attribute, CancellationToken cancellationToken)
             {
-                TelemetryInstance.TrackConvert(ConvertType.Json);
                 try
                 {
-                    return await this.BuildItemFromAttributeAsync(attribute);
+                    return await this.BuildItemFromAttributeAsync(attribute, ConvertType.Json);
                 }
                 catch (Exception ex)
                 {
@@ -152,7 +150,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// The binding attribute that contains the name of the connection string app setting and query.
             /// </param>
             /// <returns></returns>
-            public virtual async Task<string> BuildItemFromAttributeAsync(SqlAttribute attribute)
+            public virtual async Task<string> BuildItemFromAttributeAsync(SqlAttribute attribute, ConvertType type)
             {
                 using (SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, this._configuration))
                 // Ideally, we would like to move away from using SqlDataAdapter both here and in the
@@ -165,7 +163,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps();
                     var dataTable = new DataTable();
                     adapter.Fill(dataTable);
-                    TelemetryInstance.TrackEvent(TelemetryEventName.BuildItemFromAttributeAsync, props);
+                    TelemetryInstance.TrackConvert(type, props);
                     this._logger.LogInformation($"{dataTable.Rows.Count} row(s) queried from database: {connection.Database} using Command: {command.CommandText}");
                     return JsonConvert.SerializeObject(dataTable);
                 }
@@ -174,7 +172,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             IAsyncEnumerable<T> IConverter<SqlAttribute, IAsyncEnumerable<T>>.Convert(SqlAttribute attribute)
             {
-                TelemetryInstance.TrackConvert(ConvertType.IAsyncEnumerable);
                 try
                 {
                     return new SqlAsyncEnumerable<T>(SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, this._configuration), attribute);
@@ -200,10 +197,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns>JArray containing the rows read from the user's database in the form of the user-defined POCO</returns>
             async Task<JArray> IAsyncConverter<SqlAttribute, JArray>.ConvertAsync(SqlAttribute attribute, CancellationToken cancellationToken)
             {
-                TelemetryInstance.TrackConvert(ConvertType.JArray);
                 try
                 {
-                    string json = await this.BuildItemFromAttributeAsync(attribute);
+                    string json = await this.BuildItemFromAttributeAsync(attribute, ConvertType.JArray);
                     return JArray.Parse(json);
                 }
                 catch (Exception ex)
