@@ -27,7 +27,7 @@ Azure SQL bindings for Azure Functions are supported for:
       - [Docker container](#docker-container)
       - [Azure SQL Database](#azure-sql-database)
     - [SQL Setup](#sql-setup)
-    - [Create .NET Function App](#create-net-function-app)
+    - [Create a Function App](#create-a-function-app)
     - [Configure Function App](#configure-function-app)
   - [Tutorials](#tutorials)
     - [.NET functions](#net-functions)
@@ -103,9 +103,9 @@ ALTER TABLE ['{table_name}'] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED (['{prima
 ```
 
 
-### Create .NET Function App
+### Create a Function App
 
-Now you will need a .NET Function App to add the binding to. If you have one created already you can skip this step.
+Now you will need a Function App to add the binding to. If you have one created already you can skip this step.
 
 These steps can be done in the Terminal/CLI or with PowerShell.
 
@@ -120,9 +120,32 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     func init --worker-runtime dotnet
     ```
 
-**Note**: Other languages are not supported at this time
+    **JavaScript (NodeJS)**
+    ```bash
+    mkdir MyApp
+    cd MyApp
+    func init --worker-runtime node --language javascript
+    ```
 
-1. Install the extension.
+    **TypeScript (NodeJS)**
+    ```bash
+    mkdir MyApp
+    cd MyApp
+    func init --worker-runtime node --language typescript
+    ```
+
+    **Python**
+
+    *See [#250](https://github.com/Azure/azure-functions-sql-extension/issues/250) before starting.*
+    ```bash
+    mkdir MyApp
+    cd MyApp
+    func init --worker-runtime python
+    ```
+
+3. Enable SQL bindings on the function app. More information can be found [in Microsoft Docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
+
+    **.NET:** Install the extension.
 
     ```powershell
     dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql --prerelease
