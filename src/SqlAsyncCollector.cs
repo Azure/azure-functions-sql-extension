@@ -147,6 +147,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="configuration"> Used to build up the connection </param>
         private async Task UpsertRowsAsync(IEnumerable<T> rows, SqlAttribute attribute, IConfiguration configuration)
         {
+            this._logger.LogDebugWithThreadId("BEGIN UpsertRowsAsync");
+            var upsertRowsAsyncSw = Stopwatch.StartNew();
             using (SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
                 await connection.OpenAsync();
@@ -171,7 +173,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(10)
                     };
 
-                    this._logger.LogInformation($"DB and Table: {connection.Database}.{fullTableName}. Primary keys: [{string.Join(",", tableInfo.PrimaryKeys.Select(pk => pk.Name))}]. SQL Column and Definitions:  [{string.Join(",", tableInfo.ColumnDefinitions)}]");
                     cachedTables.Set(cacheKey, tableInfo, policy);
                 }
                 else
@@ -189,6 +190,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
 
                 TelemetryInstance.TrackEvent(TelemetryEventName.UpsertStart, props);
+                this._logger.LogDebugWithThreadId("BEGIN upsert rows transaction");
                 var transactionSw = Stopwatch.StartNew();
                 int batchSize = 1000;
                 SqlTransaction transaction = connection.BeginTransaction();
@@ -216,7 +218,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     { TelemetryMeasureName.CommandDurationMs, commandSw.ElapsedMilliseconds }
                 };
                     TelemetryInstance.TrackEvent(TelemetryEventName.UpsertEnd, props, measures);
-                    this._logger.LogInformation($"Upserted {rows.Count()} row(s) into database: {connection.Database} and table: {fullTableName}.");
+                    this._logger.LogDebugWithThreadId($"END upsert rows transaction Duration={transactionSw.ElapsedMilliseconds}ms Upserted {rows.Count()} row(s) into database: {connection.Database} and table: {fullTableName}.");
+                    this._logger.LogDebugWithThreadId($"END upsertRowsAsync Duration={upsertRowsAsyncSw.ElapsedMilliseconds}ms");
                 }
                 catch (Exception ex)
                 {
@@ -504,6 +507,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 Dictionary<TelemetryPropertyName, string> sqlConnProps = sqlConnection.AsConnectionProps();
                 TelemetryInstance.TrackEvent(TelemetryEventName.GetTableInfoStart, sqlConnProps);
+                logger.LogDebugWithThreadId("BEGIN RetrieveTableInformationAsync");
                 var table = new SqlObject(fullName);
 
                 // Get case sensitivity from database collation (default to false if any exception occurs)
@@ -633,6 +637,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 sqlConnProps.Add(TelemetryPropertyName.QueryType, usingInsertQuery ? "insert" : "merge");
                 sqlConnProps.Add(TelemetryPropertyName.HasIdentityColumn, hasIdentityColumnPrimaryKeys.ToString());
                 TelemetryInstance.TrackDuration(TelemetryEventName.GetTableInfoEnd, tableInfoSw.ElapsedMilliseconds, sqlConnProps, durations);
+                logger.LogDebugWithThreadId($"END RetrieveTableInformationAsync Duration={tableInfoSw.ElapsedMilliseconds}ms DB and Table: {sqlConnection.Database}.{fullName}. Primary keys: [{string.Join(",", primaryKeyFields.Select(pk => pk.Name))}]. SQL Column and Definitions:  [{string.Join(",", columnDefinitionsFromSQL)}]");
                 return new TableInformation(primaryKeyFields, columnDefinitionsFromSQL, comparer, query, hasIdentityColumnPrimaryKeys);
             }
         }

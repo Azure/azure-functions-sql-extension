@@ -4,6 +4,7 @@
 using System;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using MoreLinq;
 using Newtonsoft.Json.Linq;
 
@@ -92,6 +93,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // properties are read-only, so we have to replace them
                 property.Replace(new JProperty(property.Name.ToLowerInvariant(), property.Value));
             }
+        }
+
+        public static void LogDebugWithThreadId(this ILogger logger, string message, params object[] args)
+        {
+            logger.LogDebug($"TID:{Environment.CurrentManagedThreadId} {message}", args);
         }
     }
 }
