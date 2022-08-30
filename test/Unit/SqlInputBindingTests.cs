@@ -230,7 +230,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
             var converter = new Mock<SqlGenericsConverter<TestData>>(config.Object, logger.Object);
             string json = "[{ \"ID\":1,\"Name\":\"Broom\",\"Cost\":32.5,\"Timestamp\":\"2019-11-22T06:32:15\"},{ \"ID\":2,\"Name\":\"Brush\",\"Cost\":12.3," +
                 "\"Timestamp\":\"2017-01-27T03:13:11\"},{ \"ID\":3,\"Name\":\"Comb\",\"Cost\":100.12,\"Timestamp\":\"1997-05-03T10:11:56\"}]";
-            converter.Setup(_ => _.BuildItemFromAttributeAsync(arg)).ReturnsAsync(json);
+            converter.Setup(_ => _.BuildItemFromAttributeAsync(arg, Telemetry.ConvertType.SqlCommand)).ReturnsAsync(json);
             var list = new List<TestData>();
             var data1 = new TestData
             {
@@ -268,7 +268,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 
             // SQL data is missing a field
             string json = "[{ \"ID\":1,\"Name\":\"Broom\",\"Timestamp\":\"2019-11-22T06:32:15\"}]";
-            converter.Setup(_ => _.BuildItemFromAttributeAsync(arg)).ReturnsAsync(json);
+            converter.Setup(_ => _.BuildItemFromAttributeAsync(arg, Telemetry.ConvertType.Json)).ReturnsAsync(json);
             var list = new List<TestData>();
             var data = new TestData
             {
@@ -283,7 +283,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 
             // SQL data's columns are named differently than the POCO's fields
             json = "[{ \"ID\":1,\"Product Name\":\"Broom\",\"Price\":32.5,\"Timessstamp\":\"2019-11-22T06:32:15\"}]";
-            converter.Setup(_ => _.BuildItemFromAttributeAsync(arg)).ReturnsAsync(json);
+            converter.Setup(_ => _.BuildItemFromAttributeAsync(arg, Telemetry.ConvertType.IEnumerable)).ReturnsAsync(json);
             list = new List<TestData>();
             data = new TestData
             {
@@ -297,7 +297,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 
             // Confirm that the JSON fields are case-insensitive (technically malformed string, but still works)
             json = "[{ \"id\":1,\"nAme\":\"Broom\",\"coSt\":32.5,\"TimEStamp\":\"2019-11-22T06:32:15\"}]";
-            converter.Setup(_ => _.BuildItemFromAttributeAsync(arg)).ReturnsAsync(json);
+            converter.Setup(_ => _.BuildItemFromAttributeAsync(arg, Telemetry.ConvertType.IAsyncEnumerable)).ReturnsAsync(json);
             list = new List<TestData>();
             data = new TestData
             {
