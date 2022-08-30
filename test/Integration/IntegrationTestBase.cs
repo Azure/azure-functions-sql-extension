@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Host process for Azure Function CLI
         /// </summary>
-        private Process FunctionHost;
+        protected Process FunctionHost { get; private set; }
 
         /// <summary>
         /// Host process for Azurite local storage emulator. This is required for non-HTTP trigger functions:
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         /// <summary>
         /// Output redirect for XUnit tests.
-        /// Please use TestOutput.WriteLine() instead of Console or Debug.
+        /// Please use LogOutput.WriteLine() instead of Console or Debug.
         /// </summary>
         protected ITestOutputHelper TestOutput { get; private set; }
 
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// - The functionName is different than its route.<br/>
         /// - You can start multiple functions by passing in a space-separated list of function names.<br/>
         /// </remarks>
-        protected void StartFunctionHost(string functionName, SupportedLanguages language, bool useTestFolder = false)
+        protected void StartFunctionHost(string functionName, SupportedLanguages language, bool useTestFolder = false, DataReceivedEventHandler customOutputHandler = null)
         {
             string workingDirectory = useTestFolder ? GetPathToBin() : Path.Combine(GetPathToBin(), "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), language));
             if (!Directory.Exists(workingDirectory))
@@ -199,26 +199,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 StartInfo = startInfo
             };
+
+            // Register all handlers before starting the functions host process.
+            var taskCompletionSource = new TaskCompletionSource<bool>();
             this.FunctionHost.OutputDataReceived += this.TestOutputHandler;
+            this.FunctionHost.OutputDataReceived += SignalStartupHandler;
+            this.FunctionHost.OutputDataReceived += customOutputHandler;
+
             this.FunctionHost.ErrorDataReceived += this.TestOutputHandler;
 
             this.FunctionHost.Start();
             this.FunctionHost.BeginOutputReadLine();
             this.FunctionHost.BeginErrorReadLine();
 
-            var taskCompletionSource = new TaskCompletionSource<bool>();
-            this.FunctionHost.OutputDataReceived += (object sender, DataReceivedEventArgs e) =>
+            this.LogOutput.WriteLine($"Waiting for Azure Function host to start...");
+
+            const int FunctionHostStartupTimeoutInSeconds = 60;
+            bool isCompleted = taskCompletionSource.Task.Wait(TimeSpan.FromSeconds(FunctionHostStartupTimeoutInSeconds));
+            Assert.True(isCompleted, "Functions host did not start within specified time.");
+
+            // Give additional time to Functions host to setup routes for the HTTP triggers so that the HTTP requests
+            // made from the test methods do not get refused.
+            const int BufferTimeInSeconds = 5;
+            Task.Delay(TimeSpan.FromSeconds(BufferTimeInSeconds)).Wait();
+
+            this.LogOutput.WriteLine($"Azure Function host started!");
+            this.FunctionHost.OutputDataReceived -= SignalStartupHandler;
+
+            void SignalStartupHandler(object sender, DataReceivedEventArgs e)
             {
                 // This string is printed after the function host is started up - use this to ensure that we wait long enough
                 // since sometimes the host can take a little while to fully start up
-                if (e != null && !string.IsNullOrEmpty(e.Data) && e.Data.Contains($"http://localhost:{this.Port}/api"))
+                if (e.Data?.Contains(" Host initialized ") == true)
                 {
                     taskCompletionSource.SetResult(true);
                 }
             };
-            this.LogOutput($"Waiting for Azure Function host to start...");
             taskCompletionSource.Task.Wait(60000);
-            this.LogOutput($"Azure Function host started!");
         }
 
         private static string GetFunctionsCoreToolsPath()
@@ -339,9 +356,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         public void Dispose()
         {
+            // Try to clean up after test run, but don't consider it a failure if we can't for some reason
             try
             {
                 this.Connection.Close();
+                this.Connection.Dispose();
             }
             catch (Exception e1)
             {
@@ -354,13 +373,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 masterConnection.Open();
                 TestUtils.ExecuteNonQuery(masterConnection, $"DROP DATABASE IF EXISTS {this.DatabaseName}");
             }
-            catch (Exception e2)
+            catch (Exception e4)
             {
-                this.LogOutput($"Failed to drop {this.DatabaseName}, Error: {e2.Message}");
+                this.LogOutput.WriteLine($"Failed to drop {this.DatabaseName}, Error: {e2.Message}");
             }
-            finally
-            {
-                this.Connection.Dispose();
 
                 // Try to clean up after test run, but don't consider it a failure if we can't for some reason
                 try
@@ -370,7 +386,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 }
                 catch (Exception e3)
                 {
-                    this.LogOutput($"Failed to stop function host, Error: {e3.Message}");
+                    this.LogOutput.WriteLine($"Failed to stop function host, Error: {e3.Message}");
                 }
 
                 try
@@ -380,7 +396,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 }
                 catch (Exception e4)
                 {
-                    this.LogOutput($"Failed to stop Azurite, Error: {e4.Message}");
+                    this.LogOutput.WriteLine($"Failed to stop Azurite, Error: {e4.Message}");
                 }
             }
             GC.SuppressFinalize(this);

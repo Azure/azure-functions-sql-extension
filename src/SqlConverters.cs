@@ -53,9 +53,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 catch (Exception ex)
                 {
-                    var props = new Dictionary<string, string>()
+                    var props = new Dictionary<TelemetryPropertyName, string>()
                     {
-                        { TelemetryPropertyName.Type.ToString(), ConvertType.SqlCommand.ToString() }
+                        { TelemetryPropertyName.Type, ConvertType.SqlCommand.ToString() }
                     };
                     TelemetryInstance.TrackException(TelemetryErrorName.Convert, ex, props);
                     throw;
@@ -105,9 +105,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 catch (Exception ex)
                 {
-                    var props = new Dictionary<string, string>()
+                    var props = new Dictionary<TelemetryPropertyName, string>()
                     {
-                        { TelemetryPropertyName.Type.ToString(), ConvertType.IEnumerable.ToString() }
+                        { TelemetryPropertyName.Type, ConvertType.IEnumerable.ToString() }
                     };
                     TelemetryInstance.TrackException(TelemetryErrorName.Convert, ex, props);
                     throw;
@@ -135,9 +135,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 catch (Exception ex)
                 {
-                    var props = new Dictionary<string, string>()
+                    var props = new Dictionary<TelemetryPropertyName, string>()
                     {
-                        { TelemetryPropertyName.Type.ToString(), ConvertType.Json.ToString() }
+                        { TelemetryPropertyName.Type, ConvertType.Json.ToString() }
                     };
                     TelemetryInstance.TrackException(TelemetryErrorName.Convert, ex, props);
                     throw;
@@ -179,9 +179,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 catch (Exception ex)
                 {
-                    var props = new Dictionary<string, string>()
+                    var props = new Dictionary<TelemetryPropertyName, string>()
                     {
-                        { TelemetryPropertyName.Type.ToString(), ConvertType.IAsyncEnumerable.ToString() }
+                        { TelemetryPropertyName.Type, ConvertType.IAsyncEnumerable.ToString() }
                     };
                     TelemetryInstance.TrackException(TelemetryErrorName.Convert, ex, props);
                     throw;
@@ -206,9 +206,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 catch (Exception ex)
                 {
-                    var props = new Dictionary<string, string>()
+                    var props = new Dictionary<TelemetryPropertyName, string>()
                     {
-                        { TelemetryPropertyName.Type.ToString(), ConvertType.JArray.ToString() }
+                        { TelemetryPropertyName.Type, ConvertType.JArray.ToString() }
                     };
                     TelemetryInstance.TrackException(TelemetryErrorName.Convert, ex, props);
                     throw;
