@@ -35,10 +35,10 @@
 
   <Target Name="CopyTestSqlFiles" AfterTargets="Build">
     <ItemGroup>
-      <_CSharpTestSqlFiles Include="Integration\test-csharp\Database\**\*.*" />
+      <_CSharpTestSqlFiles Include="Database\**\*.*" />
     </ItemGroup>
     <Copy SourceFiles="@(_CSharpTestSqlFiles)" DestinationFolder="$(OutDir)\Database\%(RecursiveDir)" />
-    <Message Text="Copied C# test SQL files to $(OutDir)\Database" Importance="high" />
+    <Message Text="Copied test SQL files to $(OutDir)\Database" Importance="high" />
   </Target>
 
 </Project>

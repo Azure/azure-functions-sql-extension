@@ -121,6 +121,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Equal(2, this.ExecuteScalar("SELECT ProductId FROM Products WHERE Cost = 12"));
         }
 
+        /// <summary>
+        /// Test compatability with converting various data types to their respective
+        /// SQL server types. 
+        /// </summary>
+        /// <param name="lang">The language to run the test against</param>
+        [Theory]
+        [SqlInlineData()]
+        public void AddProductColumnTypesTest(SupportedLanguages lang)
+        {
+            this.StartFunctionHost(nameof(AddProductColumnTypes), lang, true);
+
+            var queryParameters = new Dictionary<string, string>()
+            {
+                { "productId", "999" }
+            };
+
+            this.SendOutputGetRequest("addproduct-columntypes", queryParameters).Wait();
+
+            // If we get here then the test is successful - an exception will be thrown if there were any problems
+        }
+
         [Theory]
         [SqlInlineData()]
         [UnsupportedLanguages(SupportedLanguages.JavaScript)] // Collectors are only available in C#

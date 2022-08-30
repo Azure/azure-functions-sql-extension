@@ -140,6 +140,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Equal(expectedResponse, TestUtils.CleanJsonString(actualResponse), StringComparer.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Verifies that serializing an item with various data types works when the language is 
+        /// set to a non-enUS language.
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        public async void GetProductsColumnTypesDifferentCultureTest(SupportedLanguages lang)
+        {
+            this.StartFunctionHost(nameof(GetProductsColumnTypesDifferentCulture), lang, true);
+
+            this.ExecuteNonQuery("INSERT INTO [dbo].[ProductsColumnTypes] VALUES (" +
+                "999, " + // ProductId
+                "GETDATE(), " + // Datetime field
+                "GETDATE())"); // Datetime2 field
+
+            await this.SendInputRequest("getproducts-columntypesdifferentculture");
+
+            // If we get here the test has succeeded - it'll throw an exception if serialization fails
+        }
+
         private static Product[] GetProductsWithSameCost(int n, int cost)
         {
             var result = new Product[n];
