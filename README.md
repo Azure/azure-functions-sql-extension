@@ -33,6 +33,13 @@ Azure SQL bindings for Azure Functions are supported for:
     - [.NET functions](#net-functions)
       - [Input Binding Tutorial](#input-binding-tutorial)
       - [Output Binding Tutorial](#output-binding-tutorial)
+      - [Trigger Binding Tutorial](#trigger-binding-tutorial)
+    - [JavaScript functions](#javascript-functions)
+      - [Input Binding Tutorial](#input-binding-tutorial-1)
+      - [Output Binding Tutorial](#output-binding-tutorial-1)
+    - [Python functions](#python-functions)
+      - [Input Binding Tutorial](#input-binding-tutorial-2)
+      - [Output Binding Tutorial](#output-binding-tutorial-2)
   - [More Samples](#more-samples)
     - [Input Binding](#input-binding)
       - [Query String](#query-string)
@@ -297,6 +304,46 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Hit 'F5' to run your code. Click the link to upsert the output array values in your SQL table. Your upserted values should launch in the browser.
 - Congratulations! You have successfully created your first SQL output binding! Checkout [Output Binding](#Output-Binding) for more information on how to use it and explore on your own!
 
+#### Trigger Binding Tutorial
+
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](#create-a-sql-server), and that you have the 'Employee.cs' file from the [Input Binding Tutorial](#input-binding-tutorial).
+
+- Create a new file with the following content:
+
+    ```csharp
+    using System.Collections.Generic;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Extensions.Logging;
+    using Microsoft.Azure.WebJobs.Extensions.Sql;
+
+    namespace Company.Function
+    {
+        public static class EmployeeTrigger
+        {
+            [FunctionName("EmployeeTrigger")]
+            public static void Run(
+                [SqlTrigger("[dbo].[Employees]", ConnectionStringSetting = "SqlConnectionString")]
+                IReadOnlyList<SqlChange<Employee>> changes,
+                ILogger logger)
+            {
+                foreach (SqlChange<Employee> change in changes)
+                {
+                    Employee employee = change.Item;
+                    logger.LogInformation($"Change operation: {change.Operation}");
+                    logger.LogInformation($"EmployeeID: {employee.EmployeeId}, FirstName: {employee.FirstName}, LastName: {employee.LastName}, Company: {employee.Company}, Team: {employee.Team}");
+                }
+            }
+        }
+    }
+    ```
+
+- *Skip these steps if you have not completed the output binding tutorial.*
+    - Open your output binding file and modify some of the values. For example, change the value of Team column from 'Functions' to 'Azure SQL'.
+    - Hit 'F5' to run your code. Click the link of the HTTP trigger from the output binding tutorial.
+- Update, insert, or delete rows in your SQL table while the function app is running and observe the function logs.
+- You should see the new log messages in the Visual Studio Code terminal containing the values of row-columns after the update operation.
+- Congratulations! You have successfully created your first SQL trigger binding! Checkout [Trigger Samples](#trigger-samples) for more information on how to use it and explore on your own!
+
 
 ### JavaScript functions
 
@@ -483,46 +530,6 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 - Hit 'F5' to run your code. Click the link to upsert the output array values in your SQL table. Your upserted values should launch in the browser.
 - Congratulations! You have successfully created your first SQL output binding! Checkout [Output Binding](#Output-Binding) for more information on how to use it and explore on your own!
-
-### Trigger Binding Tutorial
-
-Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](#create-a-sql-server), and that you have the 'Employee.cs' file from the [Input Binding Tutorial](#input-binding-tutorial).
-
-- Create a new file with the following content:
-
-    ```csharp
-    using System.Collections.Generic;
-    using Microsoft.Azure.WebJobs;
-    using Microsoft.Extensions.Logging;
-    using Microsoft.Azure.WebJobs.Extensions.Sql;
-
-    namespace Company.Function
-    {
-        public static class EmployeeTrigger
-        {
-            [FunctionName("EmployeeTrigger")]
-            public static void Run(
-                [SqlTrigger("[dbo].[Employees]", ConnectionStringSetting = "SqlConnectionString")]
-                IReadOnlyList<SqlChange<Employee>> changes,
-                ILogger logger)
-            {
-                foreach (SqlChange<Employee> change in changes)
-                {
-                    Employee employee = change.Item;
-                    logger.LogInformation($"Change operation: {change.Operation}");
-                    logger.LogInformation($"EmployeeID: {employee.EmployeeId}, FirstName: {employee.FirstName}, LastName: {employee.LastName}, Company: {employee.Company}, Team: {employee.Team}");
-                }
-            }
-        }
-    }
-    ```
-
-- *Skip these steps if you have not completed the output binding tutorial.*
-    - Open your output binding file and modify some of the values. For example, change the value of Team column from 'Functions' to 'Azure SQL'.
-    - Hit 'F5' to run your code. Click the link of the HTTP trigger from the output binding tutorial.
-- Update, insert, or delete rows in your SQL table while the function app is running and observe the function logs.
-- You should see the new log messages in the Visual Studio Code terminal containing the values of row-columns after the update operation.
-- Congratulations! You have successfully created your first SQL trigger binding! Checkout [Trigger Samples](#trigger-samples) for more information on how to use it and explore on your own!
 
 ## More Samples
 
