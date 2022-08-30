@@ -76,9 +76,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            this.InitializeTelemetryProps();
-            TelemetryInstance.TrackEvent(TelemetryEventName.StartListenerStart, this._telemetryProps);
-
             int previousState = Interlocked.CompareExchange(ref this._listenerState, ListenerStarting, ListenerNotStarted);
 
             switch (previousState)
@@ -88,11 +85,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 default: break;
             }
 
+            this.InitializeTelemetryProps();
+            TelemetryInstance.TrackEvent(TelemetryEventName.StartListenerStart, this._telemetryProps);
+
             try
             {
                 using (var connection = new SqlConnection(this._connectionString))
                 {
+                    this._logger.LogDebugWithThreadId("BEGIN OpenListenerConnection");
                     await connection.OpenAsync(cancellationToken);
+                    this._logger.LogDebugWithThreadId("END OpenListenerConnection");
                     this._telemetryProps.AddConnectionProps(connection);
 
                     int userTableId = await this.GetUserTableIdAsync(connection, cancellationToken);
@@ -100,7 +102,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     IReadOnlyList<string> userTableColumns = await this.GetUserTableColumnsAsync(connection, userTableId, cancellationToken);
 
                     string leasesTableName = string.Format(CultureInfo.InvariantCulture, SqlTriggerConstants.LeasesTableNameFormat, $"{this._userFunctionId}_{userTableId}");
-                    this._logger.LogDebug($"leases table name: '{leasesTableName}'.");
                     this._telemetryProps[TelemetryPropertyName.LeasesTableName] = leasesTableName;
 
                     var transactionSw = Stopwatch.StartNew();
@@ -108,10 +109,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                     using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
                     {
-                        createdSchemaDurationMs = await CreateSchemaAsync(connection, transaction, cancellationToken);
-                        createGlobalStateTableDurationMs = await CreateGlobalStateTableAsync(connection, transaction, cancellationToken);
+                        createdSchemaDurationMs = await this.CreateSchemaAsync(connection, transaction, cancellationToken);
+                        createGlobalStateTableDurationMs = await this.CreateGlobalStateTableAsync(connection, transaction, cancellationToken);
                         insertGlobalStateTableRowDurationMs = await this.InsertGlobalStateTableRowAsync(connection, transaction, userTableId, cancellationToken);
-                        createLeasesTableDurationMs = await CreateLeasesTableAsync(connection, transaction, leasesTableName, primaryKeyColumns, cancellationToken);
+                        createLeasesTableDurationMs = await this.CreateLeasesTableAsync(connection, transaction, leasesTableName, primaryKeyColumns, cancellationToken);
                         transaction.Commit();
                     }
 
@@ -186,6 +187,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             string getObjectIdQuery = $"SELECT OBJECT_ID(N{this._userTable.QuotedFullName}, 'U');";
 
+            this._logger.LogDebugWithThreadId($"BEGIN GetUserTableId Query={getObjectIdQuery}");
             using (var getObjectIdCommand = new SqlCommand(getObjectIdQuery, connection))
             using (SqlDataReader reader = await getObjectIdCommand.ExecuteReaderAsync(cancellationToken))
             {
@@ -200,7 +202,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     throw new InvalidOperationException($"Could not find table: '{this._userTable.FullName}'.");
                 }
-
+                this._logger.LogDebugWithThreadId($"END GetUserTableId TableId={userTableId}");
                 return (int)userTableId;
             }
         }
@@ -221,7 +223,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 INNER JOIN sys.types AS t ON c.user_type_id = t.user_type_id
                 WHERE i.is_primary_key = 1 AND i.object_id = {userTableId};
             ";
-
+            this._logger.LogDebugWithThreadId($"BEGIN GetPrimaryKeyColumns Query={getPrimaryKeyColumnsQuery}");
             using (var getPrimaryKeyColumnsCommand = new SqlCommand(getPrimaryKeyColumnsQuery, connection))
             using (SqlDataReader reader = await getPrimaryKeyColumnsCommand.ExecuteReaderAsync(cancellationToken))
             {
@@ -273,7 +275,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         " Please rename them to be able to use trigger binding.");
                 }
 
-                this._logger.LogDebug($"Primary key column names(types): {string.Join(", ", primaryKeyColumns.Select(col => $"'{col.name}({col.type})'"))}.");
+                this._logger.LogDebugWithThreadId($"END GetPrimaryKeyColumns ColumnNames(types) = {string.Join(", ", primaryKeyColumns.Select(col => $"'{col.name}({col.type})'"))}.");
                 return primaryKeyColumns;
             }
         }
@@ -290,6 +292,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 WHERE c.object_id = {userTableId};
             ";
 
+            this._logger.LogDebugWithThreadId($"BEGIN GetUserTableColumns Query={getUserTableColumnsQuery}");
             using (var getUserTableColumnsCommand = new SqlCommand(getUserTableColumnsQuery, connection))
             using (SqlDataReader reader = await getUserTableColumnsCommand.ExecuteReaderAsync(cancellationToken))
             {
@@ -316,7 +319,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new InvalidOperationException($"Found column(s) with unsupported type(s): {columnNamesAndTypes} in table: '{this._userTable.FullName}'.");
                 }
 
-                this._logger.LogDebug($"User table column names: {string.Join(", ", userTableColumns.Select(col => $"'{col}'"))}.");
+                this._logger.LogDebugWithThreadId($"END GetUserTableColumns ColumnNames = {string.Join(", ", userTableColumns.Select(col => $"'{col}'"))}.");
                 return userTableColumns;
             }
         }
@@ -324,25 +327,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Creates the schema for global state table and leases tables, if it does not already exist.
         /// </summary>
-        private static async Task<long> CreateSchemaAsync(SqlConnection connection, SqlTransaction transaction, CancellationToken cancellationToken)
+        /// <param name="connection">The already-opened connection to use for executing the command</param>
+        /// <param name="transaction">The transaction wrapping this command</param>
+        /// <param name="cancellationToken">Cancellation token to pass to the command</param>
+        /// <returns>The time taken in ms to execute the command</returns>
+        private async Task<long> CreateSchemaAsync(SqlConnection connection, SqlTransaction transaction, CancellationToken cancellationToken)
         {
             string createSchemaQuery = $@"
                 IF SCHEMA_ID(N'{SqlTriggerConstants.SchemaName}') IS NULL
                     EXEC ('CREATE SCHEMA {SqlTriggerConstants.SchemaName}');
             ";
 
+            this._logger.LogDebugWithThreadId($"BEGIN CreateSchema Query={createSchemaQuery}");
             using (var createSchemaCommand = new SqlCommand(createSchemaQuery, connection, transaction))
             {
                 var stopwatch = Stopwatch.StartNew();
                 await createSchemaCommand.ExecuteNonQueryAsync(cancellationToken);
-                return stopwatch.ElapsedMilliseconds;
+                long durationMs = stopwatch.ElapsedMilliseconds;
+                this._logger.LogDebugWithThreadId($"END CreateSchema Duration={durationMs}ms");
+                return durationMs;
             }
         }
 
         /// <summary>
         /// Creates the global state table if it does not already exist.
         /// </summary>
-        private static async Task<long> CreateGlobalStateTableAsync(SqlConnection connection, SqlTransaction transaction, CancellationToken cancellationToken)
+        /// <param name="connection">The already-opened connection to use for executing the command</param>
+        /// <param name="transaction">The transaction wrapping this command</param>
+        /// <param name="cancellationToken">Cancellation token to pass to the command</param>
+        /// <returns>The time taken in ms to execute the command</returns>
+        private async Task<long> CreateGlobalStateTableAsync(SqlConnection connection, SqlTransaction transaction, CancellationToken cancellationToken)
         {
             string createGlobalStateTableQuery = $@"
                 IF OBJECT_ID(N'{SqlTriggerConstants.GlobalStateTableName}', 'U') IS NULL
@@ -354,23 +368,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     );
             ";
 
+            this._logger.LogDebugWithThreadId($"BEGIN CreateGlobalStateTable Query={createGlobalStateTableQuery}");
             using (var createGlobalStateTableCommand = new SqlCommand(createGlobalStateTableQuery, connection, transaction))
             {
                 var stopwatch = Stopwatch.StartNew();
                 await createGlobalStateTableCommand.ExecuteNonQueryAsync(cancellationToken);
-                return stopwatch.ElapsedMilliseconds;
+                long durationMs = stopwatch.ElapsedMilliseconds;
+                this._logger.LogDebugWithThreadId($"END CreateGlobalStateTable Duration={durationMs}ms");
+                return durationMs;
             }
         }
 
         /// <summary>
         /// Inserts row for the 'user function and table' inside the global state table, if one does not already exist.
         /// </summary>
+        /// <param name="connection">The already-opened connection to use for executing the command</param>
+        /// <param name="transaction">The transaction wrapping this command</param>
+        /// <param name="cancellationToken">Cancellation token to pass to the command</param>
+        /// <returns>The time taken in ms to execute the command</returns>
         private async Task<long> InsertGlobalStateTableRowAsync(SqlConnection connection, SqlTransaction transaction, int userTableId, CancellationToken cancellationToken)
         {
             object minValidVersion;
 
             string getMinValidVersionQuery = $"SELECT CHANGE_TRACKING_MIN_VALID_VERSION({userTableId});";
 
+            this._logger.LogDebugWithThreadId($"BEGIN InsertGlobalStateTableRow");
+            this._logger.LogDebugWithThreadId($"BEGIN GetMinValidVersion Query={getMinValidVersionQuery}");
             using (var getMinValidVersionCommand = new SqlCommand(getMinValidVersionQuery, connection, transaction))
             using (SqlDataReader reader = await getMinValidVersionCommand.ExecuteReaderAsync(cancellationToken))
             {
@@ -386,6 +409,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new InvalidOperationException($"Could not find change tracking enabled for table: '{this._userTable.FullName}'.");
                 }
             }
+            this._logger.LogDebugWithThreadId($"END GetMinValidVersion MinValidVersion={minValidVersion}");
 
             string insertRowGlobalStateTableQuery = $@"
                 IF NOT EXISTS (
@@ -396,18 +420,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     VALUES ('{this._userFunctionId}', {userTableId}, {(long)minValidVersion});
             ";
 
+            this._logger.LogDebugWithThreadId($"BEGIN InsertRowGlobalStateTableQuery Query={insertRowGlobalStateTableQuery}");
             using (var insertRowGlobalStateTableCommand = new SqlCommand(insertRowGlobalStateTableQuery, connection, transaction))
             {
                 var stopwatch = Stopwatch.StartNew();
                 await insertRowGlobalStateTableCommand.ExecuteNonQueryAsync(cancellationToken);
-                return stopwatch.ElapsedMilliseconds;
+                long durationMs = stopwatch.ElapsedMilliseconds;
+                this._logger.LogDebugWithThreadId($"END InsertRowGlobalStateTableQuery Duration={durationMs}ms");
+                this._logger.LogDebugWithThreadId("END InsertGlobalStateTableRow");
+                return durationMs;
             }
         }
 
         /// <summary>
         /// Creates the leases table for the 'user function and table', if one does not already exist.
         /// </summary>
-        private static async Task<long> CreateLeasesTableAsync(
+        /// <param name="connection">The already-opened connection to use for executing the command</param>
+        /// <param name="transaction">The transaction wrapping this command</param>
+        /// <param name="leasesTableName">The name of the leases table to create</param>
+        /// <param name="primaryKeyColumns">The primary keys of the user table this leases table is for</param>
+        /// <param name="cancellationToken">Cancellation token to pass to the command</param>
+        /// <returns>The time taken in ms to execute the command</returns>
+        private async Task<long> CreateLeasesTableAsync(
             SqlConnection connection,
             SqlTransaction transaction,
             string leasesTableName,
@@ -428,11 +462,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     );
             ";
 
+            this._logger.LogDebugWithThreadId($"BEGIN CreateLeasesTable Query={createLeasesTableQuery}");
             using (var createLeasesTableCommand = new SqlCommand(createLeasesTableQuery, connection, transaction))
             {
                 var stopwatch = Stopwatch.StartNew();
                 await createLeasesTableCommand.ExecuteNonQueryAsync(cancellationToken);
-                return stopwatch.ElapsedMilliseconds;
+                long durationMs = stopwatch.ElapsedMilliseconds;
+                this._logger.LogDebugWithThreadId($"END CreateLeasesTable Duration={durationMs}ms");
+                return durationMs;
             }
         }
 
