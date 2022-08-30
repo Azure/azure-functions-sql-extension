@@ -120,9 +120,9 @@ This extension collect usage data in order to help us improve your experience. T
                     return;
                 }
                 this._logger.LogInformation($"Sending exception event: {exception.Message}");
-                properties = properties ?? new Dictionary<TelemetryPropertyName, string>();
-                properties.Add(TelemetryPropertyName.ErrorName, errorName.ToString());
-                properties.Add(TelemetryPropertyName.ErrorCode, ExtractErrorCode(exception));
+                properties = properties != null ? new Dictionary<TelemetryPropertyName, string>(properties) : new Dictionary<TelemetryPropertyName, string>();
+                properties[TelemetryPropertyName.ErrorName] = errorName.ToString();
+                properties[TelemetryPropertyName.ErrorCode] = ExtractErrorCode(exception);
                 //continue task in existing parallel thread
                 this._trackEventTask = this._trackEventTask.ContinueWith(
                     x => this.TrackExceptionTask(exception, properties, measurements)
@@ -147,8 +147,8 @@ This extension collect usage data in order to help us improve your experience. T
         {
             try
             {
-                measurements = measurements ?? new Dictionary<TelemetryMeasureName, double>();
-                measurements.Add(TelemetryMeasureName.DurationMs, durationMs);
+                measurements = measurements != null ? new Dictionary<TelemetryMeasureName, double>(measurements) : new Dictionary<TelemetryMeasureName, double>();
+                measurements[TelemetryMeasureName.DurationMs] = durationMs;
                 this.TrackEvent(eventName, properties, measurements);
             }
             catch (Exception ex)
@@ -169,8 +169,8 @@ This extension collect usage data in order to help us improve your experience. T
         {
             try
             {
-                properties = properties ?? new Dictionary<TelemetryPropertyName, string>();
-                properties.Add(TelemetryPropertyName.Type, type.ToString());
+                properties = properties != null ? new Dictionary<TelemetryPropertyName, string>(properties) : new Dictionary<TelemetryPropertyName, string>();
+                properties[TelemetryPropertyName.Type] = type.ToString();
                 this.TrackEvent(TelemetryEventName.Create, properties, measurements);
             }
             catch (Exception ex)
@@ -191,8 +191,8 @@ This extension collect usage data in order to help us improve your experience. T
         {
             try
             {
-                properties = properties ?? new Dictionary<TelemetryPropertyName, string>();
-                properties.Add(TelemetryPropertyName.Type, type.ToString());
+                properties = properties != null ? new Dictionary<TelemetryPropertyName, string>(properties) : new Dictionary<TelemetryPropertyName, string>();
+                properties[TelemetryPropertyName.Type] = type.ToString();
                 this.TrackEvent(TelemetryEventName.Convert, properties, measurements);
             }
             catch (Exception ex)
