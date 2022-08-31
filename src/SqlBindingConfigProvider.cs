@@ -52,7 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             TelemetryInstance.Initialize(this._configuration, logger);
 #pragma warning disable CS0618 // Fine to use this for our stuff
             FluentBindingRule<SqlAttribute> inputOutputRule = context.AddBindingRule<SqlAttribute>();
-            var converter = new SqlConverter(this._configuration);
+            var converter = new SqlConverter(this._configuration, logger);
             inputOutputRule.BindToInput(converter);
             inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), this._configuration, logger);
             inputOutputRule.BindToCollector<SQLObjectOpenType>(typeof(SqlAsyncCollectorBuilder<>), this._configuration, logger);
