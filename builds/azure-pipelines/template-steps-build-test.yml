@@ -91,6 +91,15 @@ steps:
     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-policheck.PoliCheck@1
+  displayName: 'Run PoliCheck'
+  inputs:
+    targetType: F
+    optionsFC: 0
+    optionsXS: 0
+    optionsHMENABLE: 0
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
+
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@2
   inputs:
     toolMajorVersion: V2
