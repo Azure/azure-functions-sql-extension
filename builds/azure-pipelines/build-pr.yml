@@ -5,6 +5,7 @@ pr:
     include:
     - main
     - triggerbindings
+    - release/*
 
 variables:
   solution: '**/*.sln'
