@@ -77,7 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         private void SetupDatabase()
         {
             SqlConnectionStringBuilder connectionStringBuilder;
-            string connectionString = Environment.GetEnvironmentVariable("AZURE_SQL_DB_CONNECTION_STRING");
+            string connectionString = Environment.GetEnvironmentVariable("TEST_CONNECTION_STRING");
             if (connectionString != null)
             {
                 this.MasterConnectionString = connectionString;

@@ -14,7 +14,7 @@ Our integration tests are based on functions from the samples project. To run in
    ```
    npm install -g azurite
    ```
-3. A local SQL Server instance or an Azure SQL Database - This is used by tests to verify that data is correctly added/fetched from the database when a test Function is run. You just need the server to be up and running, the tests will create the database and tables which will be cleaned up afterwards.
+3. A SQL Server instance - This is used by tests to verify that data is correctly added/fetched from the database when a test Function is run. You just need the server to be up and running, the tests will create the database and tables which will be cleaned up afterwards.
 
      ### Local Install
      To use a SQL Server installation, ensure `localhost` is available for connection via integrated security.
@@ -30,7 +30,7 @@ Our integration tests are based on functions from the samples project. To run in
      Note: If `SA_PASSWORD` is not set, the tests will assume you're using a local MSSQL installation and default to using integrated auth. MSSQL on Docker does not support integrated auth by default.
 
      ### Azure SQL Database
-     To use an Azure SQL Database, set the `AZURE_SQL_DB_CONNECTION_STRING` environment variable to your Azure SQL Database connection string.
+     To use an Azure SQL Database, set the `TEST_CONNECTION_STRING` environment variable to your Azure SQL Database connection string.
 
  ## Adding New Integration Tests
    When adding a new integration test for a function follow these steps:
