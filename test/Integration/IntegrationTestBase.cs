@@ -15,6 +15,8 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
+using Microsoft.AspNetCore.WebUtilities;
+using System.Collections.Generic;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -48,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         /// <summary>
         /// Output redirect for XUnit tests.
-        /// Please use TestOutput.WriteLine() instead of Console or Debug.
+        /// Please use LogOutput() instead of Console or Debug.
         /// </summary>
         protected ITestOutputHelper TestOutput { get; private set; }
 
@@ -57,7 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         protected int Port { get; private set; } = 7071;
 
-        public IntegrationTestBase(ITestOutputHelper output)
+        public IntegrationTestBase(ITestOutputHelper output = null)
         {
             this.TestOutput = output;
             this.SetupDatabase();
@@ -74,35 +76,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </remarks>
         private void SetupDatabase()
         {
-            // Get the test server name from environment variable "TEST_SERVER", default to localhost if not set
-            string testServer = Environment.GetEnvironmentVariable("TEST_SERVER");
-            if (string.IsNullOrEmpty(testServer))
+            SqlConnectionStringBuilder connectionStringBuilder;
+            string connectionString = Environment.GetEnvironmentVariable("TEST_CONNECTION_STRING");
+            if (connectionString != null)
             {
-                testServer = "localhost";
-            }
-
-            // First connect to master to create the database
-            var connectionStringBuilder = new SqlConnectionStringBuilder()
-            {
-                DataSource = testServer,
-                InitialCatalog = "master",
-                Pooling = false
-            };
-
-            // Either use integrated auth or SQL login depending if SA_PASSWORD is set
-            string userId = "SA";
-            string password = Environment.GetEnvironmentVariable("SA_PASSWORD");
-            if (string.IsNullOrEmpty(password))
-            {
-                connectionStringBuilder.IntegratedSecurity = true;
+                this.MasterConnectionString = connectionString;
+                connectionStringBuilder = new SqlConnectionStringBuilder(connectionString);
             }
             else
             {
-                connectionStringBuilder.UserID = userId;
-                connectionStringBuilder.Password = password;
-            }
+                // Get the test server name from environment variable "TEST_SERVER", default to localhost if not set
+                string testServer = Environment.GetEnvironmentVariable("TEST_SERVER");
+                if (string.IsNullOrEmpty(testServer))
+                {
+                    testServer = "localhost";
+                }
 
-            this.MasterConnectionString = connectionStringBuilder.ToString();
+                // First connect to master to create the database
+                connectionStringBuilder = new SqlConnectionStringBuilder()
+                {
+                    DataSource = testServer,
+                    InitialCatalog = "master",
+                    Pooling = false
+                };
+
+                // Either use integrated auth or SQL login depending if SA_PASSWORD is set
+                string userId = "SA";
+                string password = Environment.GetEnvironmentVariable("SA_PASSWORD");
+                if (string.IsNullOrEmpty(password))
+                {
+                    connectionStringBuilder.IntegratedSecurity = true;
+                }
+                else
+                {
+                    connectionStringBuilder.UserID = userId;
+                    connectionStringBuilder.Password = password;
+                }
+                this.MasterConnectionString = connectionStringBuilder.ToString();
+            }
 
             // Create database
             // Retry this in case the server isn't fully initialized yet
@@ -134,7 +145,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             foreach (string file in Directory.EnumerateFiles(folder, "*.sql"))
             {
-                Console.WriteLine($"Executing script ${file}");
+                this.LogOutput($"Executing script ${file}");
                 this.ExecuteNonQuery(File.ReadAllText(file));
             }
         }
@@ -183,7 +194,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 RedirectStandardError = true,
                 UseShellExecute = false
             };
-            this.TestOutput.WriteLine($"Starting {startInfo.FileName} {startInfo.Arguments} in {startInfo.WorkingDirectory}");
+            this.LogOutput($"Starting {startInfo.FileName} {startInfo.Arguments} in {startInfo.WorkingDirectory}");
             this.FunctionHost = new Process
             {
                 StartInfo = startInfo
@@ -201,7 +212,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.FunctionHost.BeginOutputReadLine();
             this.FunctionHost.BeginErrorReadLine();
 
-            this.TestOutput.WriteLine($"Waiting for Azure Function host to start...");
+            this.LogOutput($"Waiting for Azure Function host to start...");
 
             const int FunctionHostStartupTimeoutInSeconds = 60;
             bool isCompleted = taskCompletionSource.Task.Wait(TimeSpan.FromSeconds(FunctionHostStartupTimeoutInSeconds));
@@ -212,7 +223,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             const int BufferTimeInSeconds = 5;
             Task.Delay(TimeSpan.FromSeconds(BufferTimeInSeconds)).Wait();
 
-            this.TestOutput.WriteLine($"Azure Function host started!");
+            this.LogOutput($"Azure Function host started!");
             this.FunctionHost.OutputDataReceived -= SignalStartupHandler;
 
             void SignalStartupHandler(object sender, DataReceivedEventArgs e)
@@ -223,7 +234,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 {
                     taskCompletionSource.SetResult(true);
                 }
-            }
+            };
+            taskCompletionSource.Task.Wait(60000);
         }
 
         private static string GetFunctionsCoreToolsPath()
@@ -259,18 +271,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             return funcPath;
         }
 
+        private void LogOutput(string output)
+        {
+            if (this.TestOutput != null)
+            {
+                this.TestOutput.WriteLine(output);
+            }
+            else
+            {
+                Console.WriteLine(output);
+            }
+        }
+
         private void TestOutputHandler(object sender, DataReceivedEventArgs e)
         {
             if (e != null && !string.IsNullOrEmpty(e.Data))
             {
-                this.TestOutput.WriteLine(e.Data);
+                this.LogOutput(e.Data);
             }
         }
 
         protected async Task<HttpResponseMessage> SendGetRequest(string requestUri, bool verifySuccess = true)
         {
             string timeStamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ", System.Globalization.CultureInfo.InvariantCulture);
-            this.TestOutput.WriteLine($"[{timeStamp}] Sending GET request: {requestUri}");
+            this.LogOutput($"[{timeStamp}] Sending GET request: {requestUri}");
 
             if (string.IsNullOrEmpty(requestUri))
             {
@@ -290,7 +314,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         protected async Task<HttpResponseMessage> SendPostRequest(string requestUri, string json, bool verifySuccess = true)
         {
-            this.TestOutput.WriteLine("Sending POST request: " + requestUri);
+            this.LogOutput("Sending POST request: " + requestUri);
 
             if (string.IsNullOrEmpty(requestUri))
             {
@@ -340,7 +364,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
             catch (Exception e1)
             {
-                this.TestOutput.WriteLine($"Failed to close connection. Error: {e1.Message}");
+                this.LogOutput($"Failed to close connection. Error: {e1.Message}");
             }
 
             try
@@ -350,7 +374,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
             catch (Exception e2)
             {
-                this.TestOutput.WriteLine($"Failed to stop function host, Error: {e2.Message}");
+                this.LogOutput($"Failed to stop function host, Error: {e2.Message}");
             }
 
             try
@@ -360,7 +384,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
             catch (Exception e3)
             {
-                this.TestOutput.WriteLine($"Failed to stop Azurite, Error: {e3.Message}");
+                this.LogOutput($"Failed to stop Azurite, Error: {e3.Message}");
             }
 
             try
@@ -372,10 +396,97 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
             catch (Exception e4)
             {
-                this.TestOutput.WriteLine($"Failed to drop {this.DatabaseName}, Error: {e4.Message}");
+                this.LogOutput($"Failed to drop {this.DatabaseName}, Error: {e4.Message}");
             }
 
             GC.SuppressFinalize(this);
+        }
+
+        protected async Task<HttpResponseMessage> SendInputRequest(string functionName, string query = "")
+        {
+            string requestUri = $"http://localhost:{this.Port}/api/{functionName}/{query}";
+
+            return await this.SendGetRequest(requestUri);
+        }
+
+        protected Task<HttpResponseMessage> SendOutputGetRequest(string functionName, IDictionary<string, string> query = null)
+        {
+            string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
+
+            if (query != null)
+            {
+                requestUri = QueryHelpers.AddQueryString(requestUri, query);
+            }
+
+            return this.SendGetRequest(requestUri);
+        }
+
+        protected Task<HttpResponseMessage> SendOutputPostRequest(string functionName, string query)
+        {
+            string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
+
+            return this.SendPostRequest(requestUri, query);
+        }
+
+        protected void InsertProducts(Product[] products)
+        {
+            if (products.Length == 0)
+            {
+                return;
+            }
+
+            var queryBuilder = new StringBuilder();
+            foreach (Product p in products)
+            {
+                queryBuilder.AppendLine($"INSERT INTO dbo.Products VALUES({p.ProductID}, '{p.Name}', {p.Cost});");
+            }
+
+            this.ExecuteNonQuery(queryBuilder.ToString());
+        }
+
+        protected static Product[] GetProducts(int n, int cost)
+        {
+            var result = new Product[n];
+            for (int i = 1; i <= n; i++)
+            {
+                result[i - 1] = new Product
+                {
+                    ProductID = i,
+                    Name = "test",
+                    Cost = cost * i
+                };
+            }
+            return result;
+        }
+
+        protected static Product[] GetProductsWithSameCost(int n, int cost)
+        {
+            var result = new Product[n];
+            for (int i = 0; i < n; i++)
+            {
+                result[i] = new Product
+                {
+                    ProductID = i,
+                    Name = "test",
+                    Cost = cost
+                };
+            }
+            return result;
+        }
+
+        protected static Product[] GetProductsWithSameCostAndName(int n, int cost, string name, int offset = 0)
+        {
+            var result = new Product[n];
+            for (int i = 0; i < n; i++)
+            {
+                result[i] = new Product
+                {
+                    ProductID = i + offset,
+                    Name = name,
+                    Cost = cost
+                };
+            }
+            return result;
         }
     }
 }

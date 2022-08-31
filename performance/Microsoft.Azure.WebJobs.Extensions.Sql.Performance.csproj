@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>    
+    <!-- Need to set root namespace to empty for IDE0130 to work properly - otherwise it errors out on top-level namespaces for some reason -->
+    <RootNamespace></RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<ProjectReference Include="..\test\Microsoft.Azure.WebJobs.Extensions.Sql.Tests.csproj" />
+	<ProjectReference Include="..\samples\samples-csharp\Microsoft.Azure.WebJobs.Extensions.Sql.Samples.csproj" />
+  </ItemGroup>
+
+  <Target Name="CopySamples" AfterTargets="Build">
+    <ItemGroup>
+      <_CSharpCopyItems Include="..\samples\samples-csharp\bin\$(Configuration)\$(TargetFramework)\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_CSharpCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\CSharp\%(RecursiveDir)" />
+    <Message Text="Copied C# Samples output to $(OutDir)\SqlExtensionSamples\CSharp" Importance="high" />
+  </Target>
+
+  <!-- Copy C# Samples output to BenchmarkDotNet project bin (https://github.com/dotnet/BenchmarkDotNet/issues/946) -->
+  <ItemGroup>
+    <None Include="$(OutDir)\**\*">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Link>%(RecursiveDir)\%(Filename)%(Extension)</Link>
+      <Visible>True</Visible>
+    </None>
+  </ItemGroup>
+
+</Project>

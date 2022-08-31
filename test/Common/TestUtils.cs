@@ -60,6 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 
                     cmd.CommandText = commandText;
                     cmd.CommandType = CommandType.Text;
+                    cmd.CommandTimeout = 60000; // Increase from default 30s to prevent timeouts while connecting to Azure SQL DB
                     Console.WriteLine($"Executing non-query {commandText}");
                     return cmd.ExecuteNonQuery();
                 }
