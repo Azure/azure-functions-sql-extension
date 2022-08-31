@@ -106,7 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             public async Task<IEnumerable<T>> ConvertAsync(SqlAttribute attribute, CancellationToken cancellationToken)
             {
                 TelemetryInstance.TrackConvert(ConvertType.IEnumerable);
-                this._logger.LogDebugWithThreadId("BEGIN ConvertAsync (IEnumerabe)");
+                this._logger.LogDebugWithThreadId("BEGIN ConvertAsync (IEnumerable)");
                 var sw = Stopwatch.StartNew();
                 try
                 {

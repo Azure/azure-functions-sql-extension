@@ -190,7 +190,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
 
                 TelemetryInstance.TrackEvent(TelemetryEventName.UpsertStart, props);
-                this._logger.LogDebugWithThreadId("BEGIN upsert rows transaction");
+                this._logger.LogDebugWithThreadId("BEGIN UpsertRowsTransaction");
                 var transactionSw = Stopwatch.StartNew();
                 int batchSize = 1000;
                 SqlTransaction transaction = connection.BeginTransaction();
@@ -211,6 +211,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         await command.ExecuteNonQueryAsync();
                     }
                     transaction.Commit();
+                    transactionSw.Stop();
+                    upsertRowsAsyncSw.Stop();
                     var measures = new Dictionary<TelemetryMeasureName, double>()
                 {
                     { TelemetryMeasureName.BatchCount, batchCount },
@@ -218,8 +220,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     { TelemetryMeasureName.CommandDurationMs, commandSw.ElapsedMilliseconds }
                 };
                     TelemetryInstance.TrackEvent(TelemetryEventName.UpsertEnd, props, measures);
-                    this._logger.LogDebugWithThreadId($"END upsert rows transaction Duration={transactionSw.ElapsedMilliseconds}ms Upserted {rows.Count()} row(s) into database: {connection.Database} and table: {fullTableName}.");
-                    this._logger.LogDebugWithThreadId($"END upsertRowsAsync Duration={upsertRowsAsyncSw.ElapsedMilliseconds}ms");
+                    this._logger.LogDebugWithThreadId($"END UpsertRowsTransaction Duration={transactionSw.ElapsedMilliseconds}ms Upserted {rows.Count()} row(s) into database: {connection.Database} and table: {fullTableName}.");
+                    this._logger.LogDebugWithThreadId($"END UpsertRowsAsync Duration={upsertRowsAsyncSw.ElapsedMilliseconds}ms");
                 }
                 catch (Exception ex)
                 {
@@ -512,11 +514,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 // Get case sensitivity from database collation (default to false if any exception occurs)
                 bool caseSensitive = false;
+                logger.LogDebugWithThreadId("BEGIN GetCaseSensitivity");
                 var tableInfoSw = Stopwatch.StartNew();
                 var caseSensitiveSw = Stopwatch.StartNew();
                 try
                 {
-                    var cmdCollation = new SqlCommand(GetDatabaseCollationQuery(sqlConnection), sqlConnection);
+                    string getDatabaseCollationQuery = GetDatabaseCollationQuery(sqlConnection);
+                    var cmdCollation = new SqlCommand(getDatabaseCollationQuery, sqlConnection);
                     using (SqlDataReader rdr = await cmdCollation.ExecuteReaderAsync())
                     {
                         while (await rdr.ReadAsync())
@@ -525,6 +529,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         }
                         caseSensitiveSw.Stop();
                         TelemetryInstance.TrackDuration(TelemetryEventName.GetCaseSensitivity, caseSensitiveSw.ElapsedMilliseconds, sqlConnProps);
+                        logger.LogDebugWithThreadId($"END GetCaseSensitivity Duration={caseSensitiveSw.ElapsedMilliseconds}ms Query=\"{getDatabaseCollationQuery}\"");
                     }
                 }
                 catch (Exception ex)
@@ -540,10 +545,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 // Get all column names and types
                 var columnDefinitionsFromSQL = new Dictionary<string, string>(comparer);
+                logger.LogDebugWithThreadId("BEGIN GetColumnDefinitions");
                 var columnDefinitionsSw = Stopwatch.StartNew();
                 try
                 {
-                    var cmdColDef = new SqlCommand(GetColumnDefinitionsQuery(table), sqlConnection);
+                    string getColumnDefinitionsQuery = GetColumnDefinitionsQuery(table);
+                    var cmdColDef = new SqlCommand(getColumnDefinitionsQuery, sqlConnection);
                     using (SqlDataReader rdr = await cmdColDef.ExecuteReaderAsync())
                     {
                         while (await rdr.ReadAsync())
@@ -553,6 +560,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         }
                         columnDefinitionsSw.Stop();
                         TelemetryInstance.TrackDuration(TelemetryEventName.GetColumnDefinitions, columnDefinitionsSw.ElapsedMilliseconds, sqlConnProps);
+                        logger.LogDebugWithThreadId($"END GetColumnDefinitions Duration={columnDefinitionsSw.ElapsedMilliseconds}ms Query=\"{getColumnDefinitionsQuery}\"");
                     }
 
                 }
@@ -574,10 +582,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 // Query SQL for table Primary Keys
                 var primaryKeys = new List<PrimaryKey>();
+                logger.LogDebugWithThreadId("BEGIN GetPrimaryKeys");
                 var primaryKeysSw = Stopwatch.StartNew();
                 try
                 {
-                    var cmd = new SqlCommand(GetPrimaryKeysQuery(table), sqlConnection);
+                    string getPrimaryKeysQuery = GetPrimaryKeysQuery(table);
+                    var cmd = new SqlCommand(getPrimaryKeysQuery, sqlConnection);
                     using (SqlDataReader rdr = await cmd.ExecuteReaderAsync())
                     {
                         while (await rdr.ReadAsync())
@@ -587,6 +597,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         }
                         primaryKeysSw.Stop();
                         TelemetryInstance.TrackDuration(TelemetryEventName.GetPrimaryKeys, primaryKeysSw.ElapsedMilliseconds, sqlConnProps);
+                        logger.LogDebugWithThreadId($"END GetPrimaryKeys Duration={primaryKeysSw.ElapsedMilliseconds}ms Query=\"{getPrimaryKeysQuery}\"");
                     }
                 }
                 catch (Exception ex)
