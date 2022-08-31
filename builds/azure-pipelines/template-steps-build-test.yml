@@ -96,10 +96,6 @@ steps:
   inputs:
     targetType: F
     result: PoliCheck.xml
-    targetArgument: '$(Build.SourcesDirectory)/**/*'
-    optionsFC: 0
-    optionsXS: 0
-    optionsHMENABLE: 0
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@2
