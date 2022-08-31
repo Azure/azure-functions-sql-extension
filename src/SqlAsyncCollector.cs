@@ -514,12 +514,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 // Get case sensitivity from database collation (default to false if any exception occurs)
                 bool caseSensitive = false;
-                logger.LogDebugWithThreadId("BEGIN GetCaseSensitivity");
                 var tableInfoSw = Stopwatch.StartNew();
                 var caseSensitiveSw = Stopwatch.StartNew();
                 try
                 {
                     string getDatabaseCollationQuery = GetDatabaseCollationQuery(sqlConnection);
+                    logger.LogDebugWithThreadId($"BEGIN GetCaseSensitivity Query=\"{getDatabaseCollationQuery}\"");
                     var cmdCollation = new SqlCommand(getDatabaseCollationQuery, sqlConnection);
                     using (SqlDataReader rdr = await cmdCollation.ExecuteReaderAsync())
                     {
@@ -529,7 +529,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         }
                         caseSensitiveSw.Stop();
                         TelemetryInstance.TrackDuration(TelemetryEventName.GetCaseSensitivity, caseSensitiveSw.ElapsedMilliseconds, sqlConnProps);
-                        logger.LogDebugWithThreadId($"END GetCaseSensitivity Duration={caseSensitiveSw.ElapsedMilliseconds}ms Query=\"{getDatabaseCollationQuery}\"");
+                        logger.LogDebugWithThreadId($"END GetCaseSensitivity Duration={caseSensitiveSw.ElapsedMilliseconds}ms");
                     }
                 }
                 catch (Exception ex)
@@ -545,11 +545,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 // Get all column names and types
                 var columnDefinitionsFromSQL = new Dictionary<string, string>(comparer);
-                logger.LogDebugWithThreadId("BEGIN GetColumnDefinitions");
                 var columnDefinitionsSw = Stopwatch.StartNew();
                 try
                 {
                     string getColumnDefinitionsQuery = GetColumnDefinitionsQuery(table);
+                    logger.LogDebugWithThreadId($"BEGIN GetColumnDefinitions Query=\"{getColumnDefinitionsQuery}\"");
                     var cmdColDef = new SqlCommand(getColumnDefinitionsQuery, sqlConnection);
                     using (SqlDataReader rdr = await cmdColDef.ExecuteReaderAsync())
                     {
@@ -560,7 +560,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         }
                         columnDefinitionsSw.Stop();
                         TelemetryInstance.TrackDuration(TelemetryEventName.GetColumnDefinitions, columnDefinitionsSw.ElapsedMilliseconds, sqlConnProps);
-                        logger.LogDebugWithThreadId($"END GetColumnDefinitions Duration={columnDefinitionsSw.ElapsedMilliseconds}ms Query=\"{getColumnDefinitionsQuery}\"");
+                        logger.LogDebugWithThreadId($"END GetColumnDefinitions Duration={columnDefinitionsSw.ElapsedMilliseconds}ms");
                     }
 
                 }
@@ -582,11 +582,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 // Query SQL for table Primary Keys
                 var primaryKeys = new List<PrimaryKey>();
-                logger.LogDebugWithThreadId("BEGIN GetPrimaryKeys");
                 var primaryKeysSw = Stopwatch.StartNew();
                 try
                 {
                     string getPrimaryKeysQuery = GetPrimaryKeysQuery(table);
+                    logger.LogDebugWithThreadId($"BEGIN GetPrimaryKeys Query=\"{getPrimaryKeysQuery}\"");
                     var cmd = new SqlCommand(getPrimaryKeysQuery, sqlConnection);
                     using (SqlDataReader rdr = await cmd.ExecuteReaderAsync())
                     {
@@ -597,7 +597,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         }
                         primaryKeysSw.Stop();
                         TelemetryInstance.TrackDuration(TelemetryEventName.GetPrimaryKeys, primaryKeysSw.ElapsedMilliseconds, sqlConnProps);
-                        logger.LogDebugWithThreadId($"END GetPrimaryKeys Duration={primaryKeysSw.ElapsedMilliseconds}ms Query=\"{getPrimaryKeysQuery}\"");
+                        logger.LogDebugWithThreadId($"END GetPrimaryKeys Duration={primaryKeysSw.ElapsedMilliseconds}ms");
                     }
                 }
                 catch (Exception ex)
