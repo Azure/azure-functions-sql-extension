@@ -149,6 +149,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <param name="attribute">
             /// The binding attribute that contains the name of the connection string app setting and query.
             /// </param>
+            /// <param name="type">
+            /// The type of conversion being performed by the input binding.
+            /// </param>
             /// <returns></returns>
             public virtual async Task<string> BuildItemFromAttributeAsync(SqlAttribute attribute, ConvertType? type = null)
             {
