@@ -1,6 +1,6 @@
 /**
  * This function verifies that serializing an item with various data types
- * works when the language is set to a non-enUS language.
+ * works as expected.
  */
 module.exports = async function (context, req, products) {
     context.log(JSON.stringify(products));

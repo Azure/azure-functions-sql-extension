@@ -8,7 +8,7 @@
       "methods": [
         "get"
       ],
-      "route": "getproducts-columntypesdifferentculture"
+      "route": "getproducts-columntypesserialization"
     },
     {
       "name": "$return",
