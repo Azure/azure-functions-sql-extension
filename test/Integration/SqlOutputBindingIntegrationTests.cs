@@ -3,10 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Net.Http;
 using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Xunit;
@@ -21,25 +18,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     {
         public SqlOutputBindingIntegrationTests(ITestOutputHelper output) : base(output)
         {
-        }
-
-        private Task<HttpResponseMessage> SendOutputGetRequest(string functionName, IDictionary<string, string> query = null)
-        {
-            string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
-
-            if (query != null)
-            {
-                requestUri = QueryHelpers.AddQueryString(requestUri, query);
-            }
-
-            return this.SendGetRequest(requestUri);
-        }
-
-        private Task<HttpResponseMessage> SendOutputPostRequest(string functionName, string query)
-        {
-            string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
-
-            return this.SendPostRequest(requestUri, query);
         }
 
         [Theory]
