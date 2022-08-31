@@ -150,7 +150,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// The binding attribute that contains the name of the connection string app setting and query.
             /// </param>
             /// <returns></returns>
-            public virtual async Task<string> BuildItemFromAttributeAsync(SqlAttribute attribute, ConvertType type)
+            public virtual async Task<string> BuildItemFromAttributeAsync(SqlAttribute attribute, ConvertType? type = null)
             {
                 using (SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, this._configuration))
                 // Ideally, we would like to move away from using SqlDataAdapter both here and in the
@@ -158,8 +158,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 using (var adapter = new SqlDataAdapter())
                 using (SqlCommand command = SqlBindingUtilities.BuildCommand(attribute, connection))
                 {
-                    Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps();
-                    TelemetryInstance.TrackConvert(type, props);
+                    if (type.HasValue)
+                    {
+                        Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps();
+                        TelemetryInstance.TrackConvert(type.Value, props);
+                    }
                     adapter.SelectCommand = command;
                     await connection.OpenAsync();
                     var dataTable = new DataTable();
