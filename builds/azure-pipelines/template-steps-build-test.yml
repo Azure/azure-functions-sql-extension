@@ -142,7 +142,7 @@ steps:
   inputs:
     GdnPublishTsaOnboard: true
     GdnPublishTsaConfigFile: '$(Build.SourcesDirectory)\builds\TSAConfig.gdntsa'
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'), ne(variables['Build.Reason'], 'PullRequest'))
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'), eq(variables['TSA_UPLOAD'], 'true'))
 
 # 5.0 isn't supported on Mac yet
 - task: UseDotNet@2
