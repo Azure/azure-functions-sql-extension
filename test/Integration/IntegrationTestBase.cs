@@ -50,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         /// <summary>
         /// Output redirect for XUnit tests.
-        /// Please use LogOutput.WriteLine() instead of Console or Debug.
+        /// Please use LogOutput() instead of Console or Debug.
         /// </summary>
         protected ITestOutputHelper TestOutput { get; private set; }
 
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.FunctionHost.BeginOutputReadLine();
             this.FunctionHost.BeginErrorReadLine();
 
-            this.LogOutput.WriteLine($"Waiting for Azure Function host to start...");
+            this.LogOutput($"Waiting for Azure Function host to start...");
 
             const int FunctionHostStartupTimeoutInSeconds = 60;
             bool isCompleted = taskCompletionSource.Task.Wait(TimeSpan.FromSeconds(FunctionHostStartupTimeoutInSeconds));
@@ -223,7 +223,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             const int BufferTimeInSeconds = 5;
             Task.Delay(TimeSpan.FromSeconds(BufferTimeInSeconds)).Wait();
 
-            this.LogOutput.WriteLine($"Azure Function host started!");
+            this.LogOutput($"Azure Function host started!");
             this.FunctionHost.OutputDataReceived -= SignalStartupHandler;
 
             void SignalStartupHandler(object sender, DataReceivedEventArgs e)
@@ -366,6 +366,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 this.LogOutput($"Failed to close connection. Error: {e1.Message}");
             }
+
+            try
+            {
+                this.FunctionHost?.Kill();
+                this.FunctionHost?.Dispose();
+            }
+            catch (Exception e2)
+            {
+                this.LogOutput($"Failed to stop function host, Error: {e2.Message}");
+            }
+
+            try
+            {
+                this.AzuriteHost?.Kill();
+                this.AzuriteHost?.Dispose();
+            }
+            catch (Exception e3)
+            {
+                this.LogOutput($"Failed to stop Azurite, Error: {e3.Message}");
+            }
+
             try
             {
                 // Drop the test database
@@ -375,30 +396,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
             catch (Exception e4)
             {
-                this.LogOutput.WriteLine($"Failed to drop {this.DatabaseName}, Error: {e2.Message}");
+                this.LogOutput($"Failed to drop {this.DatabaseName}, Error: {e4.Message}");
             }
 
-                // Try to clean up after test run, but don't consider it a failure if we can't for some reason
-                try
-                {
-                    this.FunctionHost?.Kill();
-                    this.FunctionHost?.Dispose();
-                }
-                catch (Exception e3)
-                {
-                    this.LogOutput.WriteLine($"Failed to stop function host, Error: {e3.Message}");
-                }
-
-                try
-                {
-                    this.AzuriteHost?.Kill();
-                    this.AzuriteHost?.Dispose();
-                }
-                catch (Exception e4)
-                {
-                    this.LogOutput.WriteLine($"Failed to stop Azurite, Error: {e4.Message}");
-                }
-            }
             GC.SuppressFinalize(this);
         }
 
