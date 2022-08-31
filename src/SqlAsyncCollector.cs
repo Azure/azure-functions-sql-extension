@@ -349,6 +349,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public class TableInformation
         {
+            private const string ISO_8061_DATETIME_FORMAT = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff";
+
             public IEnumerable<MemberInfo> PrimaryKeys { get; }
 
             /// <summary>
@@ -391,9 +393,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 this.Query = query;
                 this.HasIdentityColumnPrimaryKeys = hasIdentityColumnPrimaryKeys;
 
+                // Convert datetime strings to ISO 8061 format to avoid potential errors on the server when converting into a datetime. This
+                // is the only format that are an international standard. 
+                // https://docs.microsoft.com/previous-versions/sql/sql-server-2008-r2/ms180878(v=sql.105)
                 this.JsonSerializerSettings = new JsonSerializerSettings
                 {
-                    ContractResolver = new DynamicPOCOContractResolver(columns, comparer)
+                    ContractResolver = new DynamicPOCOContractResolver(columns, comparer),
+                    DateFormatString = ISO_8061_DATETIME_FORMAT
                 };
             }
             public static bool GetCaseSensitivityFromCollation(string collation)

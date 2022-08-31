@@ -130,5 +130,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             Assert.Equal(expectedResponse, TestUtils.CleanJsonString(actualResponse), StringComparer.OrdinalIgnoreCase);
         }
+
+        /// <summary>
+        /// Verifies that serializing an item with various data types works when the language is
+        /// set to a non-enUS language.
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.JavaScript)] // Javascript doesn't have the concept of a runtime language used during serialization
+        public async void GetProductsColumnTypesSerializationDifferentCultureTest(SupportedLanguages lang)
+        {
+            this.StartFunctionHost(nameof(GetProductsColumnTypesSerializationDifferentCulture), lang, true);
+
+            this.ExecuteNonQuery("INSERT INTO [dbo].[ProductsColumnTypes] VALUES (" +
+                "999, " + // ProductId
+                "GETDATE(), " + // Datetime field
+                "GETDATE())"); // Datetime2 field
+
+            await this.SendInputRequest("getproducts-columntypesserializationdifferentculture");
+
+            // If we get here the test has succeeded - it'll throw an exception if serialization fails
+        }
+
+        /// <summary>
+        /// Verifies that serializing an item with various data types works as expected
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        public async void GetProductsColumnTypesSerializationTest(SupportedLanguages lang)
+        {
+            this.StartFunctionHost(nameof(GetProductsColumnTypesSerialization), lang, true);
+
+            this.ExecuteNonQuery("INSERT INTO [dbo].[ProductsColumnTypes] VALUES (" +
+                "999, " + // ProductId
+                "GETDATE(), " + // Datetime field
+                "GETDATE())"); // Datetime2 field
+
+            await this.SendInputRequest("getproducts-columntypesserialization");
+
+            // If we get here the test has succeeded - it'll throw an exception if serialization fails
+        }
     }
 }
