@@ -32,7 +32,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
             Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps();
             TelemetryInstance.TrackConvert(ConvertType.IAsyncEnumerable, props);
-
         }
         /// <summary>
         /// Returns the enumerator associated with this enumerable. The enumerator will execute the query specified

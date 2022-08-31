@@ -22,28 +22,28 @@ steps:
 # This sets the path to npm global installations as a variable which then gets passed to .NET test task
 - bash: echo "##vso[task.setvariable variable=nodeModulesPath]$(npm root -g)"
   displayName: 'Set npm installation path for Windows'
-  condition: eq(variables['Agent.OS'], 'Windows_NT')
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: DockerInstaller@0
   displayName: Docker Installer
   inputs:
     dockerVersion: 17.09.0-ce
     releaseType: stable
-  condition: eq(variables['Agent.OS'], 'linux')
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
 - script: docker pull mcr.microsoft.com/mssql/server:2019-latest
   displayName: Pull MSSQL Docker Image
-  condition: eq(variables['Agent.OS'], 'linux')
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
 - bash: echo "##vso[task.setvariable variable=serverPassword]Test-$(Build.BuildNumber)-$(Get-Date -format yyyyMMdd-Hmmss)"
   displayName: Generate password for test server
-  condition: eq(variables['Agent.OS'], 'linux')
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
 - script: 'docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=$(serverPassword)" -e "MSSQL_PID=Express"
    -p 1433:1433 --name sql1 -h sql1
    -d mcr.microsoft.com/mssql/server:2019-latest'
   displayName: Start Server in Docker Container
-  condition: eq(variables['Agent.OS'], 'linux')
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
 - task: DotNetCoreCLI@2
   displayName: '.NET Restore'
@@ -82,19 +82,19 @@ steps:
   inputs:
     InputType: 'CommandLine'
     arguments: 'analyze $(Build.SourcesDirectory)\src\bin\${{ parameters.configuration }}\* --recurse --verbose'
-  condition: eq(variables['Agent.OS'], 'Windows_NT')
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-roslynanalyzers.RoslynAnalyzers@3
   inputs:
     userProvideBuildInfo: 'autoMsBuildInfo'
   env:
     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-  condition: eq(variables['Agent.OS'], 'Windows_NT')
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@2
   inputs:
     toolMajorVersion: V2
-  condition: eq(variables['Agent.OS'], 'Windows_NT')
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-report.SdtReport@2
   displayName: 'Create Security Analysis Report'
@@ -124,25 +124,25 @@ steps:
     GdnExportGdnToolSemmleSeverity: Warning
     GdnExportGdnToolSpotBugsSeverity: Warning
     GdnExportGdnToolTSLintSeverity: Warning
-  condition: eq(variables['Agent.OS'], 'Windows_NT')
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-publishsecurityanalysislogs.PublishSecurityAnalysisLogs@3
   displayName: 'Publish Security Analysis Logs'
-  condition: eq(variables['Agent.OS'], 'Windows_NT')
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-uploadtotsa.TSAUpload@2
   displayName: 'TSA upload to Codebase: Sql Bindings Stamp: TSA'
   inputs:
     GdnPublishTsaOnboard: true
     GdnPublishTsaConfigFile: '$(Build.SourcesDirectory)\builds\TSAConfig.gdntsa'
-  condition: eq(variables['Agent.OS'], 'Windows_NT')
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'), ne(variables['Build.Reason'], 'PullRequest'))
 
 # 5.0 isn't supported on Mac yet
 - task: UseDotNet@2
   displayName: 'Install .NET Core 2.1.x SDK for CodeSigning on Mac'
   inputs:
     version: '2.1.x'
-  condition: eq(variables['Agent.OS'], 'Darwin')
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Darwin'))
 
 - task: EsrpCodeSigning@1
   displayName: 'ESRP CodeSigning - Binaries'
@@ -230,7 +230,7 @@ steps:
     command: test
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings'
-  condition: ne(variables['Agent.OS'], 'linux')
+  condition: and(succeeded(), ne(variables['Agent.OS'], 'linux'))
 
 - task: DotNetCoreCLI@2
   displayName: '.NET Test on Linux'
@@ -241,13 +241,13 @@ steps:
     command: test
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings'
-  condition: eq(variables['Agent.OS'], 'linux')
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
 - script: |
     docker stop sql1
     docker rm sql1
   displayName: 'Stop and Remove SQL Server Image'
-  condition: eq(variables['Agent.OS'], 'linux')
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
 - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
   displayName: 'Component Detection'
