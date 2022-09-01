@@ -265,3 +265,4 @@ steps:
   displayName: 'Post Analysis'
   inputs:
     GdnBreakPolicyMinSev: Error
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
