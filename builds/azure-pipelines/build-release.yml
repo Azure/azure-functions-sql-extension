@@ -18,7 +18,7 @@ variables:
   versionMajorMinor: '$(versionMajor).$(versionMinor)'  # This variable is only used for the counter so we reset properly when either major or minor is bumped
   versionPatch: $[counter(variables['versionMinor'], 0)] # This will reset when we bump minor version
   binariesVersion: '$(versionMajor).$(versionMinor).$(versionPatch)'
-  nugetVersion: '$(binariesVersion)-preview'
+  nugetVersion: '$(binariesVersion)-lapreview'
 
 stages:
 - stage: BuildPublish
