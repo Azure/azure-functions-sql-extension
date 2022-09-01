@@ -264,5 +264,6 @@ steps:
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-postanalysis.PostAnalysis@2
   displayName: 'Post Analysis'
   inputs:
-    GdnBreakPolicyMinSev: Error
+    GdnBreakPolicyMinSev: Warning
+  continueOnError: true
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
