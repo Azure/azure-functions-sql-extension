@@ -35,6 +35,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this.Name = name;
             this.IsIdentity = isIdentity;
         }
+
+        public override string ToString()
+        {
+            return this.Name;
+        }
     }
 
     /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
