@@ -349,7 +349,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public class TableInformation
         {
-            public IEnumerable<MemberInfo> PrimaryKeys { get; }
+            public IEnumerable<PropertyInfo> PrimaryKeys { get; }
 
             /// <summary>
             /// All of the columns, along with their data types, for SQL to use to turn JSON into a table
@@ -383,7 +383,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </summary>
             public JsonSerializerSettings JsonSerializerSettings { get; }
 
-            public TableInformation(IEnumerable<MemberInfo> primaryKeys, IDictionary<string, string> columns, StringComparer comparer, string query, bool hasIdentityColumnPrimaryKeys)
+            public TableInformation(IEnumerable<PropertyInfo> primaryKeys, IDictionary<string, string> columns, StringComparer comparer, string query, bool hasIdentityColumnPrimaryKeys)
             {
                 this.PrimaryKeys = primaryKeys;
                 this.Columns = columns;
@@ -618,7 +618,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 // Match SQL Primary Key column names to POCO field/property objects. Ensure none are missing.
                 StringComparison comparison = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-                IEnumerable<MemberInfo> primaryKeyFields = typeof(T).GetMembers().Where(f => primaryKeys.Any(k => string.Equals(k.Name, f.Name, comparison)));
+                IEnumerable<PropertyInfo> primaryKeyFields = typeof(T).GetProperties().Where(f => primaryKeys.Any(k => string.Equals(k.Name, f.Name, comparison)));
                 IEnumerable<string> primaryKeysFromObject = columnNames.Where(f => primaryKeys.Any(k => string.Equals(k.Name, f, comparison)));
                 IEnumerable<PrimaryKey> missingPrimaryKeysFromItem = primaryKeys
                     .Where(k => !primaryKeysFromObject.Contains(k.Name, comparer));

@@ -1145,8 +1145,8 @@
       },
       "System.Diagnostics.DiagnosticSource": {
         "type": "Transitive",
-        "resolved": "5.0.0",
-        "contentHash": "tCQTzPsGZh/A9LhhA6zrqCRV4hOHsK90/G7q3Khxmn6tnB1PuNU0cRaKANP2AWcF9bn0zsuOoZOSrHuJk6oNBA=="
+        "resolved": "4.7.0",
+        "contentHash": "oJjw3uFuVDJiJNbCD8HB4a2p3NYLdt1fiT5OGsPLw+WTOuG0KpP4OXelMmmVKpClueMsit6xOlzy4wNKQFiBLg=="
       },
       "System.Diagnostics.FileVersionInfo": {
         "type": "Transitive",
@@ -2088,46 +2088,47 @@
       "microsoft.azure.webjobs.extensions.sql": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.ApplicationInsights": "2.17.0",
-          "Microsoft.AspNetCore.Http": "2.1.22",
-          "Microsoft.Azure.WebJobs": "3.0.31",
-          "Microsoft.Data.SqlClient": "3.0.1",
-          "Newtonsoft.Json": "13.0.1",
-          "System.Runtime.Caching": "4.7.0",
-          "morelinq": "3.3.2"
+          "Microsoft.ApplicationInsights": "[2.14.0, )",
+          "Microsoft.AspNetCore.Http": "[2.1.22, )",
+          "Microsoft.Azure.WebJobs": "[3.0.31, )",
+          "Microsoft.Data.SqlClient": "[3.0.1, )",
+          "Newtonsoft.Json": "[11.0.2, )",
+          "System.Runtime.Caching": "[4.7.0, )",
+          "morelinq": "[3.3.2, )"
         }
       },
       "microsoft.azure.webjobs.extensions.sql.samples": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.AspNetCore.Http": "2.1.22",
-          "Microsoft.Azure.WebJobs.Extensions.Sql": "99.99.99",
-          "Microsoft.Azure.WebJobs.Extensions.Storage": "5.0.0",
-          "Microsoft.NET.Sdk.Functions": "3.1.1",
-          "Newtonsoft.Json": "13.0.1"
+          "Microsoft.AspNetCore.Http": "[2.1.22, )",
+          "Microsoft.Azure.WebJobs.Extensions.Sql": "[99.99.99, )",
+          "Microsoft.Azure.WebJobs.Extensions.Storage": "[5.0.0, )",
+          "Microsoft.NET.Sdk.Functions": "[3.1.1, )",
+          "Newtonsoft.Json": "[11.0.2, )"
         }
       },
       "microsoft.azure.webjobs.extensions.sql.tests": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.AspNetCore.Http": "2.1.22",
-          "Microsoft.Azure.WebJobs.Extensions.Sql": "99.99.99",
-          "Microsoft.Azure.WebJobs.Extensions.Sql.Samples": "1.0.0",
-          "Microsoft.NET.Sdk.Functions": "3.1.1",
-          "Microsoft.NET.Test.Sdk": "17.0.0",
-          "Moq": "4.14.3",
-          "Newtonsoft.Json": "13.0.1",
-          "xunit": "2.4.0",
-          "xunit.runner.visualstudio": "2.4.0"
+          "Microsoft.AspNetCore.Http": "[2.1.22, )",
+          "Microsoft.Azure.WebJobs.Extensions.Sql": "[99.99.99, )",
+          "Microsoft.Azure.WebJobs.Extensions.Sql.Samples": "[1.0.0, )",
+          "Microsoft.NET.Sdk.Functions": "[3.1.1, )",
+          "Microsoft.NET.Test.Sdk": "[17.0.0, )",
+          "Moq": "[4.14.3, )",
+          "Newtonsoft.Json": "[11.0.2, )",
+          "xunit": "[2.4.0, )",
+          "xunit.runner.visualstudio": "[2.4.0, )"
         }
       },
       "Microsoft.ApplicationInsights": {
         "type": "CentralTransitive",
-        "requested": "[2.17.0, )",
-        "resolved": "2.17.0",
-        "contentHash": "moAOrjhwiCWdg8I4fXPEd+bnnyCSRxo6wmYQ0HuNrWJUctzZEiyVTbJ8QTS6+dBOFTxpI6x+OY5wHPHrgWOk1Q==",
+        "requested": "[2.14.0, )",
+        "resolved": "2.14.0",
+        "contentHash": "j66/uh1Mb5Px/nvMwDWx73Wd9MdO2X+zsDw9JScgm5Siz5r4Cw8sTW+VCrjurFkpFqrNkj+0wbfRHDBD9b+elA==",
         "dependencies": {
-          "System.Diagnostics.DiagnosticSource": "5.0.0"
+          "System.Diagnostics.DiagnosticSource": "4.6.0",
+          "System.Memory": "4.5.4"
         }
       },
       "Microsoft.AspNetCore.Http": {
@@ -2244,9 +2245,9 @@
       },
       "Newtonsoft.Json": {
         "type": "CentralTransitive",
-        "requested": "[13.0.1, )",
-        "resolved": "13.0.1",
-        "contentHash": "ppPFpBcvxdsfUonNcvITKqLl3bqxWbDCZIzDWHzjpdAHRFfZe0Dw9HmA0+za13IdyrgJwpkDTDA9fHaxOrt20A=="
+        "requested": "[11.0.2, )",
+        "resolved": "11.0.2",
+        "contentHash": "IvJe1pj7JHEsP8B8J8DwlMEx8UInrs/x+9oVY+oCD13jpLu4JbJU2WCIsMRn5C4yW9+DgkaO8uiVE5VHKjpmdQ=="
       },
       "System.Runtime.Caching": {
         "type": "CentralTransitive",
