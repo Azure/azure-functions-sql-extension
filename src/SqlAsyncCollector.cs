@@ -305,7 +305,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         // SQL Server allows 900 bytes per primary key, so use that as a baseline
                         var combinedPrimaryKey = new StringBuilder(900 * table.PrimaryKeys.Count());
-                        // Look up primary key of T. Because we're going in the same order of fields every time,
+                        // Look up primary key of T. Because we're going in the same order of properties every time,
                         // we can assume that if two rows with the same primary key are in the list, they will collide
                         foreach (PropertyInfo primaryKey in table.PrimaryKeys)
                         {
@@ -351,7 +351,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             private const string ISO_8061_DATETIME_FORMAT = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff";
 
-            public IEnumerable<MemberInfo> PrimaryKeys { get; }
+            public IEnumerable<PropertyInfo> PrimaryKeys { get; }
 
             /// <summary>
             /// All of the columns, along with their data types, for SQL to use to turn JSON into a table
@@ -385,7 +385,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </summary>
             public JsonSerializerSettings JsonSerializerSettings { get; }
 
-            public TableInformation(IEnumerable<MemberInfo> primaryKeys, IDictionary<string, string> columns, StringComparer comparer, string query, bool hasIdentityColumnPrimaryKeys)
+            public TableInformation(IEnumerable<PropertyInfo> primaryKeys, IDictionary<string, string> columns, StringComparer comparer, string query, bool hasIdentityColumnPrimaryKeys)
             {
                 this.PrimaryKeys = primaryKeys;
                 this.Columns = columns;
@@ -622,9 +622,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw ex;
                 }
 
-                // Match SQL Primary Key column names to POCO field/property objects. Ensure none are missing.
+                // Match SQL Primary Key column names to POCO property objects. Ensure none are missing.
                 StringComparison comparison = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-                IEnumerable<MemberInfo> primaryKeyFields = typeof(T).GetMembers().Where(f => primaryKeys.Any(k => string.Equals(k.Name, f.Name, comparison)));
+                IEnumerable<PropertyInfo> primaryKeyProperties = typeof(T).GetProperties().Where(f => primaryKeys.Any(k => string.Equals(k.Name, f.Name, comparison)));
                 IEnumerable<string> primaryKeysFromObject = columnNames.Where(f => primaryKeys.Any(k => string.Equals(k.Name, f, comparison)));
                 IEnumerable<PrimaryKey> missingPrimaryKeysFromItem = primaryKeys
                     .Where(k => !primaryKeysFromObject.Contains(k.Name, comparer));
@@ -654,8 +654,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 sqlConnProps.Add(TelemetryPropertyName.QueryType, usingInsertQuery ? "insert" : "merge");
                 sqlConnProps.Add(TelemetryPropertyName.HasIdentityColumn, hasIdentityColumnPrimaryKeys.ToString());
                 TelemetryInstance.TrackDuration(TelemetryEventName.GetTableInfoEnd, tableInfoSw.ElapsedMilliseconds, sqlConnProps, durations);
-                logger.LogDebugWithThreadId($"END RetrieveTableInformationAsync Duration={tableInfoSw.ElapsedMilliseconds}ms DB and Table: {sqlConnection.Database}.{fullName}. Primary keys: [{string.Join(",", primaryKeyFields.Select(pk => pk.Name))}]. SQL Column and Definitions:  [{string.Join(",", columnDefinitionsFromSQL)}]");
-                return new TableInformation(primaryKeyFields, columnDefinitionsFromSQL, comparer, query, hasIdentityColumnPrimaryKeys);
+                logger.LogDebugWithThreadId($"END RetrieveTableInformationAsync Duration={tableInfoSw.ElapsedMilliseconds}ms DB and Table: {sqlConnection.Database}.{fullName}. Primary keys: [{string.Join(",", primaryKeyProperties.Select(pk => pk.Name))}]. SQL Column and Definitions:  [{string.Join(",", columnDefinitionsFromSQL)}]");
+                return new TableInformation(primaryKeyProperties, columnDefinitionsFromSQL, comparer, query, hasIdentityColumnPrimaryKeys);
             }
         }
 
