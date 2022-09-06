@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
-using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
@@ -23,6 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             private readonly IConfiguration _configuration;
             private readonly ILogger _logger;
+            private readonly ITelemetryService _telemetry;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="SqlConverter/>"/> class.
@@ -32,11 +32,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <exception cref="ArgumentNullException">
             /// Thrown if the configuration is null
             /// </exception>
-            public SqlConverter(IConfiguration configuration, ILogger logger)
+            public SqlConverter(IConfiguration configuration, ILogger logger, ITelemetryService telemetry)
             {
                 this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
                 this._logger = logger;
-                TelemetryInstance.TrackCreate(CreateType.SqlConverter);
+                this._telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
+                this._telemetry.TrackCreate(CreateType.SqlConverter);
             }
 
             /// <summary>
@@ -49,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns>The SqlCommand</returns>
             public SqlCommand Convert(SqlAttribute attribute)
             {
-                TelemetryInstance.TrackConvert(ConvertType.SqlCommand);
+                this._telemetry.TrackConvert(ConvertType.SqlCommand);
                 this._logger.LogDebugWithThreadId("BEGIN Convert (SqlCommand)");
                 var sw = Stopwatch.StartNew();
                 try
@@ -65,7 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         { TelemetryPropertyName.Type, ConvertType.SqlCommand.ToString() }
                     };
-                    TelemetryInstance.TrackException(TelemetryErrorName.Convert, ex, props);
+                    this._telemetry.TrackException(TelemetryErrorName.Convert, ex, props);
                     throw;
                 }
             }
@@ -79,6 +80,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             private readonly IConfiguration _configuration;
 
             private readonly ILogger _logger;
+            private readonly ITelemetryService _telemetry;
+
 
             /// <summary>
             /// Initializes a new instance of the <see cref="SqlGenericsConverter<typeparamref name="T"/>"/> class.
@@ -88,11 +91,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <exception cref="ArgumentNullException">
             /// Thrown if the configuration is null
             /// </exception>
-            public SqlGenericsConverter(IConfiguration configuration, ILogger logger)
+            public SqlGenericsConverter(IConfiguration configuration, ILogger logger, ITelemetryService telemetry)
             {
                 this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
                 this._logger = logger;
-                TelemetryInstance.TrackCreate(CreateType.SqlGenericsConverter);
+                this._telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
+                this._telemetry.TrackCreate(CreateType.SqlGenericsConverter);
             }
 
             /// <summary>
@@ -116,7 +120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         { TelemetryPropertyName.Type, ConvertType.IEnumerable.ToString() }
                     };
-                    TelemetryInstance.TrackException(TelemetryErrorName.Convert, ex, props);
+                    this._telemetry.TrackException(TelemetryErrorName.Convert, ex, props);
                     throw;
                 }
             }
@@ -145,7 +149,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         { TelemetryPropertyName.Type, ConvertType.Json.ToString() }
                     };
-                    TelemetryInstance.TrackException(TelemetryErrorName.Convert, ex, props);
+                    this._telemetry.TrackException(TelemetryErrorName.Convert, ex, props);
                     throw;
                 }
             }
@@ -172,7 +176,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     if (type.HasValue)
                     {
                         Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps();
-                        TelemetryInstance.TrackConvert(type.Value, props);
+                        this._telemetry.TrackConvert(type.Value, props);
                     }
                     adapter.SelectCommand = command;
                     await connection.OpenAsync();
@@ -196,7 +200,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         { TelemetryPropertyName.Type, ConvertType.IAsyncEnumerable.ToString() }
                     };
-                    TelemetryInstance.TrackException(TelemetryErrorName.Convert, ex, props);
+                    this._telemetry.TrackException(TelemetryErrorName.Convert, ex, props);
                     throw;
                 }
             }
@@ -222,7 +226,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         { TelemetryPropertyName.Type, ConvertType.JArray.ToString() }
                     };
-                    TelemetryInstance.TrackException(TelemetryErrorName.Convert, ex, props);
+                    this._telemetry.TrackException(TelemetryErrorName.Convert, ex, props);
                     throw;
                 }
             }
