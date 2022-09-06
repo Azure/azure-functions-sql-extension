@@ -98,7 +98,7 @@ steps:
     userProvideBuildInfo: 'autoMsBuildInfo'
   env:
     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'), ne(variables['Build.Reason', 'PullRequest']))
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'), ne(variables['Build.Reason'], 'PullRequest'))
 
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@2
   inputs:
