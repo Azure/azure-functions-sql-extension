@@ -3,10 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Net.Http;
 using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Xunit;
@@ -21,25 +18,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     {
         public SqlOutputBindingIntegrationTests(ITestOutputHelper output) : base(output)
         {
-        }
-
-        private Task<HttpResponseMessage> SendOutputGetRequest(string functionName, IDictionary<string, string> query = null)
-        {
-            string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
-
-            if (query != null)
-            {
-                requestUri = QueryHelpers.AddQueryString(requestUri, query);
-            }
-
-            return this.SendGetRequest(requestUri);
-        }
-
-        private Task<HttpResponseMessage> SendOutputPostRequest(string functionName, string query)
-        {
-            string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
-
-            return this.SendPostRequest(requestUri, query);
         }
 
         [Theory]
@@ -119,6 +97,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(1) FROM Products WHERE Cost = 100"));
             Assert.Equal(2, this.ExecuteScalar("SELECT Cost FROM Products WHERE ProductId = 1"));
             Assert.Equal(2, this.ExecuteScalar("SELECT ProductId FROM Products WHERE Cost = 12"));
+        }
+
+        /// <summary>
+        /// Test compatability with converting various data types to their respective
+        /// SQL server types. 
+        /// </summary>
+        /// <param name="lang">The language to run the test against</param>
+        [Theory]
+        [SqlInlineData()]
+        public void AddProductColumnTypesTest(SupportedLanguages lang)
+        {
+            this.StartFunctionHost(nameof(AddProductColumnTypes), lang, true);
+
+            var queryParameters = new Dictionary<string, string>()
+            {
+                { "productId", "999" }
+            };
+
+            this.SendOutputGetRequest("addproduct-columntypes", queryParameters).Wait();
+
+            // If we get here then the test is successful - an exception will be thrown if there were any problems
         }
 
         [Theory]

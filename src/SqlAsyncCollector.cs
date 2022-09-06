@@ -35,6 +35,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this.Name = name;
             this.IsIdentity = isIdentity;
         }
+
+        public override string ToString()
+        {
+            return this.Name;
+        }
     }
 
     /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
@@ -305,7 +310,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         // SQL Server allows 900 bytes per primary key, so use that as a baseline
                         var combinedPrimaryKey = new StringBuilder(900 * table.PrimaryKeys.Count());
-                        // Look up primary key of T. Because we're going in the same order of fields every time,
+                        // Look up primary key of T. Because we're going in the same order of properties every time,
                         // we can assume that if two rows with the same primary key are in the list, they will collide
                         foreach (PropertyInfo primaryKey in table.PrimaryKeys)
                         {
@@ -349,7 +354,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public class TableInformation
         {
-            public IEnumerable<MemberInfo> PrimaryKeys { get; }
+            private const string ISO_8061_DATETIME_FORMAT = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff";
+
+            public IEnumerable<PropertyInfo> PrimaryKeys { get; }
 
             /// <summary>
             /// All of the columns, along with their data types, for SQL to use to turn JSON into a table
@@ -383,7 +390,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </summary>
             public JsonSerializerSettings JsonSerializerSettings { get; }
 
-            public TableInformation(IEnumerable<MemberInfo> primaryKeys, IDictionary<string, string> columns, StringComparer comparer, string query, bool hasIdentityColumnPrimaryKeys)
+            public TableInformation(IEnumerable<PropertyInfo> primaryKeys, IDictionary<string, string> columns, StringComparer comparer, string query, bool hasIdentityColumnPrimaryKeys)
             {
                 this.PrimaryKeys = primaryKeys;
                 this.Columns = columns;
@@ -391,9 +398,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 this.Query = query;
                 this.HasIdentityColumnPrimaryKeys = hasIdentityColumnPrimaryKeys;
 
+                // Convert datetime strings to ISO 8061 format to avoid potential errors on the server when converting into a datetime. This
+                // is the only format that are an international standard. 
+                // https://docs.microsoft.com/previous-versions/sql/sql-server-2008-r2/ms180878(v=sql.105)
                 this.JsonSerializerSettings = new JsonSerializerSettings
                 {
-                    ContractResolver = new DynamicPOCOContractResolver(columns, comparer)
+                    ContractResolver = new DynamicPOCOContractResolver(columns, comparer),
+                    DateFormatString = ISO_8061_DATETIME_FORMAT
                 };
             }
             public static bool GetCaseSensitivityFromCollation(string collation)
@@ -616,9 +627,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw ex;
                 }
 
-                // Match SQL Primary Key column names to POCO field/property objects. Ensure none are missing.
+                // Match SQL Primary Key column names to POCO property objects. Ensure none are missing.
                 StringComparison comparison = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-                IEnumerable<MemberInfo> primaryKeyFields = typeof(T).GetMembers().Where(f => primaryKeys.Any(k => string.Equals(k.Name, f.Name, comparison)));
+                IEnumerable<PropertyInfo> primaryKeyProperties = typeof(T).GetProperties().Where(f => primaryKeys.Any(k => string.Equals(k.Name, f.Name, comparison)));
                 IEnumerable<string> primaryKeysFromObject = columnNames.Where(f => primaryKeys.Any(k => string.Equals(k.Name, f, comparison)));
                 IEnumerable<PrimaryKey> missingPrimaryKeysFromItem = primaryKeys
                     .Where(k => !primaryKeysFromObject.Contains(k.Name, comparer));
@@ -648,8 +659,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 sqlConnProps.Add(TelemetryPropertyName.QueryType, usingInsertQuery ? "insert" : "merge");
                 sqlConnProps.Add(TelemetryPropertyName.HasIdentityColumn, hasIdentityColumnPrimaryKeys.ToString());
                 TelemetryInstance.TrackDuration(TelemetryEventName.GetTableInfoEnd, tableInfoSw.ElapsedMilliseconds, sqlConnProps, durations);
-                logger.LogDebugWithThreadId($"END RetrieveTableInformationAsync Duration={tableInfoSw.ElapsedMilliseconds}ms DB and Table: {sqlConnection.Database}.{fullName}. Primary keys: [{string.Join(",", primaryKeyFields.Select(pk => pk.Name))}]. SQL Column and Definitions:  [{string.Join(",", columnDefinitionsFromSQL)}]");
-                return new TableInformation(primaryKeyFields, columnDefinitionsFromSQL, comparer, query, hasIdentityColumnPrimaryKeys);
+                logger.LogDebugWithThreadId($"END RetrieveTableInformationAsync Duration={tableInfoSw.ElapsedMilliseconds}ms DB and Table: {sqlConnection.Database}.{fullName}. Primary keys: [{string.Join(",", primaryKeyProperties.Select(pk => pk.Name))}]. SQL Column and Definitions:  [{string.Join(",", columnDefinitionsFromSQL)}]");
+                return new TableInformation(primaryKeyProperties, columnDefinitionsFromSQL, comparer, query, hasIdentityColumnPrimaryKeys);
             }
         }
 
