@@ -107,7 +107,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     using (SqlCommand command = SqlBindingUtilities.BuildCommand(this._attribute, this._connection))
                     {
                         await command.Connection.OpenAsync();
-                        Dictionary<TelemetryPropertyName, string> props = this._connection.AsConnectionProps();
+                        Dictionary<TelemetryPropertyName, string> props = command.Connection.AsConnectionProps();
                         TelemetryInstance.TrackConvert(ConvertType.IAsyncEnumerable, props);
                         this._reader = await command.ExecuteReaderAsync();
                     }
