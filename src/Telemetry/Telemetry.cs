@@ -18,6 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
     public sealed class Telemetry
     {
         internal static Telemetry TelemetryInstance = new Telemetry();
+
         private const string EventsNamespace = "azure-functions-sql-bindings";
         internal static string CurrentSessionId;
         private TelemetryClient _client;
