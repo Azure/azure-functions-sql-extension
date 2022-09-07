@@ -61,6 +61,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 this._connection = connection ?? throw new ArgumentNullException(nameof(connection));
                 this._attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
+                Task.Run(() => this.GetDataAsync()).Wait();
+            }
+
+            private async void GetDataAsync()
+            {
+                if (this._reader == null)
+                {
+                    using (SqlCommand command = SqlBindingUtilities.BuildCommand(this._attribute, this._connection))
+                    {
+                        await command.Connection.OpenAsync();
+                        Dictionary<TelemetryPropertyName, string> props = command.Connection.AsConnectionProps();
+                        TelemetryInstance.TrackConvert(ConvertType.IAsyncEnumerable, props);
+                        this._reader = await command.ExecuteReaderAsync();
+                    }
+                }
             }
 
             /// <summary>
@@ -102,16 +117,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </returns>
             private async Task<bool> GetNextRowAsync()
             {
-                if (this._reader == null)
-                {
-                    using (SqlCommand command = SqlBindingUtilities.BuildCommand(this._attribute, this._connection))
-                    {
-                        await command.Connection.OpenAsync();
-                        Dictionary<TelemetryPropertyName, string> props = command.Connection.AsConnectionProps();
-                        TelemetryInstance.TrackConvert(ConvertType.IAsyncEnumerable, props);
-                        this._reader = await command.ExecuteReaderAsync();
-                    }
-                }
                 if (await this._reader.ReadAsync())
                 {
                     this.Current = JsonConvert.DeserializeObject<T>(this.SerializeRow());
