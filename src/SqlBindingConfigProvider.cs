@@ -10,7 +10,7 @@ using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Azure.WebJobs.Logging;
-using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
@@ -23,7 +23,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     {
         private readonly IConfiguration _configuration;
         private readonly ILoggerFactory _loggerFactory;
-        private readonly ITelemetryService _telemetry;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlBindingConfigProvider/>"/> class.
@@ -31,12 +30,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <exception cref="ArgumentNullException">
         /// Thrown if either parameter is null
         /// </exception>
-        public SqlBindingConfigProvider(IConfiguration configuration, ILoggerFactory loggerFactory, ITelemetryService telemetry)
+        public SqlBindingConfigProvider(IConfiguration configuration, ILoggerFactory loggerFactory)
         {
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             this._loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-            this._telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
-
         }
 
         /// <summary>
@@ -53,14 +50,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 throw new ArgumentNullException(nameof(context));
             }
             ILogger logger = this._loggerFactory.CreateLogger(LogCategories.Bindings);
-            this._telemetry.GetTelemetryInstance().Initialize(this._configuration, logger);
+            TelemetryInstance.Initialize(this._configuration, logger);
 #pragma warning disable CS0618 // Fine to use this for our stuff
             FluentBindingRule<SqlAttribute> inputOutputRule = context.AddBindingRule<SqlAttribute>();
-            var converter = new SqlConverter(this._configuration, logger, this._telemetry.GetTelemetryInstance());
+            var converter = new SqlConverter(this._configuration, logger, TelemetryInstance);
             inputOutputRule.BindToInput(converter);
-            inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), this._configuration, logger, this._telemetry.GetTelemetryInstance());
+            inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), this._configuration, logger, TelemetryInstance);
             inputOutputRule.BindToCollector<SQLObjectOpenType>(typeof(SqlAsyncCollectorBuilder<>), this._configuration, logger);
-            inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), this._configuration, logger, this._telemetry.GetTelemetryInstance());
+            inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), this._configuration, logger, TelemetryInstance);
         }
     }
 

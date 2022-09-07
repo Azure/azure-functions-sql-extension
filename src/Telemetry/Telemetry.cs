@@ -402,42 +402,5 @@ This extension collect usage data in order to help us improve your experience. T
         Upsert,
         UpsertRollback,
     }
-    public class MockTelemetry : ITelemetryService
-    {
-        internal static ITelemetryService TelemetryInstance = new MockTelemetry();
-        public void Initialize(IConfiguration config, ILogger logger)
-        {
-            // no-op
-        }
-        public void TrackEvent(TelemetryEventName eventName, IDictionary<TelemetryPropertyName, string> properties = null,
-            IDictionary<TelemetryMeasureName, double> measurements = null)
-        {
-            // no-op
-        }
-        public void TrackException(TelemetryErrorName errorName, Exception exception, IDictionary<TelemetryPropertyName, string> properties = null,
-            IDictionary<TelemetryMeasureName, double> measurements = null)
-        {
-            // no-op
-        }
-        public void TrackDuration(TelemetryEventName eventName, long durationMs, IDictionary<TelemetryPropertyName, string> properties = null,
-            IDictionary<TelemetryMeasureName, double> measurements = null)
-        {
-            // no-op
-        }
-        public void TrackCreate(CreateType type, IDictionary<TelemetryPropertyName, string> properties = null,
-            IDictionary<TelemetryMeasureName, double> measurements = null)
-        {
-            // no-op
-        }
-        public void TrackConvert(ConvertType type, IDictionary<TelemetryPropertyName, string> properties = null,
-            IDictionary<TelemetryMeasureName, double> measurements = null)
-        {
-            // no-op
-        }
-        public ITelemetryService GetTelemetryInstance()
-        {
-            return TelemetryInstance;
-        }
-    }
 }
 
