@@ -177,10 +177,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 using (var adapter = new SqlDataAdapter())
                 using (SqlCommand command = SqlBindingUtilities.BuildCommand(attribute, connection))
                 {
-                    Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps();
-                    TelemetryInstance.TrackConvert(type, props);
                     adapter.SelectCommand = command;
                     await connection.OpenAsync();
+                    Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps();
+                    TelemetryInstance.TrackConvert(type, props);
                     var dataTable = new DataTable();
                     adapter.Fill(dataTable);
                     this._logger.LogInformation($"{dataTable.Rows.Count} row(s) queried from database: {connection.Database} using Command: {command.CommandText}");
