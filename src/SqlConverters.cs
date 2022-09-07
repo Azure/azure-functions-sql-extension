@@ -23,6 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             private readonly IConfiguration _configuration;
             private readonly ILogger _logger;
+
             /// <summary>
             /// Initializes a new instance of the <see cref="SqlConverter/>"/> class.
             /// </summary>

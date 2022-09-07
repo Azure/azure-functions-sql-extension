@@ -5,13 +5,12 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs.Description;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlConverters;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Azure.WebJobs.Logging;
-using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
-
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
