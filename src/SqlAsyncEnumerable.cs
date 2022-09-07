@@ -64,6 +64,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 Task.Run(() => this.GetDataAsync()).Wait();
             }
 
+            /// <summary>
+            /// Gets the data from server into the reader ready for use.
+            /// </summary>
             private async void GetDataAsync()
             {
                 if (this._reader == null)
