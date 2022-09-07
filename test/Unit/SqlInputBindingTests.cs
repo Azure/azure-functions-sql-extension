@@ -61,17 +61,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [Fact]
         public void TestNullArgumentsSqlAsyncEnumerableConstructor()
         {
-
             Assert.Throws<ArgumentNullException>(() => new SqlAsyncEnumerable<string>(connection, null));
             Assert.Throws<ArgumentNullException>(() => new SqlAsyncEnumerable<string>(null, new SqlAttribute("")));
         }
 
         [Fact]
-        public void TestNullCurrentValueEnumerator()
+        public void TestInvalidOperationSqlAsyncEnumerableConstructor()
         {
-            var enumerable = new SqlAsyncEnumerable<string>(connection, new SqlAttribute(""));
-            IAsyncEnumerator<string> enumerator = enumerable.GetAsyncEnumerator();
-            Assert.Null(enumerator.Current);
+            Assert.Throws<InvalidOperationException>(() => new SqlAsyncEnumerable<string>(connection, new SqlAttribute("")));
         }
 
         [Fact]

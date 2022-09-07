@@ -27,10 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             this.Connection = connection ?? throw new ArgumentNullException(nameof(connection));
             this._attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
-            if (!string.IsNullOrEmpty(this.Connection.ConnectionString))
-            {
-                this.Connection.Open();
-            }
+            this.Connection.Open();
         }
         /// <summary>
         /// Returns the enumerator associated with this enumerable. The enumerator will execute the query specified
@@ -108,10 +105,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     using (SqlCommand command = SqlBindingUtilities.BuildCommand(this._attribute, this._connection))
                     {
-                        if (this._connection.State != System.Data.ConnectionState.Open)
-                        {
-                            await this._connection.OpenAsync();
-                        }
                         this._reader = await command.ExecuteReaderAsync();
                     }
                 }
