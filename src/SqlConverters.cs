@@ -105,10 +105,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns>An IEnumerable containing the rows read from the user's database in the form of the user-defined POCO</returns>
             public async Task<IEnumerable<T>> ConvertAsync(SqlAttribute attribute, CancellationToken cancellationToken)
             {
+                this._logger.LogDebugWithThreadId("BEGIN ConvertAsync (IEnumerable)");
+                var sw = Stopwatch.StartNew();
                 try
                 {
                     string json = await this.BuildItemFromAttributeAsync(attribute, ConvertType.IEnumerable);
-                    return JsonConvert.DeserializeObject<IEnumerable<T>>(json);
+                    IEnumerable<T> result = JsonConvert.DeserializeObject<IEnumerable<T>>(json);
+                    this._logger.LogDebugWithThreadId($"END ConvertAsync (IEnumerable) Duration={sw.ElapsedMilliseconds}ms");
+                    return result;
                 }
                 catch (Exception ex)
                 {
