@@ -7,14 +7,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
-using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
-using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
     internal class SqlAsyncEnumerable<T> : IAsyncEnumerable<T>
     {
-        private readonly SqlConnection _connection;
+        public SqlConnection Connection { get; private set; }
         private readonly SqlAttribute _attribute;
 
         /// <summary>
@@ -27,8 +25,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </exception>
         public SqlAsyncEnumerable(SqlConnection connection, SqlAttribute attribute)
         {
-            this._connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            this.Connection = connection ?? throw new ArgumentNullException(nameof(connection));
             this._attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
+            if (!string.IsNullOrEmpty(this.Connection.ConnectionString))
+            {
+                this.Connection.Open();
+            }
         }
         /// <summary>
         /// Returns the enumerator associated with this enumerable. The enumerator will execute the query specified
@@ -39,7 +41,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The enumerator</returns>
         public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
         {
-            return new SqlAsyncEnumerator(this._connection, this._attribute);
+            return new SqlAsyncEnumerator(this.Connection, this._attribute);
         }
 
 
@@ -61,24 +63,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 this._connection = connection ?? throw new ArgumentNullException(nameof(connection));
                 this._attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
-                Task.Run(() => this.GetDataAsync()).Wait();
-            }
-
-            /// <summary>
-            /// Gets the data from server into the reader ready for use.
-            /// </summary>
-            private async void GetDataAsync()
-            {
-                if (this._reader == null)
-                {
-                    using (SqlCommand command = SqlBindingUtilities.BuildCommand(this._attribute, this._connection))
-                    {
-                        await command.Connection.OpenAsync();
-                        Dictionary<TelemetryPropertyName, string> props = command.Connection.AsConnectionProps();
-                        TelemetryInstance.TrackConvert(ConvertType.IAsyncEnumerable, props);
-                        this._reader = await command.ExecuteReaderAsync();
-                    }
-                }
             }
 
             /// <summary>
@@ -120,6 +104,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </returns>
             private async Task<bool> GetNextRowAsync()
             {
+                if (this._reader == null)
+                {
+                    using (SqlCommand command = SqlBindingUtilities.BuildCommand(this._attribute, this._connection))
+                    {
+                        if (this._connection.State != System.Data.ConnectionState.Open)
+                        {
+                            await this._connection.OpenAsync();
+                        }
+                        this._reader = await command.ExecuteReaderAsync();
+                    }
+                }
                 if (await this._reader.ReadAsync())
                 {
                     this.Current = JsonConvert.DeserializeObject<T>(this.SerializeRow());
