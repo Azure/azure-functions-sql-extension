@@ -7,7 +7,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
-
+using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
@@ -106,6 +107,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     using (SqlCommand command = SqlBindingUtilities.BuildCommand(this._attribute, this._connection))
                     {
                         await command.Connection.OpenAsync();
+                        Dictionary<TelemetryPropertyName, string> props = this._connection.AsConnectionProps();
+                        TelemetryInstance.TrackConvert(ConvertType.IAsyncEnumerable, props);
                         this._reader = await command.ExecuteReaderAsync();
                     }
                 }

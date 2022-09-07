@@ -193,10 +193,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 try
                 {
-                    SqlConnection conn = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, this._configuration);
-                    Dictionary<TelemetryPropertyName, string> props = conn.AsConnectionProps();
-                    TelemetryInstance.TrackConvert(ConvertType.IAsyncEnumerable, props);
-                    return new SqlAsyncEnumerable<T>(conn, attribute);
+                    return new SqlAsyncEnumerable<T>(SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, this._configuration), attribute);
                 }
                 catch (Exception ex)
                 {
