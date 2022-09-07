@@ -7,8 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
-using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
-using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -30,8 +28,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             this._connection = connection ?? throw new ArgumentNullException(nameof(connection));
             this._attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
-            Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps();
-            TelemetryInstance.TrackConvert(ConvertType.IAsyncEnumerable, props);
         }
         /// <summary>
         /// Returns the enumerator associated with this enumerable. The enumerator will execute the query specified

@@ -21,17 +21,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         private static readonly Mock<IConfiguration> config = new Mock<IConfiguration>();
         private static readonly Mock<ILoggerFactory> loggerFactory = new Mock<ILoggerFactory>();
         private static readonly Mock<ILogger> logger = new Mock<ILogger>();
-        private static readonly Mock<ITelemetryService> telemetry = new Mock<ITelemetryService>();
         private static readonly SqlConnection connection = new SqlConnection();
 
         [Fact]
         public void TestNullConfiguration()
         {
             Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(null, loggerFactory.Object));
-            Assert.Throws<ArgumentNullException>(() => new SqlConverter(null, logger.Object, telemetry.Object));
-            Assert.Throws<ArgumentNullException>(() => new SqlConverter(config.Object, logger.Object, null));
-            Assert.Throws<ArgumentNullException>(() => new SqlGenericsConverter<string>(null, logger.Object, telemetry.Object));
-            Assert.Throws<ArgumentNullException>(() => new SqlGenericsConverter<string>(config.Object, logger.Object, null));
+            Assert.Throws<ArgumentNullException>(() => new SqlConverter(null, logger.Object));
+            Assert.Throws<ArgumentNullException>(() => new SqlGenericsConverter<string>(null, logger.Object));
 
         }
 
@@ -231,10 +228,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         public async void TestWellformedDeserialization()
         {
             var arg = new SqlAttribute(string.Empty);
-            var converter = new Mock<SqlGenericsConverter<TestData>>(config.Object, logger.Object, telemetry.Object);
+            var converter = new Mock<SqlGenericsConverter<TestData>>(config.Object, logger.Object);
             string json = "[{ \"ID\":1,\"Name\":\"Broom\",\"Cost\":32.5,\"Timestamp\":\"2019-11-22T06:32:15\"},{ \"ID\":2,\"Name\":\"Brush\",\"Cost\":12.3," +
                 "\"Timestamp\":\"2017-01-27T03:13:11\"},{ \"ID\":3,\"Name\":\"Comb\",\"Cost\":100.12,\"Timestamp\":\"1997-05-03T10:11:56\"}]";
-            converter.Setup(_ => _.BuildItemFromAttributeAsync(arg, ConvertType.Json)).ReturnsAsync(json);
+            converter.Setup(_ => _.BuildItemFromAttributeAsync(arg, ConvertType.IEnumerable)).ReturnsAsync(json);
             var list = new List<TestData>();
             var data1 = new TestData
             {
@@ -268,11 +265,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         public async void TestMalformedDeserialization()
         {
             var arg = new SqlAttribute(string.Empty);
-            var converter = new Mock<SqlGenericsConverter<TestData>>(config.Object, logger.Object, telemetry.Object);
+            var converter = new Mock<SqlGenericsConverter<TestData>>(config.Object, logger.Object);
 
             // SQL data is missing a field
             string json = "[{ \"ID\":1,\"Name\":\"Broom\",\"Timestamp\":\"2019-11-22T06:32:15\"}]";
-            converter.Setup(_ => _.BuildItemFromAttributeAsync(arg, ConvertType.Json)).ReturnsAsync(json);
+            converter.Setup(_ => _.BuildItemFromAttributeAsync(arg, ConvertType.IEnumerable)).ReturnsAsync(json);
             var list = new List<TestData>();
             var data = new TestData
             {
@@ -287,7 +284,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 
             // SQL data's columns are named differently than the POCO's fields
             json = "[{ \"ID\":1,\"Product Name\":\"Broom\",\"Price\":32.5,\"Timessstamp\":\"2019-11-22T06:32:15\"}]";
-            converter.Setup(_ => _.BuildItemFromAttributeAsync(arg, ConvertType.Json)).ReturnsAsync(json);
+            converter.Setup(_ => _.BuildItemFromAttributeAsync(arg, ConvertType.IEnumerable)).ReturnsAsync(json);
             list = new List<TestData>();
             data = new TestData
             {
@@ -301,7 +298,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 
             // Confirm that the JSON fields are case-insensitive (technically malformed string, but still works)
             json = "[{ \"id\":1,\"nAme\":\"Broom\",\"coSt\":32.5,\"TimEStamp\":\"2019-11-22T06:32:15\"}]";
-            converter.Setup(_ => _.BuildItemFromAttributeAsync(arg, ConvertType.Json)).ReturnsAsync(json);
+            converter.Setup(_ => _.BuildItemFromAttributeAsync(arg, ConvertType.IEnumerable)).ReturnsAsync(json);
             list = new List<TestData>();
             data = new TestData
             {

@@ -15,26 +15,9 @@ using Microsoft.Data.SqlClient;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
 {
-    public interface ITelemetryService
+    public sealed class Telemetry
     {
-        ITelemetryService GetTelemetryInstance();
-        void Initialize(IConfiguration config, ILogger logger);
-        void TrackEvent(TelemetryEventName eventName, IDictionary<TelemetryPropertyName, string> properties = null,
-            IDictionary<TelemetryMeasureName, double> measurements = null);
-        void TrackException(TelemetryErrorName errorName, Exception exception, IDictionary<TelemetryPropertyName, string> properties = null,
-            IDictionary<TelemetryMeasureName, double> measurements = null);
-        void TrackDuration(TelemetryEventName eventName, long durationMs, IDictionary<TelemetryPropertyName, string> properties = null,
-            IDictionary<TelemetryMeasureName, double> measurements = null);
-        void TrackCreate(CreateType type, IDictionary<TelemetryPropertyName, string> properties = null,
-            IDictionary<TelemetryMeasureName, double> measurements = null);
-        void TrackConvert(ConvertType type, IDictionary<TelemetryPropertyName, string> properties = null,
-            IDictionary<TelemetryMeasureName, double> measurements = null);
-    }
-
-    public sealed class Telemetry : ITelemetryService
-    {
-        internal static ITelemetryService TelemetryInstance = new Telemetry();
-
+        internal static Telemetry TelemetryInstance = new Telemetry();
         private const string EventsNamespace = "azure-functions-sql-bindings";
         internal static string CurrentSessionId;
         private TelemetryClient _client;
@@ -306,11 +289,6 @@ This extension collect usage data in order to help us improve your experience. T
                 return (ex as SqlException).Number.ToString(CultureInfo.InvariantCulture);
             }
             return string.Empty;
-        }
-
-        public ITelemetryService GetTelemetryInstance()
-        {
-            return TelemetryInstance;
         }
     }
 
