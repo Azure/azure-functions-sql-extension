@@ -139,9 +139,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </returns>
             async Task<string> IAsyncConverter<SqlAttribute, string>.ConvertAsync(SqlAttribute attribute, CancellationToken cancellationToken)
             {
+                this._logger.LogDebugWithThreadId("BEGIN ConvertAsync (Json)");
+                var sw = Stopwatch.StartNew();
                 try
                 {
-                    return await this.BuildItemFromAttributeAsync(attribute, ConvertType.Json);
+                    string result = await this.BuildItemFromAttributeAsync(attribute, ConvertType.Json);
+                    this._logger.LogDebugWithThreadId($"END ConvertAsync (Json) Duration={sw.ElapsedMilliseconds}ms");
+                    return result;
                 }
                 catch (Exception ex)
                 {
