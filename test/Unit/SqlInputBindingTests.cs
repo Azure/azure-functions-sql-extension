@@ -65,6 +65,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
             Assert.Throws<ArgumentNullException>(() => new SqlAsyncEnumerable<string>(null, new SqlAttribute("")));
         }
 
+        /// SqlAsyncEnumerable should throw InvalidOperationExcepion when invoked with an invalid connection 
+        /// string setting.
         [Fact]
         public void TestInvalidOperationSqlAsyncEnumerableConstructor()
         {
