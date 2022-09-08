@@ -105,6 +105,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     using (SqlCommand command = SqlBindingUtilities.BuildCommand(this._attribute, this._connection))
                     {
+                        if (this._connection.State != System.Data.ConnectionState.Open)
+                        {
+                            await this._connection.OpenAsync();
+                        }
                         this._reader = await command.ExecuteReaderAsync();
                     }
                 }
