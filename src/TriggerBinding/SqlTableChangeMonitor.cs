@@ -35,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public const int MaxLeaseRenewalCount = 10;
         public const int LeaseIntervalInSeconds = 60;
         public const int LeaseRenewalIntervalInSeconds = 15;
-
+        public const int MaxRetryReleaseLeases = 5;
         private readonly string _connectionString;
         private readonly int _userTableId;
         private readonly SqlObject _userTable;
@@ -494,67 +494,70 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             try
             {
-                var transactionSw = Stopwatch.StartNew();
-                long releaseLeasesDurationMs = 0L, updateLastSyncVersionDurationMs = 0L;
-
-                using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
+                for (int retryCount = 1; retryCount <= MaxRetryReleaseLeases; retryCount++)
                 {
-                    try
+                    var transactionSw = Stopwatch.StartNew();
+                    long releaseLeasesDurationMs = 0L, updateLastSyncVersionDurationMs = 0L;
+
+                    using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
                     {
-                        // Release the leases held on "_rows".
-                        using (SqlCommand releaseLeasesCommand = this.BuildReleaseLeasesCommand(connection, transaction))
-                        {
-                            this._logger.LogDebugWithThreadId($"BEGIN ReleaseLeases Query={releaseLeasesCommand.CommandText}");
-                            var commandSw = Stopwatch.StartNew();
-                            await releaseLeasesCommand.ExecuteNonQueryAsync(token);
-                            releaseLeasesDurationMs = commandSw.ElapsedMilliseconds;
-                            this._logger.LogDebugWithThreadId($"END ReleaseLeases Duration={releaseLeasesDurationMs}ms");
-                        }
-
-                        // Update the global state table if we have processed all changes with ChangeVersion <= newLastSyncVersion,
-                        // and clean up the leases table to remove all rows with ChangeVersion <= newLastSyncVersion.
-                        using (SqlCommand updateTablesPostInvocationCommand = this.BuildUpdateTablesPostInvocation(connection, transaction, newLastSyncVersion))
-                        {
-                            this._logger.LogDebugWithThreadId($"BEGIN UpdateTablesPostInvocation Query={updateTablesPostInvocationCommand.CommandText}");
-                            var commandSw = Stopwatch.StartNew();
-                            await updateTablesPostInvocationCommand.ExecuteNonQueryAsync(token);
-                            updateLastSyncVersionDurationMs = commandSw.ElapsedMilliseconds;
-                            this._logger.LogDebugWithThreadId($"END UpdateTablesPostInvocation Duration={updateLastSyncVersionDurationMs}ms");
-                        }
-
-                        transaction.Commit();
-
-                        var measures = new Dictionary<TelemetryMeasureName, double>
-                        {
-                            [TelemetryMeasureName.ReleaseLeasesDurationMs] = releaseLeasesDurationMs,
-                            [TelemetryMeasureName.UpdateLastSyncVersionDurationMs] = updateLastSyncVersionDurationMs,
-                        };
-
-                        TelemetryInstance.TrackEvent(TelemetryEventName.ReleaseLeasesEnd, this._telemetryProps, measures);
-                    }
-                    catch (Exception ex)
-                    {
-                        this._logger.LogError($"Failed to execute SQL commands to release leases for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
-                        TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeases, ex, this._telemetryProps);
-
                         try
                         {
-                            transaction.Rollback();
+                            // Release the leases held on "_rows".
+                            using (SqlCommand releaseLeasesCommand = this.BuildReleaseLeasesCommand(connection, transaction))
+                            {
+                                this._logger.LogDebugWithThreadId($"BEGIN ReleaseLeases Query={releaseLeasesCommand.CommandText}");
+                                var commandSw = Stopwatch.StartNew();
+                                await releaseLeasesCommand.ExecuteNonQueryAsync(token);
+                                releaseLeasesDurationMs = commandSw.ElapsedMilliseconds;
+                                this._logger.LogDebugWithThreadId($"END ReleaseLeases Duration={releaseLeasesDurationMs}ms");
+                            }
+
+                            // Update the global state table if we have processed all changes with ChangeVersion <= newLastSyncVersion,
+                            // and clean up the leases table to remove all rows with ChangeVersion <= newLastSyncVersion.
+                            using (SqlCommand updateTablesPostInvocationCommand = this.BuildUpdateTablesPostInvocation(connection, transaction, newLastSyncVersion))
+                            {
+                                this._logger.LogDebugWithThreadId($"BEGIN UpdateTablesPostInvocation Query={updateTablesPostInvocationCommand.CommandText}");
+                                var commandSw = Stopwatch.StartNew();
+                                await updateTablesPostInvocationCommand.ExecuteNonQueryAsync(token);
+                                updateLastSyncVersionDurationMs = commandSw.ElapsedMilliseconds;
+                                this._logger.LogDebugWithThreadId($"END UpdateTablesPostInvocation Duration={updateLastSyncVersionDurationMs}ms");
+                            }
+
+                            transaction.Commit();
+
+                            var measures = new Dictionary<TelemetryMeasureName, double>
+                            {
+                                [TelemetryMeasureName.ReleaseLeasesDurationMs] = releaseLeasesDurationMs,
+                                [TelemetryMeasureName.UpdateLastSyncVersionDurationMs] = updateLastSyncVersionDurationMs,
+                            };
+
+                            TelemetryInstance.TrackEvent(TelemetryEventName.ReleaseLeasesEnd, this._telemetryProps, measures);
+                            // Don't want to loop if no exception occurs.
+                            break;
                         }
-                        catch (Exception ex2)
+                        catch (Exception ex) when (retryCount < MaxRetryReleaseLeases)
                         {
-                            this._logger.LogError($"Failed to rollback transaction due to exception: {ex2.GetType()}. Exception message: {ex2.Message}");
-                            TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeasesRollback, ex2, this._telemetryProps);
+                            this._logger.LogError($"Failed to execute SQL commands to release leases in attempt: {retryCount} for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
+                            TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeases, ex, this._telemetryProps);
+
+                            try
+                            {
+                                transaction.Rollback();
+                            }
+                            catch (Exception ex2)
+                            {
+                                this._logger.LogError($"Failed to rollback transaction due to exception: {ex2.GetType()}. Exception message: {ex2.Message}");
+                                TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeasesRollback, ex2, this._telemetryProps);
+                            }
+                            Thread.Sleep(100);
                         }
                     }
                 }
             }
             catch (Exception e)
             {
-                // What should we do if releasing the leases fails? We could try to release them again or just wait,
-                // since eventually the lease time will expire. Then another thread will re-process the same changes
-                // though, so less than ideal. But for now that's the functionality.
-                this._logger.LogError($"Failed to release leases for table '{this._userTable.FullName}' due to exception: {e.GetType()}. Exception message: {e.Message}");
+                this._logger.LogError($"Failed to release leases for table after {MaxRetryReleaseLeases} '{this._userTable.FullName}' due to exception: {e.GetType()}. Exception message: {e.Message}");
                 TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeases, e, this._telemetryProps);
             }
             finally
