@@ -217,12 +217,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         }
                         this._logger.LogDebugWithThreadId($"END UpdateTablesPreInvocation Duration={setLastSyncVersionDurationMs}ms");
 
+                        var rows = new List<IReadOnlyDictionary<string, string>>();
+
                         // Use the version number to query for new changes.
                         using (SqlCommand getChangesCommand = this.BuildGetChangesCommand(connection, transaction))
                         {
                             this._logger.LogDebugWithThreadId($"BEGIN GetChanges Query={getChangesCommand.CommandText}");
                             var commandSw = Stopwatch.StartNew();
-                            var rows = new List<IReadOnlyDictionary<string, string>>();
 
                             using (SqlDataReader reader = await getChangesCommand.ExecuteReaderAsync(token))
                             {
@@ -232,15 +233,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                                 }
                             }
 
-                            this._rows = rows;
                             getChangesDurationMs = commandSw.ElapsedMilliseconds;
                         }
-                        this._logger.LogDebugWithThreadId($"END GetChanges Duration={getChangesDurationMs}ms ChangedRows={this._rows.Count}");
+                        this._logger.LogDebugWithThreadId($"END GetChanges Duration={getChangesDurationMs}ms ChangedRows={rows.Count}");
 
                         // If changes were found, acquire leases on them.
-                        if (this._rows.Count > 0)
+                        if (rows.Count > 0)
                         {
-                            using (SqlCommand acquireLeasesCommand = this.BuildAcquireLeasesCommand(connection, transaction))
+                            using (SqlCommand acquireLeasesCommand = this.BuildAcquireLeasesCommand(connection, transaction, rows))
                             {
                                 this._logger.LogDebugWithThreadId($"BEGIN AcquireLeases Query={acquireLeasesCommand.CommandText}");
                                 var commandSw = Stopwatch.StartNew();
@@ -251,6 +251,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         }
 
                         transaction.Commit();
+
+                        // Set the rows for processing, now since the leases are acquired.
+                        this._rows = rows;
 
                         var measures = new Dictionary<TelemetryMeasureName, double>
                         {
@@ -576,6 +579,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 string changeVersion = row["SYS_CHANGE_VERSION"];
                 changeVersionSet.Add(long.Parse(changeVersion, CultureInfo.InvariantCulture));
             }
+
             // If there are more than one version numbers in the set, return the second highest one. Otherwise, return
             // the only version number in the set.
             long lastSyncVersion = changeVersionSet.ElementAt(changeVersionSet.Count > 1 ? changeVersionSet.Count - 2 : 0);
@@ -696,15 +700,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         /// <param name="connection">The connection to add to the returned SqlCommand</param>
         /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
+        /// <param name="rows">Dictionary representing the table rows on which leases should be acquired</param>
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-        private SqlCommand BuildAcquireLeasesCommand(SqlConnection connection, SqlTransaction transaction)
+        private SqlCommand BuildAcquireLeasesCommand(SqlConnection connection, SqlTransaction transaction, IReadOnlyList<IReadOnlyDictionary<string, string>> rows)
         {
             var acquireLeasesQuery = new StringBuilder();
 
-            for (int rowIndex = 0; rowIndex < this._rows.Count; rowIndex++)
+            for (int rowIndex = 0; rowIndex < rows.Count; rowIndex++)
             {
                 string valuesList = string.Join(", ", this._primaryKeyColumns.Select((_, colIndex) => $"@{rowIndex}_{colIndex}"));
-                string changeVersion = this._rows[rowIndex]["SYS_CHANGE_VERSION"];
+                string changeVersion = rows[rowIndex]["SYS_CHANGE_VERSION"];
 
                 acquireLeasesQuery.Append($@"
                     IF NOT EXISTS (SELECT * FROM {this._leasesTableName} WITH (TABLOCKX) WHERE {this._rowMatchConditions[rowIndex]})
@@ -720,7 +725,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 ");
             }
 
-            return this.GetSqlCommandWithParameters(acquireLeasesQuery.ToString(), connection, transaction);
+            return this.GetSqlCommandWithParameters(acquireLeasesQuery.ToString(), connection, transaction, rows);
         }
 
         /// <summary>
@@ -738,7 +743,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 WHERE {matchCondition};
             ";
 
-            return this.GetSqlCommandWithParameters(renewLeasesQuery, connection, null);
+            return this.GetSqlCommandWithParameters(renewLeasesQuery, connection, null, this._rows);
         }
 
         /// <summary>
@@ -771,7 +776,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 ");
             }
 
-            return this.GetSqlCommandWithParameters(releaseLeasesQuery.ToString(), connection, transaction);
+            return this.GetSqlCommandWithParameters(releaseLeasesQuery.ToString(), connection, transaction, this._rows);
         }
 
         /// <summary>
@@ -827,6 +832,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="commandText">SQL query string</param>
         /// <param name="connection">The connection to add to the returned SqlCommand</param>
         /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
+        /// <param name="rows">Dictionary representing the table rows</param>
         /// <remarks>
         /// Ideally, we would have a map that maps from rows to a list of SqlCommands populated with their primary key
         /// values. The issue with this is that SQL doesn't seem to allow adding parameters to one collection when they
@@ -834,12 +840,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// is thrown if they are also added to the collection of a SqlCommand. The expected behavior seems to be to
         /// rebuild the SqlParameters each time.
         /// </remarks>
-        private SqlCommand GetSqlCommandWithParameters(string commandText, SqlConnection connection, SqlTransaction transaction)
+        private SqlCommand GetSqlCommandWithParameters(string commandText, SqlConnection connection,
+            SqlTransaction transaction, IReadOnlyList<IReadOnlyDictionary<string, string>> rows)
         {
             var command = new SqlCommand(commandText, connection, transaction);
 
-            SqlParameter[] parameters = Enumerable.Range(0, this._rows.Count)
-                .SelectMany(rowIndex => this._primaryKeyColumns.Select((col, colIndex) => new SqlParameter($"@{rowIndex}_{colIndex}", this._rows[rowIndex][col])))
+            SqlParameter[] parameters = Enumerable.Range(0, rows.Count)
+                .SelectMany(rowIndex => this._primaryKeyColumns.Select((col, colIndex) => new SqlParameter($"@{rowIndex}_{colIndex}", rows[rowIndex][col])))
                 .ToArray();
 
             command.Parameters.AddRange(parameters);
