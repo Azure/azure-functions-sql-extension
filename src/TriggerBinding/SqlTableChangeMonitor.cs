@@ -35,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public const int MaxLeaseRenewalCount = 10;
         public const int LeaseIntervalInSeconds = 60;
         public const int LeaseRenewalIntervalInSeconds = 15;
-        public const int MaxRetryReleaseLeases = 5;
+        public const int MaxRetryReleaseLeases = 3;
         private readonly string _connectionString;
         private readonly int _userTableId;
         private readonly SqlObject _userTable;
@@ -550,14 +550,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                                 this._logger.LogError($"Failed to rollback transaction due to exception: {ex2.GetType()}. Exception message: {ex2.Message}");
                                 TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeasesRollback, ex2, this._telemetryProps);
                             }
-                            Thread.Sleep(100);
                         }
                     }
                 }
             }
             catch (Exception e)
             {
-                this._logger.LogError($"Failed to release leases for table after {MaxRetryReleaseLeases} '{this._userTable.FullName}' due to exception: {e.GetType()}. Exception message: {e.Message}");
+                this._logger.LogError($"Failed to release leases for table '{this._userTable.FullName}' after {MaxRetryReleaseLeases} attempts due to exception: {e.GetType()}. Exception message: {e.Message}");
                 TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeases, e, this._telemetryProps);
             }
             finally
