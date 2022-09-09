@@ -40,7 +40,7 @@ Azure SQL bindings for Azure Functions are supported for:
       - [Stored Procedure](#stored-procedure)
       - [IAsyncEnumerable](#iasyncenumerable)
     - [Output Binding](#output-binding)
-      - [ICollector<T>/IAsyncCollector<T>](#icollectortiasynccollectort)
+      - [ICollector<T>/IAsyncCollector<T>](#icollectoriasynccollector)
       - [Array](#array)
       - [Single Row](#single-row)
       - [Primary Keys and Identity Columns](#primary-keys-and-identity-columns)
