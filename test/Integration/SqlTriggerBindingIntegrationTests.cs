@@ -30,10 +30,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public async Task SingleOperationTriggerTest()
         {
             this.EnableChangeTrackingForTable("Products");
-            this.StartFunctionHost(nameof(ProductsTrigger), Common.SupportedLanguages.CSharp);
 
             var changes = new List<SqlChange<Product>>();
-            this.MonitorProductChanges(changes);
+            DataReceivedEventHandler[] changeHandlers = new[] { this.GetProductChangeHandler(changes, "SQL Changes: ") };
+            this.StartFunctionHost(nameof(ProductsTrigger), Common.SupportedLanguages.CSharp, useTestFolder: false, changeHandlers);
 
             // Considering the polling interval of 5 seconds and batch-size of 10, it should take around 15 seconds to
             // process 30 insert operations. Similar reasoning is used to set delays for update and delete operations.
@@ -65,10 +65,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public async Task MultiOperationTriggerTest()
         {
             this.EnableChangeTrackingForTable("Products");
-            this.StartFunctionHost(nameof(ProductsTrigger), Common.SupportedLanguages.CSharp);
 
             var changes = new List<SqlChange<Product>>();
-            this.MonitorProductChanges(changes);
+            DataReceivedEventHandler[] changeHandlers = new[] { this.GetProductChangeHandler(changes, "SQL Changes: ") };
+            this.StartFunctionHost(nameof(ProductsTrigger), Common.SupportedLanguages.CSharp, useTestFolder: false, changeHandlers);
 
             // Insert + multiple updates to a row are treated as single insert with latest row values.
             this.InsertProducts(1, 5);
@@ -98,12 +98,50 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
+        /// Ensures correct functionality with user functions running across multiple functions host processes.
+        /// </summary>
+        [Fact]
+        public async Task MultiHostTriggerTest()
+        {
+            this.EnableChangeTrackingForTable("Products");
+
+            var changes = new List<SqlChange<Product>>();
+            DataReceivedEventHandler[] changeHandlers = new[] { this.GetProductChangeHandler(changes, "SQL Changes: ") };
+
+            // Prepare three function host processes
+            this.StartFunctionHost(nameof(ProductsTrigger), Common.SupportedLanguages.CSharp, useTestFolder: false, changeHandlers);
+            this.StartFunctionHost(nameof(ProductsTrigger), Common.SupportedLanguages.CSharp, useTestFolder: false, changeHandlers);
+            this.StartFunctionHost(nameof(ProductsTrigger), Common.SupportedLanguages.CSharp, useTestFolder: false, changeHandlers);
+
+            // Considering the polling interval of 5 seconds and batch-size of 10, it should take around 15 seconds to
+            // process 90 insert operations across all functions host processes. Similar reasoning is used to set delays
+            // for update and delete operations.
+            this.InsertProducts(1, 90);
+            await Task.Delay(TimeSpan.FromSeconds(20));
+            ValidateProductChanges(changes, 1, 90, SqlChangeOperation.Insert, id => $"Product {id}", id => id * 100);
+            changes.Clear();
+
+            // All table columns (not just the columns that were updated) would be returned for update operation.
+            this.UpdateProducts(1, 60);
+            await Task.Delay(TimeSpan.FromSeconds(15));
+            ValidateProductChanges(changes, 1, 60, SqlChangeOperation.Update, id => $"Updated Product {id}", id => id * 100);
+            changes.Clear();
+
+            // The properties corresponding to non-primary key columns would be set to the C# type's default values
+            // (null and 0) for delete operation.
+            this.DeleteProducts(31, 90);
+            await Task.Delay(TimeSpan.FromSeconds(15));
+            ValidateProductChanges(changes, 31, 90, SqlChangeOperation.Delete, _ => null, _ => 0);
+            changes.Clear();
+        }
+
+        /// <summary>
         /// Tests the error message when the user table is not present in the database.
         /// </summary>
         [Fact]
         public void TableNotPresentTriggerTest()
         {
-            this.StartFunctionsHostAndWaitForError(
+            this.StartFunctionHostAndWaitForError(
                 nameof(TableNotPresentTrigger),
                 true,
                 "Could not find table: 'dbo.TableNotPresent'.");
@@ -115,7 +153,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public void PrimaryKeyNotCreatedTriggerTest()
         {
-            this.StartFunctionsHostAndWaitForError(
+            this.StartFunctionHostAndWaitForError(
                 nameof(PrimaryKeyNotPresentTrigger),
                 true,
                 "Could not find primary key created in table: 'dbo.ProductsWithoutPrimaryKey'.");
@@ -128,7 +166,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public void ReservedPrimaryKeyColumnNamesTriggerTest()
         {
-            this.StartFunctionsHostAndWaitForError(
+            this.StartFunctionHostAndWaitForError(
                 nameof(ReservedPrimaryKeyColumnNamesTrigger),
                 true,
                 "Found reserved column name(s): '_az_func_ChangeVersion', '_az_func_AttemptCount', '_az_func_LeaseExpirationTime' in table: 'dbo.ProductsWithReservedPrimaryKeyColumnNames'." +
@@ -141,7 +179,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public void UnsupportedColumnTypesTriggerTest()
         {
-            this.StartFunctionsHostAndWaitForError(
+            this.StartFunctionHostAndWaitForError(
                 nameof(UnsupportedColumnTypesTrigger),
                 true,
                 "Found column(s) with unsupported type(s): 'Location' (type: geography), 'Geometry' (type: geometry), 'Organization' (type: hierarchyid)" +
@@ -154,7 +192,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public void ChangeTrackingNotEnabledTriggerTest()
         {
-            this.StartFunctionsHostAndWaitForError(
+            this.StartFunctionHostAndWaitForError(
                 nameof(ProductsTrigger),
                 false,
                 "Could not find change tracking enabled for table: 'dbo.Products'.");
@@ -177,17 +215,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             ");
         }
 
-        private void MonitorProductChanges(List<SqlChange<Product>> changes)
+        private DataReceivedEventHandler GetProductChangeHandler(List<SqlChange<Product>> changes, string messagePrefix)
         {
-            int index = 0;
-            string prefix = "SQL Changes: ";
+            return ProductChangeHandler;
 
-            this.FunctionHost.OutputDataReceived += (sender, e) =>
+            void ProductChangeHandler(object sender, DataReceivedEventArgs e)
             {
-                if (e.Data != null && (index = e.Data.IndexOf(prefix, StringComparison.Ordinal)) >= 0)
+                int index = 0;
+
+                if (e.Data != null && (index = e.Data.IndexOf(messagePrefix, StringComparison.Ordinal)) >= 0)
                 {
-                    string json = e.Data[(index + prefix.Length)..];
-                    changes.AddRange(JsonConvert.DeserializeObject<IReadOnlyList<SqlChange<Product>>>(json));
+                    string json = e.Data[(index + messagePrefix.Length)..];
+
+                    lock (changes)
+                    {
+                        changes.AddRange(JsonConvert.DeserializeObject<IReadOnlyList<SqlChange<Product>>>(json));
+                    }
                 }
             };
         }
@@ -248,7 +291,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <param name="functionName">Name of the user function that should cause error in trigger listener</param>
         /// <param name="useTestFolder">Whether the functions host should be launched from test folder</param>
         /// <param name="expectedErrorMessage">Expected error message string</param>
-        private void StartFunctionsHostAndWaitForError(string functionName, bool useTestFolder, string expectedErrorMessage)
+        private void StartFunctionHostAndWaitForError(string functionName, bool useTestFolder, string expectedErrorMessage)
         {
             string errorMessage = null;
             var tcs = new TaskCompletionSource<bool>();
@@ -268,7 +311,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             };
 
             // All trigger integration tests are only using C# functions for testing at the moment.
-            this.StartFunctionHost(functionName, Common.SupportedLanguages.CSharp, useTestFolder, OutputHandler);
+            this.StartFunctionHost(functionName, Common.SupportedLanguages.CSharp, useTestFolder, new DataReceivedEventHandler[] { OutputHandler });
             this.FunctionHost.OutputDataReceived -= OutputHandler;
             this.FunctionHost.Kill();
 
