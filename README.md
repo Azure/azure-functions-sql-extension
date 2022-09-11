@@ -40,7 +40,7 @@ Azure SQL bindings for Azure Functions are supported for:
       - [Stored Procedure](#stored-procedure)
       - [IAsyncEnumerable](#iasyncenumerable)
     - [Output Binding](#output-binding)
-      - [ICollector<T>/IAsyncCollector<T>](#icollectoriasynccollector)
+      - [ICollector&lt;T&gt;/IAsyncCollector&lt;T&gt;](#icollectortiasynccollectort)
       - [Array](#array)
       - [Single Row](#single-row)
       - [Primary Keys and Identity Columns](#primary-keys-and-identity-columns)
@@ -94,7 +94,7 @@ ALTER TABLE ['{table_name}'] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED (['{prima
 
 ### Create a Function App
 
-Now you will need a a Function App to add the binding to. If you have one created already you can skip this step.
+Now you will need a Function App to add the binding to. If you have one created already you can skip this step.
 
 These steps can be done in the Terminal/CLI or with PowerShell.
 
@@ -132,7 +132,6 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     func init --worker-runtime python
     ```
 
-
 3. Enable SQL bindings on the function app. More information can be found [in Microsoft Docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
 
     **.NET:** Install the extension.
@@ -149,7 +148,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     ```
 
     **Python:**
-    
+
     Update the `host.json` file to the preview extension bundle.
     ```json
     "extensionBundle": {
@@ -277,7 +276,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Open your app in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger ->  (Provide a function name) -> Company.namespace is fine -> anonymous
-- In the file that opens, replace the 'public static async Task<IActionResult> Run' block with the below code
+- In the file that opens, replace the 'public static async Task&lt;IActionResult&gt; Run' block with the below code
 
     ```csharp
     public static IActionResult Run(
@@ -421,7 +420,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Open your app that you created in [Create a Function App](#create-a-function-app) in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a function name) -> anonymous
-- In the file that opens (__init__.py), replace the 'def main(req: func.HttpRequest) -> func.HttpResponse:' block with the below code.
+- In the file that opens (\_\_init\_\_.py), replace the 'def main(req: func.HttpRequest) -> func.HttpResponse:' block with the below code.
 
     ```python
     def main(req: func.HttpRequest, employee: func.SqlRowList) -> func.HttpResponse:
@@ -464,7 +463,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Open your app in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger ->  (Provide a function name) -> anonymous
-- In the file that opens (__init__.py), replace the 'def main(req: func.HttpRequest) -> func.HttpResponse:' block with the below code.
+- In the file that opens (\_\_init\_\_.py), replace the 'def main(req: func.HttpRequest) -> func.HttpResponse:' block with the below code.
 
     ```python
     def main(req: func.HttpRequest, employee: func.Out[func.SqlRow]) -> func.HttpResponse:
@@ -516,8 +515,8 @@ The input binding takes four [arguments](https://github.com/Azure/azure-function
 
 The following are valid binding types for the result of the query/stored procedure execution:
 
-- **IEnumerable<T>**: Each element is a row of the result represented by `T`, where `T` is a user-defined POCO, or Plain Old C# Object. `T` should follow the structure of a row in the queried table. See the [Query String](#query-string) section for an example of what `T` should look like.
-- **IAsyncEnumerable<T>**: Each element is again a row of the result represented by `T`, but the rows are retrieved "lazily". A row of the result is only retrieved when `MoveNextAsync` is called on the enumerator. This is useful in the case that the query can return a very large amount of rows.
+- **IEnumerable&lt;T&gt;**: Each element is a row of the result represented by `T`, where `T` is a user-defined POCO, or Plain Old C# Object. `T` should follow the structure of a row in the queried table. See the [Query String](#query-string) section for an example of what `T` should look like.
+- **IAsyncEnumerable&lt;T&gt;**: Each element is again a row of the result represented by `T`, but the rows are retrieved "lazily". A row of the result is only retrieved when `MoveNextAsync` is called on the enumerator. This is useful in the case that the query can return a very large amount of rows.
 - **String**: A JSON string representation of the rows of the result (an example is provided [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-csharp/InputBindingSamples/GetProductsString.cs)).
 - **SqlCommand**: The SqlCommand is populated with the appropriate query and parameters, but the associated connection is not opened. It is the responsiblity of the user to execute the command and read in the results. This is useful in the case that the user wants more control over how the results are read in. An example is provided [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-csharp/InputBindingSamples/GetProductsSqlCommand.cs).
 
@@ -657,13 +656,13 @@ The output binding takes two [arguments](https://github.com/Azure/azure-function
 
 The following are valid binding types for the rows to be upserted into the table:
 
-- **ICollector<T>/IAsyncCollector<T>**: Each element is a row represented by `T`, where `T` is a user-defined POCO, or Plain Old C# Object. `T` should follow the structure of a row in the queried table. See the [Query String](#query-string) for an example of what `T` should look like.
+- **ICollector&lt;T&gt;/IAsyncCollector&lt;T&gt;**: Each element is a row represented by `T`, where `T` is a user-defined POCO, or Plain Old C# Object. `T` should follow the structure of a row in the queried table. See the [Query String](#query-string) for an example of what `T` should look like.
 - **T**: Used when just one row is to be upserted into the table.
 - **T[]**: Each element is again a row of the result represented by `T`. This output binding type requires manual instantiation of the array in the function.
 
 The repo contains examples of each of these binding types [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharp/OutputBindingSamples). A few examples are also included below.
 
-#### ICollector<T>/IAsyncCollector<T>
+#### ICollector&lt;T&gt;/IAsyncCollector&lt;T&gt;
 
 When using an `ICollector`, it is not necessary to instantiate it. The function can add rows to the `ICollector` directly, and its contents are automatically upserted once the function exits.
 
