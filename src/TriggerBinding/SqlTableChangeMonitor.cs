@@ -491,10 +491,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             await this._rowsLock.WaitAsync(token);
             this._logger.LogDebugWithThreadId("END WaitRowsLock - ReleaseLeases");
             long newLastSyncVersion = this.RecomputeLastSyncVersion();
+            bool retrySucceeded = false;
 
             try
             {
-                for (int retryCount = 1; retryCount <= MaxRetryReleaseLeases; retryCount++)
+                for (int retryCount = 1; retryCount <= MaxRetryReleaseLeases && retrySucceeded == false; retryCount++)
                 {
                     var transactionSw = Stopwatch.StartNew();
                     long releaseLeasesDurationMs = 0L, updateLastSyncVersionDurationMs = 0L;
@@ -533,13 +534,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             };
 
                             TelemetryInstance.TrackEvent(TelemetryEventName.ReleaseLeasesEnd, this._telemetryProps, measures);
-                            // Don't want to loop if no exception occurs.
-                            break;
+                            retrySucceeded = true;
                         }
                         catch (Exception ex) when (retryCount < MaxRetryReleaseLeases)
                         {
                             this._logger.LogError($"Failed to execute SQL commands to release leases in attempt: {retryCount} for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
-                            TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeases, ex, this._telemetryProps);
+
+                            var measures = new Dictionary<TelemetryMeasureName, double>
+                            {
+                                [TelemetryMeasureName.RetryAttemptNumber] = retryCount,
+                            };
+
+                            TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeases, ex, this._telemetryProps, measures);
 
                             try
                             {
@@ -557,7 +563,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             catch (Exception e)
             {
                 this._logger.LogError($"Failed to release leases for table '{this._userTable.FullName}' after {MaxRetryReleaseLeases} attempts due to exception: {e.GetType()}. Exception message: {e.Message}");
-                TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeases, e, this._telemetryProps);
+                TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeasesNoRetriesLeft, e, this._telemetryProps);
             }
             finally
             {
