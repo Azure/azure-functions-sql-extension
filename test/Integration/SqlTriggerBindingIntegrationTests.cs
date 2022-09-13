@@ -271,7 +271,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.StartFunctionHost(functionName, Common.SupportedLanguages.CSharp, useTestFolder, OutputHandler);
 
             // The functions host generally logs the error message within a second after starting up.
-            const int BufferTimeForErrorInSeconds = 5;
+            const int BufferTimeForErrorInSeconds = 15;
             bool isCompleted = tcs.Task.Wait(TimeSpan.FromSeconds(BufferTimeForErrorInSeconds));
 
             this.FunctionHost.OutputDataReceived -= OutputHandler;
