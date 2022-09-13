@@ -228,7 +228,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Open your app that you created in [Create a Function App](#create-a-function-app) in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a function name) -> Company.namespace -> anonymous
-- In the file that opens, replace the 'public static async Task< IActionResult > Run' block with the below code.
+- In the file that opens, replace the `public static async Task<IActionResult> Run` block with the below code.
 
     ```csharp
     public static async Task<IActionResult> Run(
@@ -276,7 +276,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Open your app in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger ->  (Provide a function name) -> Company.namespace is fine -> anonymous
-- In the file that opens, replace the 'public static async Task&lt;IActionResult&gt; Run' block with the below code
+- In the file that opens, replace the `public static async Task<IActionResult> Run` block with the below code
 
     ```csharp
     public static IActionResult Run(
@@ -325,7 +325,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Open your app that you created in [Create a Function App](#create-a-function-app) in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a function name) -> anonymous
-- In the file that opens (index.js), replace the 'module.exports = async function (context, req)' block with the below code.
+- In the file that opens (`index.js`), replace the `module.exports = async function (context, req)` block with the below code.
 
     ```javascript
     module.exports = async function (context, req, employee) {
@@ -365,7 +365,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Open your app in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger ->  (Provide a function name) -> anonymous
-- In the file that opens (index.js), replace the 'module.exports = async function (context, req)' block with the below code.
+- In the file that opens (`index.js`), replace the `module.exports = async function (context, req)` block with the below code.
 
     ```javascript
     module.exports = async function (context, req) {
@@ -420,7 +420,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Open your app that you created in [Create a Function App](#create-a-function-app) in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a function name) -> anonymous
-- In the file that opens (\_\_init\_\_.py), replace the 'def main(req: func.HttpRequest) -> func.HttpResponse:' block with the below code.
+- In the file that opens (`__init__.py`), replace the `def main(req: func.HttpRequest) -> func.HttpResponse:` block with the below code.
 
     ```python
     def main(req: func.HttpRequest, employee: func.SqlRowList) -> func.HttpResponse:
@@ -463,7 +463,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Open your app in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger ->  (Provide a function name) -> anonymous
-- In the file that opens (\_\_init\_\_.py), replace the 'def main(req: func.HttpRequest) -> func.HttpResponse:' block with the below code.
+- In the file that opens (`__init__.py`), replace the `def main(req: func.HttpRequest) -> func.HttpResponse:` block with the below code.
 
     ```python
     def main(req: func.HttpRequest, employee: func.Out[func.SqlRow]) -> func.HttpResponse:
