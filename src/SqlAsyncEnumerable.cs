@@ -77,8 +77,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             public ValueTask DisposeAsync()
             {
                 // Doesn't seem like there's an async version of closing the reader/connection
-                this._reader.Close();
-                this._connection.Close();
+                if (this._reader != null)
+                {
+                    this._reader.Close();
+                }
+                if (this._connection != null && this._connection.State == System.Data.ConnectionState.Open)
+                {
+                    this._connection.Close();
+                }
                 return new ValueTask(Task.CompletedTask);
             }
 
@@ -101,26 +107,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </returns>
             private async Task<bool> GetNextRowAsync()
             {
-                if (this._reader == null)
+                if (this._connection.State != System.Data.ConnectionState.Closed)
                 {
-                    using (SqlCommand command = SqlBindingUtilities.BuildCommand(this._attribute, this._connection))
+                    if (this._reader == null)
                     {
-                        if (this._connection.State != System.Data.ConnectionState.Open)
+                        using (SqlCommand command = SqlBindingUtilities.BuildCommand(this._attribute, this._connection))
                         {
-                            await this._connection.OpenAsync();
+                            this._reader = await command.ExecuteReaderAsync();
                         }
-                        this._reader = await command.ExecuteReaderAsync();
+                    }
+                    if (await this._reader.ReadAsync())
+                    {
+                        this.Current = JsonConvert.DeserializeObject<T>(this.SerializeRow());
+                        return true;
                     }
                 }
-                if (await this._reader.ReadAsync())
-                {
-                    this.Current = JsonConvert.DeserializeObject<T>(this.SerializeRow());
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+                return false;
             }
 
             /// <summary>
