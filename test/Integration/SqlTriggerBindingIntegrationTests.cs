@@ -108,7 +108,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             var changes = new List<SqlChange<Product>>();
             DataReceivedEventHandler[] changeHandlers = new[] { this.GetProductChangeHandler(changes, "SQL Changes: ") };
 
-            // Prepare three function host processes
+            // Prepare three function host processes.
             this.StartFunctionHost(nameof(ProductsTrigger), Common.SupportedLanguages.CSharp, useTestFolder: false, changeHandlers);
             this.StartFunctionHost(nameof(ProductsTrigger), Common.SupportedLanguages.CSharp, useTestFolder: false, changeHandlers);
             this.StartFunctionHost(nameof(ProductsTrigger), Common.SupportedLanguages.CSharp, useTestFolder: false, changeHandlers);

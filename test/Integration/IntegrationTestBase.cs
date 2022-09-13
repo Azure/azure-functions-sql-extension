@@ -23,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     public class IntegrationTestBase : IDisposable
     {
         /// <summary>
-        /// Host process for Azure Function CLI. Useful when only one host process is involved.
+        /// The first Function Host process that was started. Null if no process has been started yet.
         /// </summary>
         protected Process FunctionHost => this.FunctionHostList.FirstOrDefault();
 
@@ -287,7 +287,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             void TestOutputHandler(object sender, DataReceivedEventArgs e)
             {
-                if (e != null && !string.IsNullOrEmpty(e.Data))
+                if (!string.IsNullOrEmpty(e.Data))
                 {
                     this.TestOutput.WriteLine($"[{processId}] {e.Data}");
                 }
@@ -374,8 +374,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 try
                 {
-                    functionHost?.Kill();
-                    functionHost?.Dispose();
+                    functionHost.Kill();
+                    functionHost.Dispose();
                 }
                 catch (Exception e2)
                 {
