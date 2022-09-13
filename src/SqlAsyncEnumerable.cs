@@ -77,14 +77,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             public ValueTask DisposeAsync()
             {
                 // Doesn't seem like there's an async version of closing the reader/connection
-                if (this._reader != null)
-                {
-                    this._reader.Close();
-                }
-                if (this._connection != null && this._connection.State == System.Data.ConnectionState.Open)
-                {
-                    this._connection.Close();
-                }
+                this._reader?.Close();
+                this._connection.Close();
                 return new ValueTask(Task.CompletedTask);
             }
 
