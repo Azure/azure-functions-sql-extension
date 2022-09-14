@@ -74,6 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             /// <summary>
             /// Closes the SQL connection and resources associated with reading the results of the query
+            /// Set _isDisposed to true so any further MoveNextAsync calls will not attempt to read from a disposed reader. 
             /// </summary>
             /// <returns></returns>
             public ValueTask DisposeAsync()
