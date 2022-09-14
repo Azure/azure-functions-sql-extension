@@ -7,13 +7,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
-
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
     internal class SqlAsyncEnumerable<T> : IAsyncEnumerable<T>
     {
-        private readonly SqlConnection _connection;
+        public SqlConnection Connection { get; private set; }
         private readonly SqlAttribute _attribute;
 
         /// <summary>
@@ -26,8 +25,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </exception>
         public SqlAsyncEnumerable(SqlConnection connection, SqlAttribute attribute)
         {
-            this._connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            this.Connection = connection ?? throw new ArgumentNullException(nameof(connection));
             this._attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
+            this.Connection.Open();
         }
         /// <summary>
         /// Returns the enumerator associated with this enumerable. The enumerator will execute the query specified
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The enumerator</returns>
         public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
         {
-            return new SqlAsyncEnumerator(this._connection, this._attribute);
+            return new SqlAsyncEnumerator(this.Connection, this._attribute);
         }
 
 
@@ -47,7 +47,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             private readonly SqlConnection _connection;
             private readonly SqlAttribute _attribute;
             private SqlDataReader _reader;
-
             /// <summary>
             /// Initializes a new instance of the <see cref="SqlAsyncEnumerator<typeparamref name="T"/>"/> class.
             /// </summary>
@@ -77,7 +76,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             public ValueTask DisposeAsync()
             {
                 // Doesn't seem like there's an async version of closing the reader/connection
-                this._reader.Close();
+                this._reader?.Close();
                 this._connection.Close();
                 return new ValueTask(Task.CompletedTask);
             }
@@ -101,23 +100,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </returns>
             private async Task<bool> GetNextRowAsync()
             {
-                if (this._reader == null)
+                // check connection state before trying to access the reader
+                // if DisposeAsync has already closed it due to the issue described here https://github.com/Azure/azure-functions-sql-extension/issues/350
+                if (this._connection.State != System.Data.ConnectionState.Closed)
                 {
-                    using (SqlCommand command = SqlBindingUtilities.BuildCommand(this._attribute, this._connection))
+                    if (this._reader == null)
                     {
-                        await command.Connection.OpenAsync();
-                        this._reader = await command.ExecuteReaderAsync();
+                        using (SqlCommand command = SqlBindingUtilities.BuildCommand(this._attribute, this._connection))
+                        {
+                            this._reader = await command.ExecuteReaderAsync();
+                        }
+                    }
+                    if (await this._reader.ReadAsync())
+                    {
+                        this.Current = JsonConvert.DeserializeObject<T>(this.SerializeRow());
+                        return true;
                     }
                 }
-                if (await this._reader.ReadAsync())
-                {
-                    this.Current = JsonConvert.DeserializeObject<T>(this.SerializeRow());
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+                return false;
             }
 
             /// <summary>
