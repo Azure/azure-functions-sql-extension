@@ -100,6 +100,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </returns>
             private async Task<bool> GetNextRowAsync()
             {
+                // check connection state before trying to access the reader
+                // if DisposeAsync has already closed it due to the issue described here https://github.com/Azure/azure-functions-sql-extension/issues/350
                 if (this._connection.State != System.Data.ConnectionState.Closed)
                 {
                     if (this._reader == null)
