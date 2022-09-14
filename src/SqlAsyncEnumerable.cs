@@ -47,6 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             private readonly SqlConnection _connection;
             private readonly SqlAttribute _attribute;
             private SqlDataReader _reader;
+            private bool _isDisposed;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="SqlAsyncEnumerator<typeparamref name="T"/>"/> class.
@@ -60,6 +61,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 this._connection = connection ?? throw new ArgumentNullException(nameof(connection));
                 this._attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
+                this._isDisposed = false;
             }
 
             /// <summary>
@@ -79,6 +81,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // Doesn't seem like there's an async version of closing the reader/connection
                 this._reader?.Close();
                 this._connection.Close();
+                this._isDisposed = true;
                 return new ValueTask(Task.CompletedTask);
             }
 
@@ -101,7 +104,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </returns>
             private async Task<bool> GetNextRowAsync()
             {
-                if (this._connection.State != System.Data.ConnectionState.Closed)
+                if (!this._isDisposed)
                 {
                     if (this._reader == null)
                     {
