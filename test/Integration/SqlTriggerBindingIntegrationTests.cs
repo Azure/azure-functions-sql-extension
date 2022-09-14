@@ -269,9 +269,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // All trigger integration tests are only using C# functions for testing at the moment.
             this.StartFunctionHost(functionName, Common.SupportedLanguages.CSharp, useTestFolder, OutputHandler);
+
+            // The functions host generally logs the error message within a second after starting up.
+            const int BufferTimeForErrorInSeconds = 15;
+            bool isCompleted = tcs.Task.Wait(TimeSpan.FromSeconds(BufferTimeForErrorInSeconds));
+
             this.FunctionHost.OutputDataReceived -= OutputHandler;
             this.FunctionHost.Kill();
 
+            Assert.True(isCompleted, "Functions host did not log failure to start SQL trigger listener within specified time.");
             Assert.Equal(expectedErrorMessage, errorMessage);
         }
     }
