@@ -35,7 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public const int MaxLeaseRenewalCount = 10;
         public const int LeaseIntervalInSeconds = 60;
         public const int LeaseRenewalIntervalInSeconds = 15;
-
+        public const int MaxRetryReleaseLeases = 3;
         private readonly string _connectionString;
         private readonly int _userTableId;
         private readonly SqlObject _userTable;
@@ -494,8 +494,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             await this._rowsLock.WaitAsync(token);
             this._logger.LogDebugWithThreadId("END WaitRowsLock - ReleaseLeases");
             long newLastSyncVersion = this.RecomputeLastSyncVersion();
+            bool retrySucceeded = false;
 
-            try
+            for (int retryCount = 1; retryCount <= MaxRetryReleaseLeases && !retrySucceeded; retryCount++)
             {
                 var transactionSw = Stopwatch.StartNew();
                 long releaseLeasesDurationMs = 0L, updateLastSyncVersionDurationMs = 0L;
@@ -531,14 +532,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         {
                             [TelemetryMeasureName.ReleaseLeasesDurationMs] = releaseLeasesDurationMs,
                             [TelemetryMeasureName.UpdateLastSyncVersionDurationMs] = updateLastSyncVersionDurationMs,
+                            [TelemetryMeasureName.TransactionDurationMs] = transactionSw.ElapsedMilliseconds,
                         };
 
                         TelemetryInstance.TrackEvent(TelemetryEventName.ReleaseLeasesEnd, this._telemetryProps, measures);
+                        retrySucceeded = true;
                     }
                     catch (Exception ex)
                     {
-                        this._logger.LogError($"Failed to execute SQL commands to release leases for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
-                        TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeases, ex, this._telemetryProps);
+                        if (retryCount < MaxRetryReleaseLeases)
+                        {
+                            this._logger.LogError($"Failed to execute SQL commands to release leases in attempt: {retryCount} for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
+
+                            var measures = new Dictionary<TelemetryMeasureName, double>
+                            {
+                                [TelemetryMeasureName.RetryAttemptNumber] = retryCount,
+                            };
+
+                            TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeases, ex, this._telemetryProps, measures);
+                        }
+                        else
+                        {
+                            this._logger.LogError($"Failed to release leases for table '{this._userTable.FullName}' after {MaxRetryReleaseLeases} attempts due to exception: {ex.GetType()}. Exception message: {ex.Message}");
+                            TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeasesNoRetriesLeft, ex, this._telemetryProps);
+                        }
 
                         try
                         {
@@ -552,20 +569,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     }
                 }
             }
-            catch (Exception e)
-            {
-                // What should we do if releasing the leases fails? We could try to release them again or just wait,
-                // since eventually the lease time will expire. Then another thread will re-process the same changes
-                // though, so less than ideal. But for now that's the functionality.
-                this._logger.LogError($"Failed to release leases for table '{this._userTable.FullName}' due to exception: {e.GetType()}. Exception message: {e.Message}");
-                TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeases, e, this._telemetryProps);
-            }
-            finally
-            {
-                // Want to do this before releasing the lock in case the renew leases thread wakes up. It will see that
-                // the state is checking for changes and not renew the (just released) leases.
-                await this.ClearRowsAsync(false);
-            }
+            // Want to do this before releasing the lock in case the renew leases thread wakes up. It will see that
+            // the state is checking for changes and not renew the (just released) leases.
+            await this.ClearRowsAsync(false);
         }
 
         /// <summary>
