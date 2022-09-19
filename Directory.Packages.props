@@ -15,5 +15,6 @@
     <PackageVersion Include="Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator" Version="1.2.3" />
     <PackageVersion Include="Newtonsoft.Json" Version="11.0.2" />
     <PackageVersion Include="Microsoft.AspNetCore.Http" Version="2.1.22" />
+    <PackageVersion Include="BenchmarkDotNet" Version="0.13.1" />
   </ItemGroup>
 </Project>
