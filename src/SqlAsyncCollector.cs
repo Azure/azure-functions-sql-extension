@@ -147,6 +147,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="configuration"> Used to build up the connection </param>
         private async Task UpsertRowsAsync(IEnumerable<T> rows, SqlAttribute attribute, IConfiguration configuration)
         {
+            this._logger.LogDebugWithThreadId("BEGIN UpsertRowsAsync");
+            var upsertRowsAsyncSw = Stopwatch.StartNew();
             using (SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
                 await connection.OpenAsync();
@@ -171,7 +173,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(10)
                     };
 
-                    this._logger.LogInformation($"DB and Table: {connection.Database}.{fullTableName}. Primary keys: [{string.Join(",", tableInfo.PrimaryKeys.Select(pk => pk.Name))}]. SQL Column and Definitions:  [{string.Join(",", tableInfo.ColumnDefinitions)}]");
                     cachedTables.Set(cacheKey, tableInfo, policy);
                 }
                 else
@@ -189,6 +190,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
 
                 TelemetryInstance.TrackEvent(TelemetryEventName.UpsertStart, props);
+                this._logger.LogDebugWithThreadId("BEGIN UpsertRowsTransaction");
                 var transactionSw = Stopwatch.StartNew();
                 int batchSize = 1000;
                 SqlTransaction transaction = connection.BeginTransaction();
@@ -209,6 +211,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         await command.ExecuteNonQueryAsync();
                     }
                     transaction.Commit();
+                    transactionSw.Stop();
+                    upsertRowsAsyncSw.Stop();
                     var measures = new Dictionary<TelemetryMeasureName, double>()
                 {
                     { TelemetryMeasureName.BatchCount, batchCount },
@@ -216,7 +220,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     { TelemetryMeasureName.CommandDurationMs, commandSw.ElapsedMilliseconds }
                 };
                     TelemetryInstance.TrackEvent(TelemetryEventName.UpsertEnd, props, measures);
-                    this._logger.LogInformation($"Upserted {rows.Count()} row(s) into database: {connection.Database} and table: {fullTableName}.");
+                    this._logger.LogDebugWithThreadId($"END UpsertRowsTransaction Duration={transactionSw.ElapsedMilliseconds}ms Upserted {rows.Count()} row(s) into database: {connection.Database} and table: {fullTableName}.");
+                    this._logger.LogDebugWithThreadId($"END UpsertRowsAsync Duration={upsertRowsAsyncSw.ElapsedMilliseconds}ms");
                 }
                 catch (Exception ex)
                 {
@@ -344,7 +349,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public class TableInformation
         {
-            public IEnumerable<MemberInfo> PrimaryKeys { get; }
+            public IEnumerable<PropertyInfo> PrimaryKeys { get; }
 
             /// <summary>
             /// All of the columns, along with their data types, for SQL to use to turn JSON into a table
@@ -378,7 +383,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </summary>
             public JsonSerializerSettings JsonSerializerSettings { get; }
 
-            public TableInformation(IEnumerable<MemberInfo> primaryKeys, IDictionary<string, string> columns, StringComparer comparer, string query, bool hasIdentityColumnPrimaryKeys)
+            public TableInformation(IEnumerable<PropertyInfo> primaryKeys, IDictionary<string, string> columns, StringComparer comparer, string query, bool hasIdentityColumnPrimaryKeys)
             {
                 this.PrimaryKeys = primaryKeys;
                 this.Columns = columns;
@@ -504,6 +509,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 Dictionary<TelemetryPropertyName, string> sqlConnProps = sqlConnection.AsConnectionProps();
                 TelemetryInstance.TrackEvent(TelemetryEventName.GetTableInfoStart, sqlConnProps);
+                logger.LogDebugWithThreadId("BEGIN RetrieveTableInformationAsync");
                 var table = new SqlObject(fullName);
 
                 // Get case sensitivity from database collation (default to false if any exception occurs)
@@ -512,7 +518,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var caseSensitiveSw = Stopwatch.StartNew();
                 try
                 {
-                    var cmdCollation = new SqlCommand(GetDatabaseCollationQuery(sqlConnection), sqlConnection);
+                    string getDatabaseCollationQuery = GetDatabaseCollationQuery(sqlConnection);
+                    logger.LogDebugWithThreadId($"BEGIN GetCaseSensitivity Query=\"{getDatabaseCollationQuery}\"");
+                    var cmdCollation = new SqlCommand(getDatabaseCollationQuery, sqlConnection);
                     using (SqlDataReader rdr = await cmdCollation.ExecuteReaderAsync())
                     {
                         while (await rdr.ReadAsync())
@@ -521,6 +529,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         }
                         caseSensitiveSw.Stop();
                         TelemetryInstance.TrackDuration(TelemetryEventName.GetCaseSensitivity, caseSensitiveSw.ElapsedMilliseconds, sqlConnProps);
+                        logger.LogDebugWithThreadId($"END GetCaseSensitivity Duration={caseSensitiveSw.ElapsedMilliseconds}ms");
                     }
                 }
                 catch (Exception ex)
@@ -539,7 +548,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var columnDefinitionsSw = Stopwatch.StartNew();
                 try
                 {
-                    var cmdColDef = new SqlCommand(GetColumnDefinitionsQuery(table), sqlConnection);
+                    string getColumnDefinitionsQuery = GetColumnDefinitionsQuery(table);
+                    logger.LogDebugWithThreadId($"BEGIN GetColumnDefinitions Query=\"{getColumnDefinitionsQuery}\"");
+                    var cmdColDef = new SqlCommand(getColumnDefinitionsQuery, sqlConnection);
                     using (SqlDataReader rdr = await cmdColDef.ExecuteReaderAsync())
                     {
                         while (await rdr.ReadAsync())
@@ -549,6 +560,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         }
                         columnDefinitionsSw.Stop();
                         TelemetryInstance.TrackDuration(TelemetryEventName.GetColumnDefinitions, columnDefinitionsSw.ElapsedMilliseconds, sqlConnProps);
+                        logger.LogDebugWithThreadId($"END GetColumnDefinitions Duration={columnDefinitionsSw.ElapsedMilliseconds}ms");
                     }
 
                 }
@@ -573,7 +585,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var primaryKeysSw = Stopwatch.StartNew();
                 try
                 {
-                    var cmd = new SqlCommand(GetPrimaryKeysQuery(table), sqlConnection);
+                    string getPrimaryKeysQuery = GetPrimaryKeysQuery(table);
+                    logger.LogDebugWithThreadId($"BEGIN GetPrimaryKeys Query=\"{getPrimaryKeysQuery}\"");
+                    var cmd = new SqlCommand(getPrimaryKeysQuery, sqlConnection);
                     using (SqlDataReader rdr = await cmd.ExecuteReaderAsync())
                     {
                         while (await rdr.ReadAsync())
@@ -583,6 +597,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         }
                         primaryKeysSw.Stop();
                         TelemetryInstance.TrackDuration(TelemetryEventName.GetPrimaryKeys, primaryKeysSw.ElapsedMilliseconds, sqlConnProps);
+                        logger.LogDebugWithThreadId($"END GetPrimaryKeys Duration={primaryKeysSw.ElapsedMilliseconds}ms");
                     }
                 }
                 catch (Exception ex)
@@ -603,7 +618,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 // Match SQL Primary Key column names to POCO field/property objects. Ensure none are missing.
                 StringComparison comparison = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-                IEnumerable<MemberInfo> primaryKeyFields = typeof(T).GetMembers().Where(f => primaryKeys.Any(k => string.Equals(k.Name, f.Name, comparison)));
+                IEnumerable<PropertyInfo> primaryKeyFields = typeof(T).GetProperties().Where(f => primaryKeys.Any(k => string.Equals(k.Name, f.Name, comparison)));
                 IEnumerable<string> primaryKeysFromObject = columnNames.Where(f => primaryKeys.Any(k => string.Equals(k.Name, f, comparison)));
                 IEnumerable<PrimaryKey> missingPrimaryKeysFromItem = primaryKeys
                     .Where(k => !primaryKeysFromObject.Contains(k.Name, comparer));
@@ -633,6 +648,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 sqlConnProps.Add(TelemetryPropertyName.QueryType, usingInsertQuery ? "insert" : "merge");
                 sqlConnProps.Add(TelemetryPropertyName.HasIdentityColumn, hasIdentityColumnPrimaryKeys.ToString());
                 TelemetryInstance.TrackDuration(TelemetryEventName.GetTableInfoEnd, tableInfoSw.ElapsedMilliseconds, sqlConnProps, durations);
+                logger.LogDebugWithThreadId($"END RetrieveTableInformationAsync Duration={tableInfoSw.ElapsedMilliseconds}ms DB and Table: {sqlConnection.Database}.{fullName}. Primary keys: [{string.Join(",", primaryKeyFields.Select(pk => pk.Name))}]. SQL Column and Definitions:  [{string.Join(",", columnDefinitionsFromSQL)}]");
                 return new TableInformation(primaryKeyFields, columnDefinitionsFromSQL, comparer, query, hasIdentityColumnPrimaryKeys);
             }
         }
