@@ -1,7 +1,7 @@
 {
     "codebaseName": "Sql Bindings",
     "notificationAliases": [
-        "sqltools@service.microsoft.com"
+        "sqlbindings@microsoft.com"
     ],
     "codebaseAdmins": [
         "REDMOND\\chlafren",
@@ -14,6 +14,7 @@
     "tools": [
         "BinSkim",
         "RoslynAnalyzers",
-        "CredScan"
+        "CredScan",
+        "Policheck"
     ]
 }
