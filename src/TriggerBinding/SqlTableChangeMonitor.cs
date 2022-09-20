@@ -47,22 +47,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly ILogger _logger;
 
-        private readonly CancellationTokenSource _cancellationTokenSourceCheckForChanges;
-        private readonly CancellationTokenSource _cancellationTokenSourceRenewLeases;
-        private CancellationTokenSource _cancellationTokenSourceExecutor;
+        private readonly CancellationTokenSource _cancellationTokenSourceCheckForChanges = new CancellationTokenSource();
+        private readonly CancellationTokenSource _cancellationTokenSourceRenewLeases = new CancellationTokenSource();
+        private CancellationTokenSource _cancellationTokenSourceExecutor = new CancellationTokenSource();
 
         // The semaphore gets used by lease-renewal loop to ensure that '_state' stays set to 'ProcessingChanges' while
         // the leases are being renewed. The change-consumption loop requires to wait for the semaphore before modifying
         // the value of '_state' back to 'CheckingForChanges'. Since the field '_rows' is only updated if the value of
         // '_state' is set to 'CheckingForChanges', this guarantees that '_rows' will stay same while it is being
         // iterated over inside the lease-renewal loop.
-        private readonly SemaphoreSlim _rowsLock;
+        private readonly SemaphoreSlim _rowsLock = new SemaphoreSlim(1, 1);
 
         private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps;
 
-        private IReadOnlyList<IReadOnlyDictionary<string, object>> _rows;
-        private int _leaseRenewalCount;
-        private State _state;
+        private IReadOnlyList<IReadOnlyDictionary<string, object>> _rows = new List<IReadOnlyDictionary<string, object>>();
+        private int _leaseRenewalCount = 0;
+        private State _state = State.CheckingForChanges;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlTableChangeMonitor{T}" />> class.
@@ -89,41 +89,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             ILogger logger,
             IDictionary<TelemetryPropertyName, string> telemetryProps)
         {
-            _ = !string.IsNullOrEmpty(connectionString) ? true : throw new ArgumentNullException(nameof(connectionString));
-            _ = !string.IsNullOrEmpty(userTable.FullName) ? true : throw new ArgumentNullException(nameof(userTable));
-            _ = !string.IsNullOrEmpty(userFunctionId) ? true : throw new ArgumentNullException(nameof(userFunctionId));
-            _ = !string.IsNullOrEmpty(leasesTableName) ? true : throw new ArgumentNullException(nameof(leasesTableName));
-            _ = userTableColumns ?? throw new ArgumentNullException(nameof(userTableColumns));
-            _ = primaryKeyColumns ?? throw new ArgumentNullException(nameof(primaryKeyColumns));
-            _ = executor ?? throw new ArgumentNullException(nameof(executor));
-            _ = logger ?? throw new ArgumentNullException(nameof(logger));
+            this._connectionString = !string.IsNullOrEmpty(connectionString) ? connectionString : throw new ArgumentNullException(nameof(connectionString));
+            this._userTable = !string.IsNullOrEmpty(userTable?.FullName) ? userTable : throw new ArgumentNullException(nameof(userTable));
+            this._userFunctionId = !string.IsNullOrEmpty(userFunctionId) ? userFunctionId : throw new ArgumentNullException(nameof(userFunctionId));
+            this._leasesTableName = !string.IsNullOrEmpty(leasesTableName) ? leasesTableName : throw new ArgumentNullException(nameof(leasesTableName));
+            this._userTableColumns = userTableColumns ?? throw new ArgumentNullException(nameof(userTableColumns));
+            this._primaryKeyColumns = primaryKeyColumns ?? throw new ArgumentNullException(nameof(primaryKeyColumns));
+            this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
+            this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            this._connectionString = connectionString;
             this._userTableId = userTableId;
-            this._userTable = userTable;
-            this._userFunctionId = userFunctionId;
-            this._leasesTableName = leasesTableName;
-            this._userTableColumns = userTableColumns;
-            this._primaryKeyColumns = primaryKeyColumns;
 
             // Prep search-conditions that will be used besides WHERE clause to match table rows.
             this._rowMatchConditions = Enumerable.Range(0, BatchSize)
                 .Select(rowIndex => string.Join(" AND ", this._primaryKeyColumns.Select((col, colIndex) => $"{col.AsBracketQuotedString()} = @{rowIndex}_{colIndex}")))
                 .ToList();
 
-            this._executor = executor;
-            this._logger = logger;
-
-            this._cancellationTokenSourceCheckForChanges = new CancellationTokenSource();
-            this._cancellationTokenSourceRenewLeases = new CancellationTokenSource();
-            this._cancellationTokenSourceExecutor = new CancellationTokenSource();
-
-            this._telemetryProps = telemetryProps;
-
-            this._rowsLock = new SemaphoreSlim(1, 1);
-            this._rows = new List<IReadOnlyDictionary<string, object>>();
-            this._leaseRenewalCount = 0;
-            this._state = State.CheckingForChanges;
+            this._telemetryProps = telemetryProps ?? new Dictionary<TelemetryPropertyName, string>();
 
 #pragma warning disable CS4014 // Queue the below tasks and exit. Do not wait for their completion.
             _ = Task.Run(() =>
