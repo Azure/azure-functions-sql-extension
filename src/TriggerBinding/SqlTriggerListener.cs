@@ -34,7 +34,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly string _userFunctionId;
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly ILogger _logger;
-        private readonly IConfiguration _configuration;
 
         private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps = new Dictionary<TelemetryPropertyName, string>();
 
