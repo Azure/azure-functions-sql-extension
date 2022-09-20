@@ -89,32 +89,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             ILogger logger,
             IDictionary<TelemetryPropertyName, string> telemetryProps)
         {
-            _ = !string.IsNullOrEmpty(connectionString) ? true : throw new ArgumentNullException(nameof(connectionString));
-            _ = !string.IsNullOrEmpty(userTable.FullName) ? true : throw new ArgumentNullException(nameof(userTable));
-            _ = !string.IsNullOrEmpty(userFunctionId) ? true : throw new ArgumentNullException(nameof(userFunctionId));
-            _ = !string.IsNullOrEmpty(leasesTableName) ? true : throw new ArgumentNullException(nameof(leasesTableName));
-            _ = userTableColumns ?? throw new ArgumentNullException(nameof(userTableColumns));
-            _ = primaryKeyColumns ?? throw new ArgumentNullException(nameof(primaryKeyColumns));
-            _ = executor ?? throw new ArgumentNullException(nameof(executor));
-            _ = logger ?? throw new ArgumentNullException(nameof(logger));
+            this._connectionString = !string.IsNullOrEmpty(connectionString) ? connectionString : throw new ArgumentNullException(nameof(connectionString));
+            this._userTable = !string.IsNullOrEmpty(userTable?.FullName) ? userTable : throw new ArgumentNullException(nameof(userTable));
+            this._userFunctionId = !string.IsNullOrEmpty(userFunctionId) ? userFunctionId : throw new ArgumentNullException(nameof(userFunctionId));
+            this._leasesTableName = !string.IsNullOrEmpty(leasesTableName) ? leasesTableName : throw new ArgumentNullException(nameof(leasesTableName));
+            this._userTableColumns = userTableColumns ?? throw new ArgumentNullException(nameof(userTableColumns));
+            this._primaryKeyColumns = primaryKeyColumns ?? throw new ArgumentNullException(nameof(primaryKeyColumns));
+            this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
+            this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            this._connectionString = connectionString;
             this._userTableId = userTableId;
-            this._userTable = userTable;
-            this._userFunctionId = userFunctionId;
-            this._leasesTableName = leasesTableName;
-            this._userTableColumns = userTableColumns;
-            this._primaryKeyColumns = primaryKeyColumns;
 
             // Prep search-conditions that will be used besides WHERE clause to match table rows.
             this._rowMatchConditions = Enumerable.Range(0, BatchSize)
                 .Select(rowIndex => string.Join(" AND ", this._primaryKeyColumns.Select((col, colIndex) => $"{col.AsBracketQuotedString()} = @{rowIndex}_{colIndex}")))
                 .ToList();
 
-            this._executor = executor;
-            this._logger = logger;
-
-            this._telemetryProps = telemetryProps;
+            this._telemetryProps = telemetryProps ?? new Dictionary<TelemetryPropertyName, string>();
 
 #pragma warning disable CS4014 // Queue the below tasks and exit. Do not wait for their completion.
             _ = Task.Run(() =>

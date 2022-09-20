@@ -33,8 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             this._hostIdProvider = hostIdProvider ?? throw new ArgumentNullException(nameof(hostIdProvider));
 
-            _ = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-            this._logger = loggerFactory.CreateLogger(LogCategories.CreateTriggerCategory("Sql"));
+            this._logger = loggerFactory?.CreateLogger(LogCategories.CreateTriggerCategory("Sql")) ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
         /// <summary>
