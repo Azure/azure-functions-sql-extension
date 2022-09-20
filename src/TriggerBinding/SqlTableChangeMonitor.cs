@@ -582,8 +582,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 changeVersionSet.Add(long.Parse(changeVersion, CultureInfo.InvariantCulture));
             }
 
-            // If there are more than one version numbers in the set, return the second highest one. Otherwise, return
+            // The batch of changes are gotten in ascending order of the version number.
+            // With this, it is ensured that if there are multiple version numbers in the changeVersionSet,
+            // all the other rows with version numbers less than the highest should have either been processed or
+            // have leases acquired on them by another worker.
+            // Therefore, if there are more than one version numbers in the set, return the second highest one. Otherwise, return
             // the only version number in the set.
+            // Also this LastSyncVersion is actually updated in the GlobalState table only after verifying that the changes with  
+            // changeVersion <= newLastSyncVersion have been processed in BuildUpdateTablesPostInvocation query. 
             long lastSyncVersion = changeVersionSet.ElementAt(changeVersionSet.Count > 1 ? changeVersionSet.Count - 2 : 0);
             this._logger.LogDebugWithThreadId($"RecomputeLastSyncVersion. LastSyncVersion={lastSyncVersion} ChangeVersionSet={string.Join(",", changeVersionSet)}");
             return lastSyncVersion;
