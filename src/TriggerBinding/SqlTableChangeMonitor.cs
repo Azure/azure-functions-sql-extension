@@ -47,9 +47,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly ILogger _logger;
 
-        private readonly CancellationTokenSource _cancellationTokenSourceCheckForChanges = new CancellationTokenSource();;
-        private readonly CancellationTokenSource _cancellationTokenSourceRenewLeases = new CancellationTokenSource();;
-        private CancellationTokenSource _cancellationTokenSourceExecutor = new CancellationTokenSource();;
+        private readonly CancellationTokenSource _cancellationTokenSourceCheckForChanges = new CancellationTokenSource();
+        private readonly CancellationTokenSource _cancellationTokenSourceRenewLeases = new CancellationTokenSource();
+        private CancellationTokenSource _cancellationTokenSourceExecutor = new CancellationTokenSource();
 
         // The semaphore gets used by lease-renewal loop to ensure that '_state' stays set to 'ProcessingChanges' while
         // the leases are being renewed. The change-consumption loop requires to wait for the semaphore before modifying
