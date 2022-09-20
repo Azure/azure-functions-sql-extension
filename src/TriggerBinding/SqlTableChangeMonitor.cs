@@ -60,7 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps;
 
-        private IReadOnlyList<IReadOnlyDictionary<string, string>> _rows;
+        private IReadOnlyList<IReadOnlyDictionary<string, object>> _rows;
         private int _leaseRenewalCount;
         private State _state;
 
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._telemetryProps = telemetryProps;
 
             this._rowsLock = new SemaphoreSlim(1, 1);
-            this._rows = new List<IReadOnlyDictionary<string, string>>();
+            this._rows = new List<IReadOnlyDictionary<string, object>>();
             this._leaseRenewalCount = 0;
             this._state = State.CheckingForChanges;
 
@@ -222,7 +222,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         }
                         this._logger.LogDebugWithThreadId($"END UpdateTablesPreInvocation Duration={setLastSyncVersionDurationMs}ms");
 
-                        var rows = new List<IReadOnlyDictionary<string, string>>();
+                        var rows = new List<IReadOnlyDictionary<string, object>>();
 
                         // Use the version number to query for new changes.
                         using (SqlCommand getChangesCommand = this.BuildGetChangesCommand(connection, transaction))
@@ -292,7 +292,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 // If there's an exception in any part of the process, we want to clear all of our data in memory and
                 // retry checking for changes again.
-                this._rows = new List<IReadOnlyDictionary<string, string>>();
+                this._rows = new List<IReadOnlyDictionary<string, object>>();
                 this._logger.LogError($"Failed to check for changes in table '{this._userTable.FullName}' due to exception: {e.GetType()}. Exception message: {e.Message}");
                 TelemetryInstance.TrackException(TelemetryErrorName.GetChanges, e, this._telemetryProps);
             }
@@ -477,7 +477,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             this._leaseRenewalCount = 0;
             this._state = State.CheckingForChanges;
-            this._rows = new List<IReadOnlyDictionary<string, string>>();
+            this._rows = new List<IReadOnlyDictionary<string, object>>();
 
             this._logger.LogDebugWithThreadId("ReleaseRowsLock - ClearRows");
             this._rowsLock.Release();
@@ -576,9 +576,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private long RecomputeLastSyncVersion()
         {
             var changeVersionSet = new SortedSet<long>();
-            foreach (IReadOnlyDictionary<string, string> row in this._rows)
+            foreach (IReadOnlyDictionary<string, object> row in this._rows)
             {
-                string changeVersion = row["SYS_CHANGE_VERSION"];
+                string changeVersion = row["SYS_CHANGE_VERSION"].ToString();
                 changeVersionSet.Add(long.Parse(changeVersion, CultureInfo.InvariantCulture));
             }
 
@@ -599,13 +599,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             this._logger.LogDebugWithThreadId("BEGIN ProcessChanges");
             var changes = new List<SqlChange<T>>();
-            foreach (IReadOnlyDictionary<string, string> row in this._rows)
+            foreach (IReadOnlyDictionary<string, object> row in this._rows)
             {
                 SqlChangeOperation operation = GetChangeOperation(row);
 
                 // If the row has been deleted, there is no longer any data for it in the user table. The best we can do
                 // is populate the row-item with the primary key values of the row.
-                Dictionary<string, string> item = operation == SqlChangeOperation.Delete
+                Dictionary<string, object> item = operation == SqlChangeOperation.Delete
                     ? this._primaryKeyColumns.ToDictionary(col => col, col => row[col])
                     : this._userTableColumns.ToDictionary(col => col, col => row[col]);
 
@@ -621,9 +621,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="row">The (combined) row from the change table and leases table</param>
         /// <exception cref="InvalidDataException">Thrown if the value of the "SYS_CHANGE_OPERATION" column is none of "I", "U", or "D"</exception>
         /// <returns>SqlChangeOperation.Insert for an insert, SqlChangeOperation.Update for an update, and SqlChangeOperation.Delete for a delete</returns>
-        private static SqlChangeOperation GetChangeOperation(IReadOnlyDictionary<string, string> row)
+        private static SqlChangeOperation GetChangeOperation(IReadOnlyDictionary<string, object> row)
         {
-            string operation = row["SYS_CHANGE_OPERATION"];
+            string operation = row["SYS_CHANGE_OPERATION"].ToString();
             switch (operation)
             {
                 case "I": return SqlChangeOperation.Insert;
@@ -704,14 +704,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
         /// <param name="rows">Dictionary representing the table rows on which leases should be acquired</param>
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-        private SqlCommand BuildAcquireLeasesCommand(SqlConnection connection, SqlTransaction transaction, IReadOnlyList<IReadOnlyDictionary<string, string>> rows)
+        private SqlCommand BuildAcquireLeasesCommand(SqlConnection connection, SqlTransaction transaction, IReadOnlyList<IReadOnlyDictionary<string, object>> rows)
         {
             var acquireLeasesQuery = new StringBuilder();
 
             for (int rowIndex = 0; rowIndex < rows.Count; rowIndex++)
             {
                 string valuesList = string.Join(", ", this._primaryKeyColumns.Select((_, colIndex) => $"@{rowIndex}_{colIndex}"));
-                string changeVersion = rows[rowIndex]["SYS_CHANGE_VERSION"];
+                string changeVersion = rows[rowIndex]["SYS_CHANGE_VERSION"].ToString();
 
                 acquireLeasesQuery.Append($@"
                     IF NOT EXISTS (SELECT * FROM {this._leasesTableName} WITH (TABLOCKX) WHERE {this._rowMatchConditions[rowIndex]})
@@ -761,7 +761,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             for (int rowIndex = 0; rowIndex < this._rows.Count; rowIndex++)
             {
-                string changeVersion = this._rows[rowIndex]["SYS_CHANGE_VERSION"];
+                string changeVersion = this._rows[rowIndex]["SYS_CHANGE_VERSION"].ToString();
 
                 releaseLeasesQuery.Append($@"
                     SELECT @current_change_version = {SqlTriggerConstants.LeasesTableChangeVersionColumnName}
@@ -843,7 +843,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// rebuild the SqlParameters each time.
         /// </remarks>
         private SqlCommand GetSqlCommandWithParameters(string commandText, SqlConnection connection,
-            SqlTransaction transaction, IReadOnlyList<IReadOnlyDictionary<string, string>> rows)
+            SqlTransaction transaction, IReadOnlyList<IReadOnlyDictionary<string, object>> rows)
         {
             var command = new SqlCommand(commandText, connection, transaction);
 
