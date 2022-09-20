@@ -47,22 +47,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly ILogger _logger;
 
-        private readonly CancellationTokenSource _cancellationTokenSourceCheckForChanges;
-        private readonly CancellationTokenSource _cancellationTokenSourceRenewLeases;
-        private CancellationTokenSource _cancellationTokenSourceExecutor;
+        private readonly CancellationTokenSource _cancellationTokenSourceCheckForChanges = new CancellationTokenSource();;
+        private readonly CancellationTokenSource _cancellationTokenSourceRenewLeases = new CancellationTokenSource();;
+        private CancellationTokenSource _cancellationTokenSourceExecutor = new CancellationTokenSource();;
 
         // The semaphore gets used by lease-renewal loop to ensure that '_state' stays set to 'ProcessingChanges' while
         // the leases are being renewed. The change-consumption loop requires to wait for the semaphore before modifying
         // the value of '_state' back to 'CheckingForChanges'. Since the field '_rows' is only updated if the value of
         // '_state' is set to 'CheckingForChanges', this guarantees that '_rows' will stay same while it is being
         // iterated over inside the lease-renewal loop.
-        private readonly SemaphoreSlim _rowsLock;
+        private readonly SemaphoreSlim _rowsLock = new SemaphoreSlim(1, 1);
 
         private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps;
 
-        private IReadOnlyList<IReadOnlyDictionary<string, object>> _rows;
-        private int _leaseRenewalCount;
-        private State _state;
+        private IReadOnlyList<IReadOnlyDictionary<string, object>> _rows = new List<IReadOnlyDictionary<string, object>>();
+        private int _leaseRenewalCount = 0;
+        private State _state = State.CheckingForChanges;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlTableChangeMonitor{T}" />> class.
@@ -114,16 +114,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._executor = executor;
             this._logger = logger;
 
-            this._cancellationTokenSourceCheckForChanges = new CancellationTokenSource();
-            this._cancellationTokenSourceRenewLeases = new CancellationTokenSource();
-            this._cancellationTokenSourceExecutor = new CancellationTokenSource();
-
             this._telemetryProps = telemetryProps;
-
-            this._rowsLock = new SemaphoreSlim(1, 1);
-            this._rows = new List<IReadOnlyDictionary<string, object>>();
-            this._leaseRenewalCount = 0;
-            this._state = State.CheckingForChanges;
 
 #pragma warning disable CS4014 // Queue the below tasks and exit. Do not wait for their completion.
             _ = Task.Run(() =>
