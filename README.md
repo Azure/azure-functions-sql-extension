@@ -40,6 +40,10 @@ Azure SQL bindings for Azure Functions are supported for:
     - [Python functions](#python-functions)
       - [Input Binding Tutorial](#input-binding-tutorial-2)
       - [Output Binding Tutorial](#output-binding-tutorial-2)
+  - [Configuration](#configuration)
+    - [Trigger Binding Configuration](#trigger-binding-configuration)
+      - [Sql_Trigger_BatchSize](#sql_trigger_batchsize)
+      - [Sql_Trigger_PollingIntervalMs](#sql_trigger_pollingintervalms)
   - [More Samples](#more-samples)
     - [Input Binding](#input-binding)
       - [Query String](#query-string)
@@ -553,6 +557,20 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 - Hit 'F5' to run your code. Click the link to upsert the output array values in your SQL table. Your upserted values should launch in the browser.
 - Congratulations! You have successfully created your first SQL output binding! Checkout [Output Binding](#Output-Binding) for more information on how to use it and explore on your own!
+
+## Configuration
+
+This section goes over some of the configuration values you can use to customize the SQL bindings. See [How to Use Azure Function App Settings](https://learn.microsoft.com/azure/azure-functions/functions-how-to-use-azure-function-app-settings) to learn more.
+
+### Trigger Binding Configuration
+
+#### Sql_Trigger_BatchSize
+
+This controls the number of changes processed at once before being sent to the triggered function.
+
+#### Sql_Trigger_PollingIntervalMs
+
+This controls the delay in milliseconds between processing each batch of changes.
 
 ## More Samples
 
