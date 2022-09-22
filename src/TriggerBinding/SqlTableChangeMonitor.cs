@@ -26,16 +26,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// <typeparam name="T">POCO class representing the row in the user table</typeparam>
     internal sealed class SqlTableChangeMonitor<T> : IDisposable
     {
-        public const int MaxAttemptCount = 5;
-        private const string CONFIG_KEY_SQL_TRIGGER_BATCHSIZE = "Sql_Trigger_BatchSize";
-        private const string CONFIG_KEY_SQL_TRIGGER_POLLINGINTERVALMS = "Sql_Trigger_PollingIntervalMs";
-        // Leases are held for approximately (LeaseRenewalIntervalInSeconds * MaxLeaseRenewalCount) seconds. It is
+        #region Constants
+        /// <summary>
+        /// The maximum number of times we'll attempt to process a change before giving up
+        /// </summary>
+        private const int MaxChangeProcessAttemptCount = 5;
+        /// <summary>
+        /// The maximum number of times that we'll attempt to renew a lease be
+        /// </summary>
+        /// <remarks>
+        /// Leases are held for approximately (LeaseRenewalIntervalInSeconds * MaxLeaseRenewalCount) seconds. It is
         // required to have at least one of (LeaseIntervalInSeconds / LeaseRenewalIntervalInSeconds) attempts to
         // renew the lease succeed to prevent it from expiring.
-        public const int MaxLeaseRenewalCount = 10;
-        public const int LeaseIntervalInSeconds = 60;
-        public const int LeaseRenewalIntervalInSeconds = 15;
-        public const int MaxRetryReleaseLeases = 3;
+        // </remarks>
+        private const int MaxLeaseRenewalCount = 10;
+        private const int LeaseIntervalInSeconds = 60;
+        private const int LeaseRenewalIntervalInSeconds = 15;
+        private const int MaxRetryReleaseLeases = 3;
+        #endregion Constants
+
         private readonly string _connectionString;
         private readonly int _userTableId;
         private readonly SqlObject _userTable;
@@ -109,8 +118,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             this._userTableId = userTableId;
             // Check if there's config settings to override the default batch size/polling interval values
-            this._batchSize = configuration.GetValue<int?>(CONFIG_KEY_SQL_TRIGGER_BATCHSIZE) ?? this._batchSize;
-            this._pollingIntervalInMs = configuration.GetValue<int?>(CONFIG_KEY_SQL_TRIGGER_POLLINGINTERVALMS) ?? this._pollingIntervalInMs;
+            this._batchSize = configuration.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_BatchSize) ?? this._batchSize;
+            this._pollingIntervalInMs = configuration.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_PollingInterval) ?? this._pollingIntervalInMs;
             // Prep search-conditions that will be used besides WHERE clause to match table rows.
             this._rowMatchConditions = Enumerable.Range(0, this._batchSize)
                 .Select(rowIndex => string.Join(" AND ", this._primaryKeyColumns.Select((col, colIndex) => $"{col.AsBracketQuotedString()} = @{rowIndex}_{colIndex}")))
@@ -689,7 +698,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     (l.{SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} IS NULL AND
                        (l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName} IS NULL OR l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName} < c.SYS_CHANGE_VERSION) OR
                         l.{SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} < SYSDATETIME()) AND
-                    (l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} IS NULL OR l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} < {MaxAttemptCount})
+                    (l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} IS NULL OR l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} < {MaxChangeProcessAttemptCount})
                 ORDER BY c.SYS_CHANGE_VERSION ASC;
             ";
 
@@ -810,7 +819,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         ((l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName} IS NULL OR
                            l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName} != c.SYS_CHANGE_VERSION OR
                            l.{SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} IS NOT NULL) AND
-                        (l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} IS NULL OR l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} < {MaxAttemptCount}))) AS Changes
+                        (l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} IS NULL OR l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} < {MaxChangeProcessAttemptCount}))) AS Changes
 
                 IF @unprocessed_changes = 0 AND @current_last_sync_version < {newLastSyncVersion}
                 BEGIN
