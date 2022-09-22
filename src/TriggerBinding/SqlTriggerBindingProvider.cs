@@ -78,10 +78,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             Type userType = parameter.ParameterType.GetGenericArguments()[0].GetGenericArguments()[0];
             Type bindingType = typeof(SqlTriggerBinding<>).MakeGenericType(userType);
 
-            var constructorParameterTypes = new Type[] { typeof(string), typeof(string), typeof(ParameterInfo), typeof(IHostIdProvider), typeof(ILogger) };
+            var constructorParameterTypes = new Type[] { typeof(string), typeof(string), typeof(ParameterInfo), typeof(IHostIdProvider), typeof(ILogger), typeof(IConfiguration) };
             ConstructorInfo bindingConstructor = bindingType.GetConstructor(constructorParameterTypes);
 
-            object[] constructorParameterValues = new object[] { connectionString, attribute.TableName, parameter, this._hostIdProvider, this._logger };
+            object[] constructorParameterValues = new object[] { connectionString, attribute.TableName, parameter, this._hostIdProvider, this._logger, this._configuration };
             var triggerBinding = (ITriggerBinding)bindingConstructor.Invoke(constructorParameterValues);
 
             return Task.FromResult(triggerBinding);
