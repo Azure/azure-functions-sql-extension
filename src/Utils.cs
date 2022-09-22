@@ -99,5 +99,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             logger.LogDebug($"TID:{Environment.CurrentManagedThreadId} {message}", args);
         }
+
+        public static void LogInformationWithThreadId(this ILogger logger, string message, params object[] args)
+        {
+            logger.LogInformation($"TID:{Environment.CurrentManagedThreadId} {message}", args);
+        }
     }
 }

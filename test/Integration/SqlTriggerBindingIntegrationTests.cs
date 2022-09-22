@@ -55,6 +55,49 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             changes.Clear();
         }
 
+        /// <summary>
+        /// Verifies that manually setting the batch size correctly changes the number of changes processed at once
+        /// </summary>
+        [Fact]
+        public async Task BatchSizeOverrideTriggerTest()
+        {
+            this.EnableChangeTrackingForTable("Products");
+            this.StartFunctionHost(nameof(ProductsTriggerWithValidation), Common.SupportedLanguages.CSharp, true, environmentVariables: new Dictionary<string, string>() {
+                { "TEST_EXPECTED_BATCH_SIZE", "20" },
+                { "Sql_Trigger_BatchSize", "20" }
+            });
+
+            var changes = new List<SqlChange<Product>>();
+            this.MonitorProductChanges(changes, "SQL Changes: ");
+
+            // Considering the polling interval of 5 seconds and batch-size of 20, it should take around 10 seconds to
+            // process 40 insert operations.
+            this.InsertProducts(1, 40);
+            await Task.Delay(TimeSpan.FromSeconds(12));
+            ValidateProductChanges(changes, 1, 40, SqlChangeOperation.Insert, id => $"Product {id}", id => id * 100);
+        }
+
+        /// <summary>
+        /// Verifies that manually setting the polling interval correctly changes the delay between processing each batch of changes
+        /// </summary>
+        [Fact]
+        public async Task PollingIntervalOverrideTriggerTest()
+        {
+            this.EnableChangeTrackingForTable("Products");
+            this.StartFunctionHost(nameof(ProductsTriggerWithValidation), Common.SupportedLanguages.CSharp, true, environmentVariables: new Dictionary<string, string>() {
+                { "Sql_Trigger_PollingIntervalMs", "100" }
+            });
+
+            var changes = new List<SqlChange<Product>>();
+            this.MonitorProductChanges(changes, "SQL Changes: ");
+
+            // Considering the polling interval of 100ms and batch-size of 10, it should take around .5 second to
+            // process 50 insert operations.
+            this.InsertProducts(1, 50);
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            ValidateProductChanges(changes, 1, 50, SqlChangeOperation.Insert, id => $"Product {id}", id => id * 100);
+        }
+
 
         /// <summary>
         /// Verifies that if several changes have happened to the table row since last invocation, then a single net

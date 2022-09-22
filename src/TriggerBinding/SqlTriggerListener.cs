@@ -14,6 +14,7 @@ using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -34,6 +35,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly string _userFunctionId;
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly ILogger _logger;
+        private readonly IConfiguration _configuration;
 
         private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps = new Dictionary<TelemetryPropertyName, string>();
 
@@ -48,13 +50,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="userFunctionId">Unique identifier for the user function</param>
         /// <param name="executor">Defines contract for triggering user function</param>
         /// <param name="logger">Facilitates logging of messages</param>
-        public SqlTriggerListener(string connectionString, string tableName, string userFunctionId, ITriggeredFunctionExecutor executor, ILogger logger)
+        /// <param name="configuration">Provides configuration values</param>
+        public SqlTriggerListener(string connectionString, string tableName, string userFunctionId, ITriggeredFunctionExecutor executor, ILogger logger, IConfiguration configuration)
         {
             this._connectionString = !string.IsNullOrEmpty(connectionString) ? connectionString : throw new ArgumentNullException(nameof(connectionString));
             this._userTable = !string.IsNullOrEmpty(tableName) ? new SqlObject(tableName) : throw new ArgumentNullException(nameof(tableName));
             this._userFunctionId = !string.IsNullOrEmpty(userFunctionId) ? userFunctionId : throw new ArgumentNullException(nameof(userFunctionId));
             this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
 
         public void Cancel()
@@ -122,6 +126,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         primaryKeyColumns.Select(col => col.name).ToList(),
                         this._executor,
                         this._logger,
+                        this._configuration,
                         this._telemetryProps);
 
                     this._listenerState = ListenerStarted;
@@ -467,7 +472,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Clears the current telemetry property dictionary and initializes the default initial properties. 
+        /// Clears the current telemetry property dictionary and initializes the default initial properties.
         /// </summary>
         private void InitializeTelemetryProps()
         {
