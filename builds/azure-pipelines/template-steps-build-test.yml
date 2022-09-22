@@ -12,6 +12,14 @@ steps:
   inputs:
     useGlobalJson: true
 
+# Run Policheck early to avoid scanning dependency folders
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-policheck.PoliCheck@2
+  displayName: 'Run PoliCheck'
+  inputs:
+    targetType: F
+    result: PoliCheck.xml
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
+
 - script: npm install -g azure-functions-core-tools
   displayName: 'Install Azure Functions Core Tools'
 
@@ -84,12 +92,13 @@ steps:
     arguments: 'analyze $(Build.SourcesDirectory)\src\bin\${{ parameters.configuration }}\* --recurse --verbose'
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
+# Don't run for PRs since this currently breaks on runs from forks. We run this daily ourselves anyways.
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-roslynanalyzers.RoslynAnalyzers@3
   inputs:
     userProvideBuildInfo: 'autoMsBuildInfo'
   env:
     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'), ne(variables['Build.Reason'], 'PullRequest'))
 
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@2
   inputs:
@@ -135,7 +144,7 @@ steps:
   inputs:
     GdnPublishTsaOnboard: true
     GdnPublishTsaConfigFile: '$(Build.SourcesDirectory)\builds\TSAConfig.gdntsa'
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'), eq(variables['TSA_UPLOAD'], 'true'))
 
 # 5.0 isn't supported on Mac yet
 - task: UseDotNet@2
@@ -253,3 +262,9 @@ steps:
   displayName: 'Component Detection'
   inputs:
     failOnAlert: true
+
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-postanalysis.PostAnalysis@2
+  displayName: 'Post Analysis'
+  inputs:
+    GdnBreakPolicyMinSev: Error
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
