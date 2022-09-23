@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
@@ -21,17 +22,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         internal class SqlConverter : IConverter<SqlAttribute, SqlCommand>
         {
             private readonly IConfiguration _configuration;
+            private readonly ILogger _logger;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="SqlConverter/>"/> class.
             /// </summary>
             /// <param name="configuration"></param>
+            /// <param name="logger">ILogger used to log information and warnings</param>
             /// <exception cref="ArgumentNullException">
             /// Thrown if the configuration is null
             /// </exception>
-            public SqlConverter(IConfiguration configuration)
+            public SqlConverter(IConfiguration configuration, ILogger logger)
             {
                 this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+                this._logger = logger;
                 TelemetryInstance.TrackCreate(CreateType.SqlConverter);
             }
 
@@ -46,10 +50,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             public SqlCommand Convert(SqlAttribute attribute)
             {
                 TelemetryInstance.TrackConvert(ConvertType.SqlCommand);
+                this._logger.LogDebugWithThreadId("BEGIN Convert (SqlCommand)");
+                var sw = Stopwatch.StartNew();
                 try
                 {
-                    return SqlBindingUtilities.BuildCommand(attribute, SqlBindingUtilities.BuildConnection(
+                    SqlCommand command = SqlBindingUtilities.BuildCommand(attribute, SqlBindingUtilities.BuildConnection(
                                        attribute.ConnectionStringSetting, this._configuration));
+                    this._logger.LogDebugWithThreadId($"END Convert (SqlCommand) Duration={sw.ElapsedMilliseconds}ms");
+                    return command;
                 }
                 catch (Exception ex)
                 {
@@ -97,11 +105,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns>An IEnumerable containing the rows read from the user's database in the form of the user-defined POCO</returns>
             public async Task<IEnumerable<T>> ConvertAsync(SqlAttribute attribute, CancellationToken cancellationToken)
             {
-                TelemetryInstance.TrackConvert(ConvertType.IEnumerable);
+                this._logger.LogDebugWithThreadId("BEGIN ConvertAsync (IEnumerable)");
+                var sw = Stopwatch.StartNew();
                 try
                 {
-                    string json = await this.BuildItemFromAttributeAsync(attribute);
-                    return JsonConvert.DeserializeObject<IEnumerable<T>>(json);
+                    string json = await this.BuildItemFromAttributeAsync(attribute, ConvertType.IEnumerable);
+                    IEnumerable<T> result = JsonConvert.DeserializeObject<IEnumerable<T>>(json);
+                    this._logger.LogDebugWithThreadId($"END ConvertAsync (IEnumerable) Duration={sw.ElapsedMilliseconds}ms");
+                    return result;
                 }
                 catch (Exception ex)
                 {
@@ -128,10 +139,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </returns>
             async Task<string> IAsyncConverter<SqlAttribute, string>.ConvertAsync(SqlAttribute attribute, CancellationToken cancellationToken)
             {
-                TelemetryInstance.TrackConvert(ConvertType.Json);
+                this._logger.LogDebugWithThreadId("BEGIN ConvertAsync (Json)");
+                var sw = Stopwatch.StartNew();
                 try
                 {
-                    return await this.BuildItemFromAttributeAsync(attribute);
+                    string result = await this.BuildItemFromAttributeAsync(attribute, ConvertType.Json);
+                    this._logger.LogDebugWithThreadId($"END ConvertAsync (Json) Duration={sw.ElapsedMilliseconds}ms");
+                    return result;
                 }
                 catch (Exception ex)
                 {
@@ -151,8 +165,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <param name="attribute">
             /// The binding attribute that contains the name of the connection string app setting and query.
             /// </param>
+            /// <param name="type">
+            /// The type of conversion being performed by the input binding.
+            /// </param>
             /// <returns></returns>
-            public virtual async Task<string> BuildItemFromAttributeAsync(SqlAttribute attribute)
+            public virtual async Task<string> BuildItemFromAttributeAsync(SqlAttribute attribute, ConvertType type)
             {
                 using (SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, this._configuration))
                 // Ideally, we would like to move away from using SqlDataAdapter both here and in the
@@ -162,6 +179,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     adapter.SelectCommand = command;
                     await connection.OpenAsync();
+                    Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps();
+                    TelemetryInstance.TrackConvert(type, props);
                     var dataTable = new DataTable();
                     adapter.Fill(dataTable);
                     this._logger.LogInformation($"{dataTable.Rows.Count} row(s) queried from database: {connection.Database} using Command: {command.CommandText}");
@@ -172,10 +191,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             IAsyncEnumerable<T> IConverter<SqlAttribute, IAsyncEnumerable<T>>.Convert(SqlAttribute attribute)
             {
-                TelemetryInstance.TrackConvert(ConvertType.IAsyncEnumerable);
                 try
                 {
-                    return new SqlAsyncEnumerable<T>(SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, this._configuration), attribute);
+                    var asyncEnumerable = new SqlAsyncEnumerable<T>(SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, this._configuration), attribute);
+                    Dictionary<TelemetryPropertyName, string> props = asyncEnumerable.Connection.AsConnectionProps();
+                    TelemetryInstance.TrackConvert(ConvertType.IAsyncEnumerable, props);
+                    return asyncEnumerable;
                 }
                 catch (Exception ex)
                 {
@@ -198,10 +219,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns>JArray containing the rows read from the user's database in the form of the user-defined POCO</returns>
             async Task<JArray> IAsyncConverter<SqlAttribute, JArray>.ConvertAsync(SqlAttribute attribute, CancellationToken cancellationToken)
             {
-                TelemetryInstance.TrackConvert(ConvertType.JArray);
                 try
                 {
-                    string json = await this.BuildItemFromAttributeAsync(attribute);
+                    string json = await this.BuildItemFromAttributeAsync(attribute, ConvertType.JArray);
                     return JArray.Parse(json);
                 }
                 catch (Exception ex)

@@ -33,8 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             this._hostIdProvider = hostIdProvider ?? throw new ArgumentNullException(nameof(hostIdProvider));
 
-            _ = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-            this._logger = loggerFactory.CreateLogger(LogCategories.CreateTriggerCategory("Sql"));
+            this._logger = loggerFactory?.CreateLogger(LogCategories.CreateTriggerCategory("Sql")) ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
         /// <summary>
@@ -79,10 +78,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             Type userType = parameter.ParameterType.GetGenericArguments()[0].GetGenericArguments()[0];
             Type bindingType = typeof(SqlTriggerBinding<>).MakeGenericType(userType);
 
-            var constructorParameterTypes = new Type[] { typeof(string), typeof(string), typeof(ParameterInfo), typeof(IHostIdProvider), typeof(ILogger) };
+            var constructorParameterTypes = new Type[] { typeof(string), typeof(string), typeof(ParameterInfo), typeof(IHostIdProvider), typeof(ILogger), typeof(IConfiguration) };
             ConstructorInfo bindingConstructor = bindingType.GetConstructor(constructorParameterTypes);
 
-            object[] constructorParameterValues = new object[] { connectionString, attribute.TableName, parameter, this._hostIdProvider, this._logger };
+            object[] constructorParameterValues = new object[] { connectionString, attribute.TableName, parameter, this._hostIdProvider, this._logger, this._configuration };
             var triggerBinding = (ITriggerBinding)bindingConstructor.Invoke(constructorParameterValues);
 
             return Task.FromResult(triggerBinding);

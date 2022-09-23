@@ -23,8 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
-        /// Ensures that the user function gets invoked for each of the insert, update and delete operation, and the
-        /// changes to the user table are passed to the function in correct sequence.
+        /// Ensures that the user function gets invoked for each of the insert, update and delete operation.
         /// </summary>
         [Fact]
         public async Task SingleOperationTriggerTest()
@@ -33,7 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.StartFunctionHost(nameof(ProductsTrigger), Common.SupportedLanguages.CSharp);
 
             var changes = new List<SqlChange<Product>>();
-            this.MonitorProductChanges(changes);
+            this.MonitorProductChanges(changes, "SQL Changes: ");
 
             // Considering the polling interval of 5 seconds and batch-size of 10, it should take around 15 seconds to
             // process 30 insert operations. Similar reasoning is used to set delays for update and delete operations.
@@ -56,6 +55,49 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             changes.Clear();
         }
 
+        /// <summary>
+        /// Verifies that manually setting the batch size correctly changes the number of changes processed at once
+        /// </summary>
+        [Fact]
+        public async Task BatchSizeOverrideTriggerTest()
+        {
+            this.EnableChangeTrackingForTable("Products");
+            this.StartFunctionHost(nameof(ProductsTriggerWithValidation), Common.SupportedLanguages.CSharp, true, environmentVariables: new Dictionary<string, string>() {
+                { "TEST_EXPECTED_BATCH_SIZE", "20" },
+                { "Sql_Trigger_BatchSize", "20" }
+            });
+
+            var changes = new List<SqlChange<Product>>();
+            this.MonitorProductChanges(changes, "SQL Changes: ");
+
+            // Considering the polling interval of 5 seconds and batch-size of 20, it should take around 10 seconds to
+            // process 40 insert operations.
+            this.InsertProducts(1, 40);
+            await Task.Delay(TimeSpan.FromSeconds(12));
+            ValidateProductChanges(changes, 1, 40, SqlChangeOperation.Insert, id => $"Product {id}", id => id * 100);
+        }
+
+        /// <summary>
+        /// Verifies that manually setting the polling interval correctly changes the delay between processing each batch of changes
+        /// </summary>
+        [Fact]
+        public async Task PollingIntervalOverrideTriggerTest()
+        {
+            this.EnableChangeTrackingForTable("Products");
+            this.StartFunctionHost(nameof(ProductsTriggerWithValidation), Common.SupportedLanguages.CSharp, true, environmentVariables: new Dictionary<string, string>() {
+                { "Sql_Trigger_PollingIntervalMs", "100" }
+            });
+
+            var changes = new List<SqlChange<Product>>();
+            this.MonitorProductChanges(changes, "SQL Changes: ");
+
+            // Considering the polling interval of 100ms and batch-size of 10, it should take around .5 second to
+            // process 50 insert operations.
+            this.InsertProducts(1, 50);
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            ValidateProductChanges(changes, 1, 50, SqlChangeOperation.Insert, id => $"Product {id}", id => id * 100);
+        }
+
 
         /// <summary>
         /// Verifies that if several changes have happened to the table row since last invocation, then a single net
@@ -68,7 +110,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.StartFunctionHost(nameof(ProductsTrigger), Common.SupportedLanguages.CSharp);
 
             var changes = new List<SqlChange<Product>>();
-            this.MonitorProductChanges(changes);
+            this.MonitorProductChanges(changes, "SQL Changes: ");
 
             // Insert + multiple updates to a row are treated as single insert with latest row values.
             this.InsertProducts(1, 5);
@@ -95,6 +137,52 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             await Task.Delay(TimeSpan.FromSeconds(6));
             ValidateProductChanges(changes, 11, 20, SqlChangeOperation.Delete, _ => null, _ => 0);
             changes.Clear();
+        }
+
+
+        /// <summary>
+        /// Ensures correct functionality with multiple user functions tracking the same table.
+        /// </summary>
+        [Fact]
+        public async Task MultiFunctionTriggerTest()
+        {
+            this.EnableChangeTrackingForTable("Products");
+
+            string functionList = $"{nameof(MultiFunctionTrigger.MultiFunctionTrigger1)} {nameof(MultiFunctionTrigger.MultiFunctionTrigger2)}";
+            this.StartFunctionHost(functionList, Common.SupportedLanguages.CSharp, useTestFolder: true);
+
+            var changes1 = new List<SqlChange<Product>>();
+            var changes2 = new List<SqlChange<Product>>();
+
+            this.MonitorProductChanges(changes1, "Trigger1 Changes: ");
+            this.MonitorProductChanges(changes2, "Trigger2 Changes: ");
+
+            // Considering the polling interval of 5 seconds and batch-size of 10, it should take around 15 seconds to
+            // process 30 insert operations for each trigger-listener. Similar reasoning is used to set delays for
+            // update and delete operations.
+            this.InsertProducts(1, 30);
+            await Task.Delay(TimeSpan.FromSeconds(20));
+            ValidateProductChanges(changes1, 1, 30, SqlChangeOperation.Insert, id => $"Product {id}", id => id * 100);
+            ValidateProductChanges(changes2, 1, 30, SqlChangeOperation.Insert, id => $"Product {id}", id => id * 100);
+            changes1.Clear();
+            changes2.Clear();
+
+            // All table columns (not just the columns that were updated) would be returned for update operation.
+            this.UpdateProducts(1, 20);
+            await Task.Delay(TimeSpan.FromSeconds(15));
+            ValidateProductChanges(changes1, 1, 20, SqlChangeOperation.Update, id => $"Updated Product {id}", id => id * 100);
+            ValidateProductChanges(changes2, 1, 20, SqlChangeOperation.Update, id => $"Updated Product {id}", id => id * 100);
+            changes1.Clear();
+            changes2.Clear();
+
+            // The properties corresponding to non-primary key columns would be set to the C# type's default values
+            // (null and 0) for delete operation.
+            this.DeleteProducts(11, 30);
+            await Task.Delay(TimeSpan.FromSeconds(15));
+            ValidateProductChanges(changes1, 11, 30, SqlChangeOperation.Delete, _ => null, _ => 0);
+            ValidateProductChanges(changes2, 11, 30, SqlChangeOperation.Delete, _ => null, _ => 0);
+            changes1.Clear();
+            changes2.Clear();
         }
 
         /// <summary>
@@ -177,16 +265,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             ");
         }
 
-        private void MonitorProductChanges(List<SqlChange<Product>> changes)
+        private void MonitorProductChanges(List<SqlChange<Product>> changes, string messagePrefix)
         {
             int index = 0;
-            string prefix = "SQL Changes: ";
 
             this.FunctionHost.OutputDataReceived += (sender, e) =>
             {
-                if (e.Data != null && (index = e.Data.IndexOf(prefix, StringComparison.Ordinal)) >= 0)
+                if (e.Data != null && (index = e.Data.IndexOf(messagePrefix, StringComparison.Ordinal)) >= 0)
                 {
-                    string json = e.Data[(index + prefix.Length)..];
+                    string json = e.Data[(index + messagePrefix.Length)..];
                     changes.AddRange(JsonConvert.DeserializeObject<IReadOnlyList<SqlChange<Product>>>(json));
                 }
             };
@@ -269,9 +356,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // All trigger integration tests are only using C# functions for testing at the moment.
             this.StartFunctionHost(functionName, Common.SupportedLanguages.CSharp, useTestFolder, OutputHandler);
+
+            // The functions host generally logs the error message within a second after starting up.
+            const int BufferTimeForErrorInSeconds = 15;
+            bool isCompleted = tcs.Task.Wait(TimeSpan.FromSeconds(BufferTimeForErrorInSeconds));
+
             this.FunctionHost.OutputDataReceived -= OutputHandler;
             this.FunctionHost.Kill();
 
+            Assert.True(isCompleted, "Functions host did not log failure to start SQL trigger listener within specified time.");
             Assert.Equal(expectedErrorMessage, errorMessage);
         }
     }
