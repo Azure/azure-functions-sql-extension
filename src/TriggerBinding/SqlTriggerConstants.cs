@@ -14,5 +14,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public const string LeasesTableChangeVersionColumnName = "_az_func_ChangeVersion";
         public const string LeasesTableAttemptCountColumnName = "_az_func_AttemptCount";
         public const string LeasesTableLeaseExpirationTimeColumnName = "_az_func_LeaseExpirationTime";
+
+        public const string ConfigKey_SqlTrigger_BatchSize = "Sql_Trigger_BatchSize";
+        public const string ConfigKey_SqlTrigger_PollingInterval = "Sql_Trigger_PollingIntervalMs";
     }
 }

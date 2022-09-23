@@ -3,8 +3,6 @@
 
 using System;
 using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples;
@@ -19,13 +17,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     {
         public SqlInputBindingIntegrationTests(ITestOutputHelper output) : base(output)
         {
-        }
-
-        private async Task<HttpResponseMessage> SendInputRequest(string functionName, string query = "")
-        {
-            string requestUri = $"http://localhost:{this.Port}/api/{functionName}/{query}";
-
-            return await this.SendGetRequest(requestUri);
         }
 
         [Theory]
@@ -140,65 +131,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Equal(expectedResponse, TestUtils.CleanJsonString(actualResponse), StringComparer.OrdinalIgnoreCase);
         }
 
-        private static Product[] GetProductsWithSameCost(int n, int cost)
+        /// <summary>
+        /// Verifies that serializing an item with various data types works when the language is
+        /// set to a non-enUS language.
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.JavaScript)] // Javascript doesn't have the concept of a runtime language used during serialization
+        public async void GetProductsColumnTypesSerializationDifferentCultureTest(SupportedLanguages lang)
         {
-            var result = new Product[n];
-            for (int i = 0; i < n; i++)
-            {
-                result[i] = new Product
-                {
-                    ProductID = i,
-                    Name = "test",
-                    Cost = cost
-                };
-            }
-            return result;
+            this.StartFunctionHost(nameof(GetProductsColumnTypesSerializationDifferentCulture), lang, true);
+
+            this.ExecuteNonQuery("INSERT INTO [dbo].[ProductsColumnTypes] VALUES (" +
+                "999, " + // ProductId
+                "GETDATE(), " + // Datetime field
+                "GETDATE())"); // Datetime2 field
+
+            await this.SendInputRequest("getproducts-columntypesserializationdifferentculture");
+
+            // If we get here the test has succeeded - it'll throw an exception if serialization fails
         }
 
-        private static Product[] GetProducts(int n, int cost)
+        /// <summary>
+        /// Verifies that serializing an item with various data types works as expected
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        public async void GetProductsColumnTypesSerializationTest(SupportedLanguages lang)
         {
-            var result = new Product[n];
-            for (int i = 1; i <= n; i++)
-            {
-                result[i - 1] = new Product
-                {
-                    ProductID = i,
-                    Name = "test",
-                    Cost = cost * i
-                };
-            }
-            return result;
-        }
+            this.StartFunctionHost(nameof(GetProductsColumnTypesSerialization), lang, true);
 
-        private static Product[] GetProductsWithSameCostAndName(int n, int cost, string name, int offset = 0)
-        {
-            var result = new Product[n];
-            for (int i = 0; i < n; i++)
-            {
-                result[i] = new Product
-                {
-                    ProductID = i + offset,
-                    Name = name,
-                    Cost = cost
-                };
-            }
-            return result;
-        }
+            this.ExecuteNonQuery("INSERT INTO [dbo].[ProductsColumnTypes] VALUES (" +
+                "999, " + // ProductId
+                "GETDATE(), " + // Datetime field
+                "GETDATE())"); // Datetime2 field
 
-        private void InsertProducts(Product[] products)
-        {
-            if (products.Length == 0)
-            {
-                return;
-            }
+            await this.SendInputRequest("getproducts-columntypesserialization");
 
-            var queryBuilder = new StringBuilder();
-            foreach (Product p in products)
-            {
-                queryBuilder.AppendLine($"INSERT INTO dbo.Products VALUES({p.ProductID}, '{p.Name}', {p.Cost});");
-            }
-
-            this.ExecuteNonQuery(queryBuilder.ToString());
+            // If we get here the test has succeeded - it'll throw an exception if serialization fails
         }
     }
 }

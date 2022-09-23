@@ -40,6 +40,10 @@ Azure SQL bindings for Azure Functions are supported for:
     - [Python functions](#python-functions)
       - [Input Binding Tutorial](#input-binding-tutorial-2)
       - [Output Binding Tutorial](#output-binding-tutorial-2)
+  - [Configuration](#configuration)
+    - [Trigger Binding Configuration](#trigger-binding-configuration)
+      - [Sql_Trigger_BatchSize](#sql_trigger_batchsize)
+      - [Sql_Trigger_PollingIntervalMs](#sql_trigger_pollingintervalms)
   - [More Samples](#more-samples)
     - [Input Binding](#input-binding)
       - [Query String](#query-string)
@@ -48,7 +52,7 @@ Azure SQL bindings for Azure Functions are supported for:
       - [Stored Procedure](#stored-procedure)
       - [IAsyncEnumerable](#iasyncenumerable)
     - [Output Binding](#output-binding)
-      - [ICollector<T>/IAsyncCollector<T>](#icollectortiasynccollectort)
+      - [ICollector&lt;T&gt;/IAsyncCollector&lt;T&gt;](#icollectortiasynccollectort)
       - [Array](#array)
       - [Single Row](#single-row)
       - [Primary Keys and Identity Columns](#primary-keys-and-identity-columns)
@@ -240,7 +244,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Open your app that you created in [Create a Function App](#create-a-function-app) in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a function name) -> Company.namespace -> anonymous
-- In the file that opens, replace the 'public static async Task< IActionResult > Run' block with the below code.
+- In the file that opens, replace the `public static async Task<IActionResult> Run` block with the below code.
 
     ```csharp
     public static async Task<IActionResult> Run(
@@ -288,7 +292,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Open your app in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger ->  (Provide a function name) -> Company.namespace is fine -> anonymous
-- In the file that opens, replace the 'public static async Task<IActionResult> Run' block with the below code
+- In the file that opens, replace the `public static async Task<IActionResult> Run` block with the below code
 
     ```csharp
     public static IActionResult Run(
@@ -377,7 +381,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Open your app that you created in [Create a Function App](#create-a-function-app) in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a function name) -> anonymous
-- In the file that opens (index.js), replace the 'module.exports = async function (context, req)' block with the below code.
+- In the file that opens (`index.js`), replace the `module.exports = async function (context, req)` block with the below code.
 
     ```javascript
     module.exports = async function (context, req, employee) {
@@ -417,7 +421,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Open your app in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger ->  (Provide a function name) -> anonymous
-- In the file that opens (index.js), replace the 'module.exports = async function (context, req)' block with the below code.
+- In the file that opens (`index.js`), replace the `module.exports = async function (context, req)` block with the below code.
 
     ```javascript
     module.exports = async function (context, req) {
@@ -472,7 +476,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Open your app that you created in [Create a Function App](#create-a-function-app) in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a function name) -> anonymous
-- In the file that opens (__init__.py), replace the 'def main(req: func.HttpRequest) -> func.HttpResponse:' block with the below code.
+- In the file that opens (`__init__.py`), replace the `def main(req: func.HttpRequest) -> func.HttpResponse:` block with the below code.
 
     ```python
     def main(req: func.HttpRequest, employee: func.SqlRowList) -> func.HttpResponse:
@@ -515,7 +519,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Open your app in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger ->  (Provide a function name) -> anonymous
-- In the file that opens (__init__.py), replace the 'def main(req: func.HttpRequest) -> func.HttpResponse:' block with the below code.
+- In the file that opens (`__init__.py`), replace the `def main(req: func.HttpRequest) -> func.HttpResponse:` block with the below code.
 
     ```python
     def main(req: func.HttpRequest, employee: func.Out[func.SqlRow]) -> func.HttpResponse:
@@ -554,6 +558,20 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Hit 'F5' to run your code. Click the link to upsert the output array values in your SQL table. Your upserted values should launch in the browser.
 - Congratulations! You have successfully created your first SQL output binding! Checkout [Output Binding](#Output-Binding) for more information on how to use it and explore on your own!
 
+## Configuration
+
+This section goes over some of the configuration values you can use to customize the SQL bindings. See [How to Use Azure Function App Settings](https://learn.microsoft.com/azure/azure-functions/functions-how-to-use-azure-function-app-settings) to learn more.
+
+### Trigger Binding Configuration
+
+#### Sql_Trigger_BatchSize
+
+This controls the number of changes processed at once before being sent to the triggered function.
+
+#### Sql_Trigger_PollingIntervalMs
+
+This controls the delay in milliseconds between processing each batch of changes.
+
 ## More Samples
 
 ### Input Binding
@@ -567,8 +585,8 @@ The input binding takes four [arguments](https://github.com/Azure/azure-function
 
 The following are valid binding types for the result of the query/stored procedure execution:
 
-- **IEnumerable<T>**: Each element is a row of the result represented by `T`, where `T` is a user-defined POCO, or Plain Old C# Object. `T` should follow the structure of a row in the queried table. See the [Query String](#query-string) section for an example of what `T` should look like.
-- **IAsyncEnumerable<T>**: Each element is again a row of the result represented by `T`, but the rows are retrieved "lazily". A row of the result is only retrieved when `MoveNextAsync` is called on the enumerator. This is useful in the case that the query can return a very large amount of rows.
+- **IEnumerable&lt;T&gt;**: Each element is a row of the result represented by `T`, where `T` is a user-defined POCO, or Plain Old C# Object. `T` should follow the structure of a row in the queried table. See the [Query String](#query-string) section for an example of what `T` should look like.
+- **IAsyncEnumerable&lt;T&gt;**: Each element is again a row of the result represented by `T`, but the rows are retrieved "lazily". A row of the result is only retrieved when `MoveNextAsync` is called on the enumerator. This is useful in the case that the query can return a very large amount of rows.
 - **String**: A JSON string representation of the rows of the result (an example is provided [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-csharp/InputBindingSamples/GetProductsString.cs)).
 - **SqlCommand**: The SqlCommand is populated with the appropriate query and parameters, but the associated connection is not opened. It is the responsiblity of the user to execute the command and read in the results. This is useful in the case that the user wants more control over how the results are read in. An example is provided [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-csharp/InputBindingSamples/GetProductsSqlCommand.cs).
 
@@ -708,13 +726,13 @@ The output binding takes two [arguments](https://github.com/Azure/azure-function
 
 The following are valid binding types for the rows to be upserted into the table:
 
-- **ICollector<T>/IAsyncCollector<T>**: Each element is a row represented by `T`, where `T` is a user-defined POCO, or Plain Old C# Object. `T` should follow the structure of a row in the queried table. See the [Query String](#query-string) for an example of what `T` should look like.
+- **ICollector&lt;T&gt;/IAsyncCollector&lt;T&gt;**: Each element is a row represented by `T`, where `T` is a user-defined POCO, or Plain Old C# Object. `T` should follow the structure of a row in the queried table. See the [Query String](#query-string) for an example of what `T` should look like.
 - **T**: Used when just one row is to be upserted into the table.
 - **T[]**: Each element is again a row of the result represented by `T`. This output binding type requires manual instantiation of the array in the function.
 
 The repo contains examples of each of these binding types [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharp/OutputBindingSamples). A few examples are also included below.
 
-#### ICollector<T>/IAsyncCollector<T>
+#### ICollector&lt;T&gt;/IAsyncCollector&lt;T&gt;
 
 When using an `ICollector`, it is not necessary to instantiate it. The function can add rows to the `ICollector` directly, and its contents are automatically upserted once the function exits.
 
