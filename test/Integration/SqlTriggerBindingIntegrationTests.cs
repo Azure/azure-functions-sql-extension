@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.TriggerBindingSamples;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
@@ -29,30 +30,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public async Task SingleOperationTriggerTest()
         {
             this.EnableChangeTrackingForTable("Products");
-            this.StartFunctionHost(nameof(ProductsTrigger), Common.SupportedLanguages.CSharp);
-
-            var changes = new List<SqlChange<Product>>();
-            this.MonitorProductChanges(changes, "SQL Changes: ");
+            this.StartFunctionHost(nameof(ProductsTrigger), SupportedLanguages.CSharp);
 
             // Considering the polling interval of 5 seconds and batch-size of 10, it should take around 15 seconds to
-            // process 30 insert operations. Similar reasoning is used to set delays for update and delete operations.
-            this.InsertProducts(1, 30);
-            await Task.Delay(TimeSpan.FromSeconds(20));
-            ValidateProductChanges(changes, 1, 30, SqlChangeOperation.Insert, id => $"Product {id}", id => id * 100);
-            changes.Clear();
+            // process 30 insert operations. An extra 5sec is added as a buffer to the timeout.
+            // Similar reasoning is used to set delays for update and delete operations.
+            await this.WaitForProductChanges(
+                1,
+                30,
+                SqlChangeOperation.Insert,
+                () => { this.InsertProducts(1, 30); return Task.CompletedTask; },
+                id => $"Product {id}",
+                id => id * 100,
+                20000);
 
             // All table columns (not just the columns that were updated) would be returned for update operation.
-            this.UpdateProducts(1, 20);
-            await Task.Delay(TimeSpan.FromSeconds(15));
-            ValidateProductChanges(changes, 1, 20, SqlChangeOperation.Update, id => $"Updated Product {id}", id => id * 100);
-            changes.Clear();
+            await this.WaitForProductChanges(
+                1,
+                20,
+                SqlChangeOperation.Update,
+                () => { this.UpdateProducts(1, 20); return Task.CompletedTask; },
+                id => $"Updated Product {id}",
+                id => id * 100,
+                20000);
 
             // The properties corresponding to non-primary key columns would be set to the C# type's default values
             // (null and 0) for delete operation.
-            this.DeleteProducts(11, 30);
-            await Task.Delay(TimeSpan.FromSeconds(15));
-            ValidateProductChanges(changes, 11, 30, SqlChangeOperation.Delete, _ => null, _ => 0);
-            changes.Clear();
+            await this.WaitForProductChanges(
+                11,
+                30,
+                SqlChangeOperation.Delete,
+                () => { this.DeleteProducts(11, 30); return Task.CompletedTask; },
+                _ => null,
+                _ => 0,
+                20000);
         }
 
         /// <summary>
@@ -62,19 +73,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public async Task BatchSizeOverrideTriggerTest()
         {
             this.EnableChangeTrackingForTable("Products");
-            this.StartFunctionHost(nameof(ProductsTriggerWithValidation), Common.SupportedLanguages.CSharp, true, environmentVariables: new Dictionary<string, string>() {
+            this.StartFunctionHost(nameof(ProductsTriggerWithValidation), SupportedLanguages.CSharp, true, environmentVariables: new Dictionary<string, string>() {
                 { "TEST_EXPECTED_BATCH_SIZE", "20" },
                 { "Sql_Trigger_BatchSize", "20" }
             });
 
-            var changes = new List<SqlChange<Product>>();
-            this.MonitorProductChanges(changes, "SQL Changes: ");
-
-            // Considering the polling interval of 5 seconds and batch-size of 20, it should take around 10 seconds to
-            // process 40 insert operations.
-            this.InsertProducts(1, 40);
-            await Task.Delay(TimeSpan.FromSeconds(12));
-            ValidateProductChanges(changes, 1, 40, SqlChangeOperation.Insert, id => $"Product {id}", id => id * 100);
+            // Considering the polling interval of 5 seconds and batch-size of 20, it should take around 10sec to
+            // process 40 insert operations. Added buffer time to timeout for total of 15sec.
+            await this.WaitForProductChanges(
+                1,
+                40,
+                SqlChangeOperation.Insert,
+                () => { this.InsertProducts(1, 40); return Task.CompletedTask; },
+                id => $"Product {id}",
+                id => id * 100,
+                15000);
         }
 
         /// <summary>
@@ -84,18 +97,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public async Task PollingIntervalOverrideTriggerTest()
         {
             this.EnableChangeTrackingForTable("Products");
-            this.StartFunctionHost(nameof(ProductsTriggerWithValidation), Common.SupportedLanguages.CSharp, true, environmentVariables: new Dictionary<string, string>() {
+            this.StartFunctionHost(nameof(ProductsTriggerWithValidation), SupportedLanguages.CSharp, true, environmentVariables: new Dictionary<string, string>() {
                 { "Sql_Trigger_PollingIntervalMs", "100" }
             });
 
-            var changes = new List<SqlChange<Product>>();
-            this.MonitorProductChanges(changes, "SQL Changes: ");
-
             // Considering the polling interval of 100ms and batch-size of 10, it should take around .5 second to
-            // process 50 insert operations.
-            this.InsertProducts(1, 50);
-            await Task.Delay(TimeSpan.FromSeconds(1));
-            ValidateProductChanges(changes, 1, 50, SqlChangeOperation.Insert, id => $"Product {id}", id => id * 100);
+            // process 50 insert operations. Added buffer time to timeout for total of 2sec.
+            await this.WaitForProductChanges(
+                1,
+                50,
+                SqlChangeOperation.Insert,
+                () => { this.InsertProducts(1, 50); return Task.CompletedTask; },
+                id => $"Product {id}",
+                id => id * 100,
+                2000);
         }
 
 
@@ -107,36 +122,69 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public async Task MultiOperationTriggerTest()
         {
             this.EnableChangeTrackingForTable("Products");
-            this.StartFunctionHost(nameof(ProductsTrigger), Common.SupportedLanguages.CSharp);
+            this.StartFunctionHost(nameof(ProductsTrigger), SupportedLanguages.CSharp);
 
-            var changes = new List<SqlChange<Product>>();
-            this.MonitorProductChanges(changes, "SQL Changes: ");
+            // 1. Insert + multiple updates to a row are treated as single insert with latest row values.
+            await this.WaitForProductChanges(
+                1,
+                5,
+                SqlChangeOperation.Insert,
+                () =>
+                {
+                    this.InsertProducts(1, 5);
+                    this.UpdateProducts(1, 5);
+                    this.UpdateProducts(1, 5);
+                    return Task.CompletedTask;
+                },
+                id => $"Updated Updated Product {id}",
+                id => id * 100,
+                10000);
 
-            // Insert + multiple updates to a row are treated as single insert with latest row values.
-            this.InsertProducts(1, 5);
-            this.UpdateProducts(1, 5);
-            this.UpdateProducts(1, 5);
-            await Task.Delay(TimeSpan.FromSeconds(6));
-            ValidateProductChanges(changes, 1, 5, SqlChangeOperation.Insert, id => $"Updated Updated Product {id}", id => id * 100);
-            changes.Clear();
+            // 2. Multiple updates to a row are treated as single update with latest row values.
+            // First insert items and wait for those changes to be sent
+            await this.WaitForProductChanges(
+                6,
+                10,
+                SqlChangeOperation.Insert,
+                () =>
+                {
+                    this.InsertProducts(6, 10);
+                    return Task.CompletedTask;
+                },
+                id => $"Product {id}",
+                id => id * 100,
+                10000);
 
-            // Multiple updates to a row are treated as single update with latest row values.
-            this.InsertProducts(6, 10);
-            await Task.Delay(TimeSpan.FromSeconds(6));
-            changes.Clear();
-            this.UpdateProducts(6, 10);
-            this.UpdateProducts(6, 10);
-            await Task.Delay(TimeSpan.FromSeconds(6));
-            ValidateProductChanges(changes, 6, 10, SqlChangeOperation.Update, id => $"Updated Updated Product {id}", id => id * 100);
-            changes.Clear();
+            // Now do multiple updates at once and verify the updates are batched together
+            await this.WaitForProductChanges(
+                6,
+                10,
+                SqlChangeOperation.Update,
+                () =>
+                {
+                    this.UpdateProducts(6, 10);
+                    this.UpdateProducts(6, 10);
+                    return Task.CompletedTask;
+                },
+                id => $"Updated Updated Product {id}",
+                id => id * 100,
+                10000);
 
-            // Insert + (zero or more updates) + delete to a row are treated as single delete with default values for non-primary columns.
-            this.InsertProducts(11, 20);
-            this.UpdateProducts(11, 20);
-            this.DeleteProducts(11, 20);
-            await Task.Delay(TimeSpan.FromSeconds(6));
-            ValidateProductChanges(changes, 11, 20, SqlChangeOperation.Delete, _ => null, _ => 0);
-            changes.Clear();
+            // 3. Insert + (zero or more updates) + delete to a row are treated as single delete with default values for non-primary columns.
+            await this.WaitForProductChanges(
+                11,
+                20,
+                SqlChangeOperation.Delete,
+                () =>
+                {
+                    this.InsertProducts(11, 20);
+                    this.UpdateProducts(11, 20);
+                    this.DeleteProducts(11, 20);
+                    return Task.CompletedTask;
+                },
+                _ => null,
+                _ => 0,
+                10000);
         }
 
 
@@ -146,43 +194,121 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public async Task MultiFunctionTriggerTest()
         {
+            const string Trigger1Changes = "Trigger1 Changes: ";
+            const string Trigger2Changes = "Trigger2 Changes: ";
+
             this.EnableChangeTrackingForTable("Products");
 
             string functionList = $"{nameof(MultiFunctionTrigger.MultiFunctionTrigger1)} {nameof(MultiFunctionTrigger.MultiFunctionTrigger2)}";
-            this.StartFunctionHost(functionList, Common.SupportedLanguages.CSharp, useTestFolder: true);
-
-            var changes1 = new List<SqlChange<Product>>();
-            var changes2 = new List<SqlChange<Product>>();
-
-            this.MonitorProductChanges(changes1, "Trigger1 Changes: ");
-            this.MonitorProductChanges(changes2, "Trigger2 Changes: ");
+            this.StartFunctionHost(functionList, SupportedLanguages.CSharp, useTestFolder: true);
 
             // Considering the polling interval of 5 seconds and batch-size of 10, it should take around 15 seconds to
-            // process 30 insert operations for each trigger-listener. Similar reasoning is used to set delays for
-            // update and delete operations.
+            // process 30 insert operations for each trigger-listener. Buffer of 5sec added to timeout.
+            // Similar reasoning is used to set delays for update and delete operations.
+
+            // 1. INSERT
+            // Set up monitoring for Trigger 1...
+            Task changes1Task = this.WaitForProductChanges(
+                1,
+                30,
+                SqlChangeOperation.Insert,
+                () =>
+                {
+                    return Task.CompletedTask;
+                },
+                id => $"Product {id}",
+                id => id * 100,
+                20000,
+                Trigger1Changes
+                );
+
+            // Set up monitoring for Trigger 2...
+            Task changes2Task = this.WaitForProductChanges(
+                1,
+                30,
+                SqlChangeOperation.Insert,
+                () =>
+                {
+                    return Task.CompletedTask;
+                },
+                id => $"Product {id}",
+                id => id * 100,
+                25000,
+                Trigger2Changes
+                );
+
+            // Now that monitoring is set up make the changes and then wait for the monitoring tasks to see them and complete
             this.InsertProducts(1, 30);
-            await Task.Delay(TimeSpan.FromSeconds(20));
-            ValidateProductChanges(changes1, 1, 30, SqlChangeOperation.Insert, id => $"Product {id}", id => id * 100);
-            ValidateProductChanges(changes2, 1, 30, SqlChangeOperation.Insert, id => $"Product {id}", id => id * 100);
-            changes1.Clear();
-            changes2.Clear();
+            await Task.WhenAll(changes1Task, changes2Task);
 
+            // 2. UPDATE
             // All table columns (not just the columns that were updated) would be returned for update operation.
-            this.UpdateProducts(1, 20);
-            await Task.Delay(TimeSpan.FromSeconds(15));
-            ValidateProductChanges(changes1, 1, 20, SqlChangeOperation.Update, id => $"Updated Product {id}", id => id * 100);
-            ValidateProductChanges(changes2, 1, 20, SqlChangeOperation.Update, id => $"Updated Product {id}", id => id * 100);
-            changes1.Clear();
-            changes2.Clear();
+            // Set up monitoring for Trigger 1...
+            changes1Task = this.WaitForProductChanges(
+                1,
+                20,
+                SqlChangeOperation.Update,
+                () =>
+                {
+                    return Task.CompletedTask;
+                },
+                id => $"Updated Product {id}",
+                id => id * 100,
+                25000,
+                Trigger1Changes);
 
+            // Set up monitoring for Trigger 2...
+            changes2Task = this.WaitForProductChanges(
+                1,
+                20,
+                SqlChangeOperation.Update,
+                () =>
+                {
+                    return Task.CompletedTask;
+                },
+                id => $"Updated Product {id}",
+                id => id * 100,
+                25000,
+                Trigger2Changes);
+
+            // Now that monitoring is set up make the changes and then wait for the monitoring tasks to see them and complete
+            this.UpdateProducts(1, 20);
+            await Task.WhenAll(changes1Task, changes2Task);
+
+            // 3. DELETE
             // The properties corresponding to non-primary key columns would be set to the C# type's default values
             // (null and 0) for delete operation.
+            // Set up monitoring for Trigger 1...
+            changes1Task = this.WaitForProductChanges(
+                11,
+                30,
+                SqlChangeOperation.Delete,
+                () =>
+                {
+                    return Task.CompletedTask;
+                },
+                _ => null,
+                _ => 0,
+                25000,
+                Trigger1Changes);
+
+            // Set up monitoring for Trigger 2...
+            changes2Task = this.WaitForProductChanges(
+                11,
+                30,
+                SqlChangeOperation.Delete,
+                () =>
+                {
+                    return Task.CompletedTask;
+                },
+                _ => null,
+                _ => 0,
+                25000,
+                Trigger2Changes);
+
+            // Now that monitoring is set up make the changes and then wait for the monitoring tasks to see them and complete
             this.DeleteProducts(11, 30);
-            await Task.Delay(TimeSpan.FromSeconds(15));
-            ValidateProductChanges(changes1, 11, 30, SqlChangeOperation.Delete, _ => null, _ => 0);
-            ValidateProductChanges(changes2, 11, 30, SqlChangeOperation.Delete, _ => null, _ => 0);
-            changes1.Clear();
-            changes2.Clear();
+            await Task.WhenAll(changes1Task, changes2Task);
         }
 
         /// <summary>
@@ -304,28 +430,54 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 "WHERE ProductId IN (" + string.Join(", ", Enumerable.Range(first_id, count)) + ");");
         }
 
-        private static void ValidateProductChanges(List<SqlChange<Product>> changes, int first_id, int last_id,
-            SqlChangeOperation operation, Func<int, string> getName, Func<int, int> getCost)
+        private async Task WaitForProductChanges(
+            int firstId,
+            int lastId,
+            SqlChangeOperation operation,
+            Func<Task> actions,
+            Func<int, string> getName,
+            Func<int, int> getCost,
+            int timeoutMs,
+            string messagePrefix = "SQL Changes: ")
         {
-            int count = last_id - first_id + 1;
-            Assert.Equal(count, changes.Count);
+            var expectedIds = Enumerable.Range(firstId, lastId - firstId + 1).ToHashSet();
+            int index = 0;
 
-            // Since the table rows are changed with a single SQL statement, the changes are not guaranteed to arrive in
-            // ProductID-order. Occasionally, we find the items in the second batch are passed to the user function in
-            // reverse order, which is an expected behavior.
-            IEnumerable<SqlChange<Product>> orderedChanges = changes.OrderBy(change => change.Item.ProductID);
+            var taskCompletion = new TaskCompletionSource<bool>();
 
-            int id = first_id;
-            foreach (SqlChange<Product> change in orderedChanges)
+            void MonitorOutputData(object sender, DataReceivedEventArgs e)
             {
-                Assert.Equal(operation, change.Operation);
-                Product product = change.Item;
-                Assert.NotNull(product);
-                Assert.Equal(id, product.ProductID);
-                Assert.Equal(getName(id), product.Name);
-                Assert.Equal(getCost(id), product.Cost);
-                id += 1;
-            }
+                if (e.Data != null && (index = e.Data.IndexOf(messagePrefix, StringComparison.Ordinal)) >= 0)
+                {
+                    string json = e.Data[(index + messagePrefix.Length)..];
+                    IReadOnlyList<SqlChange<Product>> changes = JsonConvert.DeserializeObject<IReadOnlyList<SqlChange<Product>>>(json);
+                    foreach (SqlChange<Product> change in changes)
+                    {
+                        Assert.Equal(operation, change.Operation); // Expected change operation
+                        Product product = change.Item;
+                        Assert.NotNull(product); // Product deserialized correctly
+                        Assert.Contains(product.ProductID, expectedIds); // We haven't seen this product ID yet, and it's one we expected to see
+                        expectedIds.Remove(product.ProductID);
+                        Assert.Equal(getName(product.ProductID), product.Name); // The product has the expected name
+                        Assert.Equal(getCost(product.ProductID), product.Cost); // The product has the expected cost
+                    }
+                    if (expectedIds.Count == 0)
+                    {
+                        taskCompletion.SetResult(true);
+                    }
+                }
+            };
+            // Set up listener for the changes coming in
+            this.FunctionHost.OutputDataReceived += MonitorOutputData;
+
+            // Now that we've set up our listener trigger the actions to monitor
+            await actions();
+
+            // Now wait until either we timeout or we've gotten all the expected changes, whichever comes first
+            await taskCompletion.Task.TimeoutAfter(TimeSpan.FromMilliseconds(timeoutMs), $"Timed out waiting for {operation} changes.");
+
+            // Unhook handler since we're done monitoring these changes so we aren't checking other changes done later
+            this.FunctionHost.OutputDataReceived -= MonitorOutputData;
         }
 
         /// <summary>
@@ -355,7 +507,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             };
 
             // All trigger integration tests are only using C# functions for testing at the moment.
-            this.StartFunctionHost(functionName, Common.SupportedLanguages.CSharp, useTestFolder, OutputHandler);
+            this.StartFunctionHost(functionName, SupportedLanguages.CSharp, useTestFolder, OutputHandler);
 
             // The functions host generally logs the error message within a second after starting up.
             const int BufferTimeForErrorInSeconds = 15;
