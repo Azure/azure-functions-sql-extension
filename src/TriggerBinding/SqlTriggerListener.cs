@@ -257,22 +257,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new InvalidOperationException($"Could not find primary key created in table: '{this._userTable.FullName}'.");
                 }
 
-                string[] reservedColumnNames = new[]
-                {
-                    SqlTriggerConstants.LeasesTableChangeVersionColumnName,
-                    SqlTriggerConstants.LeasesTableAttemptCountColumnName,
-                    SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName
-                };
-
-                var conflictingColumnNames = primaryKeyColumns.Select(col => col.name).Intersect(reservedColumnNames).ToList();
-
-                if (conflictingColumnNames.Count > 0)
-                {
-                    string columnNames = string.Join(", ", conflictingColumnNames.Select(col => $"'{col}'"));
-                    throw new InvalidOperationException($"Found reserved column name(s): {columnNames} in table: '{this._userTable.FullName}'." +
-                        " Please rename them to be able to use trigger binding.");
-                }
-
                 this._logger.LogDebugWithThreadId($"END GetPrimaryKeyColumns ColumnNames(types) = {string.Join(", ", primaryKeyColumns.Select(col => $"'{col.name}({col.type})'"))}.");
                 return primaryKeyColumns;
             }
@@ -315,6 +299,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     string columnNamesAndTypes = string.Join(", ", userDefinedTypeColumns.Select(col => $"'{col.name}' (type: {col.type})"));
                     throw new InvalidOperationException($"Found column(s) with unsupported type(s): {columnNamesAndTypes} in table: '{this._userTable.FullName}'.");
+                }
+
+                string[] reservedColumnNames = new string[]
+                    {
+                        SqlTriggerConstants.LeasesTableChangeVersionColumnName,
+                        SqlTriggerConstants.LeasesTableAttemptCountColumnName,
+                        SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName
+                    };
+
+                var conflictingColumnNames = userTableColumns.Intersect(reservedColumnNames).ToList();
+
+                if (conflictingColumnNames.Count > 0)
+                {
+                    string columnNames = string.Join(", ", conflictingColumnNames.Select(col => $"'{col}'"));
+                    throw new InvalidOperationException($"Found reserved column name(s): {columnNames} in table: '{this._userTable.FullName}'." +
+                        " Please rename them to be able to use trigger binding.");
                 }
 
                 this._logger.LogDebugWithThreadId($"END GetUserTableColumns ColumnNames = {string.Join(", ", userTableColumns.Select(col => $"'{col}'"))}.");
