@@ -301,14 +301,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new InvalidOperationException($"Found column(s) with unsupported type(s): {columnNamesAndTypes} in table: '{this._userTable.FullName}'.");
                 }
 
-                string[] reservedColumnNames = new string[]
-                    {
-                        SqlTriggerConstants.LeasesTableChangeVersionColumnName,
-                        SqlTriggerConstants.LeasesTableAttemptCountColumnName,
-                        SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName
-                    };
-
-                var conflictingColumnNames = userTableColumns.Intersect(reservedColumnNames).ToList();
+                var conflictingColumnNames = userTableColumns.Intersect(SqlTriggerConstants.ReservedColumnNames).ToList();
 
                 if (conflictingColumnNames.Count > 0)
                 {
