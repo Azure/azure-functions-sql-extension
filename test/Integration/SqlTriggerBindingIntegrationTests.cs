@@ -41,7 +41,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 () => { this.InsertProducts(firstId, lastId); return Task.CompletedTask; },
                 id => $"Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(lastId - firstId));
+                GetBatchProcessingTimeout(firstId, lastId));
 
             firstId = 1;
             lastId = 20;
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 () => { this.UpdateProducts(firstId, lastId); return Task.CompletedTask; },
                 id => $"Updated Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(lastId - firstId));
+                GetBatchProcessingTimeout(firstId, lastId));
 
             firstId = 11;
             lastId = 30;
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 () => { this.DeleteProducts(firstId, lastId); return Task.CompletedTask; },
                 _ => null,
                 _ => 0,
-                GetBatchProcessingTimeout(lastId - firstId));
+                GetBatchProcessingTimeout(firstId, lastId));
         }
 
         /// <summary>
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 () => { this.InsertProducts(firstId, lastId); return Task.CompletedTask; },
                 id => $"Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(lastId - firstId, pollingIntervalMs: pollingIntervalMs));
+                GetBatchProcessingTimeout(firstId, lastId, pollingIntervalMs: pollingIntervalMs));
         }
 
 
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 },
                 id => $"Updated Updated Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(lastId - firstId));
+                GetBatchProcessingTimeout(firstId, lastId));
 
             firstId = 6;
             lastId = 10;
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 },
                 id => $"Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(lastId - firstId));
+                GetBatchProcessingTimeout(firstId, lastId));
 
             firstId = 6;
             lastId = 10;
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 },
                 id => $"Updated Updated Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(lastId - firstId));
+                GetBatchProcessingTimeout(firstId, lastId));
 
             firstId = 11;
             lastId = 20;
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 },
                 _ => null,
                 _ => 0,
-                GetBatchProcessingTimeout(lastId - firstId));
+                GetBatchProcessingTimeout(firstId, lastId));
         }
 
 
@@ -229,7 +229,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 },
                 id => $"Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(lastId - firstId),
+                GetBatchProcessingTimeout(firstId, lastId),
                 Trigger1Changes
                 );
 
@@ -244,7 +244,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 },
                 id => $"Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(lastId - firstId),
+                GetBatchProcessingTimeout(firstId, lastId),
                 Trigger2Changes
                 );
 
@@ -267,7 +267,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 },
                 id => $"Updated Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(lastId - firstId),
+                GetBatchProcessingTimeout(firstId, lastId),
                 Trigger1Changes);
 
             // Set up monitoring for Trigger 2...
@@ -281,7 +281,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 },
                 id => $"Updated Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(lastId - firstId),
+                GetBatchProcessingTimeout(firstId, lastId),
                 Trigger2Changes);
 
             // Now that monitoring is set up make the changes and then wait for the monitoring tasks to see them and complete
@@ -304,7 +304,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 },
                 _ => null,
                 _ => 0,
-                GetBatchProcessingTimeout(lastId - firstId),
+                GetBatchProcessingTimeout(firstId, lastId),
                 Trigger1Changes);
 
             // Set up monitoring for Trigger 2...
@@ -318,7 +318,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 },
                 _ => null,
                 _ => 0,
-                GetBatchProcessingTimeout(lastId - firstId),
+                GetBatchProcessingTimeout(firstId, lastId),
                 Trigger2Changes);
 
             // Now that monitoring is set up make the changes and then wait for the monitoring tasks to see them and complete
@@ -420,29 +420,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             };
         }
 
-        private void InsertProducts(int first_id, int last_id)
+        private void InsertProducts(int firstId, int lastId)
         {
-            int count = last_id - first_id + 1;
+            int count = lastId - firstId + 1;
             this.ExecuteNonQuery(
                 "INSERT INTO [dbo].[Products] VALUES\n" +
-                string.Join(",\n", Enumerable.Range(first_id, count).Select(id => $"({id}, 'Product {id}', {id * 100})")) + ";");
+                string.Join(",\n", Enumerable.Range(firstId, count).Select(id => $"({id}, 'Product {id}', {id * 100})")) + ";");
         }
 
-        private void UpdateProducts(int first_id, int last_id)
+        private void UpdateProducts(int firstId, int lastId)
         {
-            int count = last_id - first_id + 1;
+            int count = lastId - firstId + 1;
             this.ExecuteNonQuery(
                 "UPDATE [dbo].[Products]\n" +
                 "SET Name = 'Updated ' + Name\n" +
-                "WHERE ProductId IN (" + string.Join(", ", Enumerable.Range(first_id, count)) + ");");
+                "WHERE ProductId IN (" + string.Join(", ", Enumerable.Range(firstId, count)) + ");");
         }
 
-        private void DeleteProducts(int first_id, int last_id)
+        private void DeleteProducts(int firstId, int lastId)
         {
-            int count = last_id - first_id + 1;
+            int count = lastId - firstId + 1;
             this.ExecuteNonQuery(
                 "DELETE FROM [dbo].[Products]\n" +
-                "WHERE ProductId IN (" + string.Join(", ", Enumerable.Range(first_id, count)) + ");");
+                "WHERE ProductId IN (" + string.Join(", ", Enumerable.Range(firstId, count)) + ");");
         }
 
         private async Task WaitForProductChanges(
@@ -536,13 +536,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
-        /// Gets a timeout value to use when processing changesToProcess number of changes, based on the
+        /// Gets a timeout value to use when processing the given number of changes, based on the
         /// default batch size and polling interval. 
         /// </summary>
-        /// <param name="changesToProcess">The total number of changes being processed</param>
+        /// <param name="firstId">The first ID in the batch to process</param>
+        /// <param name="lastId">The last ID in the batch to process</param>
+        /// <param name="batchSize">The batch size if different than the default batch size</param>
+        /// <param name="pollingIntervalMs">The polling interval in ms if different than the default polling interval</param>
         /// <returns></returns>
-        protected static int GetBatchProcessingTimeout(int changesToProcess, int batchSize = SqlTableChangeMonitor<object>.DefaultBatchSize, int pollingIntervalMs = SqlTableChangeMonitor<object>.DefaultPollingIntervalMs)
+        protected static int GetBatchProcessingTimeout(int firstId, int lastId, int batchSize = SqlTableChangeMonitor<object>.DefaultBatchSize, int pollingIntervalMs = SqlTableChangeMonitor<object>.DefaultPollingIntervalMs)
         {
+            int changesToProcess = lastId - firstId + 1;
             return (int)(Math.Ceiling((double)changesToProcess / batchSize) // The number of batches to process
                 * pollingIntervalMs // The length to process each batch
                 * 1.2); // A bit of buffer time
