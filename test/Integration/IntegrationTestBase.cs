@@ -17,6 +17,7 @@ using Xunit.Abstractions;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Microsoft.AspNetCore.WebUtilities;
 using System.Collections.Generic;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -194,6 +195,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 RedirectStandardError = true,
                 UseShellExecute = false
             };
+
+            // Always disable telemetry during test runs
+            startInfo.EnvironmentVariables[TelemetryOptoutEnvVar] = "1";
+
             this.LogOutput($"Starting {startInfo.FileName} {startInfo.Arguments} in {startInfo.WorkingDirectory}");
             this.FunctionHost = new Process
             {
