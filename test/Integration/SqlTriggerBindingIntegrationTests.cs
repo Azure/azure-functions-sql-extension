@@ -18,7 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     [Collection("IntegrationTests")]
     public class SqlTriggerBindingIntegrationTests : IntegrationTestBase
     {
-        public SqlTriggerBindingIntegrationTests(ITestOutputHelper output) : base(output)
+        public SqlTriggerBindingIntegrationTests(ITestOutputHelper output = null) : base(output)
         {
             this.EnableChangeTrackingForDatabase();
         }
@@ -398,7 +398,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             ");
         }
 
-        private void EnableChangeTrackingForTable(string tableName)
+        protected void EnableChangeTrackingForTable(string tableName)
         {
             this.ExecuteNonQuery($@"
                 ALTER TABLE [dbo].[{tableName}]
@@ -420,7 +420,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             };
         }
 
-        private void InsertProducts(int firstId, int lastId)
+        protected void InsertProducts(int firstId, int lastId)
         {
             int count = lastId - firstId + 1;
             this.ExecuteNonQuery(
@@ -428,7 +428,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 string.Join(",\n", Enumerable.Range(firstId, count).Select(id => $"({id}, 'Product {id}', {id * 100})")) + ";");
         }
 
-        private void UpdateProducts(int firstId, int lastId)
+        protected void UpdateProducts(int firstId, int lastId)
         {
             int count = lastId - firstId + 1;
             this.ExecuteNonQuery(
@@ -437,7 +437,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 "WHERE ProductId IN (" + string.Join(", ", Enumerable.Range(firstId, count)) + ");");
         }
 
-        private void DeleteProducts(int firstId, int lastId)
+        protected void DeleteProducts(int firstId, int lastId)
         {
             int count = lastId - firstId + 1;
             this.ExecuteNonQuery(
@@ -445,7 +445,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 "WHERE ProductId IN (" + string.Join(", ", Enumerable.Range(firstId, count)) + ");");
         }
 
-        private async Task WaitForProductChanges(
+        protected async Task WaitForProductChanges(
             int firstId,
             int lastId,
             SqlChangeOperation operation,
