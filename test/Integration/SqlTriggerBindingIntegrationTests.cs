@@ -550,7 +550,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             int calculatedTimeout = (int)(Math.Ceiling((double)changesToProcess / batchSize) // The number of batches to process
                 * pollingIntervalMs // The length to process each batch
                 * 2); // Double to add buffer time for processing results
-            return Math.Min(calculatedTimeout, 2000); // Always have a timeout of at least 2sec to ensure we have time for processing the results
+            return Math.Max(calculatedTimeout, 2000); // Always have a timeout of at least 2sec to ensure we have time for processing the results
         }
     }
 }
