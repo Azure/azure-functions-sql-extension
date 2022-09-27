@@ -43,6 +43,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const int LeaseIntervalInSeconds = 60;
         private const int LeaseRenewalIntervalInSeconds = 15;
         private const int MaxRetryReleaseLeases = 3;
+
+        public const int DefaultBatchSize = 10;
+        public const int DefaultPollingIntervalMs = 5000;
         #endregion Constants
 
         private readonly string _connectionString;
@@ -58,11 +61,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Number of changes to process in each iteration of the loop
         /// </summary>
-        private readonly int _batchSize = 10;
+        private readonly int _batchSize = DefaultBatchSize;
         /// <summary>
         /// Delay in ms between processing each batch of changes
         /// </summary>
-        private readonly int _pollingIntervalInMs = 5000;
+        private readonly int _pollingIntervalInMs = DefaultPollingIntervalMs;
 
         private readonly CancellationTokenSource _cancellationTokenSourceCheckForChanges = new CancellationTokenSource();
         private readonly CancellationTokenSource _cancellationTokenSourceRenewLeases = new CancellationTokenSource();
@@ -591,8 +594,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // have leases acquired on them by another worker.
             // Therefore, if there are more than one version numbers in the set, return the second highest one. Otherwise, return
             // the only version number in the set.
-            // Also this LastSyncVersion is actually updated in the GlobalState table only after verifying that the changes with  
-            // changeVersion <= newLastSyncVersion have been processed in BuildUpdateTablesPostInvocation query. 
+            // Also this LastSyncVersion is actually updated in the GlobalState table only after verifying that the changes with
+            // changeVersion <= newLastSyncVersion have been processed in BuildUpdateTablesPostInvocation query.
             long lastSyncVersion = changeVersionSet.ElementAt(changeVersionSet.Count > 1 ? changeVersionSet.Count - 2 : 0);
             this._logger.LogDebugWithThreadId($"RecomputeLastSyncVersion. LastSyncVersion={lastSyncVersion} ChangeVersionSet={string.Join(",", changeVersionSet)}");
             return lastSyncVersion;
