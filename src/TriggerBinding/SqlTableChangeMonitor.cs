@@ -44,8 +44,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const int LeaseRenewalIntervalInSeconds = 15;
         private const int MaxRetryReleaseLeases = 3;
 
-        public const int DefaultBatchSize = 10;
-        public const int DefaultPollingIntervalMs = 5000;
+        public const int DefaultBatchSize = 100;
+        public const int DefaultPollingIntervalMs = 1000;
         #endregion Constants
 
         private readonly string _connectionString;

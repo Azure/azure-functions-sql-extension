@@ -11,6 +11,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
         {
             BenchmarkRunner.Run<SqlInputBindingPerformance>();
             BenchmarkRunner.Run<SqlOutputBindingPerformance>();
+            BenchmarkRunner.Run<SqlTriggerBindingPerformance>();
         }
     }
 }
