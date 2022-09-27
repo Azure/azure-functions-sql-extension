@@ -120,15 +120,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             this._userTableId = userTableId;
+            this._telemetryProps = telemetryProps ?? new Dictionary<TelemetryPropertyName, string>();
+
             // Check if there's config settings to override the default batch size/polling interval values
-            this._batchSize = configuration.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_BatchSize) ?? this._batchSize;
-            this._pollingIntervalInMs = configuration.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_PollingInterval) ?? this._pollingIntervalInMs;
+            int? configuredBatchSize = configuration.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_BatchSize);
+            int? configuredPollingInterval = configuration.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_BatchSize);
+            this._batchSize = configuredBatchSize ?? this._batchSize;
+            this._pollingIntervalInMs = configuredPollingInterval ?? this._pollingIntervalInMs;
+            var monitorStartProps = new Dictionary<TelemetryPropertyName, string>(telemetryProps)
+            {
+                { TelemetryPropertyName.HasConfiguredBatchSize, (configuredBatchSize != null).ToString() },
+                { TelemetryPropertyName.HasConfiguredPollingInterval, (configuredPollingInterval != null).ToString() },
+            };
+            TelemetryInstance.TrackEvent(
+                TelemetryEventName.TriggerMonitorStart,
+                monitorStartProps,
+                new Dictionary<TelemetryMeasureName, double>() {
+                    { TelemetryMeasureName.BatchSize, this._batchSize },
+                    { TelemetryMeasureName.PollingIntervalMs, this._pollingIntervalInMs }
+            });
+
             // Prep search-conditions that will be used besides WHERE clause to match table rows.
             this._rowMatchConditions = Enumerable.Range(0, this._batchSize)
                 .Select(rowIndex => string.Join(" AND ", this._primaryKeyColumns.Select((col, colIndex) => $"{col.AsBracketQuotedString()} = @{rowIndex}_{colIndex}")))
                 .ToList();
-
-            this._telemetryProps = telemetryProps ?? new Dictionary<TelemetryPropertyName, string>();
 
 #pragma warning disable CS4014 // Queue the below tasks and exit. Do not wait for their completion.
             _ = Task.Run(() =>
