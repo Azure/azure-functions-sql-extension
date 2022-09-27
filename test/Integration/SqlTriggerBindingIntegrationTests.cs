@@ -91,7 +91,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 () => { this.InsertProducts(firstId, lastId); return Task.CompletedTask; },
                 id => $"Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(lastId - firstId, batchSize));
+                GetBatchProcessingTimeout(firstId, lastId, batchSize: batchSize));
         }
 
         /// <summary>
@@ -549,7 +549,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             int changesToProcess = lastId - firstId + 1;
             return (int)(Math.Ceiling((double)changesToProcess / batchSize) // The number of batches to process
                 * pollingIntervalMs // The length to process each batch
-                * 1.2); // A bit of buffer time
+                * 2); // Double to add buffer time for processing results
         }
     }
 }
