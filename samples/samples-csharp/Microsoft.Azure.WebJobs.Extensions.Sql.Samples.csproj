@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <AzureFunctionsVersion>v3</AzureFunctionsVersion>
+    <_FunctionsExtensionTargetFramework>netstandard2.0</_FunctionsExtensionTargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
