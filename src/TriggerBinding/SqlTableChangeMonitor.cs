@@ -43,6 +43,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const int LeaseIntervalInSeconds = 60;
         private const int LeaseRenewalIntervalInSeconds = 15;
         private const int MaxRetryReleaseLeases = 3;
+
+        public const int DefaultBatchSize = 100;
+        public const int DefaultPollingIntervalMs = 1000;
         #endregion Constants
 
         private readonly string _connectionString;
@@ -58,11 +61,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Number of changes to process in each iteration of the loop
         /// </summary>
-        private readonly int _batchSize = 10;
+        private readonly int _batchSize = DefaultBatchSize;
         /// <summary>
         /// Delay in ms between processing each batch of changes
         /// </summary>
-        private readonly int _pollingIntervalInMs = 5000;
+        private readonly int _pollingIntervalInMs = DefaultPollingIntervalMs;
 
         private readonly CancellationTokenSource _cancellationTokenSourceCheckForChanges = new CancellationTokenSource();
         private readonly CancellationTokenSource _cancellationTokenSourceRenewLeases = new CancellationTokenSource();
@@ -117,15 +120,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             this._userTableId = userTableId;
+            this._telemetryProps = telemetryProps ?? new Dictionary<TelemetryPropertyName, string>();
+
             // Check if there's config settings to override the default batch size/polling interval values
-            this._batchSize = configuration.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_BatchSize) ?? this._batchSize;
-            this._pollingIntervalInMs = configuration.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_PollingInterval) ?? this._pollingIntervalInMs;
+            int? configuredBatchSize = configuration.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_BatchSize);
+            int? configuredPollingInterval = configuration.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_BatchSize);
+            this._batchSize = configuredBatchSize ?? this._batchSize;
+            this._pollingIntervalInMs = configuredPollingInterval ?? this._pollingIntervalInMs;
+            var monitorStartProps = new Dictionary<TelemetryPropertyName, string>(telemetryProps)
+            {
+                { TelemetryPropertyName.HasConfiguredBatchSize, (configuredBatchSize != null).ToString() },
+                { TelemetryPropertyName.HasConfiguredPollingInterval, (configuredPollingInterval != null).ToString() },
+            };
+            TelemetryInstance.TrackEvent(
+                TelemetryEventName.TriggerMonitorStart,
+                monitorStartProps,
+                new Dictionary<TelemetryMeasureName, double>() {
+                    { TelemetryMeasureName.BatchSize, this._batchSize },
+                    { TelemetryMeasureName.PollingIntervalMs, this._pollingIntervalInMs }
+            });
+
             // Prep search-conditions that will be used besides WHERE clause to match table rows.
             this._rowMatchConditions = Enumerable.Range(0, this._batchSize)
                 .Select(rowIndex => string.Join(" AND ", this._primaryKeyColumns.Select((col, colIndex) => $"{col.AsBracketQuotedString()} = @{rowIndex}_{colIndex}")))
                 .ToList();
-
-            this._telemetryProps = telemetryProps ?? new Dictionary<TelemetryPropertyName, string>();
 
 #pragma warning disable CS4014 // Queue the below tasks and exit. Do not wait for their completion.
             _ = Task.Run(() =>
@@ -591,8 +609,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // have leases acquired on them by another worker.
             // Therefore, if there are more than one version numbers in the set, return the second highest one. Otherwise, return
             // the only version number in the set.
-            // Also this LastSyncVersion is actually updated in the GlobalState table only after verifying that the changes with  
-            // changeVersion <= newLastSyncVersion have been processed in BuildUpdateTablesPostInvocation query. 
+            // Also this LastSyncVersion is actually updated in the GlobalState table only after verifying that the changes with
+            // changeVersion <= newLastSyncVersion have been processed in BuildUpdateTablesPostInvocation query.
             long lastSyncVersion = changeVersionSet.ElementAt(changeVersionSet.Count > 1 ? changeVersionSet.Count - 2 : 0);
             this._logger.LogDebugWithThreadId($"RecomputeLastSyncVersion. LastSyncVersion={lastSyncVersion} ChangeVersionSet={string.Join(",", changeVersionSet)}");
             return lastSyncVersion;
