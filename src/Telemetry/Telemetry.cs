@@ -346,6 +346,7 @@ This extension collect usage data in order to help us improve your experience. T
         TableInfoCacheMiss,
         TriggerFunctionEnd,
         TriggerFunctionStart,
+        TriggerMonitorStart,
         UpsertEnd,
         UpsertStart,
     }
@@ -359,6 +360,8 @@ This extension collect usage data in order to help us improve your experience. T
         ErrorName,
         ExceptionType,
         HasIdentityColumn,
+        HasConfiguredBatchSize,
+        HasConfiguredPollingInterval,
         LeasesTableName,
         QueryType,
         ServerVersion,
@@ -373,6 +376,7 @@ This extension collect usage data in order to help us improve your experience. T
     {
         AcquireLeasesDurationMs,
         BatchCount,
+        BatchSize,
         CommandDurationMs,
         CreatedSchemaDurationMs,
         CreateGlobalStateTableDurationMs,
@@ -383,6 +387,7 @@ This extension collect usage data in order to help us improve your experience. T
         GetColumnDefinitionsDurationMs,
         GetPrimaryKeysDurationMs,
         InsertGlobalStateTableRowDurationMs,
+        PollingIntervalMs,
         ReleaseLeasesDurationMs,
         RetryAttemptNumber,
         SetLastSyncVersionDurationMs,
