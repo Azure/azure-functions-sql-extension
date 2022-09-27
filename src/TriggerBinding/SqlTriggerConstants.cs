@@ -15,6 +15,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public const string LeasesTableAttemptCountColumnName = "_az_func_AttemptCount";
         public const string LeasesTableLeaseExpirationTimeColumnName = "_az_func_LeaseExpirationTime";
 
+        /// <summary>
+        /// The column names that are used in internal state tables and so can't exist in the target table
+        /// since that shares column names with the primary keys from each user table being monitored.
+        /// </summary>
+        public static readonly string[] ReservedColumnNames = new string[]
+        {
+                    LeasesTableChangeVersionColumnName,
+                    LeasesTableAttemptCountColumnName,
+                    LeasesTableLeaseExpirationTimeColumnName
+        };
+
         public const string ConfigKey_SqlTrigger_BatchSize = "Sql_Trigger_BatchSize";
         public const string ConfigKey_SqlTrigger_PollingInterval = "Sql_Trigger_PollingIntervalMs";
     }
