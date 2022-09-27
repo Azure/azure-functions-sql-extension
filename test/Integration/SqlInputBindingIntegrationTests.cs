@@ -137,7 +137,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.JavaScript)] // Javascript doesn't have the concept of a runtime language used during serialization
+        [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.Java)] // Javascript doesn't have the concept of a runtime language used during serialization
         public async void GetProductsColumnTypesSerializationDifferentCultureTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsColumnTypesSerializationDifferentCulture), lang, true);
