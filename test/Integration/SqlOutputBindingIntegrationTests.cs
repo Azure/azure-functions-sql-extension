@@ -106,6 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <param name="lang">The language to run the test against</param>
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Java)] // TODO: add AddProductColumnTypes Java function
         public void AddProductColumnTypesTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductColumnTypes), lang, true);
@@ -166,6 +167,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Java)] // TODO: add AddProductExtraColumns Java function
         public void AddProductExtraColumnsTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductExtraColumns), lang, true);
@@ -178,6 +180,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Java)] // TODO: add AddProductMissingColumns Java function
         public void AddProductMissingColumnsTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductMissingColumns), lang, true);
@@ -190,6 +193,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Java)] // TODO: add AddProductMissingColumnsExceptionFunction Java function
         public void AddProductMissingColumnsNotNullTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductMissingColumnsExceptionFunction), lang, true);
@@ -201,6 +205,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Java)] // TODO: add AddProductsNoPartialUpsert Java function
         public void AddProductNoPartialUpsertTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsNoPartialUpsert), lang, true);

@@ -33,6 +33,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         private Process AzuriteHost;
 
+        private Process Mvn;
+
         /// <summary>
         /// Connection to the database for the current test.
         /// </summary>
@@ -151,6 +153,51 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
+        /// Run `mvn clean package` to build the Java function app.
+        /// </summary>
+        private void BuildJavaFunctionApp(string workingDirectory)
+        {
+            this.Mvn = new Process()
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "mvn",
+                    Arguments = "clean package",
+                    WorkingDirectory = workingDirectory,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false
+                }
+            };
+
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            this.Mvn.OutputDataReceived += this.TestOutputHandler;
+            this.Mvn.OutputDataReceived += SignalStartupHandler;
+
+            this.Mvn.Start();
+
+            this.Mvn.BeginOutputReadLine();
+
+            this.LogOutput($"Building Java function app");
+
+            const int buildJavaAppTimeoutInSeconds = 120;
+            bool isCompleted = taskCompletionSource.Task.Wait(TimeSpan.FromSeconds(buildJavaAppTimeoutInSeconds));
+            Assert.True(isCompleted, "Java function app did not build successfully");
+
+            this.LogOutput($"Java function app built successfully");
+            this.Mvn.OutputDataReceived -= SignalStartupHandler;
+            this.Mvn.OutputDataReceived -= this.TestOutputHandler;
+
+            void SignalStartupHandler(object sender, DataReceivedEventArgs e)
+            {
+                {
+                    taskCompletionSource.SetResult(true);
+                }
+            };
+            taskCompletionSource.Task.Wait(120000);
+        }
+
+        /// <summary>
         /// This starts the Azurite storage emulator.
         /// </summary>
         protected void StartAzurite()
@@ -182,6 +229,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 throw new FileNotFoundException("Working directory not found at " + workingDirectory);
             }
+
+            if (language == SupportedLanguages.Java)
+            {
+                this.BuildJavaFunctionApp(workingDirectory);
+                workingDirectory = Path.Combine(workingDirectory, "target", "azure-functions", "samples-java-1664216893907");
+            }
+
             var startInfo = new ProcessStartInfo
             {
                 // The full path to the Functions CLI is required in the ProcessStartInfo because UseShellExecute is set to false.
