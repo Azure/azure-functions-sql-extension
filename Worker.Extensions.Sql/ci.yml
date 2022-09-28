@@ -1,0 +1,15 @@
+trigger: none
+
+pr:
+  branches:
+    include:
+    - main
+    - release/*
+  paths:
+    include:
+    - /Worker.Extensions.Sql/
+
+extends:
+  template: ../builds/azure-pipelines/extensions-ci.yml
+  parameters:
+    ExtensionDirectory: /Worker.Extensions.Sql
