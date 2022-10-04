@@ -41,7 +41,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 () => { this.InsertProducts(firstId, lastId); return Task.CompletedTask; },
                 id => $"Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(firstId, lastId));
+                this.GetBatchProcessingTimeout(firstId, lastId));
 
             firstId = 1;
             lastId = 20;
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 () => { this.UpdateProducts(firstId, lastId); return Task.CompletedTask; },
                 id => $"Updated Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(firstId, lastId));
+                this.GetBatchProcessingTimeout(firstId, lastId));
 
             firstId = 11;
             lastId = 30;
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 () => { this.DeleteProducts(firstId, lastId); return Task.CompletedTask; },
                 _ => null,
                 _ => 0,
-                GetBatchProcessingTimeout(firstId, lastId));
+                this.GetBatchProcessingTimeout(firstId, lastId));
         }
 
         /// <summary>
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 () => { this.InsertProducts(firstId, lastId); return Task.CompletedTask; },
                 id => $"Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(firstId, lastId, batchSize: batchSize));
+                this.GetBatchProcessingTimeout(firstId, lastId, batchSize: batchSize));
         }
 
         /// <summary>
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 () => { this.InsertProducts(firstId, lastId); return Task.CompletedTask; },
                 id => $"Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(firstId, lastId, pollingIntervalMs: pollingIntervalMs));
+                this.GetBatchProcessingTimeout(firstId, lastId, pollingIntervalMs: pollingIntervalMs));
         }
 
 
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 },
                 id => $"Updated Updated Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(firstId, lastId));
+                this.GetBatchProcessingTimeout(firstId, lastId));
 
             firstId = 6;
             lastId = 10;
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 },
                 id => $"Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(firstId, lastId));
+                this.GetBatchProcessingTimeout(firstId, lastId));
 
             firstId = 6;
             lastId = 10;
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 },
                 id => $"Updated Updated Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(firstId, lastId));
+                this.GetBatchProcessingTimeout(firstId, lastId));
 
             firstId = 11;
             lastId = 20;
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 },
                 _ => null,
                 _ => 0,
-                GetBatchProcessingTimeout(firstId, lastId));
+                this.GetBatchProcessingTimeout(firstId, lastId));
         }
 
         /// <summary>
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 },
                 id => $"Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(firstId, lastId),
+                this.GetBatchProcessingTimeout(firstId, lastId),
                 Trigger1Changes
                 );
 
@@ -243,7 +243,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 },
                 id => $"Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(firstId, lastId),
+                this.GetBatchProcessingTimeout(firstId, lastId),
                 Trigger2Changes
                 );
 
@@ -266,7 +266,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 },
                 id => $"Updated Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(firstId, lastId),
+                this.GetBatchProcessingTimeout(firstId, lastId),
                 Trigger1Changes);
 
             // Set up monitoring for Trigger 2...
@@ -280,7 +280,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 },
                 id => $"Updated Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(firstId, lastId),
+                this.GetBatchProcessingTimeout(firstId, lastId),
                 Trigger2Changes);
 
             // Now that monitoring is set up make the changes and then wait for the monitoring tasks to see them and complete
@@ -303,7 +303,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 },
                 _ => null,
                 _ => 0,
-                GetBatchProcessingTimeout(firstId, lastId),
+                this.GetBatchProcessingTimeout(firstId, lastId),
                 Trigger1Changes);
 
             // Set up monitoring for Trigger 2...
@@ -317,7 +317,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 },
                 _ => null,
                 _ => 0,
-                GetBatchProcessingTimeout(firstId, lastId),
+                this.GetBatchProcessingTimeout(firstId, lastId),
                 Trigger2Changes);
 
             // Now that monitoring is set up make the changes and then wait for the monitoring tasks to see them and complete
@@ -347,7 +347,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 () => { this.InsertProducts(firstId, lastId); return Task.CompletedTask; },
                 id => $"Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(firstId, lastId));
+                this.GetBatchProcessingTimeout(firstId, lastId));
 
             firstId = 1;
             lastId = 60;
@@ -359,7 +359,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 () => { this.UpdateProducts(firstId, lastId); return Task.CompletedTask; },
                 id => $"Updated Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(firstId, lastId));
+                this.GetBatchProcessingTimeout(firstId, lastId));
 
             firstId = 31;
             lastId = 90;
@@ -372,7 +372,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 () => { this.DeleteProducts(firstId, lastId); return Task.CompletedTask; },
                 _ => null,
                 _ => 0,
-                GetBatchProcessingTimeout(firstId, lastId));
+                this.GetBatchProcessingTimeout(firstId, lastId));
         }
 
         /// <summary>
