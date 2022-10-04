@@ -24,6 +24,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.WebJobs.Ext
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "performance", "performance", "{F0F3562F-9176-4461-98E4-13D38D3DD056}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Worker.Extension.Sql", "Worker.Extension.Sql", "{605E19C0-3A77-477F-928E-85B8972B734D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.Functions.Worker.Extension.Sql", "Worker.Extension.Sql\src\Microsoft.Azure.Functions.Worker.Extension.Sql.csproj", "{84D97605-F1BF-4083-9C93-2B68A9FBB00F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -46,6 +50,10 @@ Global
 		{1A5148B7-F877-4813-852C-F94D6EF795E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1A5148B7-F877-4813-852C-F94D6EF795E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1A5148B7-F877-4813-852C-F94D6EF795E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{84D97605-F1BF-4083-9C93-2B68A9FBB00F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{84D97605-F1BF-4083-9C93-2B68A9FBB00F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{84D97605-F1BF-4083-9C93-2B68A9FBB00F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{84D97605-F1BF-4083-9C93-2B68A9FBB00F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -55,6 +63,7 @@ Global
 		{4453B407-2CA3-4011-BDE5-247FCE5C1974} = {21CDC01C-247B-46B0-A8F5-9D35686C628B}
 		{A5B55530-71C8-4A9A-92AD-1D33A5E80FC1} = {F7E99EB5-47D3-4B50-A6AA-D8D5508A121A}
 		{1A5148B7-F877-4813-852C-F94D6EF795E8} = {F0F3562F-9176-4461-98E4-13D38D3DD056}
+		{84D97605-F1BF-4083-9C93-2B68A9FBB00F} = {605E19C0-3A77-477F-928E-85B8972B734D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {49902AA5-150F-4567-B562-4AA8549B2CF4}

@@ -7,9 +7,9 @@ pr:
     - release/*
   paths:
     include:
-    - /Worker.Extensions.Sql/
+    - /Worker.Extension.Sql/
 
 extends:
   template: ../builds/azure-pipelines/extensions-ci.yml
   parameters:
-    ExtensionDirectory: /Worker.Extensions.Sql
+    ExtensionDirectory: /Worker.Extension.Sql
