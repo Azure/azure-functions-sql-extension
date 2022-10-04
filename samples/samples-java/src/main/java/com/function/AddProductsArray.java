@@ -33,7 +33,6 @@ public class AddProductsArray {
             final ExecutionContext context) {
 
         String json = request.getBody().get();
-        Gson gson = new Gson();
         Type listType = new TypeToken<ArrayList<Product>>() {}.getType();
         ArrayList<Product> p = new Gson().fromJson(json , listType);
         products.setValue(p);

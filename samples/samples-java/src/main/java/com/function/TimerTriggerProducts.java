@@ -19,7 +19,7 @@ public class TimerTriggerProducts {
                 connectionStringSetting = "sqlConnectionString") OutputBinding<Product[]> products,
             final ExecutionContext context) {
 
-        int totalUpserts = 1;
+        int totalUpserts = 1000;
         Product[] p = new Product[totalUpserts];
         for (int i = 0; i < totalUpserts; i++) {
             p[i] = new Product(i, "test", 100);

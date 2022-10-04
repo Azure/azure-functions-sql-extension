@@ -161,7 +161,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = "mvn",
+                    FileName = GetMavenPath(),
                     Arguments = "clean package",
                     WorkingDirectory = workingDirectory,
                     WindowStyle = ProcessWindowStyle.Hidden,
@@ -180,21 +180,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             this.LogOutput($"Building Java function app");
 
-            const int buildJavaAppTimeoutInSeconds = 120;
+            const int buildJavaAppTimeoutInSeconds = 60;
             bool isCompleted = taskCompletionSource.Task.Wait(TimeSpan.FromSeconds(buildJavaAppTimeoutInSeconds));
             Assert.True(isCompleted, "Java function app did not build successfully");
 
-            this.LogOutput($"Java function app built successfully");
             this.Mvn.OutputDataReceived -= SignalStartupHandler;
             this.Mvn.OutputDataReceived -= this.TestOutputHandler;
 
             void SignalStartupHandler(object sender, DataReceivedEventArgs e)
             {
+                if (e.Data?.Contains("BUILD SUCCESS") == true)
                 {
                     taskCompletionSource.SetResult(true);
                 }
             };
-            taskCompletionSource.Task.Wait(120000);
+            taskCompletionSource.Task.Wait(6000);
+        }
+
+        private static string GetMavenPath()
+        {
+            string mavenPath = Environment.GetEnvironmentVariable("MAVEN_PATH");
+            return mavenPath;
         }
 
         /// <summary>
