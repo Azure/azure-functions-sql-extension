@@ -16,6 +16,7 @@ using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -25,16 +26,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// <typeparam name="T">POCO class representing the row in the user table</typeparam>
     internal sealed class SqlTableChangeMonitor<T> : IDisposable
     {
-        public const int BatchSize = 10;
-        public const int PollingIntervalInSeconds = 5;
-        public const int MaxAttemptCount = 5;
-
-        // Leases are held for approximately (LeaseRenewalIntervalInSeconds * MaxLeaseRenewalCount) seconds. It is
+        #region Constants
+        /// <summary>
+        /// The maximum number of times we'll attempt to process a change before giving up
+        /// </summary>
+        private const int MaxChangeProcessAttemptCount = 5;
+        /// <summary>
+        /// The maximum number of times that we'll attempt to renew a lease be
+        /// </summary>
+        /// <remarks>
+        /// Leases are held for approximately (LeaseRenewalIntervalInSeconds * MaxLeaseRenewalCount) seconds. It is
         // required to have at least one of (LeaseIntervalInSeconds / LeaseRenewalIntervalInSeconds) attempts to
         // renew the lease succeed to prevent it from expiring.
-        public const int MaxLeaseRenewalCount = 10;
-        public const int LeaseIntervalInSeconds = 60;
-        public const int LeaseRenewalIntervalInSeconds = 15;
+        // </remarks>
+        private const int MaxLeaseRenewalCount = 10;
+        private const int LeaseIntervalInSeconds = 60;
+        private const int LeaseRenewalIntervalInSeconds = 15;
+        private const int MaxRetryReleaseLeases = 3;
+
+        public const int DefaultBatchSize = 100;
+        public const int DefaultPollingIntervalMs = 1000;
+        #endregion Constants
 
         private readonly string _connectionString;
         private readonly int _userTableId;
@@ -46,18 +58,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly IReadOnlyList<string> _rowMatchConditions;
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly ILogger _logger;
+        /// <summary>
+        /// Number of changes to process in each iteration of the loop
+        /// </summary>
+        private readonly int _batchSize = DefaultBatchSize;
+        /// <summary>
+        /// Delay in ms between processing each batch of changes
+        /// </summary>
+        private readonly int _pollingIntervalInMs = DefaultPollingIntervalMs;
 
-        private readonly CancellationTokenSource _cancellationTokenSourceCheckForChanges;
-        private readonly CancellationTokenSource _cancellationTokenSourceRenewLeases;
-        private CancellationTokenSource _cancellationTokenSourceExecutor;
+        private readonly CancellationTokenSource _cancellationTokenSourceCheckForChanges = new CancellationTokenSource();
+        private readonly CancellationTokenSource _cancellationTokenSourceRenewLeases = new CancellationTokenSource();
+        private CancellationTokenSource _cancellationTokenSourceExecutor = new CancellationTokenSource();
 
-        // The semaphore ensures that mutable class members such as this._rows are accessed by only one thread at a time.
-        private readonly SemaphoreSlim _rowsLock;
+        // The semaphore gets used by lease-renewal loop to ensure that '_state' stays set to 'ProcessingChanges' while
+        // the leases are being renewed. The change-consumption loop requires to wait for the semaphore before modifying
+        // the value of '_state' back to 'CheckingForChanges'. Since the field '_rows' is only updated if the value of
+        // '_state' is set to 'CheckingForChanges', this guarantees that '_rows' will stay same while it is being
+        // iterated over inside the lease-renewal loop.
+        private readonly SemaphoreSlim _rowsLock = new SemaphoreSlim(1, 1);
 
         private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps;
 
-        private IReadOnlyList<IReadOnlyDictionary<string, string>> _rows;
-        private int _leaseRenewalCount;
+        private IReadOnlyList<IReadOnlyDictionary<string, object>> _rows = new List<IReadOnlyDictionary<string, object>>();
+        private int _leaseRenewalCount = 0;
         private State _state = State.CheckingForChanges;
 
         /// <summary>
@@ -83,43 +107,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             IReadOnlyList<string> primaryKeyColumns,
             ITriggeredFunctionExecutor executor,
             ILogger logger,
+            IConfiguration configuration,
             IDictionary<TelemetryPropertyName, string> telemetryProps)
         {
-            _ = !string.IsNullOrEmpty(connectionString) ? true : throw new ArgumentNullException(nameof(connectionString));
-            _ = !string.IsNullOrEmpty(userTable.FullName) ? true : throw new ArgumentNullException(nameof(userTable));
-            _ = !string.IsNullOrEmpty(userFunctionId) ? true : throw new ArgumentNullException(nameof(userFunctionId));
-            _ = !string.IsNullOrEmpty(leasesTableName) ? true : throw new ArgumentNullException(nameof(leasesTableName));
-            _ = userTableColumns ?? throw new ArgumentNullException(nameof(userTableColumns));
-            _ = primaryKeyColumns ?? throw new ArgumentNullException(nameof(primaryKeyColumns));
-            _ = executor ?? throw new ArgumentNullException(nameof(executor));
-            _ = logger ?? throw new ArgumentNullException(nameof(logger));
+            this._connectionString = !string.IsNullOrEmpty(connectionString) ? connectionString : throw new ArgumentNullException(nameof(connectionString));
+            this._userTable = !string.IsNullOrEmpty(userTable?.FullName) ? userTable : throw new ArgumentNullException(nameof(userTable));
+            this._userFunctionId = !string.IsNullOrEmpty(userFunctionId) ? userFunctionId : throw new ArgumentNullException(nameof(userFunctionId));
+            this._leasesTableName = !string.IsNullOrEmpty(leasesTableName) ? leasesTableName : throw new ArgumentNullException(nameof(leasesTableName));
+            this._userTableColumns = userTableColumns ?? throw new ArgumentNullException(nameof(userTableColumns));
+            this._primaryKeyColumns = primaryKeyColumns ?? throw new ArgumentNullException(nameof(primaryKeyColumns));
+            this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
+            this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            this._connectionString = connectionString;
             this._userTableId = userTableId;
-            this._userTable = userTable;
-            this._userFunctionId = userFunctionId;
-            this._leasesTableName = leasesTableName;
-            this._userTableColumns = userTableColumns;
-            this._primaryKeyColumns = primaryKeyColumns;
+            this._telemetryProps = telemetryProps ?? new Dictionary<TelemetryPropertyName, string>();
+
+            // Check if there's config settings to override the default batch size/polling interval values
+            int? configuredBatchSize = configuration.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_BatchSize);
+            int? configuredPollingInterval = configuration.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_BatchSize);
+            this._batchSize = configuredBatchSize ?? this._batchSize;
+            this._pollingIntervalInMs = configuredPollingInterval ?? this._pollingIntervalInMs;
+            var monitorStartProps = new Dictionary<TelemetryPropertyName, string>(telemetryProps)
+            {
+                { TelemetryPropertyName.HasConfiguredBatchSize, (configuredBatchSize != null).ToString() },
+                { TelemetryPropertyName.HasConfiguredPollingInterval, (configuredPollingInterval != null).ToString() },
+            };
+            TelemetryInstance.TrackEvent(
+                TelemetryEventName.TriggerMonitorStart,
+                monitorStartProps,
+                new Dictionary<TelemetryMeasureName, double>() {
+                    { TelemetryMeasureName.BatchSize, this._batchSize },
+                    { TelemetryMeasureName.PollingIntervalMs, this._pollingIntervalInMs }
+            });
 
             // Prep search-conditions that will be used besides WHERE clause to match table rows.
-            this._rowMatchConditions = Enumerable.Range(0, BatchSize)
+            this._rowMatchConditions = Enumerable.Range(0, this._batchSize)
                 .Select(rowIndex => string.Join(" AND ", this._primaryKeyColumns.Select((col, colIndex) => $"{col.AsBracketQuotedString()} = @{rowIndex}_{colIndex}")))
                 .ToList();
-
-            this._executor = executor;
-            this._logger = logger;
-
-            this._cancellationTokenSourceCheckForChanges = new CancellationTokenSource();
-            this._cancellationTokenSourceRenewLeases = new CancellationTokenSource();
-            this._cancellationTokenSourceExecutor = new CancellationTokenSource();
-
-            this._telemetryProps = telemetryProps;
-
-            this._rowsLock = new SemaphoreSlim(1);
-            this._rows = new List<IReadOnlyDictionary<string, string>>();
-            this._leaseRenewalCount = 0;
-            this._state = State.CheckingForChanges;
 
 #pragma warning disable CS4014 // Queue the below tasks and exit. Do not wait for their completion.
             _ = Task.Run(() =>
@@ -136,7 +160,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Executed once every <see cref="PollingIntervalInSeconds"/> period. If the state of the change monitor is
+        /// Executed once every <see cref="_pollingIntervalInMs"/> period. If the state of the change monitor is
         /// <see cref="State.CheckingForChanges"/>, then the method query the change/leases tables for changes on the
         /// user's table. If any are found, the state of the change monitor is transitioned to
         /// <see cref="State.ProcessingChanges"/> and the user's function is executed with the found changes. If the
@@ -145,7 +169,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         private async Task RunChangeConsumptionLoopAsync()
         {
-            this._logger.LogDebugWithThreadId("Starting change consumption loop.");
+            this._logger.LogInformationWithThreadId($"Starting change consumption loop. BatchSize: {this._batchSize} PollingIntervalMs: {this._pollingIntervalInMs}");
 
             try
             {
@@ -156,6 +180,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     this._logger.LogDebugWithThreadId("BEGIN OpenChangeConsumptionConnection");
                     await connection.OpenAsync(token);
                     this._logger.LogDebugWithThreadId("END OpenChangeConsumptionConnection");
+
                     // Check for cancellation request only after a cycle of checking and processing of changes completes.
                     while (!token.IsCancellationRequested)
                     {
@@ -166,7 +191,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             await this.ProcessTableChangesAsync(connection, token);
                         }
                         this._logger.LogDebugWithThreadId("END CheckingForChanges");
-                        await Task.Delay(TimeSpan.FromSeconds(PollingIntervalInSeconds), token);
+                        this._logger.LogDebugWithThreadId($"Delaying for {this._pollingIntervalInMs}ms");
+                        await Task.Delay(TimeSpan.FromMilliseconds(this._pollingIntervalInMs), token);
                     }
                 }
             }
@@ -217,7 +243,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         }
                         this._logger.LogDebugWithThreadId($"END UpdateTablesPreInvocation Duration={setLastSyncVersionDurationMs}ms");
 
-                        var rows = new List<IReadOnlyDictionary<string, string>>();
+                        var rows = new List<IReadOnlyDictionary<string, object>>();
 
                         // Use the version number to query for new changes.
                         using (SqlCommand getChangesCommand = this.BuildGetChangesCommand(connection, transaction))
@@ -287,7 +313,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 // If there's an exception in any part of the process, we want to clear all of our data in memory and
                 // retry checking for changes again.
-                this._rows = new List<IReadOnlyDictionary<string, string>>();
+                this._rows = new List<IReadOnlyDictionary<string, object>>();
                 this._logger.LogError($"Failed to check for changes in table '{this._userTable.FullName}' due to exception: {e.GetType()}. Exception message: {e.Message}");
                 TelemetryInstance.TrackException(TelemetryErrorName.GetChanges, e, this._telemetryProps);
             }
@@ -314,7 +340,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     this._logger.LogError($"Failed to compose trigger parameter value for table: '{this._userTable.FullName} due to exception: {e.GetType()}. Exception message: {e.Message}");
                     TelemetryInstance.TrackException(TelemetryErrorName.ProcessChanges, e, this._telemetryProps);
-                    await this.ClearRowsAsync(true);
+                    await this.ClearRowsAsync();
                 }
 
                 if (changes != null)
@@ -346,7 +372,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         this._logger.LogError($"Failed to trigger user function for table: '{this._userTable.FullName} due to exception: {result.Exception.GetType()}. Exception message: {result.Exception.Message}");
                         TelemetryInstance.TrackException(TelemetryErrorName.ProcessChanges, result.Exception, this._telemetryProps, measures);
 
-                        await this.ClearRowsAsync(true);
+                        await this.ClearRowsAsync();
                     }
                 }
             }
@@ -370,11 +396,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     this._logger.LogDebugWithThreadId("BEGIN OpenLeaseRenewalLoopConnection");
                     await connection.OpenAsync(token);
                     this._logger.LogDebugWithThreadId("END OpenLeaseRenewalLoopConnection");
+
                     while (!token.IsCancellationRequested)
                     {
-                        this._logger.LogDebugWithThreadId("BEGIN WaitRowsLock - LeaseRenewal");
-                        await this._rowsLock.WaitAsync(token);
-                        this._logger.LogDebugWithThreadId("END WaitRowsLock - LeaseRenewal");
                         await this.RenewLeasesAsync(connection, token);
                         await Task.Delay(TimeSpan.FromSeconds(LeaseRenewalIntervalInSeconds), token);
                     }
@@ -398,9 +422,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         private async Task RenewLeasesAsync(SqlConnection connection, CancellationToken token)
         {
-            try
+            this._logger.LogDebugWithThreadId("BEGIN WaitRowsLock - RenewLeases");
+            await this._rowsLock.WaitAsync(token);
+            this._logger.LogDebugWithThreadId("END WaitRowsLock - RenewLeases");
+
+            if (this._state == State.ProcessingChanges)
             {
-                if (this._state == State.ProcessingChanges)
+                try
                 {
                     // I don't think I need a transaction for renewing leases. If this worker reads in a row from the
                     // leases table and determines that it corresponds to its batch of changes, but then that row gets
@@ -423,19 +451,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         TelemetryInstance.TrackEvent(TelemetryEventName.RenewLeasesEnd, this._telemetryProps, measures);
                     }
                 }
-            }
-            catch (Exception e)
-            {
-                // This catch block is necessary so that the finally block is executed even in the case of an exception
-                // (see https://docs.microsoft.com/dotnet/csharp/language-reference/keywords/try-finally, third
-                // paragraph). If we fail to renew the leases, multiple workers could be processing the same change
-                // data, but we have functionality in place to deal with this (see design doc).
-                this._logger.LogError($"Failed to renew leases due to exception: {e.GetType()}. Exception message: {e.Message}");
-                TelemetryInstance.TrackException(TelemetryErrorName.RenewLeases, e, this._telemetryProps);
-            }
-            finally
-            {
-                if (this._state == State.ProcessingChanges)
+                catch (Exception e)
+                {
+                    // This catch block is necessary so that the finally block is executed even in the case of an exception
+                    // (see https://docs.microsoft.com/dotnet/csharp/language-reference/keywords/try-finally, third
+                    // paragraph). If we fail to renew the leases, multiple workers could be processing the same change
+                    // data, but we have functionality in place to deal with this (see design doc).
+                    this._logger.LogError($"Failed to renew leases due to exception: {e.GetType()}. Exception message: {e.Message}");
+                    TelemetryInstance.TrackException(TelemetryErrorName.RenewLeases, e, this._telemetryProps);
+                }
+                finally
                 {
                     // Do we want to update this count even in the case of a failure to renew the leases? Probably,
                     // because the count is simply meant to indicate how much time the other thread has spent processing
@@ -455,30 +480,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         this._cancellationTokenSourceExecutor = new CancellationTokenSource();
                     }
                 }
-
-                // Want to always release the lock at the end, even if renewing the leases failed.
-                this._logger.LogDebugWithThreadId("ReleaseRowLock - RenewLeases");
-                this._rowsLock.Release();
             }
+
+            // Want to always release the lock at the end, even if renewing the leases failed.
+            this._logger.LogDebugWithThreadId("ReleaseRowsLock - RenewLeases");
+            this._rowsLock.Release();
         }
 
         /// <summary>
         /// Resets the in-memory state of the change monitor and sets it to start polling for changes again.
         /// </summary>
-        /// <param name="acquireLock">True if ClearRowsAsync should acquire the "_rowsLock" (only true in the case of a failure)</param>
-        private async Task ClearRowsAsync(bool acquireLock)
+        private async Task ClearRowsAsync()
         {
-            if (acquireLock)
-            {
-                this._logger.LogDebugWithThreadId("BEGIN WaitRowsLock - ClearRows");
-                await this._rowsLock.WaitAsync();
-                this._logger.LogDebugWithThreadId("END WaitRowsLock - ClearRows");
-            }
+            this._logger.LogDebugWithThreadId("BEGIN WaitRowsLock - ClearRows");
+            await this._rowsLock.WaitAsync();
+            this._logger.LogDebugWithThreadId("END WaitRowsLock - ClearRows");
 
             this._leaseRenewalCount = 0;
             this._state = State.CheckingForChanges;
-            this._rows = new List<IReadOnlyDictionary<string, string>>();
-            this._logger.LogDebugWithThreadId("ReleaseRowLock - ClearRows");
+            this._rows = new List<IReadOnlyDictionary<string, object>>();
+
+            this._logger.LogDebugWithThreadId("ReleaseRowsLock - ClearRows");
             this._rowsLock.Release();
         }
 
@@ -489,13 +511,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private async Task ReleaseLeasesAsync(SqlConnection connection, CancellationToken token)
         {
             TelemetryInstance.TrackEvent(TelemetryEventName.ReleaseLeasesStart, this._telemetryProps);
-            this._logger.LogDebugWithThreadId("BEGIN WaitRowsLock - ReleaseLeases");
-            // Don't want to change the "_rows" while another thread is attempting to renew leases on them.
-            await this._rowsLock.WaitAsync(token);
-            this._logger.LogDebugWithThreadId("END WaitRowsLock - ReleaseLeases");
             long newLastSyncVersion = this.RecomputeLastSyncVersion();
+            bool retrySucceeded = false;
 
-            try
+            for (int retryCount = 1; retryCount <= MaxRetryReleaseLeases && !retrySucceeded; retryCount++)
             {
                 var transactionSw = Stopwatch.StartNew();
                 long releaseLeasesDurationMs = 0L, updateLastSyncVersionDurationMs = 0L;
@@ -531,14 +550,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         {
                             [TelemetryMeasureName.ReleaseLeasesDurationMs] = releaseLeasesDurationMs,
                             [TelemetryMeasureName.UpdateLastSyncVersionDurationMs] = updateLastSyncVersionDurationMs,
+                            [TelemetryMeasureName.TransactionDurationMs] = transactionSw.ElapsedMilliseconds,
                         };
 
                         TelemetryInstance.TrackEvent(TelemetryEventName.ReleaseLeasesEnd, this._telemetryProps, measures);
+                        retrySucceeded = true;
                     }
                     catch (Exception ex)
                     {
-                        this._logger.LogError($"Failed to execute SQL commands to release leases for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
-                        TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeases, ex, this._telemetryProps);
+                        if (retryCount < MaxRetryReleaseLeases)
+                        {
+                            this._logger.LogError($"Failed to execute SQL commands to release leases in attempt: {retryCount} for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
+
+                            var measures = new Dictionary<TelemetryMeasureName, double>
+                            {
+                                [TelemetryMeasureName.RetryAttemptNumber] = retryCount,
+                            };
+
+                            TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeases, ex, this._telemetryProps, measures);
+                        }
+                        else
+                        {
+                            this._logger.LogError($"Failed to release leases for table '{this._userTable.FullName}' after {MaxRetryReleaseLeases} attempts due to exception: {ex.GetType()}. Exception message: {ex.Message}");
+                            TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeasesNoRetriesLeft, ex, this._telemetryProps);
+                        }
 
                         try
                         {
@@ -552,20 +587,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     }
                 }
             }
-            catch (Exception e)
-            {
-                // What should we do if releasing the leases fails? We could try to release them again or just wait,
-                // since eventually the lease time will expire. Then another thread will re-process the same changes
-                // though, so less than ideal. But for now that's the functionality.
-                this._logger.LogError($"Failed to release leases for table '{this._userTable.FullName}' due to exception: {e.GetType()}. Exception message: {e.Message}");
-                TelemetryInstance.TrackException(TelemetryErrorName.ReleaseLeases, e, this._telemetryProps);
-            }
-            finally
-            {
-                // Want to do this before releasing the lock in case the renew leases thread wakes up. It will see that
-                // the state is checking for changes and not renew the (just released) leases.
-                await this.ClearRowsAsync(false);
-            }
+
+            await this.ClearRowsAsync();
         }
 
         /// <summary>
@@ -574,14 +597,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private long RecomputeLastSyncVersion()
         {
             var changeVersionSet = new SortedSet<long>();
-            foreach (IReadOnlyDictionary<string, string> row in this._rows)
+            foreach (IReadOnlyDictionary<string, object> row in this._rows)
             {
-                string changeVersion = row["SYS_CHANGE_VERSION"];
+                string changeVersion = row["SYS_CHANGE_VERSION"].ToString();
                 changeVersionSet.Add(long.Parse(changeVersion, CultureInfo.InvariantCulture));
             }
 
-            // If there are more than one version numbers in the set, return the second highest one. Otherwise, return
+            // The batch of changes are gotten in ascending order of the version number.
+            // With this, it is ensured that if there are multiple version numbers in the changeVersionSet,
+            // all the other rows with version numbers less than the highest should have either been processed or
+            // have leases acquired on them by another worker.
+            // Therefore, if there are more than one version numbers in the set, return the second highest one. Otherwise, return
             // the only version number in the set.
+            // Also this LastSyncVersion is actually updated in the GlobalState table only after verifying that the changes with
+            // changeVersion <= newLastSyncVersion have been processed in BuildUpdateTablesPostInvocation query.
             long lastSyncVersion = changeVersionSet.ElementAt(changeVersionSet.Count > 1 ? changeVersionSet.Count - 2 : 0);
             this._logger.LogDebugWithThreadId($"RecomputeLastSyncVersion. LastSyncVersion={lastSyncVersion} ChangeVersionSet={string.Join(",", changeVersionSet)}");
             return lastSyncVersion;
@@ -597,13 +626,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             this._logger.LogDebugWithThreadId("BEGIN ProcessChanges");
             var changes = new List<SqlChange<T>>();
-            foreach (IReadOnlyDictionary<string, string> row in this._rows)
+            foreach (IReadOnlyDictionary<string, object> row in this._rows)
             {
                 SqlChangeOperation operation = GetChangeOperation(row);
 
                 // If the row has been deleted, there is no longer any data for it in the user table. The best we can do
                 // is populate the row-item with the primary key values of the row.
-                Dictionary<string, string> item = operation == SqlChangeOperation.Delete
+                Dictionary<string, object> item = operation == SqlChangeOperation.Delete
                     ? this._primaryKeyColumns.ToDictionary(col => col, col => row[col])
                     : this._userTableColumns.ToDictionary(col => col, col => row[col]);
 
@@ -619,9 +648,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="row">The (combined) row from the change table and leases table</param>
         /// <exception cref="InvalidDataException">Thrown if the value of the "SYS_CHANGE_OPERATION" column is none of "I", "U", or "D"</exception>
         /// <returns>SqlChangeOperation.Insert for an insert, SqlChangeOperation.Update for an update, and SqlChangeOperation.Delete for a delete</returns>
-        private static SqlChangeOperation GetChangeOperation(IReadOnlyDictionary<string, string> row)
+        private static SqlChangeOperation GetChangeOperation(IReadOnlyDictionary<string, object> row)
         {
-            string operation = row["SYS_CHANGE_OPERATION"];
+            string operation = row["SYS_CHANGE_OPERATION"].ToString();
             switch (operation)
             {
                 case "I": return SqlChangeOperation.Insert;
@@ -676,7 +705,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 FROM {SqlTriggerConstants.GlobalStateTableName}
                 WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
 
-                SELECT TOP {BatchSize}
+                SELECT TOP {this._batchSize}
                     {selectList},
                     c.SYS_CHANGE_VERSION, c.SYS_CHANGE_OPERATION,
                     l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName}, l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName}, l.{SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName}
@@ -687,7 +716,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     (l.{SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} IS NULL AND
                        (l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName} IS NULL OR l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName} < c.SYS_CHANGE_VERSION) OR
                         l.{SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} < SYSDATETIME()) AND
-                    (l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} IS NULL OR l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} < {MaxAttemptCount})
+                    (l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} IS NULL OR l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} < {MaxChangeProcessAttemptCount})
                 ORDER BY c.SYS_CHANGE_VERSION ASC;
             ";
 
@@ -702,14 +731,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
         /// <param name="rows">Dictionary representing the table rows on which leases should be acquired</param>
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-        private SqlCommand BuildAcquireLeasesCommand(SqlConnection connection, SqlTransaction transaction, IReadOnlyList<IReadOnlyDictionary<string, string>> rows)
+        private SqlCommand BuildAcquireLeasesCommand(SqlConnection connection, SqlTransaction transaction, IReadOnlyList<IReadOnlyDictionary<string, object>> rows)
         {
             var acquireLeasesQuery = new StringBuilder();
 
             for (int rowIndex = 0; rowIndex < rows.Count; rowIndex++)
             {
                 string valuesList = string.Join(", ", this._primaryKeyColumns.Select((_, colIndex) => $"@{rowIndex}_{colIndex}"));
-                string changeVersion = rows[rowIndex]["SYS_CHANGE_VERSION"];
+                string changeVersion = rows[rowIndex]["SYS_CHANGE_VERSION"].ToString();
 
                 acquireLeasesQuery.Append($@"
                     IF NOT EXISTS (SELECT * FROM {this._leasesTableName} WITH (TABLOCKX) WHERE {this._rowMatchConditions[rowIndex]})
@@ -759,7 +788,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             for (int rowIndex = 0; rowIndex < this._rows.Count; rowIndex++)
             {
-                string changeVersion = this._rows[rowIndex]["SYS_CHANGE_VERSION"];
+                string changeVersion = this._rows[rowIndex]["SYS_CHANGE_VERSION"].ToString();
 
                 releaseLeasesQuery.Append($@"
                     SELECT @current_change_version = {SqlTriggerConstants.LeasesTableChangeVersionColumnName}
@@ -808,7 +837,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         ((l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName} IS NULL OR
                            l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName} != c.SYS_CHANGE_VERSION OR
                            l.{SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} IS NOT NULL) AND
-                        (l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} IS NULL OR l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} < {MaxAttemptCount}))) AS Changes
+                        (l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} IS NULL OR l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} < {MaxChangeProcessAttemptCount}))) AS Changes
 
                 IF @unprocessed_changes = 0 AND @current_last_sync_version < {newLastSyncVersion}
                 BEGIN
@@ -841,7 +870,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// rebuild the SqlParameters each time.
         /// </remarks>
         private SqlCommand GetSqlCommandWithParameters(string commandText, SqlConnection connection,
-            SqlTransaction transaction, IReadOnlyList<IReadOnlyDictionary<string, string>> rows)
+            SqlTransaction transaction, IReadOnlyList<IReadOnlyDictionary<string, object>> rows)
         {
             var command = new SqlCommand(commandText, connection, transaction);
 

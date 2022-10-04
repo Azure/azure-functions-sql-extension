@@ -14,6 +14,7 @@ using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -34,11 +35,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly string _userFunctionId;
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly ILogger _logger;
+        private readonly IConfiguration _configuration;
 
         private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps = new Dictionary<TelemetryPropertyName, string>();
 
         private SqlTableChangeMonitor<T> _changeMonitor;
-        private int _listenerState;
+        private int _listenerState = ListenerNotStarted;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlTriggerListener{T}"/> class.
@@ -48,20 +50,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="userFunctionId">Unique identifier for the user function</param>
         /// <param name="executor">Defines contract for triggering user function</param>
         /// <param name="logger">Facilitates logging of messages</param>
-        public SqlTriggerListener(string connectionString, string tableName, string userFunctionId, ITriggeredFunctionExecutor executor, ILogger logger)
+        /// <param name="configuration">Provides configuration values</param>
+        public SqlTriggerListener(string connectionString, string tableName, string userFunctionId, ITriggeredFunctionExecutor executor, ILogger logger, IConfiguration configuration)
         {
-            _ = !string.IsNullOrEmpty(connectionString) ? true : throw new ArgumentNullException(nameof(connectionString));
-            _ = !string.IsNullOrEmpty(tableName) ? true : throw new ArgumentNullException(nameof(tableName));
-            _ = !string.IsNullOrEmpty(userFunctionId) ? true : throw new ArgumentNullException(nameof(userFunctionId));
-            _ = executor ?? throw new ArgumentNullException(nameof(executor));
-            _ = logger ?? throw new ArgumentNullException(nameof(logger));
-
-            this._connectionString = connectionString;
-            this._userTable = new SqlObject(tableName);
-            this._userFunctionId = userFunctionId;
-            this._executor = executor;
-            this._logger = logger;
-            this._listenerState = ListenerNotStarted;
+            this._connectionString = !string.IsNullOrEmpty(connectionString) ? connectionString : throw new ArgumentNullException(nameof(connectionString));
+            this._userTable = !string.IsNullOrEmpty(tableName) ? new SqlObject(tableName) : throw new ArgumentNullException(nameof(tableName));
+            this._userFunctionId = !string.IsNullOrEmpty(userFunctionId) ? userFunctionId : throw new ArgumentNullException(nameof(userFunctionId));
+            this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
+            this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
 
         public void Cancel()
@@ -129,6 +126,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         primaryKeyColumns.Select(col => col.name).ToList(),
                         this._executor,
                         this._logger,
+                        this._configuration,
                         this._telemetryProps);
 
                     this._listenerState = ListenerStarted;
@@ -259,22 +257,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new InvalidOperationException($"Could not find primary key created in table: '{this._userTable.FullName}'.");
                 }
 
-                string[] reservedColumnNames = new[]
-                {
-                    SqlTriggerConstants.LeasesTableChangeVersionColumnName,
-                    SqlTriggerConstants.LeasesTableAttemptCountColumnName,
-                    SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName
-                };
-
-                var conflictingColumnNames = primaryKeyColumns.Select(col => col.name).Intersect(reservedColumnNames).ToList();
-
-                if (conflictingColumnNames.Count > 0)
-                {
-                    string columnNames = string.Join(", ", conflictingColumnNames.Select(col => $"'{col}'"));
-                    throw new InvalidOperationException($"Found reserved column name(s): {columnNames} in table: '{this._userTable.FullName}'." +
-                        " Please rename them to be able to use trigger binding.");
-                }
-
                 this._logger.LogDebugWithThreadId($"END GetPrimaryKeyColumns ColumnNames(types) = {string.Join(", ", primaryKeyColumns.Select(col => $"'{col.name}({col.type})'"))}.");
                 return primaryKeyColumns;
             }
@@ -317,6 +299,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     string columnNamesAndTypes = string.Join(", ", userDefinedTypeColumns.Select(col => $"'{col.name}' (type: {col.type})"));
                     throw new InvalidOperationException($"Found column(s) with unsupported type(s): {columnNamesAndTypes} in table: '{this._userTable.FullName}'.");
+                }
+
+                var conflictingColumnNames = userTableColumns.Intersect(SqlTriggerConstants.ReservedColumnNames).ToList();
+
+                if (conflictingColumnNames.Count > 0)
+                {
+                    string columnNames = string.Join(", ", conflictingColumnNames.Select(col => $"'{col}'"));
+                    throw new InvalidOperationException($"Found reserved column name(s): {columnNames} in table: '{this._userTable.FullName}'." +
+                        " Please rename them to be able to use trigger binding.");
                 }
 
                 this._logger.LogDebugWithThreadId($"END GetUserTableColumns ColumnNames = {string.Join(", ", userTableColumns.Select(col => $"'{col}'"))}.");
@@ -474,7 +465,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Clears the current telemetry property dictionary and initializes the default initial properties. 
+        /// Clears the current telemetry property dictionary and initializes the default initial properties.
         /// </summary>
         private void InitializeTelemetryProps()
         {
