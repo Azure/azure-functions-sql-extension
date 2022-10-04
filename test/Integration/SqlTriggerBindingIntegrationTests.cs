@@ -455,21 +455,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             ");
         }
 
-        private void MonitorProductChanges(List<SqlChange<Product>> changes)
-        {
-            int index = 0;
-            string prefix = "SQL Changes: ";
-
-            this.FunctionHost.OutputDataReceived += (sender, e) =>
-            {
-                if (e.Data != null && (index = e.Data.IndexOf(prefix, StringComparison.Ordinal)) >= 0)
-                {
-                    string json = e.Data[(index + prefix.Length)..];
-                    changes.AddRange(JsonConvert.DeserializeObject<IReadOnlyList<SqlChange<Product>>>(json));
-                }
-            };
-        }
-
         protected void InsertProducts(int firstId, int lastId)
         {
             int count = lastId - firstId + 1;
@@ -505,8 +490,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             int timeoutMs,
             string messagePrefix = "SQL Changes: ")
         {
-            this.LogOutput($"{timeoutMs}");
-
             var expectedIds = Enumerable.Range(firstId, lastId - firstId + 1).ToHashSet();
             int index = 0;
 
@@ -528,7 +511,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                         Assert.Equal(getName(product.ProductID), product.Name); // The product has the expected name
                         Assert.Equal(getCost(product.ProductID), product.Cost); // The product has the expected cost
                     }
-
                     if (expectedIds.Count == 0)
                     {
                         taskCompletion.SetResult(true);
@@ -545,9 +527,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             await actions();
 
             // Now wait until either we timeout or we've gotten all the expected changes, whichever comes first
-            var stopwatch = Stopwatch.StartNew();
             await taskCompletion.Task.TimeoutAfter(TimeSpan.FromMilliseconds(timeoutMs), $"Timed out waiting for {operation} changes.");
-            this.LogOutput($"{stopwatch.ElapsedMilliseconds}");
 
             // Unhook handler since we're done monitoring these changes so we aren't checking other changes done later
             foreach (Process functionHost in this.FunctionHostList)
@@ -605,14 +585,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <param name="batchSize">The batch size if different than the default batch size</param>
         /// <param name="pollingIntervalMs">The polling interval in ms if different than the default polling interval</param>
         /// <returns></returns>
-        protected int GetBatchProcessingTimeout(int firstId, int lastId, int batchSize = SqlTableChangeMonitor<object>.DefaultBatchSize, int pollingIntervalMs = SqlTableChangeMonitor<object>.DefaultPollingIntervalMs)
+        protected static int GetBatchProcessingTimeout(int firstId, int lastId, int batchSize = SqlTableChangeMonitor<object>.DefaultBatchSize, int pollingIntervalMs = SqlTableChangeMonitor<object>.DefaultPollingIntervalMs)
         {
             int changesToProcess = lastId - firstId + 1;
             int calculatedTimeout = (int)(Math.Ceiling((double)changesToProcess / batchSize // The number of batches to process
                 / this.FunctionHostList.Count) // The number of function host processes
                 * pollingIntervalMs // The length to process each batch
                 * 2); // Double to add buffer time for processing results
-            this.LogOutput($"{calculatedTimeout}");
             return Math.Max(calculatedTimeout, 2000); // Always have a timeout of at least 2sec to ensure we have time for processing the results
         }
     }
