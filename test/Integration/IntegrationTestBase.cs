@@ -293,6 +293,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             return funcPath;
         }
 
+        private void LogOutput(string output)
+        {
+            if (this.TestOutput != null)
+            {
+                this.TestOutput.WriteLine(output);
+            }
+            else
+            {
+                Console.WriteLine(output);
+            }
+        }
 
         private DataReceivedEventHandler GetTestOutputHandler(int processId)
         {
@@ -304,18 +315,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 {
                     this.LogOutput($"[{processId}] {e.Data}");
                 }
-            }
-        }
-
-        protected void LogOutput(string output)
-        {
-            if (this.TestOutput != null)
-            {
-                this.TestOutput.WriteLine(output);
-            }
-            else
-            {
-                Console.WriteLine(output);
             }
         }
 
