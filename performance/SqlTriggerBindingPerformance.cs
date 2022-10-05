@@ -32,7 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
                 () => { this.InsertProducts(1, count); return Task.CompletedTask; },
                 id => $"Product {id}",
                 id => id * 100,
-                GetBatchProcessingTimeout(1, count));
+                this.GetBatchProcessingTimeout(1, count));
         }
 
         [IterationCleanup]
