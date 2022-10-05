@@ -10,6 +10,7 @@ import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
 import com.microsoft.azure.functions.sql.annotation.SQLOutput;
 import com.function.Common.Product;
+
 import java.util.Optional;
 
 public class AddProductParams {
@@ -28,7 +29,7 @@ public class AddProductParams {
 
         Product p = new Product(
             Integer.parseInt(request.getQueryParameters().get("productId")),
-            request.getQueryParameters().get("name"),
+            request.getQueryParameters().get("name") == null ? "" : request.getQueryParameters().get("name"),
             Integer.parseInt(request.getQueryParameters().get("cost"))
         );
         product.setValue(p);
