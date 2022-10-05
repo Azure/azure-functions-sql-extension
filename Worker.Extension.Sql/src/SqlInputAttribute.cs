@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Functions.Worker.Extension.Sql
         /// Constructs a new instance.
         /// </summary>
         /// <param name="commandText">The text of the command.</param>
+        /// <param name="commandType">Specifies whether commandText refers to a stored procedure or SQL query string.</param>
         /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored.</param>
         public SqlInputAttribute(string commandText, System.Data.CommandType commandType, string connectionStringSetting)
         {
