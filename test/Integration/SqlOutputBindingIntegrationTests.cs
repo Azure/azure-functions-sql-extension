@@ -355,6 +355,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Java)] // TODO: Investigate case insensitive json to POJO
         public void AddProductCaseSensitiveTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductParams), lang);
