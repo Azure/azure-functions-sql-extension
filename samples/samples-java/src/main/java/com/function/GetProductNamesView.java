@@ -1,7 +1,6 @@
 package com.function;
 
 import com.function.Common.ProductName;
-import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpMethod;
 import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
@@ -25,8 +24,8 @@ public class GetProductNamesView {
             @SQLInput(
                 commandText = "SELECT * FROM ProductNames",
                 commandType = "Text",
-                connectionStringSetting = "sqlConnectionString") ProductName[] products,
-            final ExecutionContext context) {
+                connectionStringSetting = "sqlConnectionString") 
+                ProductName[] products) {
 
         return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(products).build();
     }

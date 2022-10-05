@@ -1,6 +1,5 @@
 package com.function;
 
-import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpMethod;
 import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
@@ -25,8 +24,8 @@ public class AddProductWithIdentityColumnIncluded {
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
                 commandText = "ProductsWithIdentity",
-                connectionStringSetting = "sqlConnectionString") OutputBinding<ProductWithOptionalId> product,
-            final ExecutionContext context) {
+                connectionStringSetting = "sqlConnectionString")
+                OutputBinding<ProductWithOptionalId> product) {
 
         ProductWithOptionalId p = new ProductWithOptionalId(
             request.getQueryParameters().get("productId") == null ? null : Integer.parseInt(request.getQueryParameters().get("productId")),

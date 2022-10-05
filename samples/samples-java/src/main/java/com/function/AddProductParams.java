@@ -1,6 +1,5 @@
 package com.function;
 
-import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpMethod;
 import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
@@ -24,8 +23,8 @@ public class AddProductParams {
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
                 commandText = "Products",
-                connectionStringSetting = "sqlConnectionString") OutputBinding<Product> product,
-            final ExecutionContext context) {
+                connectionStringSetting = "sqlConnectionString") 
+                OutputBinding<Product> product) {
 
         Product p = new Product(
             Integer.parseInt(request.getQueryParameters().get("productId")),

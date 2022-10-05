@@ -1,19 +1,24 @@
 package com.function;
 
-import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpMethod;
 import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
 import com.microsoft.azure.functions.sql.annotation.SQLOutput;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.function.Common.Product;
-import com.google.gson.Gson;
+
+import java.io.IOException;
 import java.util.Optional;
 
 public class AddProductReturnValue {
     @FunctionName("AddProductReturnValue")
-    @SQLOutput(commandText = "Products",
+    @SQLOutput(
+        commandText = "Products",
         connectionStringSetting = "sqlConnectionString")
     public Product run(
             @HttpTrigger(
@@ -21,12 +26,14 @@ public class AddProductReturnValue {
                 methods = {HttpMethod.POST},
                 authLevel = AuthorizationLevel.ANONYMOUS,
                 route = "addproduct-returnvalue")
-                HttpRequestMessage<Optional<String>> request,
-                final ExecutionContext context) {
+                HttpRequestMessage<Optional<String>> request) throws JsonParseException, JsonMappingException, IOException {
 
         String json = request.getBody().get();
-        Gson gson = new Gson();
-        Product product = gson.fromJson(json, Product.class);
+
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+        
+        Product product = mapper.readValue(json, Product.class);
         return product;
     }
 }

@@ -1,6 +1,5 @@
 package com.function;
 
-import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpMethod;
 import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
@@ -10,12 +9,13 @@ import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
 import com.microsoft.azure.functions.sql.annotation.SQLOutput;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.function.Common.Product;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
-import java.lang.reflect.Type;
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.Optional;
 
 public class AddProductsArray {
@@ -29,12 +29,15 @@ public class AddProductsArray {
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
                 commandText = "Products",
-                connectionStringSetting = "sqlConnectionString") OutputBinding<ArrayList<Product>> products,
-            final ExecutionContext context) {
+                connectionStringSetting = "sqlConnectionString") 
+                OutputBinding<Product[]> products) throws JsonParseException, JsonMappingException, IOException {
 
         String json = request.getBody().get();
-        Type listType = new TypeToken<ArrayList<Product>>() {}.getType();
-        ArrayList<Product> p = new Gson().fromJson(json , listType);
+        
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+
+        Product[] p = mapper.readValue(json, Product[].class);
         products.setValue(p);
 
         return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(products).build();

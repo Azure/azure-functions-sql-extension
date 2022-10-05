@@ -1,6 +1,5 @@
 package com.function;
 
-import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpMethod;
 import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
@@ -24,10 +23,10 @@ public class AddProductWithMultiplePrimaryColumnsAndIdentity {
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
                 commandText = "ProductsWithMultiplePrimaryColumnsAndIdentity",
-                connectionStringSetting = "sqlConnectionString") OutputBinding<MultiplePrimaryKeyProductWithoutId> product,
-            final ExecutionContext context) {
+                connectionStringSetting = "sqlConnectionString")
+                OutputBinding<MultiplePrimaryKeyProductWithoutId> product) {
 
-            MultiplePrimaryKeyProductWithoutId p = new MultiplePrimaryKeyProductWithoutId(
+        MultiplePrimaryKeyProductWithoutId p = new MultiplePrimaryKeyProductWithoutId(
             Integer.parseInt(request.getQueryParameters().get("externalId")),
             request.getQueryParameters().get("name"),
             Integer.parseInt(request.getQueryParameters().get("cost"))

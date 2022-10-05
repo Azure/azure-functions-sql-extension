@@ -1,6 +1,5 @@
 package com.function;
 
-import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.TimerTrigger;
@@ -16,8 +15,8 @@ public class TimerTriggerProducts {
             ) String timerInfo,
             @SQLOutput(
                 commandText = "Products",
-                connectionStringSetting = "sqlConnectionString") OutputBinding<Product[]> products,
-            final ExecutionContext context) {
+                connectionStringSetting = "sqlConnectionString")
+                OutputBinding<Product[]> products) {
 
         int totalUpserts = 1000;
         Product[] p = new Product[totalUpserts];

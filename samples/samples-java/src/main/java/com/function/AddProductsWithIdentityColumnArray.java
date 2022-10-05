@@ -1,6 +1,5 @@
 package com.function;
 
-import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpMethod;
 import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
@@ -22,8 +21,10 @@ public class AddProductsWithIdentityColumnArray {
                 methods = { HttpMethod.GET },
                 authLevel = AuthorizationLevel.ANONYMOUS,
                 route = "addproductswithidentitycolumnarray") HttpRequestMessage<Optional<String>> request,
-            @SQLOutput(commandText = "dbo.ProductsWithIdentity", connectionStringSetting = "sqlConnectionString") OutputBinding<ProductWithoutId[]> products,
-            final ExecutionContext context) {
+            @SQLOutput(
+                commandText = "dbo.ProductsWithIdentity",
+                connectionStringSetting = "sqlConnectionString") 
+                OutputBinding<ProductWithoutId[]> products) {
 
         ProductWithoutId[] p = new ProductWithoutId[] { 
             new ProductWithoutId("Cup", 2),
