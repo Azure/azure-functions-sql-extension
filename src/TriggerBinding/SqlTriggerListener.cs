@@ -12,6 +12,7 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Listeners;
+using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
@@ -22,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// Represents the listener to SQL table changes.
     /// </summary>
     /// <typeparam name="T">POCO class representing the row in the user table</typeparam>
-    internal sealed class SqlTriggerListener<T> : IListener
+    internal sealed class SqlTriggerListener<T> : IListener, IScaleMonitor<SqlTriggerMetrics>
     {
         private const int ListenerNotStarted = 0;
         private const int ListenerStarting = 1;
@@ -41,6 +42,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         private SqlTableChangeMonitor<T> _changeMonitor;
         private int _listenerState = ListenerNotStarted;
+
+        ScaleMonitorDescriptor IScaleMonitor.Descriptor => throw new NotImplementedException();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlTriggerListener{T}"/> class.
@@ -462,6 +465,42 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 this._logger.LogDebugWithThreadId($"END CreateLeasesTable Duration={durationMs}ms");
                 return durationMs;
             }
+        }
+
+        async Task<ScaleMetrics> IScaleMonitor.GetMetricsAsync()
+        {
+            return await this.GetMetricsAsync();
+        }
+
+        public async Task<SqlTriggerMetrics> GetMetricsAsync()
+        {
+            Debug.Assert(!(this._changeMonitor is null));
+
+            return new SqlTriggerMetrics
+            {
+                UnprocessedChangeCount = await this._changeMonitor.GetUnprocessedChangeCountAsync(),
+                Timestamp = DateTime.UtcNow,
+            };
+        }
+
+        ScaleStatus IScaleMonitor.GetScaleStatus(ScaleStatusContext context)
+        {
+            return GetScaleStatusCore(context.WorkerCount, context.Metrics?.Cast<SqlTriggerMetrics>().ToArray());
+        }
+
+        public ScaleStatus GetScaleStatus(ScaleStatusContext<SqlTriggerMetrics> context)
+        {
+            return GetScaleStatusCore(context.WorkerCount, context.Metrics?.ToArray());
+        }
+
+        private static ScaleStatus GetScaleStatusCore(int workerCount, SqlTriggerMetrics[] metrics)
+        {
+            var status = new ScaleStatus
+            {
+                Vote = ScaleVote.None
+            };
+
+            return status;
         }
 
         /// <summary>

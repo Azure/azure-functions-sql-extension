@@ -386,12 +386,14 @@ This extension collect usage data in order to help us improve your experience. T
         GetChangesDurationMs,
         GetColumnDefinitionsDurationMs,
         GetPrimaryKeysDurationMs,
+        GetUnprocessedChangesDurationMs,
         InsertGlobalStateTableRowDurationMs,
         PollingIntervalMs,
         ReleaseLeasesDurationMs,
         RetryAttemptNumber,
         SetLastSyncVersionDurationMs,
         TransactionDurationMs,
+        UnprocessedChangeCount,
         UpdateLastSyncVersionDurationMs,
     }
 
@@ -409,6 +411,7 @@ This extension collect usage data in order to help us improve your experience. T
         GetColumnDefinitions,
         GetColumnDefinitionsTableDoesNotExist,
         GetPrimaryKeys,
+        GetUnprocessedChangeCount,
         MissingPrimaryKeys,
         NoPrimaryKeys,
         ProcessChanges,
