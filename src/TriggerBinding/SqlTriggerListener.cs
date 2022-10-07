@@ -37,13 +37,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly ILogger _logger;
         private readonly IConfiguration _configuration;
+        private readonly ScaleMonitorDescriptor _scaleMonitorDescriptor;
 
         private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps = new Dictionary<TelemetryPropertyName, string>();
 
         private SqlTableChangeMonitor<T> _changeMonitor;
         private int _listenerState = ListenerNotStarted;
 
-        ScaleMonitorDescriptor IScaleMonitor.Descriptor => throw new NotImplementedException();
+        ScaleMonitorDescriptor IScaleMonitor.Descriptor => this._scaleMonitorDescriptor;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlTriggerListener{T}"/> class.
@@ -62,6 +63,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+
+            this._scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{userFunctionId}-SqlTrigger-{tableName}".ToLower(CultureInfo.InvariantCulture));
         }
 
         public void Cancel()
