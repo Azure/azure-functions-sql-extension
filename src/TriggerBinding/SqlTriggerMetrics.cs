@@ -10,6 +10,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// The number of row changes in the user table that are not yet processed.
         /// </summary>
-        public ulong UnprocessedChangeCount { get; set; }
+        public long UnprocessedChangeCount { get; set; }
     }
 }

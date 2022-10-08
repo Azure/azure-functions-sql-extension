@@ -159,9 +159,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._cancellationTokenSourceCheckForChanges.Cancel();
         }
 
-        public async Task<ulong> GetUnprocessedChangeCountAsync()
+        public async Task<long> GetUnprocessedChangeCountAsync()
         {
-            ulong unprocessedChangeCount = 0UL;
+            long unprocessedChangeCount = 0L;
 
             try
             {
@@ -177,7 +177,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         this._logger.LogDebugWithThreadId($"BEGIN GetUnprocessedChangeCount Query={getUnprocessedChangesCommand.CommandText}");
                         var commandSw = Stopwatch.StartNew();
-                        unprocessedChangeCount = (ulong)await getUnprocessedChangesCommand.ExecuteScalarAsync();
+                        unprocessedChangeCount = (long)await getUnprocessedChangesCommand.ExecuteScalarAsync();
                         getUnprocessedChangesDurationMs = commandSw.ElapsedMilliseconds;
                     }
 
