@@ -430,7 +430,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 return $@"
                     SELECT
-                        ccu.{ColumnName}, c.is_identity,
+                        ccu.{ColumnName},
+                        c.is_identity,
                         case
                             when isc.COLUMN_DEFAULT = NULL then 'false'
                             else 'true'
