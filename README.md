@@ -900,6 +900,8 @@ This table is used to ensure that all changes are processed and that no change i
      * `_az_func_AttepmtCount` for tracking the number of times that a change has attempted to be processed to avoid getting stuck trying to process a change it's unable to handle
      * `_az_func_LeaseExpirationTime` for tracking when the lease on this row for a particular instance is set to expire. This ensures that if an instance quits expectedly another instance will be able to pick up and process any changes it had leases for after the expiration time has passed.
 
+A row is created for every row in the target table that is modified. These are then cleaned up after the changes are processed for a set of changes corresponding to a change tracking sync version.
+
 #### Trigger Samples
 The trigger binding takes two [arguments](https://github.com/Azure/azure-functions-sql-extension/blob/main/src/TriggerBinding/SqlTriggerAttribute.cs)
 
