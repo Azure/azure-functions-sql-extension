@@ -331,14 +331,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 try
                 {
-                    // What should we do if this fails? It doesn't make sense to retry since it's not a connection based
-                    // thing. We could still try to trigger on the correctly processed changes, but that adds additional
-                    // complication because we don't want to release the leases on the incorrectly processed changes.
-                    // For now, just give up I guess?
                     changes = this.ProcessChanges();
                 }
                 catch (Exception e)
                 {
+                    // Either there's a bug or we're in a bad state so not much we can do here. We'll try clearing
+                    //  our state and retry getting the changes from the top again in case something broke while
+                    // fetching the changes.
+                    // It doesn't make sense to retry processing the changes immediately since this isn't a connection based issue.
                     this._logger.LogError($"Failed to compose trigger parameter value for table: '{this._userTable.FullName} due to exception: {e.GetType()}. Exception message: {e.Message}");
                     TelemetryInstance.TrackException(TelemetryErrorName.ProcessChanges, e, this._telemetryProps);
                     await this.ClearRowsAsync();
