@@ -338,7 +338,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     // Either there's a bug or we're in a bad state so not much we can do here. We'll try clearing
                     //  our state and retry getting the changes from the top again in case something broke while
                     // fetching the changes.
-                    // It doesn't make sense to retry processing the changes immediately since this isn't a connection based issue.
+                    // It doesn't make sense to retry processing the changes immediately since this isn't a connection-based issue.
                     // We could probably send up the changes we were able to process and just skip the ones we couldn't, but given
                     // that this is not a case we expect would happen during normal execution we'll err on the side of caution for
                     // now and just retry getting the whole set of changes.

@@ -876,11 +876,11 @@ The trigger binding utilizes SQL [change tracking](https://docs.microsoft.com/sq
 
 The trigger functionality creates a number of tables to use for tracking the current state of the trigger. This allows state to be persisted across sessions and for multiple instances of a trigger binding to execute in parallel (for scaling purposes).
 
-In addition a schema named `az_func` will be created that the tables will belong to.
+In addition, a schema named `az_func` will be created that the tables will belong to.
 
-The login the trigger is configured to use must be given permissions to create these tables and schema. If not then an error will be thrown and the trigger will fail to be ran.
+The login the trigger is configured to use must be given permissions to create these tables and schema. If not then an error will be thrown and the trigger will fail to run.
 
-If the tables are deleted or modified then unexpected behavior may occur. To reset the state of the triggers first stop all currently running functions with trigger bindings and then either truncate or delete the tables - the next time a function with a trigger binding is started it will recreate the tables as necessary.
+If the tables are deleted or modified, then unexpected behavior may occur. To reset the state of the triggers first stop all currently running functions with trigger bindings and then either truncate or delete the tables - the next time a function with a trigger binding is started it will recreate the tables as necessary.
 
 ##### az_func.GlobalState
 
@@ -892,7 +892,7 @@ A `Leases_*` table is created for every unique instance of a function and table.
 
 e.g. `Leases_7d12c06c6ddff24c_1845581613`
 
-This table is used to ensure that all changes are processed and that no change is processed more than once. This table consists of two groups of columns :
+This table is used to ensure that all changes are processed and that no change is processed more than once. This table consists of two groups of columns:
 
    * A column for each column in the primary key of the target table - used to identify the row that it maps to in the target table
    * A couple columns for tracking the state of each row. These are:
