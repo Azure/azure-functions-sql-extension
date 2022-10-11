@@ -156,6 +156,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public void Dispose()
         {
+            // When the CheckForChanges loop is finished, it will cancel the lease renewal loop.
             this._cancellationTokenSourceCheckForChanges.Cancel();
         }
 
