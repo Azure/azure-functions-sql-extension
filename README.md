@@ -43,7 +43,7 @@ Azure SQL bindings for Azure Functions are supported for:
       - [ICollector&lt;T&gt;/IAsyncCollector&lt;T&gt;](#icollectortiasynccollectort)
       - [Array](#array)
       - [Single Row](#single-row)
-      - [Special Cases](#special-cases)
+      - [Primary Key Special Cases](#primary-key-special-cases)
   - [Known Issues](#known-issues)
   - [Telemetry](#telemetry)
   - [Trademarks](#trademarks)
@@ -756,17 +756,17 @@ public static IActionResult Run(
 }
 ```
 
-#### Special Cases
+#### Primary Key Special Cases
 
 Normally Output Bindings require two things :
 
 1. The table being upserted to contains a Primary Key constraint (composed of one or more columns)
 2. Each of those columns must be present in the POCO object used in the attribute
 
-If either of these are false then an error will be thrown.
+Normally if either of these are false then an error will be thrown. Below are the situations in which this is not the case :
 
 ##### Identity Columns
-This changes if one of the primary key columns is an identity column though. In that case there are two options based on how the function defines the output object:
+In the case where one of the primary key columns is an identity column, there are two options based on how the function defines the output object:
 
 1. If the identity column isn't included in the output object then a straight insert is always performed with the other column values. See [AddProductWithIdentityColumn](./samples/samples-csharp/OutputBindingSamples/AddProductWithIdentityColumn.cs) for an example.
 2. If the identity column is included (even if it's an optional nullable value) then a merge is performed similar to what happens when no identity column is present. This merge will either insert a new row or update an existing row based on the existence of a row that matches the primary keys (including the identity column). See [AddProductWithIdentityColumnIncluded](./samples/samples-csharp/OutputBindingSamples/AddProductWithIdentityColumnIncluded.cs) for an example.
