@@ -377,5 +377,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Equal("test", this.ExecuteScalar($"select Name from Products where ProductId={1}"));
             Assert.Equal(100, this.ExecuteScalar($"select cost from Products where ProductId={1}"));
         }
+
+        /// <summary>
+        /// Tests that a row is inserted successfully when the object is missing
+        /// the primary key column with a default value.
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        public void AddProductWithDefaultPKTest(SupportedLanguages lang)
+        {
+            this.StartFunctionHost(nameof(AddProductWithDefaultPK), lang);
+            var product = new Dictionary<string, string>()
+            {
+                { "name", "MyProduct" },
+                { "cost", "1" }
+            };
+            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
+            this.SendOutputPostRequest("addproductwithdefaultpk", JsonConvert.SerializeObject(product)).Wait();
+            this.SendOutputPostRequest("addproductwithdefaultpk", JsonConvert.SerializeObject(product)).Wait();
+            Assert.Equal(2, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
+        }
     }
 }
