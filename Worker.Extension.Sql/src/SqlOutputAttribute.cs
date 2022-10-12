@@ -8,7 +8,8 @@ namespace Microsoft.Azure.Functions.Worker.Extension.Sql
     public class SqlOutputAttribute : OutputBindingAttribute
     {
         /// <summary>
-        /// Constructs a new instance.
+        /// Creates an instance of the <see cref="SqlAttribute"/>, specifying the Sql attributes
+        /// the function supports.
         /// </summary>
         /// <param name="commandText">The text of the command.</param>
         /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored.</param>
