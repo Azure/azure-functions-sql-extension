@@ -76,6 +76,8 @@ steps:
     sourceFolder: $(Build.SourcesDirectory)\src\bin\${{ parameters.configuration }}\netstandard2.0
     contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
     targetFolder: $(azureFunctionsExtensionBundlePath)\..\..\Microsoft.Azure.Functions.ExtensionBundle.Preview\**\bin
+    overWrite: true
+    ignoreMakeDirErrors: true
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: CopyFiles@2
@@ -84,6 +86,8 @@ steps:
     sourceFolder: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}/netstandard2.0
     contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
     targetFolder: $(azureFunctionsExtensionBundlePath)/../../Microsoft.Azure.Functions.ExtensionBundle.Preview/**/bin
+    overWrite: true
+    ignoreMakeDirErrors: true
   condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
 - script: |
