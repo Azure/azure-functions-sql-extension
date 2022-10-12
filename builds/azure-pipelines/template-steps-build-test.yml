@@ -73,8 +73,9 @@ steps:
 - task: CopyFiles@2
   displayName: 'Copy Sql extension dll to Azure Functions extension bundle'
   inputs:
-    contents: '$(Build.SourcesDirectory)\src\bin\${{ parameters.configuration }}\Microsoft.Azure.WebJobs.Extensions.Sql.dll'
-    targetFolder: '$(azureFunctionsExtensionBundlePath)'
+    contents: $(Build.SourcesDirectory)\src\bin\${{ parameters.configuration }}\Microsoft.Azure.WebJobs.Extensions.Sql.dll
+    targetFolder: $(azureFunctionsExtensionBundlePath)
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - script: |
     npm install
