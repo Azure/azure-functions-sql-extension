@@ -31,13 +31,12 @@ namespace Microsoft.Azure.Functions.Worker.Extension.Sql
         public string ConnectionStringSetting { get; set; }
 
         /// <summary>
-        /// For an output binding, the table name.
+        /// The table name.
         /// </summary>
         public string CommandText { get; }
 
         /// <summary>
-        /// Specifies whether <see cref="CommandText"/> refers to a stored procedure or SQL query string.
-        /// Use <see cref="CommandType.StoredProcedure"/> for the former, <see cref="CommandType.Text"/> for the latter
+        /// Specifies <see cref="CommandText"/> which refers to the table name.
         /// </summary>
         public System.Data.CommandType CommandType { get; set; } = System.Data.CommandType.Text;
     }
