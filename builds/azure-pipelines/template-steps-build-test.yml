@@ -34,6 +34,7 @@ steps:
 
 - bash: echo "##vso[task.setvariable variable=azureFunctionsExtensionBundlePath]$(func GetExtensionBundlePath)"
   displayName: 'Set Azure Functions extension bundle path'
+  workingDirectory: $(Build.SourcesDirectory)/samples/samples-js
 
 - task: DockerInstaller@0
   displayName: Docker Installer
@@ -75,7 +76,7 @@ steps:
   inputs:
     sourceFolder: $(Build.SourcesDirectory)\src\bin\${{ parameters.configuration }}\netstandard2.0
     contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
-    targetFolder: $(azureFunctionsExtensionBundlePath)\..\..\Microsoft.Azure.Functions.ExtensionBundle.Preview\**\bin
+    targetFolder: $(azureFunctionsExtensionBundlePath)\bin
     overWrite: true
     ignoreMakeDirErrors: true
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
@@ -85,7 +86,7 @@ steps:
   inputs:
     sourceFolder: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}/netstandard2.0
     contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
-    targetFolder: $(azureFunctionsExtensionBundlePath)/../../Microsoft.Azure.Functions.ExtensionBundle.Preview/**/bin
+    targetFolder: $(azureFunctionsExtensionBundlePath)/bin
     overWrite: true
     ignoreMakeDirErrors: true
   condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
