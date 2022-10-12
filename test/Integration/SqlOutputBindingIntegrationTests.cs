@@ -384,6 +384,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.JavaScript)] // Skip temporarily until the extension bundle is updated with this fix: https://github.com/Azure/azure-functions-sql-extension/pull/388
         public void AddProductWithDefaultPKTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithDefaultPK), lang);
