@@ -73,14 +73,16 @@ steps:
 - task: CopyFiles@2
   displayName: 'Copy Sql extension dll to Azure Functions extension bundle for Windows'
   inputs:
-    contents: $(Build.SourcesDirectory)\src\bin\${{ parameters.configuration }}\**\Microsoft.Azure.WebJobs.Extensions.Sql.dll
+    sourceFolder: $(Build.SourcesDirectory)\src\bin\${{ parameters.configuration }}\netstandard2.0
+    contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
     targetFolder: $(azureFunctionsExtensionBundlePath)\bin
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: CopyFiles@2
   displayName: 'Copy Sql extension dll to Azure Functions extension bundle for Linux'
   inputs:
-    contents: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}/**/Microsoft.Azure.WebJobs.Extensions.Sql.dll
+    sourceFolder: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}/netstandard2.0
+    contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
     targetFolder: $(azureFunctionsExtensionBundlePath)/bin
   condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
