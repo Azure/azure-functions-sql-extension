@@ -60,7 +60,7 @@ Azure SQL bindings for Azure Functions are supported for:
       - [Change Tracking](#change-tracking)
       - [Internal State Tables](#internal-state-tables)
         - [az_func.GlobalState](#az_funcglobalstate)
-        - [azfunc.Leases_*](#azfuncleases_)
+        - [az_func.Leases_*](#az_funcleases_)
       - [Trigger Samples](#trigger-samples)
   - [Known Issues](#known-issues)
   - [Telemetry](#telemetry)
@@ -874,23 +874,21 @@ The trigger binding utilizes SQL [change tracking](https://docs.microsoft.com/sq
 
 #### Internal State Tables
 
-The trigger functionality creates a number of tables to use for tracking the current state of the trigger. This allows state to be persisted across sessions and for multiple instances of a trigger binding to execute in parallel (for scaling purposes).
+The trigger functionality creates several tables to use for tracking the current state of the trigger. This allows state to be persisted across sessions and for multiple instances of a trigger binding to execute in parallel (for scaling purposes).
 
 In addition, a schema named `az_func` will be created that the tables will belong to.
 
-The login the trigger is configured to use must be given permissions to create these tables and schema. If not then an error will be thrown and the trigger will fail to run.
+The login the trigger is configured to use must be given permissions to create these tables and schema. If not, then an error will be thrown and the trigger will fail to run.
 
-If the tables are deleted or modified, then unexpected behavior may occur. To reset the state of the triggers first stop all currently running functions with trigger bindings and then either truncate or delete the tables - the next time a function with a trigger binding is started it will recreate the tables as necessary.
+If the tables are deleted or modified, then unexpected behavior may occur. To reset the state of the triggers, first stop all currently running functions with trigger bindings and then either truncate or delete the tables. The next time a function with a trigger binding is started, it will recreate the tables as necessary.
 
 ##### az_func.GlobalState
 
 This table stores information about each function being executed, what table that function is watching and what the [last sync state](https://learn.microsoft.com/sql/relational-databases/track-changes/work-with-change-tracking-sql-server) that has been processed.
 
-##### azfunc.Leases_*
+##### az_func.Leases_*
 
-A `Leases_*` table is created for every unique instance of a function and table. The full name will be in the format `Leases_<FunctionId>_<TableId>` where `<FunctionId>` is a hash of the Host ID assigned by the function runtime and `<TableId>` is the SQL Object ID of the table being tracked.
-
-e.g. `Leases_7d12c06c6ddff24c_1845581613`
+A `Leases_*` table is created for every unique instance of a function and table. The full name will be in the format `Leases_<FunctionId>_<TableId>` where `<FunctionId>` is generated from the function ID and `<TableId>` is the object ID of the table being tracked. Such as `Leases_7d12c06c6ddff24c_1845581613`.
 
 This table is used to ensure that all changes are processed and that no change is processed more than once. This table consists of two groups of columns:
 
@@ -898,7 +896,7 @@ This table is used to ensure that all changes are processed and that no change i
    * A couple columns for tracking the state of each row. These are:
      * `_az_func_ChangeVersion` for the change version of the row currently being processed
      * `_az_func_AttemptCount` for tracking the number of times that a change has attempted to be processed to avoid getting stuck trying to process a change it's unable to handle
-     * `_az_func_LeaseExpirationTime` for tracking when the lease on this row for a particular instance is set to expire. This ensures that if an instance quits expectedly another instance will be able to pick up and process any changes it had leases for after the expiration time has passed.
+     * `_az_func_LeaseExpirationTime` for tracking when the lease on this row for a particular instance is set to expire. This ensures that if an instance exits unexpectedly another instance will be able to pick up and process any changes it had leases for after the expiration time has passed.
 
 A row is created for every row in the target table that is modified. These are then cleaned up after the changes are processed for a set of changes corresponding to a change tracking sync version.
 
