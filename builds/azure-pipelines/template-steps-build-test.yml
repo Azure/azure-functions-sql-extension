@@ -75,7 +75,7 @@ steps:
   inputs:
     sourceFolder: $(Build.SourcesDirectory)\src\bin\${{ parameters.configuration }}\netstandard2.0
     contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
-    targetFolder: $(azureFunctionsExtensionBundlePath)\bin
+    targetFolder: $(azureFunctionsExtensionBundlePath)\..\..\Microsoft.Azure.Functions.ExtensionBundle.Preview\**\bin
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: CopyFiles@2
@@ -83,7 +83,7 @@ steps:
   inputs:
     sourceFolder: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}/netstandard2.0
     contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
-    targetFolder: $(azureFunctionsExtensionBundlePath)/bin
+    targetFolder: $(azureFunctionsExtensionBundlePath)/../../Microsoft.Azure.Functions.ExtensionBundle.Preview/**/bin
   condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
 - script: |
