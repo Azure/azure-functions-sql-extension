@@ -897,7 +897,7 @@ This table is used to ensure that all changes are processed and that no change i
    * A column for each column in the primary key of the target table - used to identify the row that it maps to in the target table
    * A couple columns for tracking the state of each row. These are:
      * `_az_func_ChangeVersion` for the change version of the row currently being processed
-     * `_az_func_AttepmtCount` for tracking the number of times that a change has attempted to be processed to avoid getting stuck trying to process a change it's unable to handle
+     * `_az_func_AttemptCount` for tracking the number of times that a change has attempted to be processed to avoid getting stuck trying to process a change it's unable to handle
      * `_az_func_LeaseExpirationTime` for tracking when the lease on this row for a particular instance is set to expire. This ensures that if an instance quits expectedly another instance will be able to pick up and process any changes it had leases for after the expiration time has passed.
 
 A row is created for every row in the target table that is modified. These are then cleaned up after the changes are processed for a set of changes corresponding to a change tracking sync version.
