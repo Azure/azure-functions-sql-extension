@@ -170,9 +170,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 using (var connection = new SqlConnection(this._connectionString))
                 {
-                    this._logger.LogDebugWithThreadId("BEGIN GetUnprocessedChangeCountAsync");
+                    this._logger.LogDebugWithThreadId("BEGIN OpenGetUnprocessedChangesConnection");
                     await connection.OpenAsync();
-                    this._logger.LogDebugWithThreadId("END GetUnprocessedChangeCountAsync");
+                    this._logger.LogDebugWithThreadId("END OpenGetUnprocessedChangesConnection");
 
                     using (SqlCommand getUnprocessedChangesCommand = this.BuildGetUnprocessedChangesCommand(connection))
                     {

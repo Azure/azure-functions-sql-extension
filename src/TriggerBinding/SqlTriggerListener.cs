@@ -498,7 +498,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         private ScaleStatus GetScaleStatusCore(int workerCount, SqlTriggerMetrics[] metrics)
         {
-            const int minMetricSamplesForScaling = 5;
+            const int minSamplesForScaling = 5;
             const int maxChangesPerWorker = 1000;
 
             var status = new ScaleStatus
@@ -506,13 +506,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 Vote = ScaleVote.None
             };
 
+            this._logger.LogInformation($"Number of samples: {metrics?.Length}");
+
             // Do not make a scale decision unless we have enough samples.
-            if (metrics == null || (metrics.Length < minMetricSamplesForScaling))
+            if (metrics == null || (metrics.Length < minSamplesForScaling))
             {
+                this._logger.LogInformation($"Requesting no-scaling: Found insufficient metrics for making scale decision for table: '{this._userTable.FullName}'.");
                 return status;
             }
 
-            // Add worker is count of unprocessed changes per worker exceeds the maximum limit.
+            // Add worker if the count of unprocessed changes per worker exceeds the maximum limit.
             long lastUnprocessedChangeCount = metrics.Last().UnprocessedChangeCount;
             this._logger.LogInformation($"Unprocessed change count: {lastUnprocessedChangeCount}, worker count: {workerCount}, maximum changes per worker: {maxChangesPerWorker}.");
 
@@ -523,50 +526,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 return status;
             }
 
-            // Check to see if there are no changes occurring in the user table for a while.
-            if (metrics.All(p => p.UnprocessedChangeCount == 0L))
-            {
-                status.Vote = ScaleVote.ScaleIn;
-                this._logger.LogInformation($"Requesting scale-in: Found table: '{this._userTable.FullName}' to be idle for a while.");
-                return status;
-            }
-
-            // Check if there is a continuous increase in count of unprocessed changes.
-            if (metrics[0].UnprocessedChangeCount > 0)
-            {
-                bool isIncreasing = true;
-                for (int index = metrics.Length - minMetricSamplesForScaling; index < metrics.Length - 1; index++)
-                {
-                    if (metrics[index].UnprocessedChangeCount >= metrics[index + 1].UnprocessedChangeCount)
-                    {
-                        isIncreasing = false;
-                        break;
-                    }
-                }
-
-                if (isIncreasing)
-                {
-                    status.Vote = ScaleVote.ScaleOut;
-                    this._logger.LogInformation($"Requesting scale-out: Found the unprocessed changes for table: '{this._userTable.FullName}' to be continuously increasing.");
-                    return status;
-                }
-            }
-
-            // Check if there is a continuous decrease in count of unprocessed changes.
+            // Check if there is a continuous increase or decrease in count of unprocessed changes.
+            bool isIncreasing = true;
             bool isDecreasing = true;
-            for (int index = metrics.Length - minMetricSamplesForScaling; index < metrics.Length - 1; index++)
+            for (int index = metrics.Length - minSamplesForScaling; index < metrics.Length - 1; index++)
             {
-                if (metrics[index].UnprocessedChangeCount == 0 || metrics[index].UnprocessedChangeCount > metrics[index + 1].UnprocessedChangeCount)
-                {
-                    isDecreasing = false;
-                    break;
-                }
+                isIncreasing = isIncreasing && metrics[index].UnprocessedChangeCount < metrics[index + 1].UnprocessedChangeCount;
+                isDecreasing = isDecreasing && (metrics[index].UnprocessedChangeCount == 0 || metrics[index].UnprocessedChangeCount > metrics[index + 1].UnprocessedChangeCount);
+            }
+
+            if (isIncreasing)
+            {
+                status.Vote = ScaleVote.ScaleOut;
+                this._logger.LogInformation($"Requesting scale-out: Found the unprocessed changes for table: '{this._userTable.FullName}' to be continuously increasing.");
+                return status;
             }
 
             if (isDecreasing)
             {
                 status.Vote = ScaleVote.ScaleIn;
-                this._logger.LogInformation($"Requesting scale-in: Found the unprocessed changes for table: '{this._userTable.FullName}' to be continuously decreasing.");
+                this._logger.LogInformation($"Requesting scale-in: Found table: '{this._userTable.FullName}' to be either idle or the unprocessed changes to be continuously decreasing.");
                 return status;
             }
 
