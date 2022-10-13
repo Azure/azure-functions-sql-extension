@@ -59,6 +59,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         private const string Collation = "Collation";
 
+        private const int DEFAULT_TABLE_INFO_CACHE_TIMEOUT_MIN = 10;
+
         private readonly IConfiguration _configuration;
         private readonly SqlAttribute _attribute;
         private readonly ILogger _logger;
@@ -172,15 +174,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 ObjectCache cachedTables = MemoryCache.Default;
                 var tableInfo = cachedTables[cacheKey] as TableInformation;
 
-                int timeout = 10;
+                int timeout = DEFAULT_TABLE_INFO_CACHE_TIMEOUT_MIN;
                 string timeoutEnvVar = Environment.GetEnvironmentVariable("AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MIN");
-                this._logger.LogDebugWithThreadId("TIMEOUT STRING HERE " + timeoutEnvVar);
-
                 if (!string.IsNullOrEmpty(timeoutEnvVar))
                 {
-                    timeout = int.Parse(timeoutEnvVar, CultureInfo.InvariantCulture);
+                    if (int.TryParse(timeoutEnvVar, NumberStyles.Integer, CultureInfo.InvariantCulture, out timeout))
+                    {
+                        this._logger.LogDebugWithThreadId($"Overriding default table info cache timeout with new value {timeout}");
+                    }
                 }
-                this._logger.LogDebugWithThreadId("TIMEOUT HERE " + timeout);
 
                 if (tableInfo == null)
                 {
@@ -189,7 +191,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullTableName, this._logger, GetColumnNamesFromItem(rows.First()));
                     var policy = new CacheItemPolicy
                     {
-                        // Re-look up the primary key(s) after 10 minutes (they should not change very often!)
+                        // Re-look up the primary key(s) after timeout (default timeout is 10 minutes)
                         AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(timeout)
                     };
 
