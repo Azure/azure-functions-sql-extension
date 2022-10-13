@@ -488,14 +488,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         ScaleStatus IScaleMonitor.GetScaleStatus(ScaleStatusContext context)
         {
-            return this.GetScaleStatusCore(context.WorkerCount, context.Metrics?.Cast<SqlTriggerMetrics>().ToArray());
+            return this.GetScaleStatusWithTelemetry(context.WorkerCount, context.Metrics?.Cast<SqlTriggerMetrics>().ToArray());
         }
 
         public ScaleStatus GetScaleStatus(ScaleStatusContext<SqlTriggerMetrics> context)
         {
-            return this.GetScaleStatusCore(context.WorkerCount, context.Metrics?.ToArray());
+            return this.GetScaleStatusWithTelemetry(context.WorkerCount, context.Metrics?.ToArray());
         }
 
+        private ScaleStatus GetScaleStatusWithTelemetry(int workerCount, SqlTriggerMetrics[] metrics)
+        {
+            var measures = new Dictionary<TelemetryMeasureName, double>
+            {
+                [TelemetryMeasureName.WorkerCount] = workerCount,
+                [TelemetryMeasureName.UnprocessedChangeCount] = (metrics is null || metrics.Length == 0) ? -1L : metrics[metrics.Length - 1].UnprocessedChangeCount,
+            };
+
+            TelemetryInstance.TrackEvent(TelemetryEventName.GetScaleStatusStart, this._telemetryProps, measures);
+
+            ScaleStatus scaleStatus = this.GetScaleStatusCore(workerCount, metrics);
+
+            measures.Add(TelemetryMeasureName.ScaleRecommendation, (double)scaleStatus.Vote);
+            TelemetryInstance.TrackEvent(TelemetryEventName.GetScaleStatusEnd, this._telemetryProps, measures);
+
+            return scaleStatus;
+        }
+
+        /// <summary>
+        /// Returns scale recommendation i.e. whether to scale in or out the host application. The recommendation is
+        /// made based on both the latest metrics and the trend of increase or decrease in the count of unprocessed
+        /// changes in the user table. In all of the calculations, it is attempted to keep the number of workers minimum
+        /// while also ensuring that the count of unprocessed changes per worker stays under the maximum limit.
+        /// </summary>
+        /// <param name="workerCount">The current worker count for the host application.</param>
+        /// <param name="metrics">The collection of metrics samples to make the scale decision.</param>
+        /// <returns></returns>
         private ScaleStatus GetScaleStatusCore(int workerCount, SqlTriggerMetrics[] metrics)
         {
             const int minSamplesForScaling = 5;
@@ -507,7 +534,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             };
 
             // Do not make a scale decision unless we have enough samples.
-            if (metrics == null || (metrics.Length < minSamplesForScaling))
+            if (metrics is null || (metrics.Length < minSamplesForScaling))
             {
                 this._logger.LogInformation($"Requesting no-scaling: Insufficient metrics for making scale decision for table: '{this._userTable.FullName}'.");
                 return status;

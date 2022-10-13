@@ -332,6 +332,8 @@ This extension collect usage data in order to help us improve your experience. T
         GetChangesStart,
         GetColumnDefinitions,
         GetPrimaryKeys,
+        GetScaleStatusEnd,
+        GetScaleStatusStart,
         GetTableInfoEnd,
         GetTableInfoStart,
         ReleaseLeasesEnd,
@@ -391,10 +393,12 @@ This extension collect usage data in order to help us improve your experience. T
         PollingIntervalMs,
         ReleaseLeasesDurationMs,
         RetryAttemptNumber,
+        ScaleRecommendation,
         SetLastSyncVersionDurationMs,
         TransactionDurationMs,
         UnprocessedChangeCount,
         UpdateLastSyncVersionDurationMs,
+        WorkerCount,
     }
 
     /// <summary>
