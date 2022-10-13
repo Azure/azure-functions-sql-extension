@@ -32,6 +32,10 @@ steps:
   displayName: 'Set npm installation path for Windows'
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
+- bash: echo "##vso[task.setvariable variable=azureFunctionsExtensionBundlePath]$(func GetExtensionBundlePath)"
+  displayName: 'Set Azure Functions extension bundle path'
+  workingDirectory: $(Build.SourcesDirectory)/samples/samples-js
+
 - task: DockerInstaller@0
   displayName: Docker Installer
   inputs:
@@ -66,6 +70,14 @@ steps:
     command: build
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=false -p:Version=${{ parameters.binariesVersion }}'
+
+- task: CopyFiles@2
+  displayName: 'Copy Sql extension dll to Azure Functions extension bundle'
+  inputs:
+    sourceFolder: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}/netstandard2.0
+    contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
+    targetFolder: $(azureFunctionsExtensionBundlePath)/bin
+    overWrite: true
 
 - script: |
     npm install

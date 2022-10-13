@@ -18,7 +18,6 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 using Microsoft.Data.SqlClient;
 using Xunit;
 using Xunit.Abstractions;
-
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
@@ -185,7 +184,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </remarks>
         protected void StartFunctionHost(string functionName, SupportedLanguages language, bool useTestFolder = false, DataReceivedEventHandler customOutputHandler = null, IDictionary<string, string> environmentVariables = null)
         {
-            string workingDirectory = useTestFolder ? GetPathToBin() : Path.Combine(GetPathToBin(), "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), language));
+            string workingDirectory = language == SupportedLanguages.CSharp && useTestFolder ? GetPathToBin() : Path.Combine(GetPathToBin(), "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), language));
             if (!Directory.Exists(workingDirectory))
             {
                 throw new FileNotFoundException("Working directory not found at " + workingDirectory);
