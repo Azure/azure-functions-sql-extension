@@ -5,8 +5,8 @@
 module.exports = async function (context, req) {
     const product = {
         "productId": req.query.productId,
-        "datetime": Date.now(),
-        "datetime2": Date.now()
+        "datetime": new Date().toISOString(),
+        "datetime2": new Date().toISOString()
     };
 
     context.bindings.product = JSON.stringify(product);

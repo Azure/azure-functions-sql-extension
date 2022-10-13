@@ -352,10 +352,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public void AddProductCaseSensitiveTest(SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProductParams), lang);
+            // Set table info cache timeout to 0 minutes so that new collation gets picked up
+            var environmentVariables = new Dictionary<string, string>()
+            {
+                { "AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES", "0" }
+            };
+            this.StartFunctionHost(nameof(AddProductParams), lang, false, null, environmentVariables);
 
             // Change database collation to case sensitive
-            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS");
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
 
             var query = new Dictionary<string, string>()
             {
@@ -369,13 +374,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-params", query).Wait());
 
             // Change database collation back to case insensitive
-            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS");
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
 
             this.SendOutputGetRequest("addproduct-params", query).Wait();
 
             // Verify result
             Assert.Equal("test", this.ExecuteScalar($"select Name from Products where ProductId={1}"));
             Assert.Equal(100, this.ExecuteScalar($"select cost from Products where ProductId={1}"));
+        }
+
+        /// <summary>
+        /// Tests that a row is inserted successfully when the object is missing
+        /// the primary key column with a default value.
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        public void AddProductWithDefaultPKTest(SupportedLanguages lang)
+        {
+            this.StartFunctionHost(nameof(AddProductWithDefaultPK), lang);
+            var product = new Dictionary<string, string>()
+            {
+                { "name", "MyProduct" },
+                { "cost", "1" }
+            };
+            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
+            this.SendOutputPostRequest("addproductwithdefaultpk", JsonConvert.SerializeObject(product)).Wait();
+            this.SendOutputPostRequest("addproductwithdefaultpk", JsonConvert.SerializeObject(product)).Wait();
+            Assert.Equal(2, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
         }
     }
 }
