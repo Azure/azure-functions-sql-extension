@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -57,6 +58,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const string CteName = "cte";
 
         private const string Collation = "Collation";
+
+        private const int AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES = 10;
 
         private readonly IConfiguration _configuration;
         private readonly SqlAttribute _attribute;
@@ -171,6 +174,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 ObjectCache cachedTables = MemoryCache.Default;
                 var tableInfo = cachedTables[cacheKey] as TableInformation;
 
+                int timeout = AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES;
+                string timeoutEnvVar = Environment.GetEnvironmentVariable("AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES");
+                if (!string.IsNullOrEmpty(timeoutEnvVar))
+                {
+                    if (int.TryParse(timeoutEnvVar, NumberStyles.Integer, CultureInfo.InvariantCulture, out timeout))
+                    {
+                        this._logger.LogDebugWithThreadId($"Overriding default table info cache timeout with new value {timeout}");
+                    }
+                    else
+                    {
+                        timeout = AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES;
+                    }
+                }
+
                 if (tableInfo == null)
                 {
                     TelemetryInstance.TrackEvent(TelemetryEventName.TableInfoCacheMiss, props);
@@ -178,8 +195,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullTableName, this._logger, GetColumnNamesFromItem(rows.First()));
                     var policy = new CacheItemPolicy
                     {
-                        // Re-look up the primary key(s) after 10 minutes (they should not change very often!)
-                        AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(10)
+                        // Re-look up the primary key(s) after timeout (default timeout is 10 minutes)
+                        AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(timeout)
                     };
 
                     cachedTables.Set(cacheKey, tableInfo, policy);
