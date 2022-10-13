@@ -506,12 +506,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 Vote = ScaleVote.None
             };
 
-            this._logger.LogInformation($"Number of samples: {metrics?.Length}");
-
             // Do not make a scale decision unless we have enough samples.
             if (metrics == null || (metrics.Length < minSamplesForScaling))
             {
-                this._logger.LogInformation($"Requesting no-scaling: Found insufficient metrics for making scale decision for table: '{this._userTable.FullName}'.");
+                this._logger.LogInformation($"Requesting no-scaling: Insufficient metrics for making scale decision for table: '{this._userTable.FullName}'.");
                 return status;
             }
 
@@ -537,16 +535,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             if (isIncreasing)
             {
-                status.Vote = ScaleVote.ScaleOut;
-                this._logger.LogInformation($"Requesting scale-out: Found the unprocessed changes for table: '{this._userTable.FullName}' to be continuously increasing.");
-                return status;
+                // Scale out only if the expected count of unprocessed changes would exceed the combined limit after 30 seconds.
+                long expectedUnprocessedChangeCount = (2 * metrics[metrics.Length - 1].UnprocessedChangeCount) - metrics[metrics.Length - 4].UnprocessedChangeCount;
+
+                if (expectedUnprocessedChangeCount > workerCount * maxChangesPerWorker)
+                {
+                    status.Vote = ScaleVote.ScaleOut;
+                    this._logger.LogInformation($"Requesting scale-out: Found the unprocessed changes for table: '{this._userTable.FullName}' to be continuously increasing.");
+                    return status;
+                }
             }
 
             if (isDecreasing)
             {
-                status.Vote = ScaleVote.ScaleIn;
-                this._logger.LogInformation($"Requesting scale-in: Found table: '{this._userTable.FullName}' to be either idle or the unprocessed changes to be continuously decreasing.");
-                return status;
+                // Scale in only if the count of unprocessed changes will not exceed the combined limit post the scale-in operation.
+                if (lastUnprocessedChangeCount <= (workerCount - 1) * maxChangesPerWorker)
+                {
+                    status.Vote = ScaleVote.ScaleIn;
+                    this._logger.LogInformation($"Requesting scale-in: Found table: '{this._userTable.FullName}' to be either idle or the unprocessed changes to be continuously decreasing.");
+                    return status;
+                }
             }
 
             this._logger.LogInformation($"Requesting no-scaling: Found the number of unprocessed changes for table: '{this._userTable.FullName}' to be steady.");
