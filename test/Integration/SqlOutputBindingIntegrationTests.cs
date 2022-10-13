@@ -371,8 +371,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // Change database collation back to case insensitive
             this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
 
-            Thread.Sleep(660000); // Wait 11 minutes to ensure table info cache is not hit since database collation was changed
-
             this.SendOutputGetRequest("addproduct-params", query).Wait();
 
             // Verify result

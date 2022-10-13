@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -171,6 +172,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 ObjectCache cachedTables = MemoryCache.Default;
                 var tableInfo = cachedTables[cacheKey] as TableInformation;
 
+                int timeout = 10;
+                string timeoutEnvVar = Environment.GetEnvironmentVariable("AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MIN");
+                this._logger.LogDebugWithThreadId("TIMEOUT STRING HERE " + timeoutEnvVar);
+
+                if (!string.IsNullOrEmpty(timeoutEnvVar))
+                {
+                    timeout = int.Parse(timeoutEnvVar, CultureInfo.InvariantCulture);
+                }
+                this._logger.LogDebugWithThreadId("TIMEOUT HERE " + timeout);
+
                 if (tableInfo == null)
                 {
                     TelemetryInstance.TrackEvent(TelemetryEventName.TableInfoCacheMiss, props);
@@ -179,7 +190,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     var policy = new CacheItemPolicy
                     {
                         // Re-look up the primary key(s) after 10 minutes (they should not change very often!)
-                        AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(10)
+                        AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(timeout)
                     };
 
                     cachedTables.Set(cacheKey, tableInfo, policy);
