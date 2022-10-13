@@ -59,7 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         private const string Collation = "Collation";
 
-        private const int DEFAULT_TABLE_INFO_CACHE_TIMEOUT_MIN = 10;
+        private const int AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES = 10;
 
         private readonly IConfiguration _configuration;
         private readonly SqlAttribute _attribute;
@@ -174,13 +174,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 ObjectCache cachedTables = MemoryCache.Default;
                 var tableInfo = cachedTables[cacheKey] as TableInformation;
 
-                int timeout = DEFAULT_TABLE_INFO_CACHE_TIMEOUT_MIN;
-                string timeoutEnvVar = Environment.GetEnvironmentVariable("AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MIN");
+                int timeout = AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES;
+                string timeoutEnvVar = Environment.GetEnvironmentVariable("AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES");
                 if (!string.IsNullOrEmpty(timeoutEnvVar))
                 {
                     if (int.TryParse(timeoutEnvVar, NumberStyles.Integer, CultureInfo.InvariantCulture, out timeout))
                     {
                         this._logger.LogDebugWithThreadId($"Overriding default table info cache timeout with new value {timeout}");
+                    }
+                    else
+                    {
+                        timeout = AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES;
                     }
                 }
 

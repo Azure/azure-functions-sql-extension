@@ -247,7 +247,6 @@ steps:
     TEST_SERVER: '$(testServer)'
     NODE_MODULES_PATH: '$(nodeModulesPath)'
     AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
-    AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MIN: '0'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
@@ -259,7 +258,6 @@ steps:
   env:
     SA_PASSWORD: '$(serverPassword)'
     AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
-    AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MIN: '0'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
