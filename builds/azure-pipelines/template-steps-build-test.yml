@@ -78,7 +78,6 @@ steps:
     contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
     targetFolder: $(azureFunctionsExtensionBundlePath)\bin
     overWrite: true
-    ignoreMakeDirErrors: true
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: CopyFiles@2
@@ -88,7 +87,6 @@ steps:
     contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
     targetFolder: $(azureFunctionsExtensionBundlePath)/bin
     overWrite: true
-    ignoreMakeDirErrors: true
   condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
 - script: |
