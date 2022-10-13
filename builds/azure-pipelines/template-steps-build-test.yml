@@ -76,7 +76,7 @@ steps:
   inputs:
     sourceFolder: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}/netstandard2.0
     contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
-    targetFolder: $(azureFunctionsExtensionBundlePath)\bin
+    targetFolder: $(azureFunctionsExtensionBundlePath)/bin
     overWrite: true
 
 - script: |
