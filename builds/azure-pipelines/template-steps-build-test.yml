@@ -72,22 +72,12 @@ steps:
     arguments: '--configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=false -p:Version=${{ parameters.binariesVersion }}'
 
 - task: CopyFiles@2
-  displayName: 'Copy Sql extension dll to Azure Functions extension bundle for Windows'
-  inputs:
-    sourceFolder: $(Build.SourcesDirectory)\src\bin\${{ parameters.configuration }}\netstandard2.0
-    contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
-    targetFolder: $(azureFunctionsExtensionBundlePath)\bin
-    overWrite: true
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
-
-- task: CopyFiles@2
-  displayName: 'Copy Sql extension dll to Azure Functions extension bundle for Linux'
+  displayName: 'Copy Sql extension dll to Azure Functions extension bundle'
   inputs:
     sourceFolder: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}/netstandard2.0
     contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
-    targetFolder: $(azureFunctionsExtensionBundlePath)/bin
+    targetFolder: $(azureFunctionsExtensionBundlePath)\bin
     overWrite: true
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
 - script: |
     npm install
