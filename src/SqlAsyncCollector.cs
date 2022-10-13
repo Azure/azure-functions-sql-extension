@@ -163,7 +163,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             var upsertRowsAsyncSw = Stopwatch.StartNew();
             using (SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
+                this._logger.LogDebugWithThreadId("BEGIN OpenUpsertRowsAsyncConnection");
                 await connection.OpenAsync();
+                this._logger.LogDebugWithThreadId("END OpenUpsertRowsAsyncConnection");
                 Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps();
 
                 string fullTableName = attribute.CommandText;
@@ -420,7 +422,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 this.HasIdentityColumnPrimaryKeys = hasIdentityColumnPrimaryKeys;
 
                 // Convert datetime strings to ISO 8061 format to avoid potential errors on the server when converting into a datetime. This
-                // is the only format that are an international standard. 
+                // is the only format that are an international standard.
                 // https://docs.microsoft.com/previous-versions/sql/sql-server-2008-r2/ms180878(v=sql.105)
                 this.JsonSerializerSettings = new JsonSerializerSettings
                 {
