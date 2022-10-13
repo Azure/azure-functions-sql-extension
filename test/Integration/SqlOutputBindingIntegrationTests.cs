@@ -355,7 +355,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.StartFunctionHost(nameof(AddProductParams), lang);
 
             // Change database collation to case sensitive
-            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS");
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
 
             var query = new Dictionary<string, string>()
             {
@@ -369,7 +369,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-params", query).Wait());
 
             // Change database collation back to case insensitive
-            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS");
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
+
+            Thread.Sleep(660000); // Wait 11 minutes to ensure table info cache is not hit since database collation was changed
 
             this.SendOutputGetRequest("addproduct-params", query).Wait();
 
