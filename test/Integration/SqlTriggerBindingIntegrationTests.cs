@@ -75,15 +75,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public async Task BatchSizeOverrideTriggerTest()
         {
-            const int batchSize = 20;
+            // Use enough items for the default batch size to require 4 batches but then
+            // set the batch size to the same value so they can all be processed in one
+            // batch. The test will only wait for ~1 batch worth of time so will timeout
+            // if the batch size isn't actually changed
+            const int batchSize = SqlTableChangeMonitor<object>.DefaultBatchSize * 4;
             const int firstId = 1;
-            const int lastId = 40;
+            const int lastId = batchSize;
             this.EnableChangeTrackingForTable("Products");
             var taskCompletionSource = new TaskCompletionSource<bool>();
             DataReceivedEventHandler handler = TestUtils.CreateOutputReceievedHandler(
                 taskCompletionSource,
-                @"Starting change consumption loop. BatchSize: \d* PollingIntervalMs: (\d*)",
-                "PollingInterval",
+                @"Starting change consumption loop. BatchSize: (\d*) PollingIntervalMs: \d*",
+                "BatchSize",
                 batchSize.ToString());
             this.StartFunctionHost(
                 nameof(ProductsTriggerWithValidation),
@@ -114,7 +118,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public async Task PollingIntervalOverrideTriggerTest()
         {
             const int firstId = 1;
-            const int lastId = 50;
+            // Use enough items to require 5 batches to be processed - the test will
+            // only wait for the expected time and timeout if the default polling
+            // interval isn't actually modified. 
+            const int lastId = SqlTableChangeMonitor<object>.DefaultBatchSize * 5;
             const int pollingIntervalMs = 75;
             this.EnableChangeTrackingForTable("Products");
             var taskCompletionSource = new TaskCompletionSource<bool>();
