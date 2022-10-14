@@ -525,6 +525,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns></returns>
         private ScaleStatus GetScaleStatusCore(int workerCount, SqlTriggerMetrics[] metrics)
         {
+            // We require minimum 5 samples to estimate the trend of variation in count of unprocessed changes with
+            // certain reliability. These samples roughly cover the timespan of past 40 seconds.
             const int minSamplesForScaling = 5;
             const int maxChangesPerWorker = 1000;
 
@@ -540,10 +542,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 return status;
             }
 
+            string counts = string.Join(" ,", metrics.TakeLast(minSamplesForScaling).Select(metric => metric.UnprocessedChangeCount));
+            this._logger.LogInformation($"Unprocessed change counts: [{counts}], worker count: {workerCount}, maximum changes per worker: {maxChangesPerWorker}.");
+
             // Add worker if the count of unprocessed changes per worker exceeds the maximum limit.
             long lastUnprocessedChangeCount = metrics.Last().UnprocessedChangeCount;
-            this._logger.LogInformation($"Unprocessed change count: {lastUnprocessedChangeCount}, worker count: {workerCount}, maximum changes per worker: {maxChangesPerWorker}.");
-
             if (lastUnprocessedChangeCount > workerCount * maxChangesPerWorker)
             {
                 status.Vote = ScaleVote.ScaleOut;
@@ -563,13 +566,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             if (isIncreasing)
             {
                 // Scale out only if the expected count of unprocessed changes would exceed the combined limit after 30 seconds.
-                long expectedUnprocessedChangeCount = (2 * metrics[metrics.Length - 1].UnprocessedChangeCount) - metrics[metrics.Length - 4].UnprocessedChangeCount;
+                DateTime referenceTime = metrics[metrics.Length - 1].Timestamp - TimeSpan.FromSeconds(30);
+                SqlTriggerMetrics referenceMetric = metrics.First(metric => metric.Timestamp > referenceTime);
+                long expectedUnprocessedChangeCount = (2 * metrics[metrics.Length - 1].UnprocessedChangeCount) - referenceMetric.UnprocessedChangeCount;
 
                 if (expectedUnprocessedChangeCount > workerCount * maxChangesPerWorker)
                 {
                     status.Vote = ScaleVote.ScaleOut;
-                    this._logger.LogInformation($"Requesting scale-out: Found the unprocessed changes for table: '{this._userTable.FullName}' to be continuously increasing.");
+                    this._logger.LogInformation($"Requesting scale-out: Found the unprocessed changes for table: '{this._userTable.FullName}' to be continuously increasing" +
+                        " and may exceed the maximum limit set for the workers.");
                     return status;
+                }
+                else
+                {
+                    this._logger.LogDebug($"Avoiding scale-out: Found the unprocessed changes for table: '{this._userTable.FullName}' to be increasing" +
+                        " but they may not exceed the maximum limit set for the workers.");
                 }
             }
 
@@ -582,9 +593,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     this._logger.LogInformation($"Requesting scale-in: Found table: '{this._userTable.FullName}' to be either idle or the unprocessed changes to be continuously decreasing.");
                     return status;
                 }
+                else
+                {
+                    this._logger.LogDebug($"Avoiding scale-in: Found the unprocessed changes for table: '{this._userTable.FullName}' to be decreasing" +
+                        " but they are high enough to require all existing workers for processing.");
+                }
             }
 
-            this._logger.LogInformation($"Requesting no-scaling: Found the number of unprocessed changes for table: '{this._userTable.FullName}' to be steady.");
+            this._logger.LogInformation($"Requesting no-scaling: Found the number of unprocessed changes for table: '{this._userTable.FullName}' to not require scaling.");
             return status;
         }
 
