@@ -187,7 +187,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         /// <param name="regex">The regex. This must have a single group match for the specific value being looked for</param>
         /// <param name="valueName">The name of the value to output if the match fails</param>
         /// <param name="expectedValue">The value expected to be equal to the matched group from the regex</param>
-        /// <returns></returns>
+        /// <returns>The event handler</returns>
         public static DataReceivedEventHandler CreateOutputReceievedHandler(TaskCompletionSource<bool> taskCompletionSource, string regex, string valueName, string expectedValue)
         {
             return (object sender, DataReceivedEventArgs e) =>
