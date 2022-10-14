@@ -8,7 +8,8 @@ namespace Microsoft.Azure.Functions.Worker.Extension.Sql
     public class SqlOutputAttribute : OutputBindingAttribute
     {
         /// <summary>
-        /// Constructs a new instance.
+        /// Creates an instance of the <see cref="SqlAttribute"/>, specifying the Sql attributes
+        /// the function supports.
         /// </summary>
         /// <param name="commandText">The text of the command.</param>
         /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored.</param>
@@ -20,9 +21,9 @@ namespace Microsoft.Azure.Functions.Worker.Extension.Sql
 
         /// <summary>
         /// The name of the app setting where the SQL connection string is stored
-        /// (see https://docs.microsoft.com/en-us/dotnet/api/microsoft.data.sqlclient.sqlconnection?view=sqlclient-dotnet-core-2.0).
+        /// (see https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection).
         /// The attributes specified in the connection string are listed here
-        /// https://docs.microsoft.com/en-us/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0
+        /// https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring
         /// For example, to create a connection to the "TestDB" located at the URL "test.database.windows.net" using a User ID and password,
         /// create a ConnectionStringSetting with a name like SqlServerAuthentication. The value of the SqlServerAuthentication app setting
         /// would look like "Data Source=test.database.windows.net;Database=TestDB;User ID={userid};Password={password}".
@@ -30,13 +31,12 @@ namespace Microsoft.Azure.Functions.Worker.Extension.Sql
         public string ConnectionStringSetting { get; set; }
 
         /// <summary>
-        /// For an output binding, the table name.
+        /// The table name.
         /// </summary>
         public string CommandText { get; }
 
         /// <summary>
-        /// Specifies whether <see cref="CommandText"/> refers to a stored procedure or SQL query string.
-        /// Use <see cref="CommandType.StoredProcedure"/> for the former, <see cref="CommandType.Text"/> for the latter
+        /// Specifies <see cref="CommandText"/> which refers to the table name.
         /// </summary>
         public System.Data.CommandType CommandType { get; set; } = System.Data.CommandType.Text;
     }

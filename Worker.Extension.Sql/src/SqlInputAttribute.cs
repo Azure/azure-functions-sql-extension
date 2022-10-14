@@ -8,7 +8,8 @@ namespace Microsoft.Azure.Functions.Worker.Extension.Sql
     public sealed class SqlInputAttribute : InputBindingAttribute
     {
         /// <summary>
-        /// Constructs a new instance.
+        /// Creates an instance of the <see cref="SqlAttribute"/>, specifying the Sql attributes
+        /// the function supports.
         /// </summary>
         /// <param name="commandText">The text of the command.</param>
         /// <param name="commandType">Specifies whether commandText refers to a stored procedure or SQL query string.</param>
@@ -22,9 +23,9 @@ namespace Microsoft.Azure.Functions.Worker.Extension.Sql
 
         /// <summary>
         /// The name of the app setting where the SQL connection string is stored
-        /// (see https://docs.microsoft.com/en-us/dotnet/api/microsoft.data.sqlclient.sqlconnection?view=sqlclient-dotnet-core-2.0).
+        /// (see https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection).
         /// The attributes specified in the connection string are listed here
-        /// https://docs.microsoft.com/en-us/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0
+        /// https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring
         /// For example, to create a connection to the "TestDB" located at the URL "test.database.windows.net" using a User ID and password,
         /// create a ConnectionStringSetting with a name like SqlServerAuthentication. The value of the SqlServerAuthentication app setting
         /// would look like "Data Source=test.database.windows.net;Database=TestDB;User ID={userid};Password={password}".
@@ -32,7 +33,7 @@ namespace Microsoft.Azure.Functions.Worker.Extension.Sql
         public string ConnectionStringSetting { get; set; }
 
         /// <summary>
-        /// For an input binding, either a SQL query or stored procedure that will be run in the database referred to in the ConnectionString.
+        /// Either a SQL query or stored procedure that will be run in the database referred to in the ConnectionString.
         /// </summary>
         public string CommandText { get; }
 
