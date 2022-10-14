@@ -108,7 +108,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 id => $"Product {id}",
                 id => id * 100,
                 this.GetBatchProcessingTimeout(firstId, lastId, batchSize: batchSize));
-            await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromSeconds(5000));
+            await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromSeconds(5000), "Timed out waiting for BatchSize configuration message");
         }
 
         /// <summary>
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // only wait for the expected time and timeout if the default polling
             // interval isn't actually modified. 
             const int lastId = SqlTableChangeMonitor<object>.DefaultBatchSize * 5;
-            const int pollingIntervalMs = 75;
+            const int pollingIntervalMs = SqlTableChangeMonitor<object>.DefaultPollingIntervalMs / 2;
             this.EnableChangeTrackingForTable("Products");
             var taskCompletionSource = new TaskCompletionSource<bool>();
             DataReceivedEventHandler handler = TestUtils.CreateOutputReceievedHandler(
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 id => $"Product {id}",
                 id => id * 100,
                 this.GetBatchProcessingTimeout(firstId, lastId, pollingIntervalMs: pollingIntervalMs));
-            await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromSeconds(5000));
+            await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromSeconds(5000), "Timed out waiting for PollingInterval configuration message");
         }
 
         /// <summary>
