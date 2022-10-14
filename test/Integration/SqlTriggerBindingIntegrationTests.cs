@@ -79,10 +79,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             const int firstId = 1;
             const int lastId = 40;
             this.EnableChangeTrackingForTable("Products");
-            this.StartFunctionHost(nameof(ProductsTriggerWithValidation), SupportedLanguages.CSharp, true, environmentVariables: new Dictionary<string, string>() {
-                { "TEST_EXPECTED_BATCH_SIZE", batchSize.ToString() },
-                { "Sql_Trigger_BatchSize", batchSize.ToString() }
-            });
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            DataReceivedEventHandler handler = TestUtils.CreateOutputReceievedHandler(
+                taskCompletionSource,
+                @"Starting change consumption loop. BatchSize: \d* PollingIntervalMs: (\d*)",
+                "PollingInterval",
+                batchSize.ToString());
+            this.StartFunctionHost(
+                nameof(ProductsTriggerWithValidation),
+                SupportedLanguages.CSharp,
+                useTestFolder: true,
+                customOutputHandler: handler,
+                environmentVariables: new Dictionary<string, string>() {
+                    { "TEST_EXPECTED_BATCH_SIZE", batchSize.ToString() },
+                    { "Sql_Trigger_BatchSize", batchSize.ToString() }
+                }
+            );
 
             await this.WaitForProductChanges(
                 firstId,
@@ -92,6 +104,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 id => $"Product {id}",
                 id => id * 100,
                 this.GetBatchProcessingTimeout(firstId, lastId, batchSize: batchSize));
+            await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromSeconds(5000));
         }
 
         /// <summary>
@@ -100,13 +113,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public async Task PollingIntervalOverrideTriggerTest()
         {
-            const int pollingIntervalMs = 100;
             const int firstId = 1;
             const int lastId = 50;
+            const int pollingIntervalMs = 75;
             this.EnableChangeTrackingForTable("Products");
-            this.StartFunctionHost(nameof(ProductsTriggerWithValidation), SupportedLanguages.CSharp, true, environmentVariables: new Dictionary<string, string>() {
-                { "Sql_Trigger_PollingIntervalMs", pollingIntervalMs.ToString() }
-            });
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            DataReceivedEventHandler handler = TestUtils.CreateOutputReceievedHandler(
+                taskCompletionSource,
+                @"Starting change consumption loop. BatchSize: \d* PollingIntervalMs: (\d*)",
+                "PollingInterval",
+                pollingIntervalMs.ToString());
+            this.StartFunctionHost(
+                nameof(ProductsTriggerWithValidation),
+                SupportedLanguages.CSharp,
+                useTestFolder: true,
+                customOutputHandler: handler,
+                environmentVariables: new Dictionary<string, string>() {
+                    { "Sql_Trigger_PollingIntervalMs", pollingIntervalMs.ToString() }
+                }
+            );
 
             await this.WaitForProductChanges(
                 firstId,
@@ -116,8 +141,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 id => $"Product {id}",
                 id => id * 100,
                 this.GetBatchProcessingTimeout(firstId, lastId, pollingIntervalMs: pollingIntervalMs));
+            await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromSeconds(5000));
         }
-
 
         /// <summary>
         /// Verifies that if several changes have happened to the table row since last invocation, then a single net
