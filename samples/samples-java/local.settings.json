@@ -1,8 +1,8 @@
 {
-    "IsEncrypted": false,
-    "Values": {
-      "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-      "FUNCTIONS_WORKER_RUNTIME": "dotnet",
-      "SqlConnectionString": ""
-    }
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "java",
+    "SqlConnectionString": ""
   }
+}
