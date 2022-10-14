@@ -75,7 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public async Task BatchSizeOverrideTriggerTest()
         {
-            // Use enough items for the default batch size to require 4 batches but then
+            // Use enough items to require 4 batches to be processed but then
             // set the batch size to the same value so they can all be processed in one
             // batch. The test will only wait for ~1 batch worth of time so will timeout
             // if the batch size isn't actually changed
