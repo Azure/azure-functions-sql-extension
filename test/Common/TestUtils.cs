@@ -183,7 +183,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         /// Creates a DataReceievedEventHandler that will wait for the specified regex and then check that
         /// the matched group matches the expected value.
         /// </summary>
-        /// <param name="taskCompletionSource">The task completion source to signal when the value is receieved</param>
+        /// <param name="taskCompletionSource">The task completion source to signal when the value is received</param>
         /// <param name="regex">The regex. This must have a single group match for the specific value being looked for</param>
         /// <param name="valueName">The name of the value to output if the match fails</param>
         /// <param name="expectedValue">The value expected to be equal to the matched group from the regex</param>
