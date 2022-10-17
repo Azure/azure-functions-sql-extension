@@ -124,7 +124,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             // Check if there's config settings to override the default batch size/polling interval values
             int? configuredBatchSize = configuration.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_BatchSize);
-            int? configuredPollingInterval = configuration.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_BatchSize);
+            int? configuredPollingInterval = configuration.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_PollingInterval);
             this._batchSize = configuredBatchSize ?? this._batchSize;
             this._pollingIntervalInMs = configuredPollingInterval ?? this._pollingIntervalInMs;
             var monitorStartProps = new Dictionary<TelemetryPropertyName, string>(telemetryProps)
