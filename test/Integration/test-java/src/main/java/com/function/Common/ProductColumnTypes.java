@@ -3,18 +3,18 @@ package com.function.Common;
 import java.util.Date;
 
 public class ProductColumnTypes {
-    private int ProductID;
+    private int ProductId;
     private Date Datetime;
     private Date Datetime2;
 
     public ProductColumnTypes(int productId, Date datetime, Date datetime2) {
-        ProductID = productId;
+        ProductId = productId;
         Datetime = datetime;
         Datetime2 = datetime2;
     }
 
     public int getProductId() {
-        return ProductID;
+        return ProductId;
     }
 
     public Date getDatetime() {

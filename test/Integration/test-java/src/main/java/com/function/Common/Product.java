@@ -1,18 +1,18 @@
 package com.function.Common;
 
 public class Product {
-    private int ProductID;
+    private int ProductId;
     private String Name;
     private int Cost;
 
     public Product(int productId, String name, int cost) {
-        ProductID = productId;
+        ProductId = productId;
         Name = name;
         Cost = cost;
     }
 
     public int getProductId() {
-        return ProductID;
+        return ProductId;
     }
 
     public String getName() {

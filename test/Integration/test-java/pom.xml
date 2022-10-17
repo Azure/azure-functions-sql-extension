@@ -14,7 +14,7 @@
         <java.version>1.8</java.version>
         <azure.functions.maven.plugin.version>1.21.0</azure.functions.maven.plugin.version>
         <azure.functions.java.library.version>2.0.1</azure.functions.java.library.version>
-        <functionAppName>test-java-1665583180358</functionAppName>
+        <functionAppName>test-java-1666041146813</functionAppName>
     </properties>
 
     <repositories>

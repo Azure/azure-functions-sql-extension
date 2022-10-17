@@ -1,16 +1,16 @@
 package com.function.Common;
 
 public class ProductMissingColumns {
-    private int ProductID;
+    private int ProductId;
     private String Name;
 
     public ProductMissingColumns(int productId, String name) {
-        ProductID = productId;
+        ProductId = productId;
         Name = name;
     }
 
     public int getProductId() {
-        return ProductID;
+        return ProductId;
     }
 
     public String getName() {

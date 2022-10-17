@@ -1,14 +1,14 @@
 package com.function.Common;
 
 public class ProductExtraColumns {
-    private int ProductID;
+    private int ProductId;
     private String Name;
     private int Cost;
     private int ExtraInt;
     private String ExtraString;
 
     public ProductExtraColumns(int productId, String name, int cost, int extraInt, String extraString) {
-        ProductID = productId;
+        ProductId = productId;
         Name = name;
         Cost = cost;
         ExtraInt = extraInt;
@@ -16,7 +16,7 @@ public class ProductExtraColumns {
     }
 
     public int getProductId() {
-        return ProductID;
+        return ProductId;
     }
 
     public String getName() {
