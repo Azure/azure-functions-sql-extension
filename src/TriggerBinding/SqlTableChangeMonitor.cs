@@ -17,6 +17,8 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Microsoft.Extensions.Configuration;
+using System.Data;
+using MoreLinq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -54,7 +56,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly string _userFunctionId;
         private readonly string _leasesTableName;
         private readonly IReadOnlyList<string> _userTableColumns;
-        private readonly IReadOnlyList<string> _primaryKeyColumns;
+        private readonly IReadOnlyList<(string name, string type)> _primaryKeyColumns;
         private readonly IReadOnlyList<string> _rowMatchConditions;
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly ILogger _logger;
@@ -104,7 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string userFunctionId,
             string leasesTableName,
             IReadOnlyList<string> userTableColumns,
-            IReadOnlyList<string> primaryKeyColumns,
+            IReadOnlyList<(string name, string type)> primaryKeyColumns,
             ITriggeredFunctionExecutor executor,
             ILogger logger,
             IConfiguration configuration,
@@ -142,7 +144,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             // Prep search-conditions that will be used besides WHERE clause to match table rows.
             this._rowMatchConditions = Enumerable.Range(0, this._batchSize)
-                .Select(rowIndex => string.Join(" AND ", this._primaryKeyColumns.Select((col, colIndex) => $"{col.AsBracketQuotedString()} = @{rowIndex}_{colIndex}")))
+                .Select(rowIndex => string.Join(" AND ", this._primaryKeyColumns.Select((col, colIndex) => $"{col.name.AsBracketQuotedString()} = @{rowIndex}_{colIndex}")))
                 .ToList();
 
 #pragma warning disable CS4014 // Queue the below tasks and exit. Do not wait for their completion.
@@ -230,7 +232,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var transactionSw = Stopwatch.StartNew();
                 long setLastSyncVersionDurationMs = 0L, getChangesDurationMs = 0L, acquireLeasesDurationMs = 0L;
 
-                using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
+                using (SqlTransaction transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead))
                 {
                     try
                     {
@@ -523,7 +525,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var transactionSw = Stopwatch.StartNew();
                 long releaseLeasesDurationMs = 0L, updateLastSyncVersionDurationMs = 0L;
 
-                using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
+                using (SqlTransaction transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead))
                 {
                     try
                     {
@@ -637,7 +639,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // If the row has been deleted, there is no longer any data for it in the user table. The best we can do
                 // is populate the row-item with the primary key values of the row.
                 Dictionary<string, object> item = operation == SqlChangeOperation.Delete
-                    ? this._primaryKeyColumns.ToDictionary(col => col, col => row[col])
+                    ? this._primaryKeyColumns.ToDictionary(col => col.name, col => row[col.name])
                     : this._userTableColumns.ToDictionary(col => col, col => row[col]);
 
                 changes.Add(new SqlChange<T>(operation, JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(item))));
@@ -699,9 +701,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
         private SqlCommand BuildGetChangesCommand(SqlConnection connection, SqlTransaction transaction)
         {
-            string selectList = string.Join(", ", this._userTableColumns.Select(col => this._primaryKeyColumns.Contains(col) ? $"c.{col.AsBracketQuotedString()}" : $"u.{col.AsBracketQuotedString()}"));
-            string userTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.AsBracketQuotedString()} = u.{col.AsBracketQuotedString()}"));
-            string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.AsBracketQuotedString()} = l.{col.AsBracketQuotedString()}"));
+            string selectList = string.Join(", ", this._userTableColumns.Select(col => this._primaryKeyColumns.Select(c => c.name).Contains(col) ? $"c.{col.AsBracketQuotedString()}" : $"u.{col.AsBracketQuotedString()}"));
+            string userTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = u.{col.name.AsBracketQuotedString()}"));
+            string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
 
             string getChangesQuery = $@"
                 DECLARE @last_sync_version bigint;
@@ -737,28 +739,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
         private SqlCommand BuildAcquireLeasesCommand(SqlConnection connection, SqlTransaction transaction, IReadOnlyList<IReadOnlyDictionary<string, object>> rows)
         {
-            var acquireLeasesQuery = new StringBuilder();
+            // The column definitions to use for the CTE
+            IEnumerable<string> cteColumnDefinitions = this._primaryKeyColumns
+                .Select(c => $"{c.name.AsBracketQuotedString()} {c.type}")
+                // These are the internal column values that we use. Note that we use SYS_CHANGE_VERSION because that's
+                // the new version - the _az_func_ChangeVersion has the old version 
+                .Concat(new string[] { "SYS_CHANGE_VERSION bigint", "_az_func_AttemptCount int" });
+            IList<string> bracketedPrimaryKeys = this._primaryKeyColumns.Select(p => p.name.AsBracketQuotedString()).ToList();
 
-            for (int rowIndex = 0; rowIndex < rows.Count; rowIndex++)
+            // Create the query that the merge statement will match the rows on
+            var primaryKeyMatchingQuery = new StringBuilder($"ExistingData.{bracketedPrimaryKeys[0]} = NewData.{bracketedPrimaryKeys[0]}");
+            foreach (string primaryKey in bracketedPrimaryKeys.Skip(1))
             {
-                string valuesList = string.Join(", ", this._primaryKeyColumns.Select((_, colIndex) => $"@{rowIndex}_{colIndex}"));
-                string changeVersion = rows[rowIndex]["SYS_CHANGE_VERSION"].ToString();
-
-                acquireLeasesQuery.Append($@"
-                    IF NOT EXISTS (SELECT * FROM {this._leasesTableName} WITH (TABLOCKX) WHERE {this._rowMatchConditions[rowIndex]})
-                        INSERT INTO {this._leasesTableName} WITH (TABLOCKX)
-                        VALUES ({valuesList}, {changeVersion}, 1, DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME()));
-                    ELSE
-                        UPDATE {this._leasesTableName} WITH (TABLOCKX)
-                        SET
-                            {SqlTriggerConstants.LeasesTableChangeVersionColumnName} = {changeVersion},
-                            {SqlTriggerConstants.LeasesTableAttemptCountColumnName} = {SqlTriggerConstants.LeasesTableAttemptCountColumnName} + 1,
-                            {SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} = DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME())
-                        WHERE {this._rowMatchConditions[rowIndex]};
-                ");
+                primaryKeyMatchingQuery.Append($" AND ExistingData.{primaryKey} = NewData.{primaryKey}");
             }
 
-            return this.GetSqlCommandWithParameters(acquireLeasesQuery.ToString(), connection, transaction, rows);
+            const string acquireLeasesCte = "acquireLeasesCte";
+            const string rowDataParameter = "@rowData";
+            // Create the merge query that will either update the rows that already exist or insert a new one if it doesn't exist
+            string query = $@"
+                    WITH {acquireLeasesCte} AS ( SELECT * FROM OPENJSON(@rowData) WITH ({string.Join(",", cteColumnDefinitions)}) )
+                    MERGE INTO {this._leasesTableName} WITH (TABLOCKX)
+                        AS ExistingData
+                    USING {acquireLeasesCte}
+                        AS NewData
+                    ON
+                        {primaryKeyMatchingQuery}
+                    WHEN MATCHED THEN
+                        UPDATE SET
+                        {SqlTriggerConstants.LeasesTableChangeVersionColumnName} = NewData.SYS_CHANGE_VERSION,
+                        {SqlTriggerConstants.LeasesTableAttemptCountColumnName} = ExistingData.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} + 1,
+                        {SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} = DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME())
+                    WHEN NOT MATCHED THEN
+                        INSERT VALUES ({string.Join(",", bracketedPrimaryKeys.Select(k => $"NewData.{k}"))}, NewData.SYS_CHANGE_VERSION, 1, DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME()));";
+
+            var command = new SqlCommand(query, connection, transaction);
+            SqlParameter par = command.Parameters.Add(rowDataParameter, SqlDbType.NVarChar, -1);
+            string rowData = JsonConvert.SerializeObject(rows);
+            this._logger.LogInformation(rowData);
+            par.Value = rowData;
+            return command;
         }
 
         /// <summary>
@@ -823,7 +843,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
         private SqlCommand BuildUpdateTablesPostInvocation(SqlConnection connection, SqlTransaction transaction, long newLastSyncVersion)
         {
-            string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.AsBracketQuotedString()} = l.{col.AsBracketQuotedString()}"));
+            string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
 
             string updateTablesPostInvocationQuery = $@"
                 DECLARE @current_last_sync_version bigint;
@@ -879,7 +899,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             var command = new SqlCommand(commandText, connection, transaction);
 
             SqlParameter[] parameters = Enumerable.Range(0, rows.Count)
-                .SelectMany(rowIndex => this._primaryKeyColumns.Select((col, colIndex) => new SqlParameter($"@{rowIndex}_{colIndex}", rows[rowIndex][col])))
+                .SelectMany(rowIndex => this._primaryKeyColumns.Select((col, colIndex) => new SqlParameter($"@{rowIndex}_{colIndex}", rows[rowIndex][col.name])))
                 .ToArray();
 
             command.Parameters.AddRange(parameters);
