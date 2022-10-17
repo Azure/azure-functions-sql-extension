@@ -1,10 +1,8 @@
 {
-    "IsEncrypted": false,
-    "Values": {
-      "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-      "FUNCTIONS_WORKER_RUNTIME": "dotnet",
-      "SqlConnectionString": "",
-      "Sp_SelectCost": "SelectProductsCost",
-      "ProductCost": 100
-    }
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "java",
+    "SqlConnectionString": ""
   }
+}
