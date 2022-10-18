@@ -12,9 +12,11 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Listeners;
+using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
+using MoreLinq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -22,7 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// Represents the listener to SQL table changes.
     /// </summary>
     /// <typeparam name="T">POCO class representing the row in the user table</typeparam>
-    internal sealed class SqlTriggerListener<T> : IListener
+    internal sealed class SqlTriggerListener<T> : IListener, IScaleMonitor<SqlTriggerMetrics>
     {
         private const int ListenerNotStarted = 0;
         private const int ListenerStarting = 1;
@@ -36,11 +38,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly ILogger _logger;
         private readonly IConfiguration _configuration;
+        private readonly ScaleMonitorDescriptor _scaleMonitorDescriptor;
 
         private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps = new Dictionary<TelemetryPropertyName, string>();
 
         private SqlTableChangeMonitor<T> _changeMonitor;
         private int _listenerState = ListenerNotStarted;
+
+        ScaleMonitorDescriptor IScaleMonitor.Descriptor => this._scaleMonitorDescriptor;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlTriggerListener{T}"/> class.
@@ -59,6 +64,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+
+            this._scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{userFunctionId}-SqlTrigger-{tableName}".ToLower(CultureInfo.InvariantCulture));
         }
 
         public void Cancel()
@@ -461,6 +468,155 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 this._logger.LogDebugWithThreadId($"END CreateLeasesTable Duration={durationMs}ms");
                 return durationMs;
             }
+        }
+
+        async Task<ScaleMetrics> IScaleMonitor.GetMetricsAsync()
+        {
+            return await this.GetMetricsAsync();
+        }
+
+        public async Task<SqlTriggerMetrics> GetMetricsAsync()
+        {
+            Debug.Assert(!(this._changeMonitor is null));
+
+            return new SqlTriggerMetrics
+            {
+                UnprocessedChangeCount = await this._changeMonitor.GetUnprocessedChangeCountAsync(),
+                Timestamp = DateTime.UtcNow,
+            };
+        }
+
+        ScaleStatus IScaleMonitor.GetScaleStatus(ScaleStatusContext context)
+        {
+            return this.GetScaleStatusWithTelemetry(context.WorkerCount, context.Metrics?.Cast<SqlTriggerMetrics>().ToArray());
+        }
+
+        public ScaleStatus GetScaleStatus(ScaleStatusContext<SqlTriggerMetrics> context)
+        {
+            return this.GetScaleStatusWithTelemetry(context.WorkerCount, context.Metrics?.ToArray());
+        }
+
+        private ScaleStatus GetScaleStatusWithTelemetry(int workerCount, SqlTriggerMetrics[] metrics)
+        {
+            var status = new ScaleStatus
+            {
+                Vote = ScaleVote.None,
+            };
+
+            var properties = new Dictionary<TelemetryPropertyName, string>(this._telemetryProps)
+            {
+                [TelemetryPropertyName.ScaleRecommendation] = $"{status.Vote}",
+                [TelemetryPropertyName.TriggerMetrics] = metrics is null ? "null" : $"[{string.Join(", ", metrics.Select(metric => metric.UnprocessedChangeCount))}]",
+                [TelemetryPropertyName.WorkerCount] = $"{workerCount}",
+            };
+
+            try
+            {
+                status = this.GetScaleStatusCore(workerCount, metrics);
+
+                properties[TelemetryPropertyName.ScaleRecommendation] = $"{status.Vote}";
+                TelemetryInstance.TrackEvent(TelemetryEventName.GetScaleStatus, properties);
+            }
+            catch (Exception ex)
+            {
+                this._logger.LogError($"Failed to get scale status for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
+                TelemetryInstance.TrackException(TelemetryErrorName.GetScaleStatus, ex, properties);
+            }
+
+            return status;
+        }
+
+        /// <summary>
+        /// Returns scale recommendation i.e. whether to scale in or out the host application. The recommendation is
+        /// made based on both the latest metrics and the trend of increase or decrease in the count of unprocessed
+        /// changes in the user table. In all of the calculations, it is attempted to keep the number of workers minimum
+        /// while also ensuring that the count of unprocessed changes per worker stays under the maximum limit.
+        /// </summary>
+        /// <param name="workerCount">The current worker count for the host application.</param>
+        /// <param name="metrics">The collection of metrics samples to make the scale decision.</param>
+        /// <returns></returns>
+        private ScaleStatus GetScaleStatusCore(int workerCount, SqlTriggerMetrics[] metrics)
+        {
+            // We require minimum 5 samples to estimate the trend of variation in count of unprocessed changes with
+            // certain reliability. These samples roughly cover the timespan of past 40 seconds.
+            const int minSamplesForScaling = 5;
+
+            // Please ensure the Readme file and other public documentation are also updated if this value ever needs to
+            // be changed.
+            const int maxChangesPerWorker = 1000;
+
+            var status = new ScaleStatus
+            {
+                Vote = ScaleVote.None,
+            };
+
+            // Do not make a scale decision unless we have enough samples.
+            if (metrics is null || (metrics.Length < minSamplesForScaling))
+            {
+                this._logger.LogInformation($"Requesting no-scaling: Insufficient metrics for making scale decision for table: '{this._userTable.FullName}'.");
+                return status;
+            }
+
+            string counts = string.Join(" ,", metrics.TakeLast(minSamplesForScaling).Select(metric => metric.UnprocessedChangeCount));
+            this._logger.LogInformation($"Unprocessed change counts: [{counts}], worker count: {workerCount}, maximum changes per worker: {maxChangesPerWorker}.");
+
+            // Add worker if the count of unprocessed changes per worker exceeds the maximum limit.
+            long lastUnprocessedChangeCount = metrics.Last().UnprocessedChangeCount;
+            if (lastUnprocessedChangeCount > workerCount * maxChangesPerWorker)
+            {
+                status.Vote = ScaleVote.ScaleOut;
+                this._logger.LogInformation($"Requesting scale-out: Found too many unprocessed changes for table: '{this._userTable.FullName}' relative to the number of workers.");
+                return status;
+            }
+
+            // Check if there is a continuous increase or decrease in count of unprocessed changes.
+            bool isIncreasing = true;
+            bool isDecreasing = true;
+            for (int index = metrics.Length - minSamplesForScaling; index < metrics.Length - 1; index++)
+            {
+                isIncreasing = isIncreasing && metrics[index].UnprocessedChangeCount < metrics[index + 1].UnprocessedChangeCount;
+                isDecreasing = isDecreasing && (metrics[index].UnprocessedChangeCount == 0 || metrics[index].UnprocessedChangeCount > metrics[index + 1].UnprocessedChangeCount);
+            }
+
+            if (isIncreasing)
+            {
+                // Scale out only if the expected count of unprocessed changes would exceed the combined limit after 30 seconds.
+                DateTime referenceTime = metrics[metrics.Length - 1].Timestamp - TimeSpan.FromSeconds(30);
+                SqlTriggerMetrics referenceMetric = metrics.First(metric => metric.Timestamp > referenceTime);
+                long expectedUnprocessedChangeCount = (2 * metrics[metrics.Length - 1].UnprocessedChangeCount) - referenceMetric.UnprocessedChangeCount;
+
+                if (expectedUnprocessedChangeCount > workerCount * maxChangesPerWorker)
+                {
+                    status.Vote = ScaleVote.ScaleOut;
+                    this._logger.LogInformation($"Requesting scale-out: Found the unprocessed changes for table: '{this._userTable.FullName}' to be continuously increasing" +
+                        " and may exceed the maximum limit set for the workers.");
+                    return status;
+                }
+                else
+                {
+                    this._logger.LogDebug($"Avoiding scale-out: Found the unprocessed changes for table: '{this._userTable.FullName}' to be increasing" +
+                        " but they may not exceed the maximum limit set for the workers.");
+                }
+            }
+
+            if (isDecreasing)
+            {
+                // Scale in only if the count of unprocessed changes will not exceed the combined limit post the scale-in operation.
+                if (lastUnprocessedChangeCount <= (workerCount - 1) * maxChangesPerWorker)
+                {
+                    status.Vote = ScaleVote.ScaleIn;
+                    this._logger.LogInformation($"Requesting scale-in: Found table: '{this._userTable.FullName}' to be either idle or the unprocessed changes to be continuously decreasing.");
+                    return status;
+                }
+                else
+                {
+                    this._logger.LogDebug($"Avoiding scale-in: Found the unprocessed changes for table: '{this._userTable.FullName}' to be decreasing" +
+                        " but they are high enough to require all existing workers for processing.");
+                }
+            }
+
+            this._logger.LogInformation($"Requesting no-scaling: Found the number of unprocessed changes for table: '{this._userTable.FullName}' to not require scaling.");
+            return status;
         }
 
         /// <summary>
