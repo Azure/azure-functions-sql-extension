@@ -745,15 +745,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // These are the internal column values that we use. Note that we use SYS_CHANGE_VERSION because that's
                 // the new version - the _az_func_ChangeVersion has the old version 
                 .Concat(new string[] { "SYS_CHANGE_VERSION bigint", "_az_func_AttemptCount int" });
-            IList<string> bracketedPrimaryKeys = this._primaryKeyColumns.Select(p => p.name.AsBracketQuotedString()).ToList();
+            IEnumerable<string> bracketedPrimaryKeys = this._primaryKeyColumns.Select(p => p.name.AsBracketQuotedString());
 
             // Create the query that the merge statement will match the rows on
-            var primaryKeyMatchingQuery = new StringBuilder($"ExistingData.{bracketedPrimaryKeys[0]} = NewData.{bracketedPrimaryKeys[0]}");
-            foreach (string primaryKey in bracketedPrimaryKeys.Skip(1))
-            {
-                primaryKeyMatchingQuery.Append($" AND ExistingData.{primaryKey} = NewData.{primaryKey}");
-            }
-
+            string primaryKeyMatchingQuery = string.Join(" AND ", bracketedPrimaryKeys.Select(key => $"ExistingData.{key} = NewData.{key}"));
             const string acquireLeasesCte = "acquireLeasesCte";
             const string rowDataParameter = "@rowData";
             // Create the merge query that will either update the rows that already exist or insert a new one if it doesn't exist
