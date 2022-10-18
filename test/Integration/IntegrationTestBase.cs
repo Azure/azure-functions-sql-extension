@@ -241,7 +241,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 workingDirectory = useTestFolder ? Path.Combine(GetPathToBin(), "..", "..", "..", "Integration", "test-java") : workingDirectory;
                 this.BuildJavaFunctionApp(workingDirectory);
-                string projectName = useTestFolder ? "test-java-1665583180358" : "samples-java-1664216893907";
+                string projectName = useTestFolder ? "test-java-1666041146813" : "samples-java-1665766173929";
                 workingDirectory = Path.Combine(workingDirectory, "target", "azure-functions", projectName);
             }
 
