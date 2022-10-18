@@ -162,6 +162,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._cancellationTokenSourceCheckForChanges.Cancel();
         }
 
+        public async Task<long> GetUnprocessedChangeCountAsync()
+        {
+            long unprocessedChangeCount = 0L;
+
+            try
+            {
+                long getUnprocessedChangesDurationMs = 0L;
+
+                using (var connection = new SqlConnection(this._connectionString))
+                {
+                    this._logger.LogDebugWithThreadId("BEGIN OpenGetUnprocessedChangesConnection");
+                    await connection.OpenAsync();
+                    this._logger.LogDebugWithThreadId("END OpenGetUnprocessedChangesConnection");
+
+                    using (SqlCommand getUnprocessedChangesCommand = this.BuildGetUnprocessedChangesCommand(connection))
+                    {
+                        this._logger.LogDebugWithThreadId($"BEGIN GetUnprocessedChangeCount Query={getUnprocessedChangesCommand.CommandText}");
+                        var commandSw = Stopwatch.StartNew();
+                        unprocessedChangeCount = (long)await getUnprocessedChangesCommand.ExecuteScalarAsync();
+                        getUnprocessedChangesDurationMs = commandSw.ElapsedMilliseconds;
+                    }
+
+                    this._logger.LogDebugWithThreadId($"END GetUnprocessedChangeCount Duration={getUnprocessedChangesDurationMs}ms Count={unprocessedChangeCount}");
+                }
+
+                var measures = new Dictionary<TelemetryMeasureName, double>
+                {
+                    [TelemetryMeasureName.GetUnprocessedChangesDurationMs] = getUnprocessedChangesDurationMs,
+                    [TelemetryMeasureName.UnprocessedChangeCount] = unprocessedChangeCount,
+                };
+            }
+            catch (Exception ex)
+            {
+                this._logger.LogError($"Failed to query count of unprocessed changes for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
+                TelemetryInstance.TrackException(TelemetryErrorName.GetUnprocessedChangeCount, ex, this._telemetryProps);
+            }
+
+            return unprocessedChangeCount;
+        }
+
         /// <summary>
         /// Executed once every <see cref="_pollingIntervalInMs"/> period. If the state of the change monitor is
         /// <see cref="State.CheckingForChanges"/>, then the method query the change/leases tables for changes on the
@@ -727,6 +767,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             ";
 
             return new SqlCommand(getChangesQuery, connection, transaction);
+        }
+
+        /// <summary>
+        /// Builds the query to get count of unprocessed changes in the user's table. This one mimics the query that is
+        /// used by workers to get the changes for processing.
+        /// </summary>
+        /// <param name="connection">The connection to add to the returned SqlCommand</param>
+        /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
+        private SqlCommand BuildGetUnprocessedChangesCommand(SqlConnection connection)
+        {
+            string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.AsBracketQuotedString()} = l.{col.AsBracketQuotedString()}"));
+
+            string getUnprocessedChangesQuery = $@"
+                DECLARE @last_sync_version bigint;
+                SELECT @last_sync_version = LastSyncVersion
+                FROM {SqlTriggerConstants.GlobalStateTableName}
+                WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
+
+                SELECT COUNT_BIG(*)
+                FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @last_sync_version) AS c
+                LEFT OUTER JOIN {this._leasesTableName} AS l WITH (TABLOCKX) ON {leasesTableJoinCondition}
+                WHERE
+                    (l.{SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} IS NULL AND
+                       (l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName} IS NULL OR l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName} < c.SYS_CHANGE_VERSION) OR
+                        l.{SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} < SYSDATETIME()) AND
+                    (l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} IS NULL OR l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} < {MaxChangeProcessAttemptCount});
+            ";
+
+            return new SqlCommand(getUnprocessedChangesQuery, connection);
         }
 
         /// <summary>
