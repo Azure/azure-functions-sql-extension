@@ -18,13 +18,13 @@ public class AddProductMissingColumns {
     public HttpResponseMessage run(
             @HttpTrigger(
                 name = "req",
-                methods = {HttpMethod.GET},
+                methods = {HttpMethod.POST},
                 authLevel = AuthorizationLevel.ANONYMOUS,
                 route = "addproduct-missingcolumns")
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
                 commandText = "dbo.Products",
-                connectionStringSetting = "sqlConnectionString")
+                connectionStringSetting = "SqlConnectionString")
                 OutputBinding<ProductMissingColumns> product) {
 
         ProductMissingColumns p = new ProductMissingColumns(0, "test");

@@ -15,7 +15,7 @@ public class TimerTriggerProducts {
             ) String timerInfo,
             @SQLOutput(
                 commandText = "Products",
-                connectionStringSetting = "sqlConnectionString")
+                connectionStringSetting = "SqlConnectionString")
                 OutputBinding<Product[]> products) {
 
         int totalUpserts = 1000;

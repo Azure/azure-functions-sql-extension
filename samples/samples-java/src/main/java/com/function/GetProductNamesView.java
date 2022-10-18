@@ -24,7 +24,7 @@ public class GetProductNamesView {
             @SQLInput(
                 commandText = "SELECT * FROM ProductNames",
                 commandType = "Text",
-                connectionStringSetting = "sqlConnectionString") 
+                connectionStringSetting = "SqlConnectionString")
                 ProductName[] products) {
 
         return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(products).build();

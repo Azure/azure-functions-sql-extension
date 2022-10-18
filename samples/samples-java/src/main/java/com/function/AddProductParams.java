@@ -24,7 +24,7 @@ public class AddProductParams {
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
                 commandText = "Products",
-                connectionStringSetting = "sqlConnectionString") 
+                connectionStringSetting = "SqlConnectionString")
                 OutputBinding<Product> product) {
 
         Product p = new Product(

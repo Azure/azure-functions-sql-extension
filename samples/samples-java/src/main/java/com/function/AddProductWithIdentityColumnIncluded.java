@@ -24,7 +24,7 @@ public class AddProductWithIdentityColumnIncluded {
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
                 commandText = "ProductsWithIdentity",
-                connectionStringSetting = "sqlConnectionString")
+                connectionStringSetting = "SqlConnectionString")
                 OutputBinding<ProductWithOptionalId> product) {
 
         ProductWithOptionalId p = new ProductWithOptionalId(

@@ -25,7 +25,7 @@ public class GetProducts {
                 commandText = "SELECT * FROM Products WHERE Cost = @Cost",
                 commandType = "Text",
                 parameters = "@Cost={cost}",
-                connectionStringSetting = "sqlConnectionString")
+                connectionStringSetting = "SqlConnectionString")
                 Product[] products) {
 
         return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(products).build();

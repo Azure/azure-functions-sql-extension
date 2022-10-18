@@ -29,11 +29,11 @@ public class AddProductsArray {
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
                 commandText = "Products",
-                connectionStringSetting = "sqlConnectionString") 
+                connectionStringSetting = "SqlConnectionString")
                 OutputBinding<Product[]> products) throws JsonParseException, JsonMappingException, IOException {
 
         String json = request.getBody().get();
-        
+
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
 

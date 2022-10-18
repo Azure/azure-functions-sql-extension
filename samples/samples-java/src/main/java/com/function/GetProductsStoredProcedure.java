@@ -25,7 +25,7 @@ public class GetProductsStoredProcedure {
                 commandText = "SelectProductsCost",
                 commandType = "StoredProcedure",
                 parameters = "@Cost={cost}",
-                connectionStringSetting = "sqlConnectionString")
+                connectionStringSetting = "SqlConnectionString")
                 Product[] products) {
 
         return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(products).build();

@@ -16,7 +16,7 @@ public class QueueTriggerProducts {
             String queueMessage,
             @SQLOutput(
                 commandText = "Products",
-                connectionStringSetting = "sqlConnectionString") 
+                connectionStringSetting = "SqlConnectionString")
                 OutputBinding<Product[]> products) {
 
         int totalUpserts = 100;

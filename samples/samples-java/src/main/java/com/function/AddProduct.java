@@ -29,14 +29,14 @@ public class AddProduct {
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
                 commandText = "Products",
-                connectionStringSetting = "sqlConnectionString") 
+                connectionStringSetting = "SqlConnectionString")
                 OutputBinding<Product> product) throws JsonParseException, JsonMappingException, IOException {
 
         String json = request.getBody().get();
 
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
-        
+
         Product p = mapper.readValue(json, Product.class);
         product.setValue(p);
 

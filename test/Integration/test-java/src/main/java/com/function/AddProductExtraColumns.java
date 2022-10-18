@@ -24,7 +24,7 @@ public class AddProductExtraColumns {
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
                 commandText = "dbo.Products",
-                connectionStringSetting = "sqlConnectionString")
+                connectionStringSetting = "SqlConnectionString")
                 OutputBinding<ProductExtraColumns> product) {
 
         ProductExtraColumns p = new ProductExtraColumns(0, "test", 0, 0, "test");

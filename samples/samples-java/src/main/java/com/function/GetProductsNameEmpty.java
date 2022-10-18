@@ -25,7 +25,7 @@ public class GetProductsNameEmpty {
                 commandText = "SELECT * FROM Products WHERE Cost = @Cost and Name = @Name",
                 commandType = "Text",
                 parameters = "@Cost={cost},@Name=",
-                connectionStringSetting = "sqlConnectionString")
+                connectionStringSetting = "SqlConnectionString")
                 Product[] products) {
 
         return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(products).build();

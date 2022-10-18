@@ -9,28 +9,35 @@ import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
 import com.microsoft.azure.functions.sql.annotation.SQLOutput;
-import com.function.Common.MultiplePrimaryKeyProductWithoutId;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.function.Common.ProductWithDefaultPK;
+
+import java.io.IOException;
 import java.util.Optional;
 
-public class AddProductWithMultiplePrimaryColumnsAndIdentity {
-    @FunctionName("AddProductWithMultiplePrimaryColumnsAndIdentity")
+public class AddProductWithDefaultPK {
+    @FunctionName("AddProductWithDefaultPK")
     public HttpResponseMessage run(
             @HttpTrigger(
                 name = "req",
-                methods = {HttpMethod.GET},
+                methods = {HttpMethod.POST},
                 authLevel = AuthorizationLevel.ANONYMOUS,
-                route = "addproductwithmultipleprimarycolumnsandidentity")
+                route = "addproductwithdefaultpk")
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
-                commandText = "ProductsWithMultiplePrimaryColumnsAndIdentity",
+                commandText = "dbo.ProductsWithDefaultPK",
                 connectionStringSetting = "SqlConnectionString")
-                OutputBinding<MultiplePrimaryKeyProductWithoutId> product) {
+                OutputBinding<ProductWithDefaultPK> product) throws JsonParseException, JsonMappingException, IOException {
 
-        MultiplePrimaryKeyProductWithoutId p = new MultiplePrimaryKeyProductWithoutId(
-            Integer.parseInt(request.getQueryParameters().get("externalId")),
-            request.getQueryParameters().get("name"),
-            Integer.parseInt(request.getQueryParameters().get("cost"))
-        );
+        String json = request.getBody().get();
+
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+
+        ProductWithDefaultPK p = mapper.readValue(json, ProductWithDefaultPK.class);
         product.setValue(p);
 
         return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(product).build();

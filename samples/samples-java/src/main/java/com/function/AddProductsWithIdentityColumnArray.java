@@ -23,10 +23,10 @@ public class AddProductsWithIdentityColumnArray {
                 route = "addproductswithidentitycolumnarray") HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
                 commandText = "dbo.ProductsWithIdentity",
-                connectionStringSetting = "sqlConnectionString") 
+                connectionStringSetting = "SqlConnectionString")
                 OutputBinding<ProductWithoutId[]> products) {
 
-        ProductWithoutId[] p = new ProductWithoutId[] { 
+        ProductWithoutId[] p = new ProductWithoutId[] {
             new ProductWithoutId("Cup", 2),
             new ProductWithoutId("Glasses", 12) };
         products.setValue(p);

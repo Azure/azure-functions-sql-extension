@@ -25,7 +25,7 @@ public class AddProductColumnTypes {
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
                 commandText = "dbo.ProductsColumnTypes",
-                connectionStringSetting = "sqlConnectionString")
+                connectionStringSetting = "SqlConnectionString")
                 OutputBinding<ProductColumnTypes> product) {
 
         ProductColumnTypes p = new ProductColumnTypes(Integer.parseInt(request.getQueryParameters().get("productId")), new Date(), new Date());

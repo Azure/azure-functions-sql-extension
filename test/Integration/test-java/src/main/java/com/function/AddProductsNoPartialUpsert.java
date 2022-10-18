@@ -18,13 +18,13 @@ public class AddProductsNoPartialUpsert {
     public HttpResponseMessage run(
             @HttpTrigger(
                 name = "req",
-                methods = {HttpMethod.GET},
+                methods = {HttpMethod.POST},
                 authLevel = AuthorizationLevel.ANONYMOUS,
                 route = "addproduct-nopartialupsert")
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
                 commandText = "dbo.ProductsNameNotNull",
-                connectionStringSetting = "sqlConnectionString")
+                connectionStringSetting = "SqlConnectionString")
                 OutputBinding<Product[]> products) {
 
         Product validProduct = new Product(0, "test", 100);

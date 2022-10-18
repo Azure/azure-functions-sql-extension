@@ -23,7 +23,7 @@ public class AddProductWithIdentityColumn {
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
                 commandText = "ProductsWithIdentity",
-                connectionStringSetting = "sqlConnectionString")
+                connectionStringSetting = "SqlConnectionString")
                 OutputBinding<ProductWithoutId> product) {
 
         ProductWithoutId p = new ProductWithoutId(

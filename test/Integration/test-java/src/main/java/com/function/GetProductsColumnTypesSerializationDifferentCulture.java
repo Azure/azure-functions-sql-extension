@@ -29,7 +29,7 @@ public class GetProductsColumnTypesSerializationDifferentCulture {
             @SQLInput(
                 commandText = "SELECT * FROM [dbo].[ProductsColumnTypes]",
                 commandType = "Text",
-                connectionStringSetting = "sqlConnectionString")
+                connectionStringSetting = "SqlConnectionString")
                 ProductColumnTypes[] products,
             ExecutionContext context) throws JsonProcessingException {
 

@@ -25,7 +25,7 @@ public class GetProductsStoredProcedureFromAppSetting {
                 commandText = "%Sp_SelectCost%",
                 commandType = "StoredProcedure",
                 parameters = "@Cost=%ProductCost%",
-                connectionStringSetting = "sqlConnectionString")
+                connectionStringSetting = "SqlConnectionString")
                 Product[] products) {
 
         return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(products).build();

@@ -19,7 +19,7 @@ public class AddProductReturnValue {
     @FunctionName("AddProductReturnValue")
     @SQLOutput(
         commandText = "Products",
-        connectionStringSetting = "sqlConnectionString")
+        connectionStringSetting = "SqlConnectionString")
     public Product run(
             @HttpTrigger(
                 name = "req",
