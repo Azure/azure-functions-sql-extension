@@ -332,8 +332,7 @@ This extension collect usage data in order to help us improve your experience. T
         GetChangesStart,
         GetColumnDefinitions,
         GetPrimaryKeys,
-        GetScaleStatusEnd,
-        GetScaleStatusStart,
+        GetScaleStatus,
         GetTableInfoEnd,
         GetTableInfoStart,
         ReleaseLeasesEnd,
@@ -366,9 +365,12 @@ This extension collect usage data in order to help us improve your experience. T
         HasConfiguredPollingInterval,
         LeasesTableName,
         QueryType,
+        ScaleRecommendation,
         ServerVersion,
+        TriggerMetrics,
         Type,
         UserFunctionId,
+        WorkerCount,
     }
 
     /// <summary>
@@ -393,12 +395,10 @@ This extension collect usage data in order to help us improve your experience. T
         PollingIntervalMs,
         ReleaseLeasesDurationMs,
         RetryAttemptNumber,
-        ScaleRecommendation,
         SetLastSyncVersionDurationMs,
         TransactionDurationMs,
         UnprocessedChangeCount,
         UpdateLastSyncVersionDurationMs,
-        WorkerCount,
     }
 
     /// <summary>
@@ -415,6 +415,7 @@ This extension collect usage data in order to help us improve your experience. T
         GetColumnDefinitions,
         GetColumnDefinitionsTableDoesNotExist,
         GetPrimaryKeys,
+        GetScaleStatus,
         GetUnprocessedChangeCount,
         MissingPrimaryKeys,
         NoPrimaryKeys,

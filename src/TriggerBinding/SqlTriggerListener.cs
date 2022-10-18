@@ -498,20 +498,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         private ScaleStatus GetScaleStatusWithTelemetry(int workerCount, SqlTriggerMetrics[] metrics)
         {
-            var measures = new Dictionary<TelemetryMeasureName, double>
+            var status = new ScaleStatus
             {
-                [TelemetryMeasureName.WorkerCount] = workerCount,
-                [TelemetryMeasureName.UnprocessedChangeCount] = (metrics is null || metrics.Length == 0) ? -1L : metrics[metrics.Length - 1].UnprocessedChangeCount,
+                Vote = ScaleVote.None,
             };
 
-            TelemetryInstance.TrackEvent(TelemetryEventName.GetScaleStatusStart, this._telemetryProps, measures);
+            var properties = new Dictionary<TelemetryPropertyName, string>(this._telemetryProps)
+            {
+                [TelemetryPropertyName.ScaleRecommendation] = $"{status.Vote}",
+                [TelemetryPropertyName.TriggerMetrics] = metrics is null ? "null" : $"[{string.Join(", ", metrics.Select(metric => metric.UnprocessedChangeCount))}]",
+                [TelemetryPropertyName.WorkerCount] = $"{workerCount}",
+            };
 
-            ScaleStatus scaleStatus = this.GetScaleStatusCore(workerCount, metrics);
+            try
+            {
+                status = this.GetScaleStatusCore(workerCount, metrics);
 
-            measures.Add(TelemetryMeasureName.ScaleRecommendation, (double)scaleStatus.Vote);
-            TelemetryInstance.TrackEvent(TelemetryEventName.GetScaleStatusEnd, this._telemetryProps, measures);
+                properties[TelemetryPropertyName.ScaleRecommendation] = $"{status.Vote}";
+                TelemetryInstance.TrackEvent(TelemetryEventName.GetScaleStatus, properties);
+            }
+            catch (Exception ex)
+            {
+                this._logger.LogError($"Failed to get scale status for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
+                TelemetryInstance.TrackException(TelemetryErrorName.GetScaleStatus, ex, properties);
+            }
 
-            return scaleStatus;
+            return status;
         }
 
         /// <summary>
@@ -528,11 +540,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // We require minimum 5 samples to estimate the trend of variation in count of unprocessed changes with
             // certain reliability. These samples roughly cover the timespan of past 40 seconds.
             const int minSamplesForScaling = 5;
+
+            // Please ensure the Readme file and other public documentation are also updated if this value ever needs to
+            // be changed.
             const int maxChangesPerWorker = 1000;
 
             var status = new ScaleStatus
             {
-                Vote = ScaleVote.None
+                Vote = ScaleVote.None,
             };
 
             // Do not make a scale decision unless we have enough samples.
