@@ -776,7 +776,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             var command = new SqlCommand(query, connection, transaction);
             SqlParameter par = command.Parameters.Add(rowDataParameter, SqlDbType.NVarChar, -1);
             string rowData = JsonConvert.SerializeObject(rows);
-            this._logger.LogInformation(rowData);
             par.Value = rowData;
             return command;
         }
