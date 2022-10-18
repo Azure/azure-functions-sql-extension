@@ -115,7 +115,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                     this._logger.LogInformation($"Starting SQL trigger listener for table: '{this._userTable.FullName}', function ID: '{this._userFunctionId}'.");
 
-                    // TODO: Check if passing the cancellation token would be beneficial.
                     this._changeMonitor = new SqlTableChangeMonitor<T>(
                         this._connectionString,
                         userTableId,
