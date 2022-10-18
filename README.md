@@ -55,9 +55,14 @@ Azure SQL bindings for Azure Functions are supported for:
       - [ICollector&lt;T&gt;/IAsyncCollector&lt;T&gt;](#icollectortiasynccollectort)
       - [Array](#array)
       - [Single Row](#single-row)
-      - [Primary Keys and Identity Columns](#primary-keys-and-identity-columns)
+      - [Primary Key Special Cases](#primary-key-special-cases)
+        - [Identity Columns](#identity-columns)
+        - [Columns with Default Values](#columns-with-default-values)
     - [Trigger Binding](#trigger-binding)
       - [Change Tracking](#change-tracking)
+      - [Internal State Tables](#internal-state-tables)
+        - [az_func.GlobalState](#az_funcglobalstate)
+        - [az_func.Leases_*](#az_funcleases_)
       - [Trigger Samples](#trigger-samples)
   - [Known Issues](#known-issues)
   - [Telemetry](#telemetry)
@@ -826,19 +831,25 @@ public static IActionResult Run(
 }
 ```
 
-#### Primary Keys and Identity Columns
+#### Primary Key Special Cases
 
 Normally Output Bindings require two things :
 
 1. The table being upserted to contains a Primary Key constraint (composed of one or more columns)
 2. Each of those columns must be present in the POCO object used in the attribute
 
-If either of these are false then an error will be thrown.
+Normally if either of these are false then an error will be thrown. Below are the situations in which this is not the case :
 
-This changes if one of the primary key columns is an identity column though. In that case there are two options based on how the function defines the output object:
+##### Identity Columns
+In the case where one of the primary key columns is an identity column, there are two options based on how the function defines the output object:
 
 1. If the identity column isn't included in the output object then a straight insert is always performed with the other column values. See [AddProductWithIdentityColumn](./samples/samples-csharp/OutputBindingSamples/AddProductWithIdentityColumn.cs) for an example.
 2. If the identity column is included (even if it's an optional nullable value) then a merge is performed similar to what happens when no identity column is present. This merge will either insert a new row or update an existing row based on the existence of a row that matches the primary keys (including the identity column). See [AddProductWithIdentityColumnIncluded](./samples/samples-csharp/OutputBindingSamples/AddProductWithIdentityColumnIncluded.cs) for an example.
+
+##### Columns with Default Values
+In the case where one of the primary key columns has a default value, there are also two options based on how the function defines the output object:
+1. If the column with a default value is not included in the output object, then a straight insert is always performed with the other values. See [AddProductWithDefaultPK](./samples/samples-csharp/OutputBindingSamples/AddProductWithDefaultPK.cs) for an example.
+2. If the column with a default value is included then a merge is performed similar to what happens when no default column is present. If there is a nullable column with a default value, then the provided column value in the output object will be upserted even if it is null.
 
 ### Trigger Binding
 
@@ -868,6 +879,34 @@ The trigger binding utilizes SQL [change tracking](https://docs.microsoft.com/sq
     For more information, please refer to the documentation [here](https://docs.microsoft.com/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server#enable-change-tracking-for-a-table). The trigger needs to have read access on the table being monitored for changes as well as to the change tracking system tables. It also needs write access to an `az_func` schema within the database, where it will create additional leases tables to store the trigger states and leases. Each function trigger will thus have an associated change tracking table and leases table.
 
     > **NOTE:** The leases table contains all columns corresponding to the primary key from the user table and three additional columns named `_az_func_ChangeVersion`, `_az_func_AttemptCount` and `_az_func_LeaseExpirationTime`. If any of the primary key columns happen to have the same name, that will result in an error message listing any conflicts. In this case, the listed primary key columns must be renamed for the trigger to work.
+
+#### Internal State Tables
+
+The trigger functionality creates several tables to use for tracking the current state of the trigger. This allows state to be persisted across sessions and for multiple instances of a trigger binding to execute in parallel (for scaling purposes).
+
+In addition, a schema named `az_func` will be created that the tables will belong to.
+
+The login the trigger is configured to use must be given permissions to create these tables and schema. If not, then an error will be thrown and the trigger will fail to run.
+
+If the tables are deleted or modified, then unexpected behavior may occur. To reset the state of the triggers, first stop all currently running functions with trigger bindings and then either truncate or delete the tables. The next time a function with a trigger binding is started, it will recreate the tables as necessary.
+
+##### az_func.GlobalState
+
+This table stores information about each function being executed, what table that function is watching and what the [last sync state](https://learn.microsoft.com/sql/relational-databases/track-changes/work-with-change-tracking-sql-server) that has been processed.
+
+##### az_func.Leases_*
+
+A `Leases_*` table is created for every unique instance of a function and table. The full name will be in the format `Leases_<FunctionId>_<TableId>` where `<FunctionId>` is generated from the function ID and `<TableId>` is the object ID of the table being tracked. Such as `Leases_7d12c06c6ddff24c_1845581613`.
+
+This table is used to ensure that all changes are processed and that no change is processed more than once. This table consists of two groups of columns:
+
+   * A column for each column in the primary key of the target table - used to identify the row that it maps to in the target table
+   * A couple columns for tracking the state of each row. These are:
+     * `_az_func_ChangeVersion` for the change version of the row currently being processed
+     * `_az_func_AttemptCount` for tracking the number of times that a change has attempted to be processed to avoid getting stuck trying to process a change it's unable to handle
+     * `_az_func_LeaseExpirationTime` for tracking when the lease on this row for a particular instance is set to expire. This ensures that if an instance exits unexpectedly another instance will be able to pick up and process any changes it had leases for after the expiration time has passed.
+
+A row is created for every row in the target table that is modified. These are then cleaned up after the changes are processed for a set of changes corresponding to a change tracking sync version.
 
 #### Trigger Samples
 The trigger binding takes two [arguments](https://github.com/Azure/azure-functions-sql-extension/blob/main/src/TriggerBinding/SqlTriggerAttribute.cs)

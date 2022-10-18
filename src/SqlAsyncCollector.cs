@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -30,10 +31,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public readonly bool IsIdentity;
 
-        public PrimaryKey(string name, bool isIdentity)
+        public readonly bool HasDefault;
+
+        public PrimaryKey(string name, bool isIdentity, bool hasDefault)
         {
             this.Name = name;
             this.IsIdentity = isIdentity;
+            this.HasDefault = hasDefault;
         }
 
         public override string ToString()
@@ -49,10 +53,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const string ColumnName = "COLUMN_NAME";
         private const string ColumnDefinition = "COLUMN_DEFINITION";
 
+        private const string HasDefault = "has_default";
         private const string IsIdentity = "is_identity";
         private const string CteName = "cte";
 
         private const string Collation = "Collation";
+
+        private const int AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES = 10;
 
         private readonly IConfiguration _configuration;
         private readonly SqlAttribute _attribute;
@@ -156,7 +163,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             var upsertRowsAsyncSw = Stopwatch.StartNew();
             using (SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
+                this._logger.LogDebugWithThreadId("BEGIN OpenUpsertRowsAsyncConnection");
                 await connection.OpenAsync();
+                this._logger.LogDebugWithThreadId("END OpenUpsertRowsAsyncConnection");
                 Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps();
 
                 string fullTableName = attribute.CommandText;
@@ -167,15 +176,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 ObjectCache cachedTables = MemoryCache.Default;
                 var tableInfo = cachedTables[cacheKey] as TableInformation;
 
+                int timeout = AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES;
+                string timeoutEnvVar = Environment.GetEnvironmentVariable("AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES");
+                if (!string.IsNullOrEmpty(timeoutEnvVar))
+                {
+                    if (int.TryParse(timeoutEnvVar, NumberStyles.Integer, CultureInfo.InvariantCulture, out timeout))
+                    {
+                        this._logger.LogDebugWithThreadId($"Overriding default table info cache timeout with new value {timeout}");
+                    }
+                    else
+                    {
+                        timeout = AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES;
+                    }
+                }
+
                 if (tableInfo == null)
                 {
                     TelemetryInstance.TrackEvent(TelemetryEventName.TableInfoCacheMiss, props);
-                    // set the columnNames for supporting T as JObject since it doesn't have columns in the memeber info.
+                    // set the columnNames for supporting T as JObject since it doesn't have columns in the member info.
                     tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullTableName, this._logger, GetColumnNamesFromItem(rows.First()));
                     var policy = new CacheItemPolicy
                     {
-                        // Re-look up the primary key(s) after 10 minutes (they should not change very often!)
-                        AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(10)
+                        // Re-look up the primary key(s) after timeout (default timeout is 10 minutes)
+                        AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(timeout)
                     };
 
                     cachedTables.Set(cacheKey, tableInfo, policy);
@@ -426,13 +449,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 return $@"
                     SELECT
-                        {ColumnName}, c.is_identity
+                        ccu.{ColumnName},
+                        c.is_identity,
+                        case
+                            when isc.COLUMN_DEFAULT = NULL then 'false'
+                            else 'true'
+                        end as {HasDefault}
                     FROM
                         INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
                     INNER JOIN
                         INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE ccu ON ccu.CONSTRAINT_NAME = tc.CONSTRAINT_NAME AND ccu.TABLE_NAME = tc.TABLE_NAME
                     INNER JOIN
                         sys.columns c ON c.object_id = OBJECT_ID({table.QuotedFullName}) AND c.name = ccu.COLUMN_NAME
+                    INNER JOIN
+                        INFORMATION_SCHEMA.COLUMNS isc ON isc.TABLE_NAME = {table.QuotedName} AND isc.COLUMN_NAME = ccu.COLUMN_NAME
                     WHERE
                         tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
                     and
@@ -464,15 +494,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         c.TABLE_SCHEMA = {table.QuotedSchema}";
             }
 
-            public static string GetInsertQuery(SqlObject table)
+            public static string GetInsertQuery(SqlObject table, IEnumerable<string> bracketedColumnNamesFromItem)
             {
-                return $"INSERT INTO {table.BracketQuotedFullName} SELECT * FROM {CteName}";
+                return $"INSERT INTO {table.BracketQuotedFullName} ({string.Join(",", bracketedColumnNamesFromItem)}) SELECT * FROM {CteName}";
             }
 
             /// <summary>
             /// Generates reusable SQL query that will be part of every upsert command.
             /// </summary>
-            public static string GetMergeQuery(IList<PrimaryKey> primaryKeys, SqlObject table, StringComparison comparison, IEnumerable<string> columnNames)
+            public static string GetMergeQuery(IList<PrimaryKey> primaryKeys, SqlObject table, IEnumerable<string> bracketedColumnNamesFromItem)
             {
                 IList<string> bracketedPrimaryKeys = primaryKeys.Select(p => p.Name.AsBracketQuotedString()).ToList();
                 // Generate the ON part of the merge query (compares new data against existing data)
@@ -483,9 +513,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
 
                 // Generate the UPDATE part of the merge query (all columns that should be updated)
-                IEnumerable<string> bracketedColumnNamesFromItem = columnNames
-                    .Where(prop => !primaryKeys.Any(k => k.IsIdentity && string.Equals(k.Name, prop, comparison))) // Skip any identity columns, those should never be updated
-                    .Select(prop => prop.AsBracketQuotedString());
                 var columnMatchingQueryBuilder = new StringBuilder();
                 foreach (string column in bracketedColumnNamesFromItem)
                 {
@@ -604,7 +631,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         while (await rdr.ReadAsync())
                         {
                             string columnName = caseSensitive ? rdr[ColumnName].ToString() : rdr[ColumnName].ToString().ToLowerInvariant();
-                            primaryKeys.Add(new PrimaryKey(columnName, bool.Parse(rdr[IsIdentity].ToString())));
+                            primaryKeys.Add(new PrimaryKey(columnName, bool.Parse(rdr[IsIdentity].ToString()), bool.Parse(rdr[HasDefault].ToString())));
                         }
                         primaryKeysSw.Stop();
                         TelemetryInstance.TrackDuration(TelemetryEventName.GetPrimaryKeys, primaryKeysSw.ElapsedMilliseconds, sqlConnProps);
@@ -634,9 +661,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 IEnumerable<PrimaryKey> missingPrimaryKeysFromItem = primaryKeys
                     .Where(k => !primaryKeysFromObject.Contains(k.Name, comparer));
                 bool hasIdentityColumnPrimaryKeys = primaryKeys.Any(k => k.IsIdentity);
-                // If none of the primary keys are an identity column then we require that all primary keys be present in the POCO so we can
+                bool hasDefaultColumnPrimaryKeys = primaryKeys.Any(k => k.HasDefault);
+                // If none of the primary keys are an identity column or have a default value then we require that all primary keys be present in the POCO so we can
                 // generate the MERGE statement correctly
-                if (!hasIdentityColumnPrimaryKeys && missingPrimaryKeysFromItem.Any())
+                if (!hasIdentityColumnPrimaryKeys && !hasDefaultColumnPrimaryKeys && missingPrimaryKeysFromItem.Any())
                 {
                     string message = $"All primary keys for SQL table {table} need to be found in '{typeof(T)}.' Missing primary keys: [{string.Join(",", missingPrimaryKeysFromItem)}]";
                     var ex = new InvalidOperationException(message);
@@ -644,10 +672,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw ex;
                 }
 
-                // If any identity columns aren't included in the object then we have to generate a basic insert since the merge statement expects all primary key
+                // If any identity columns or columns with default values aren't included in the object then we have to generate a basic insert since the merge statement expects all primary key
                 // columns to exist. (the merge statement can handle nullable columns though if those exist)
-                bool usingInsertQuery = hasIdentityColumnPrimaryKeys && missingPrimaryKeysFromItem.Any();
-                string query = usingInsertQuery ? GetInsertQuery(table) : GetMergeQuery(primaryKeys, table, comparison, columnNames);
+                bool usingInsertQuery = (hasIdentityColumnPrimaryKeys || hasDefaultColumnPrimaryKeys) && missingPrimaryKeysFromItem.Any();
+                IEnumerable<string> bracketedColumnNamesFromItem = columnNames
+                    .Where(prop => !primaryKeys.Any(k => k.IsIdentity && string.Equals(k.Name, prop, comparison))) // Skip any identity columns, those should never be updated
+                    .Select(prop => prop.AsBracketQuotedString());
+                string query = usingInsertQuery ? GetInsertQuery(table, bracketedColumnNamesFromItem) : GetMergeQuery(primaryKeys, table, bracketedColumnNamesFromItem);
 
                 tableInfoSw.Stop();
                 var durations = new Dictionary<TelemetryMeasureName, double>()
@@ -659,7 +690,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 sqlConnProps.Add(TelemetryPropertyName.QueryType, usingInsertQuery ? "insert" : "merge");
                 sqlConnProps.Add(TelemetryPropertyName.HasIdentityColumn, hasIdentityColumnPrimaryKeys.ToString());
                 TelemetryInstance.TrackDuration(TelemetryEventName.GetTableInfoEnd, tableInfoSw.ElapsedMilliseconds, sqlConnProps, durations);
-                logger.LogDebugWithThreadId($"END RetrieveTableInformationAsync Duration={tableInfoSw.ElapsedMilliseconds}ms DB and Table: {sqlConnection.Database}.{fullName}. Primary keys: [{string.Join(",", primaryKeyProperties.Select(pk => pk.Name))}]. SQL Column and Definitions:  [{string.Join(",", columnDefinitionsFromSQL)}]");
+                logger.LogDebugWithThreadId($"END RetrieveTableInformationAsync Duration={tableInfoSw.ElapsedMilliseconds}ms DB and Table: {sqlConnection.Database}.{fullName}. Primary keys: [{string.Join(",", primaryKeys.Select(pk => pk.Name))}]. SQL Column and Definitions:  [{string.Join(",", columnDefinitionsFromSQL)}]");
                 return new TableInformation(primaryKeyProperties, columnDefinitionsFromSQL, comparer, query, hasIdentityColumnPrimaryKeys);
             }
         }
