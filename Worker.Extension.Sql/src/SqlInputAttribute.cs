@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Functions.Worker.Extension.Sql
         /// <summary>
         /// Either a SQL query or stored procedure that will be run in the database referred to in the ConnectionString.
         /// </summary>
-        public string CommandText { get; set;}
+        public string CommandText { get; set; }
 
         /// <summary>
         /// Specifies whether <see cref="CommandText"/> refers to a stored procedure or SQL query string.
