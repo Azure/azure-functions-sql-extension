@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Functions.Worker.Extension.Sql
         public string ConnectionStringSetting { get; set; }
 
         /// <summary>
-        /// The table name.
+        /// The table name to upsert the values to.
         /// </summary>
         public string CommandText { get; }
 
