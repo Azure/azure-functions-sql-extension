@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Functions.Worker.Extension.Sql
         /// <summary>
         /// The table name to upsert the values to.
         /// </summary>
-        public string CommandText { get; }
+        public string CommandText { get; set; }
 
         /// <summary>
         /// Specifies <see cref="CommandText"/> as Text.
