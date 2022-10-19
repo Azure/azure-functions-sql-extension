@@ -12,13 +12,9 @@ namespace Microsoft.Azure.Functions.Worker.Extension.Sql
         /// the function supports.
         /// </summary>
         /// <param name="commandText">The text of the command.</param>
-        /// <param name="commandType">Specifies whether commandText refers to a stored procedure or SQL query string.</param>
-        /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored.</param>
-        public SqlInputAttribute(string commandText, System.Data.CommandType commandType, string connectionStringSetting)
+        public SqlInputAttribute(string commandText)
         {
             this.CommandText = commandText;
-            this.CommandType = commandType;
-            this.ConnectionStringSetting = connectionStringSetting;
         }
 
         /// <summary>
@@ -35,7 +31,7 @@ namespace Microsoft.Azure.Functions.Worker.Extension.Sql
         /// <summary>
         /// Either a SQL query or stored procedure that will be run in the database referred to in the ConnectionString.
         /// </summary>
-        public string CommandText { get; }
+        public string CommandText { get; set; }
 
         /// <summary>
         /// Specifies whether <see cref="CommandText"/> refers to a stored procedure or SQL query string.
