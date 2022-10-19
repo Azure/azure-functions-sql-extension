@@ -13,10 +13,9 @@ namespace Microsoft.Azure.Functions.Worker.Extension.Sql
         /// </summary>
         /// <param name="commandText">The text of the command.</param>
         /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored.</param>
-        public SqlOutputAttribute(string commandText, string connectionStringSetting)
+        public SqlOutputAttribute(string commandText)
         {
             this.CommandText = commandText;
-            this.ConnectionStringSetting = connectionStringSetting;
         }
 
         /// <summary>
@@ -36,8 +35,8 @@ namespace Microsoft.Azure.Functions.Worker.Extension.Sql
         public string CommandText { get; }
 
         /// <summary>
-        /// Specifies <see cref="CommandText"/> which refers to the table name.
+        /// Specifies <see cref="CommandText"/> as Text.
         /// </summary>
-        public System.Data.CommandType CommandType { get; set; } = System.Data.CommandType.Text;
+        public System.Data.CommandType CommandType { get; } = System.Data.CommandType.Text;
     }
 }
