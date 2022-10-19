@@ -3,4 +3,4 @@
 
 using Microsoft.Azure.Functions.Worker.Extensions.Abstractions;
 
-[assembly: ExtensionInformation("Microsoft.Azure.WebJobs.Extensions.Sql", "0.1.*-preview")]
+[assembly: ExtensionInformation("Microsoft.Azure.WebJobs.Extensions.Sql", "0.*-preview")]
