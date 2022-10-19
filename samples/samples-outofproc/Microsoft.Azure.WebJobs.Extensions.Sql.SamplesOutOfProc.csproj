@@ -1,12 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <IsPackable>false</IsPackable>
-    <TargetFramework>net48</TargetFramework>
-    <AzureFunctionsVersion>v4</AzureFunctionsVersion>
-    <OutputType>Exe</OutputType>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>..\..\key.snk</AssemblyOriginatorKeyFile>
+    <AzureFunctionsVersion>v3</AzureFunctionsVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,12 +9,12 @@
     <PackageReference Include="Microsoft.NET.Sdk.Functions"/>
     <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="Microsoft.AspNetCore.Http" />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Sql" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Microsoft.Azure.WebJobs.Extensions.Sql.csproj" />
+    <ProjectReference Include="../../Worker.Extension.Sql/src/Microsoft.Azure.Functions.Worker.Extension.Sql.csproj" />
   </ItemGroup>
+
 
   <ItemGroup>
     <None Update="host.json">

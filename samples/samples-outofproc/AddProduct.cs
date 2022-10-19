@@ -4,6 +4,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.Common;
+using Microsoft.Azure.Functions.Worker.Extension.Sql;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc
 {
     public static class AddProduct
@@ -12,7 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "addproduct")]
             [FromBody] Product prod,
-            [Sql("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] out Product product)
+            [SqlOutput("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] out Product product)
         {
             product = prod;
             return new CreatedResult($"/api/addproduct", product);
