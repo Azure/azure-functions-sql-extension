@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Functions.Worker.Extension.Sql
         /// the function supports.
         /// </summary>
         /// <param name="commandText">The text of the command.</param>
-        /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored.</param>
         public SqlOutputAttribute(string commandText)
         {
             this.CommandText = commandText;
