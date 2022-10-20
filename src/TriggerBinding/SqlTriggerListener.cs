@@ -129,7 +129,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         this._userFunctionId,
                         leasesTableName,
                         userTableColumns,
-                        primaryKeyColumns.Select(col => col.name).ToList(),
+                        primaryKeyColumns,
                         this._executor,
                         this._logger,
                         this._configuration,
