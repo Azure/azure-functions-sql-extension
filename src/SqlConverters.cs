@@ -186,7 +186,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     var dataTable = new DataTable();
                     adapter.Fill(dataTable);
                     this._logger.LogInformation($"{dataTable.Rows.Count} row(s) queried from database: {connection.Database} using Command: {command.CommandText}");
-                    return JsonConvert.SerializeObject(dataTable);
+                    // Serialize any DateTime objects in UTC format
+                    var jsonSerializerSettings = new JsonSerializerSettings()
+                    {
+                        DateFormatString = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fffZ"
+                    };
+                    return JsonConvert.SerializeObject(dataTable, jsonSerializerSettings);
                 }
 
             }
