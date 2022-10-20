@@ -2,7 +2,7 @@ package com.function;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.function.Common.ProductColumnTypes;
+import com.function.Common.AllDataTypes;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpMethod;
 import com.microsoft.azure.functions.HttpRequestMessage;
@@ -16,28 +16,26 @@ import com.microsoft.azure.functions.sql.annotation.SQLInput;
 import java.util.Optional;
 import java.util.logging.Level;
 
-public class GetProductsColumnTypesSerialization {
-    @FunctionName("GetProductColumnTypesSerialization")
+public class GetAllDataTypes {
+    @FunctionName("GetAllDataTypes")
     public HttpResponseMessage run(
             @HttpTrigger(
                 name = "req",
                 methods = {HttpMethod.GET},
                 authLevel = AuthorizationLevel.ANONYMOUS,
-                route = "getproducts-columntypesserialization")
+                route = "getalldatatypes")
                 HttpRequestMessage<Optional<String>> request,
             @SQLInput(
-                commandText = "SELECT * FROM [dbo].[ProductsColumnTypes]",
+                commandText = "SELECT * FROM [dbo].[AllDataTypes]",
                 commandType = "Text",
                 connectionStringSetting = "SqlConnectionString")
-                ProductColumnTypes[] products,
+                AllDataTypes[] rows,
             ExecutionContext context) throws JsonProcessingException {
 
         ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(com.fasterxml.jackson.databind.SerializationFeature.
-            WRITE_DATES_AS_TIMESTAMPS , false);
-        for (ProductColumnTypes product : products) {
-            context.getLogger().log(Level.INFO, mapper.writeValueAsString(product));
+        for (AllDataTypes row : rows) {
+            context.getLogger().log(Level.INFO, mapper.writeValueAsString(row));
         }
-        return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(products).build();
+        return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(rows).build();
     }
 }

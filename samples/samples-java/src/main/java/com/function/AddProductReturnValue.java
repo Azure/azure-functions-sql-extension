@@ -32,7 +32,7 @@ public class AddProductReturnValue {
 
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
-        
+
         Product product = mapper.readValue(json, Product.class);
         return product;
     }
