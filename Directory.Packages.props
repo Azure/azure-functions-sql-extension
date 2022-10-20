@@ -19,5 +19,6 @@
     <PackageVersion Include="BenchmarkDotNet" Version="0.13.1" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.7.0" />
     <PackageVersion Include="System.Net.NameResolution" Version="4.3.0" />
+    <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.Http" Version="3.0.13" />
   </ItemGroup>
 </Project>

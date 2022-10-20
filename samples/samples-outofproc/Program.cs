@@ -1,8 +1,9 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using Microsoft.Extensions.Hosting;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc
 {
@@ -10,13 +11,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc
     {
         static void Main(string[] args)
         {
-            FunctionsDebugger.Enable();
-
+            // #if DEBUG
+            //     Debugger.Launch();
+            // #endif
+            //<docsnippet_startup>
             var host = new HostBuilder()
-                .ConfigureFunctionsWorkerDefaults()
+                //<docsnippet_configure_defaults>
+                .ConfigureFunctionsWorkerDefaults(builder =>
+                {
+                    builder
+                        .AddApplicationInsights()
+                        .AddApplicationInsightsLogger();
+                })
+                //</docsnippet_configure_defaults>
+                //<docsnippet_dependency_injection>
+                .ConfigureServices(s =>
+                {
+                    s.AddSingleton<IHttpResponderService, DefaultHttpResponderService>();
+                })
+                //</docsnippet_dependency_injection>
                 .Build();
+            //</docsnippet_startup>
 
-            host.Run();
+            //<docsnippet_host_run>
+            await host.RunAsync();
+            //</docsnippet_host_run>
         }
     }
 }

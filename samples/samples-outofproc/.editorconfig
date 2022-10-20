@@ -4,3 +4,6 @@
 # Disable these until they can be fixed
 dotnet_diagnostic.CA1305.severity = silent
 dotnet_diagnostic.CA1805.severity = silent
+dotnet_diagnostic.IDE0040.severity = none
+dotnet_diagnostic.IDE0005.severity = none
+

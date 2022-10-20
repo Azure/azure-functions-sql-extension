@@ -328,19 +328,6 @@
           "ncrontab.signed": "3.3.0"
         }
       },
-      "Microsoft.Azure.WebJobs.Extensions.Http": {
-        "type": "Transitive",
-        "resolved": "3.0.2",
-        "contentHash": "JvC3fESMMbNkYbpaJ4vkK4Xaw1yZy4HSxxqwoaI3Ls2Y5/qBrHftPy0WJQgmXcGjgE/o/aAmuixdTfrj5OQDJQ==",
-        "dependencies": {
-          "Microsoft.AspNet.WebApi.Client": "5.2.4",
-          "Microsoft.AspNetCore.Http": "2.1.0",
-          "Microsoft.AspNetCore.Mvc.Formatters.Json": "2.1.0",
-          "Microsoft.AspNetCore.Mvc.WebApiCompatShim": "2.1.0",
-          "Microsoft.AspNetCore.Routing": "2.1.0",
-          "Microsoft.Azure.WebJobs": "3.0.2"
-        }
-      },
       "Microsoft.Azure.WebJobs.Extensions.Storage.Blobs": {
         "type": "Transitive",
         "resolved": "5.0.0",
@@ -2088,37 +2075,37 @@
       "microsoft.azure.webjobs.extensions.sql": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.ApplicationInsights": "2.17.0",
-          "Microsoft.AspNetCore.Http": "2.1.22",
-          "Microsoft.Azure.WebJobs": "3.0.31",
-          "Microsoft.Data.SqlClient": "3.0.1",
-          "Newtonsoft.Json": "13.0.1",
-          "System.Runtime.Caching": "4.7.0",
-          "morelinq": "3.3.2"
+          "Microsoft.ApplicationInsights": "[2.17.0, )",
+          "Microsoft.AspNetCore.Http": "[2.1.22, )",
+          "Microsoft.Azure.WebJobs": "[3.0.31, )",
+          "Microsoft.Data.SqlClient": "[3.0.1, )",
+          "Newtonsoft.Json": "[13.0.1, )",
+          "System.Runtime.Caching": "[4.7.0, )",
+          "morelinq": "[3.3.2, )"
         }
       },
       "microsoft.azure.webjobs.extensions.sql.samples": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.AspNetCore.Http": "2.1.22",
-          "Microsoft.Azure.WebJobs.Extensions.Sql": "99.99.99",
-          "Microsoft.Azure.WebJobs.Extensions.Storage": "5.0.0",
-          "Microsoft.NET.Sdk.Functions": "3.1.1",
-          "Newtonsoft.Json": "13.0.1"
+          "Microsoft.AspNetCore.Http": "[2.1.22, )",
+          "Microsoft.Azure.WebJobs.Extensions.Sql": "[99.99.99, )",
+          "Microsoft.Azure.WebJobs.Extensions.Storage": "[5.0.0, )",
+          "Microsoft.NET.Sdk.Functions": "[3.1.1, )",
+          "Newtonsoft.Json": "[13.0.1, )"
         }
       },
       "microsoft.azure.webjobs.extensions.sql.tests": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.AspNetCore.Http": "2.1.22",
-          "Microsoft.Azure.WebJobs.Extensions.Sql": "99.99.99",
-          "Microsoft.Azure.WebJobs.Extensions.Sql.Samples": "1.0.0",
-          "Microsoft.NET.Sdk.Functions": "3.1.1",
-          "Microsoft.NET.Test.Sdk": "17.0.0",
-          "Moq": "4.14.3",
-          "Newtonsoft.Json": "13.0.1",
-          "xunit": "2.4.0",
-          "xunit.runner.visualstudio": "2.4.0"
+          "Microsoft.AspNetCore.Http": "[2.1.22, )",
+          "Microsoft.Azure.WebJobs.Extensions.Sql": "[99.99.99, )",
+          "Microsoft.Azure.WebJobs.Extensions.Sql.Samples": "[1.0.0, )",
+          "Microsoft.NET.Sdk.Functions": "[3.1.1, )",
+          "Microsoft.NET.Test.Sdk": "[17.0.0, )",
+          "Moq": "[4.14.3, )",
+          "Newtonsoft.Json": "[13.0.1, )",
+          "xunit": "[2.4.0, )",
+          "xunit.runner.visualstudio": "[2.4.0, )"
         }
       },
       "Microsoft.ApplicationInsights": {
@@ -2161,6 +2148,20 @@
           "Newtonsoft.Json": "11.0.2",
           "System.Memory.Data": "1.0.1",
           "System.Threading.Tasks.Dataflow": "4.8.0"
+        }
+      },
+      "Microsoft.Azure.WebJobs.Extensions.Http": {
+        "type": "CentralTransitive",
+        "requested": "[3.0.13, )",
+        "resolved": "3.0.2",
+        "contentHash": "JvC3fESMMbNkYbpaJ4vkK4Xaw1yZy4HSxxqwoaI3Ls2Y5/qBrHftPy0WJQgmXcGjgE/o/aAmuixdTfrj5OQDJQ==",
+        "dependencies": {
+          "Microsoft.AspNet.WebApi.Client": "5.2.4",
+          "Microsoft.AspNetCore.Http": "2.1.0",
+          "Microsoft.AspNetCore.Mvc.Formatters.Json": "2.1.0",
+          "Microsoft.AspNetCore.Mvc.WebApiCompatShim": "2.1.0",
+          "Microsoft.AspNetCore.Routing": "2.1.0",
+          "Microsoft.Azure.WebJobs": "3.0.2"
         }
       },
       "Microsoft.Azure.WebJobs.Extensions.Storage": {
