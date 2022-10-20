@@ -1,0 +1,28 @@
+{
+  "bindings": [
+    {
+      "authLevel": "function",
+      "name": "req",
+      "direction": "in",
+      "type": "httpTrigger",
+      "methods": [
+        "get"
+      ],
+      "route": "addproduct-columntypes"
+    },
+    {
+      "name": "response",
+      "type": "http",
+      "direction": "out"
+    },
+    {
+      "name": "product",
+      "type": "sql",
+      "direction": "out",
+      "commandText": "[dbo].[ProductsColumnTypes]",
+      "commandType": "Text",
+      "connectionStringSetting": "SqlConnectionString"
+    }
+  ],
+  "disabled": false
+}
