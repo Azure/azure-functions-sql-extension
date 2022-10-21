@@ -29,8 +29,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples
             IAsyncEnumerable<ProductColumnTypes> products,
             ILogger log)
         {
+            // Test different cultures to ensure that serialization/deserialization works correctly for all types.
+            // We expect the datetime types to be serialized in UTC format.
             string language = req.Query["culture"];
-            if (string.IsNullOrEmpty(language))
+            if (!string.IsNullOrEmpty(language))
             {
                 CultureInfo.CurrentCulture = new CultureInfo(language);
             }
