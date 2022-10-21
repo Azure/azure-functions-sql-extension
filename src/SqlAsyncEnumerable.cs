@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlBindingConstants;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
@@ -126,7 +127,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns>JSON string version of the SQL row</returns>
             private string SerializeRow()
             {
-                return JsonConvert.SerializeObject(SqlBindingUtilities.BuildDictionaryFromSqlRow(this._reader));
+                var jsonSerializerSettings = new JsonSerializerSettings()
+                {
+                    DateFormatString = ISO_8061_DATETIME_FORMAT
+                };
+                return JsonConvert.SerializeObject(SqlBindingUtilities.BuildDictionaryFromSqlRow(this._reader), jsonSerializerSettings);
             }
         }
     }
