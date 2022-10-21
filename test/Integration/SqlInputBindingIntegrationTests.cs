@@ -132,24 +132,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
-        /// Verifies that serializing an item with various data types works when the language is
-        /// set to a non-enUS language.
+        /// Verifies that serializing an item with various data types works when using IAsyncEnumerable
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.JavaScript)] // Javascript doesn't have the concept of a runtime language used during serialization
-        public async void GetProductsColumnTypesSerializationDifferentCultureTest(SupportedLanguages lang)
+        [UnsupportedLanguages(SupportedLanguages.JavaScript)] // IAsyncEnumerable is only available in C#
+        public async void GetProductsColumnTypesSerializationAsyncEnumerableTest(SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(GetProductsColumnTypesSerializationDifferentCulture), lang, true);
+            this.StartFunctionHost(nameof(GetProductsColumnTypesSerializationAsyncEnumerable), lang, true);
 
+            string datetime = "2022-10-20 12:39:13.123";
             this.ExecuteNonQuery("INSERT INTO [dbo].[ProductsColumnTypes] VALUES (" +
                 "999, " + // ProductId
-                "GETDATE(), " + // Datetime field
-                "GETDATE())"); // Datetime2 field
+                $"CONVERT(DATETIME, '{datetime}'), " + // Datetime field
+                $"CONVERT(DATETIME2, '{datetime}'))"); // Datetime2 field
 
-            await this.SendInputRequest("getproducts-columntypesserializationdifferentculture");
+            HttpResponseMessage response = await this.SendInputRequest("getproducts-columntypesserializationasyncenumerable");
+            string expectedResponse = "[{\"productId\":999,\"datetime\":\"2022-10-20T12:39:13.123Z\",\"datetime2\":\"2022-10-20T12:39:13.123Z\"}]";
+            string actualResponse = await response.Content.ReadAsStringAsync();
 
-            // If we get here the test has succeeded - it'll throw an exception if serialization fails
+            Assert.Equal(expectedResponse, TestUtils.CleanJsonString(actualResponse), StringComparer.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -161,14 +163,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             this.StartFunctionHost(nameof(GetProductsColumnTypesSerialization), lang, true);
 
+            string datetime = "2022-10-20 12:39:13.123";
             this.ExecuteNonQuery("INSERT INTO [dbo].[ProductsColumnTypes] VALUES (" +
                 "999, " + // ProductId
-                "GETDATE(), " + // Datetime field
-                "GETDATE())"); // Datetime2 field
+                $"CONVERT(DATETIME, '{datetime}'), " + // Datetime field
+                $"CONVERT(DATETIME2, '{datetime}'))"); // Datetime2 field
 
-            await this.SendInputRequest("getproducts-columntypesserialization");
+            HttpResponseMessage response = await this.SendInputRequest("getproducts-columntypesserialization");
+            string expectedResponse = "[{\"ProductId\":999,\"Datetime\":\"2022-10-20T12:39:13.123Z\",\"Datetime2\":\"2022-10-20T12:39:13.123Z\"}]";
+            string actualResponse = await response.Content.ReadAsStringAsync();
 
-            // If we get here the test has succeeded - it'll throw an exception if serialization fails
+            Assert.Equal(expectedResponse, TestUtils.CleanJsonString(actualResponse), StringComparer.OrdinalIgnoreCase);
         }
     }
 }

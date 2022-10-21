@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Collections.Generic;
-using System.Globalization;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -13,17 +12,15 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples
 {
-    public static class GetProductsColumnTypesSerializationDifferentCulture
+    public static class GetProductsColumnTypesSerializationAsyncEnumerable
     {
         /// <summary>
         /// This function verifies that serializing an item with various data types
-        /// works when the language is set to a non-enUS language.
-        /// Note this uses IAsyncEnumerable because IEnumerable serializes the entire table directly,
-        /// instead of each item one by one (which is where issues can occur)
+        /// works when using IAsyncEnumerable.
         /// </summary>
-        [FunctionName(nameof(GetProductsColumnTypesSerializationDifferentCulture))]
+        [FunctionName(nameof(GetProductsColumnTypesSerializationAsyncEnumerable))]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-columntypesserializationdifferentculture")]
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-columntypesserializationasyncenumerable")]
             HttpRequest req,
             [Sql("SELECT * FROM [dbo].[ProductsColumnTypes]",
                 CommandType = System.Data.CommandType.Text,
@@ -31,12 +28,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples
             IAsyncEnumerable<ProductColumnTypes> products,
             ILogger log)
         {
-            CultureInfo.CurrentCulture = new CultureInfo("it-IT", false);
+            var productsList = new List<ProductColumnTypes>();
             await foreach (ProductColumnTypes item in products)
             {
                 log.LogInformation(JsonSerializer.Serialize(item));
+                productsList.Add(item);
             }
-            return new OkObjectResult(products);
+            return new OkObjectResult(productsList);
         }
     }
 }

@@ -14,6 +14,7 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Microsoft.Extensions.Logging;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlBindingConstants;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -189,7 +190,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     // Serialize any DateTime objects in UTC format
                     var jsonSerializerSettings = new JsonSerializerSettings()
                     {
-                        DateFormatString = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fffZ"
+                        DateFormatString = ISO_8061_DATETIME_FORMAT
                     };
                     return JsonConvert.SerializeObject(dataTable, jsonSerializerSettings);
                 }
