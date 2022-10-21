@@ -21,6 +21,7 @@ using Newtonsoft.Json.Serialization;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
 using System.Diagnostics;
 using Newtonsoft.Json.Linq;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlBindingConstants;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -377,8 +378,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public class TableInformation
         {
-            private const string ISO_8061_DATETIME_FORMAT = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff";
-
             public IEnumerable<PropertyInfo> PrimaryKeys { get; }
 
             /// <summary>
