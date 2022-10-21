@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -16,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples
     {
         /// <summary>
         /// This function verifies that serializing an item with various data types
-        /// works when using IAsyncEnumerable.
+        /// and different languages works when using IAsyncEnumerable.
         /// </summary>
         [FunctionName(nameof(GetProductsColumnTypesSerializationAsyncEnumerable))]
         public static async Task<IActionResult> Run(
@@ -28,6 +29,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples
             IAsyncEnumerable<ProductColumnTypes> products,
             ILogger log)
         {
+            string language = req.Query["culture"];
+            if (string.IsNullOrEmpty(language))
+            {
+                CultureInfo.CurrentCulture = new CultureInfo(language);
+            }
+
             var productsList = new List<ProductColumnTypes>();
             await foreach (ProductColumnTypes item in products)
             {

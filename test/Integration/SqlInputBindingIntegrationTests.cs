@@ -132,12 +132,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
-        /// Verifies that serializing an item with various data types works when using IAsyncEnumerable
+        /// Verifies that serializing an item with various data types and different cultures works when using IAsyncEnumerable
         /// </summary>
         [Theory]
-        [SqlInlineData()]
+        [SqlInlineData("en-US")]
+        [SqlInlineData("it-IT")]
         [UnsupportedLanguages(SupportedLanguages.JavaScript)] // IAsyncEnumerable is only available in C#
-        public async void GetProductsColumnTypesSerializationAsyncEnumerableTest(SupportedLanguages lang)
+        public async void GetProductsColumnTypesSerializationAsyncEnumerableTest(string culture, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsColumnTypesSerializationAsyncEnumerable), lang, true);
 
@@ -147,7 +148,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 $"CONVERT(DATETIME, '{datetime}'), " + // Datetime field
                 $"CONVERT(DATETIME2, '{datetime}'))"); // Datetime2 field
 
-            HttpResponseMessage response = await this.SendInputRequest("getproducts-columntypesserializationasyncenumerable");
+            HttpResponseMessage response = await this.SendInputRequest("getproducts-columntypesserializationasyncenumerable", $"?culture={culture}");
+            // We expect the datetime and datetime2 fields to be returned in UTC format
             string expectedResponse = "[{\"productId\":999,\"datetime\":\"2022-10-20T12:39:13.123Z\",\"datetime2\":\"2022-10-20T12:39:13.123Z\"}]";
             string actualResponse = await response.Content.ReadAsStringAsync();
 
@@ -170,6 +172,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 $"CONVERT(DATETIME2, '{datetime}'))"); // Datetime2 field
 
             HttpResponseMessage response = await this.SendInputRequest("getproducts-columntypesserialization");
+            // We expect the datetime and datetime2 fields to be returned in UTC format
             string expectedResponse = "[{\"ProductId\":999,\"Datetime\":\"2022-10-20T12:39:13.123Z\",\"Datetime2\":\"2022-10-20T12:39:13.123Z\"}]";
             string actualResponse = await response.Content.ReadAsStringAsync();
 
