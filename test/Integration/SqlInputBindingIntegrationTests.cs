@@ -22,7 +22,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(0, 100)]
         [SqlInlineData(1, -500)]
         [SqlInlineData(100, 500)]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
         public async void GetProductsTest(int n, int cost, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProducts), lang);
@@ -45,8 +44,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(0, 99)]
         [SqlInlineData(1, -999)]
         [SqlInlineData(100, 999)]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
-
         public async void GetProductsStoredProcedureTest(int n, int cost, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsStoredProcedure), lang);
@@ -69,8 +66,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(0, 0)]
         [SqlInlineData(1, 20)]
         [SqlInlineData(100, 1000)]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
-
         public async void GetProductsNameEmptyTest(int n, int cost, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsNameEmpty), lang);
@@ -96,7 +91,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
         public async void GetProductsByCostTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsStoredProcedureFromAppSetting), lang);
@@ -117,7 +111,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         [Theory]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
         [SqlInlineData()]
         public async void GetProductNamesViewTest(SupportedLanguages lang)
         {
@@ -143,7 +136,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
+        [UnsupportedLanguages(SupportedLanguages.JavaScript)] // Javascript doesn't have the concept of a runtime language used during serialization
         public async void GetProductsColumnTypesSerializationDifferentCultureTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsColumnTypesSerializationDifferentCulture), lang, true);
@@ -163,8 +156,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
-
         public async void GetProductsColumnTypesSerializationTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsColumnTypesSerialization), lang, true);

@@ -1,5 +1,5 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
+﻿// Copyright(c) Microsoft Corporation.All rights reserved.
+// Licensed under the MIT License.See License.txt in the project root for license information.
 
 using System;
 using System.Collections.Generic;
@@ -23,8 +23,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(1, "Test", 5)]
         [SqlInlineData(0, "", 0)]
         [SqlInlineData(-500, "ABCD", 580)]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
-
         public void AddProductTest(int id, string name, int cost, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProduct), lang);
@@ -47,8 +45,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(1, "Test", 5)]
         [SqlInlineData(0, "", 0)]
         [SqlInlineData(-500, "ABCD", 580)]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
-
         public void AddProductParamsTest(int id, string name, int cost, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductParams), lang);
@@ -69,8 +65,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
-
         public void AddProductArrayTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsArray), lang);
@@ -111,8 +105,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <param name="lang">The language to run the test against</param>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
-
         public void AddProductColumnTypesTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductColumnTypes), lang, true);
@@ -129,8 +121,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
-
+        [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.PowerShell)] // Collectors are only available in C#
         public void AddProductsCollectorTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsCollector), lang);
@@ -143,8 +134,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
-
         public void QueueTriggerProductsTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(QueueTriggerProducts), lang);
@@ -162,8 +151,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
-
         public void TimerTriggerProductsTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(TimerTriggerProducts), lang);
@@ -178,8 +165,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
-
         public void AddProductExtraColumnsTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductExtraColumns), lang, true);
@@ -192,8 +177,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
-
         public void AddProductMissingColumnsTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductMissingColumns), lang, true);
@@ -206,8 +189,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
-
         public void AddProductMissingColumnsNotNullTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductMissingColumnsExceptionFunction), lang, true);
@@ -219,8 +200,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
-
         public void AddProductNoPartialUpsertTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsNoPartialUpsert), lang, true);
@@ -235,8 +214,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
-
         public void AddProductWithIdentity(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithIdentityColumn), lang);
@@ -257,8 +234,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
-
         public void AddProductsWithIdentityColumnArray(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsWithIdentityColumnArray), lang);
@@ -274,8 +249,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
-
         public void AddProductWithIdentity_MultiplePrimaryColumns(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), lang);
@@ -297,8 +270,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
-
         public void AddProductWithIdentity_SpecifyIdentityColumn(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithIdentityColumnIncluded), lang);
@@ -329,8 +300,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
-
         public void AddProductWithIdentity_NoIdentityColumn(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithIdentityColumnIncluded), lang);
@@ -359,8 +328,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
-
         public void AddProductWithIdentity_MissingPrimaryColumn(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), lang);
@@ -382,8 +349,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
-
         public void AddProductCaseSensitiveTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductParams), lang);
@@ -418,8 +383,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
-
         public void AddProductWithDefaultPKTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithDefaultPK), lang);
