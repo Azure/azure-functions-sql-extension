@@ -187,7 +187,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 // The full path to the Functions CLI is required in the ProcessStartInfo because UseShellExecute is set to false.
                 // We cannot both use shell execute and redirect output at the same time: https://docs.microsoft.com//dotnet/api/system.diagnostics.processstartinfo.redirectstandardoutput#remarks
                 // FileName = GetFunctionsCoreToolsPath(),
-                FileName = "/usr/local/lib/node_modules/azure-functions-core-tools/bin/func",
+                FileName = "/usr/local/bin/func",
                 Arguments = $"start --verbose --port {this.Port} --functions {functionName}",
                 WorkingDirectory = workingDirectory,
                 WindowStyle = ProcessWindowStyle.Hidden,
