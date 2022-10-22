@@ -65,7 +65,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
 
-            this._scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{userFunctionId}-SqlTrigger-{tableName}".ToLower(CultureInfo.InvariantCulture));
+            // Do not convert the scale-monitor ID to lower-case string since SQL table names can be case-sensitive
+            // depending on the collation of the current database.
+            this._scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{userFunctionId}-SqlTrigger-{tableName}");
         }
 
         public void Cancel()
@@ -541,8 +543,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // certain reliability. These samples roughly cover the timespan of past 40 seconds.
             const int minSamplesForScaling = 5;
 
-            // Please ensure the Readme file and other public documentation are also updated if this value ever needs to
-            // be changed.
+            // NOTE: please ensure the Readme file and other public documentation are also updated if this value ever
+            // needs to be changed.
             const int maxChangesPerWorker = 1000;
 
             var status = new ScaleStatus
@@ -557,7 +559,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 return status;
             }
 
-            string counts = string.Join(" ,", metrics.TakeLast(minSamplesForScaling).Select(metric => metric.UnprocessedChangeCount));
+            // Consider only the most recent batch of samples in the rest of the method.
+            metrics = metrics.TakeLast(minSamplesForScaling).ToArray();
+
+            string counts = string.Join(", ", metrics.Select(metric => metric.UnprocessedChangeCount));
             this._logger.LogInformation($"Unprocessed change counts: [{counts}], worker count: {workerCount}, maximum changes per worker: {maxChangesPerWorker}.");
 
             // Add worker if the count of unprocessed changes per worker exceeds the maximum limit.
@@ -572,10 +577,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // Check if there is a continuous increase or decrease in count of unprocessed changes.
             bool isIncreasing = true;
             bool isDecreasing = true;
-            for (int index = metrics.Length - minSamplesForScaling; index < metrics.Length - 1; index++)
+            for (int index = 0; index < metrics.Length - 1; index++)
             {
                 isIncreasing = isIncreasing && metrics[index].UnprocessedChangeCount < metrics[index + 1].UnprocessedChangeCount;
-                isDecreasing = isDecreasing && (metrics[index].UnprocessedChangeCount == 0 || metrics[index].UnprocessedChangeCount > metrics[index + 1].UnprocessedChangeCount);
+                isDecreasing = isDecreasing && (metrics[index + 1].UnprocessedChangeCount == 0 || metrics[index].UnprocessedChangeCount > metrics[index + 1].UnprocessedChangeCount);
             }
 
             if (isIncreasing)
