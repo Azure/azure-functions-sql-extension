@@ -15,18 +15,27 @@ using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 {
-    public class SqlTriggerBindingTests
+    public class SqlTriggerBindingProviderTests
     {
+        /// <summary>
+        /// Verifies that null trigger binding is returned if the trigger parameter in user function does not have
+        /// <see cref="SqlTriggerAttribute"/> applied.
+        /// </summary>
         [Fact]
-        public async Task SqlTriggerBindingProvider_ReturnsNullBindingForParameterWithoutAttribute()
+        public async Task TryCreateAsync_TriggerParameterWithoutAttribute_ReturnsNullBinding()
         {
             Type parameterType = typeof(IReadOnlyList<SqlChange<object>>);
             ITriggerBinding binding = await CreateTriggerBindingAsync(parameterType, nameof(UserFunctionWithoutAttribute));
             Assert.Null(binding);
         }
 
+        /// <summary>
+        /// Verifies that <see cref="ArgumentException"/> is thrown if the <see cref="SqlTriggerAttribute"/> applied on
+        /// the trigger parameter does not have <see cref="SqlTriggerAttribute.ConnectionStringSetting"/> property set.
+        /// <see cref="SqlTriggerAttribute"/> attribute applied.
+        /// </summary>
         [Fact]
-        public async Task SqlTriggerBindingProvider_ThrowsForMissingConnectionString()
+        public async Task TryCreateAsync_MissingConnectionString_ThrowsException()
         {
             Type parameterType = typeof(IReadOnlyList<SqlChange<object>>);
             Task testCode() { return CreateTriggerBindingAsync(parameterType, nameof(UserFunctionWithoutConnectionString)); }
@@ -37,13 +46,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
                 exception.Message);
         }
 
+        /// <summary>
+        /// Verifies that <see cref="InvalidOperationException"/> is thrown if the <see cref="SqlTriggerAttribute"/> is
+        /// applied on the trigger parameter of unsupported type.
+        /// </summary>
         [Theory]
         [InlineData(typeof(object))]
         [InlineData(typeof(SqlChange<object>))]
         [InlineData(typeof(IEnumerable<SqlChange<object>>))]
         [InlineData(typeof(IReadOnlyList<object>))]
         [InlineData(typeof(IReadOnlyList<IReadOnlyList<object>>))]
-        public async Task SqlTriggerBindingProvider_ThrowsForInvalidTriggerParameterType(Type parameterType)
+        public async Task TryCreateAsync_InvalidTriggerParameterType_ThrowsException(Type parameterType)
         {
             Task testCode() { return CreateTriggerBindingAsync(parameterType, nameof(UserFunctionWithoutConnectionString)); }
             InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(testCode);
@@ -53,23 +66,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
                 exception.Message);
         }
 
+        /// <summary>
+        /// Verifies that <see cref="SqlTriggerBinding"/> is returned if the <see cref="SqlTriggerAttribute"/> has all
+        /// required properties set and it is applied on the trigger parameter of supported type.
+        /// </summary>
         [Fact]
-        public async Task SqlTriggerBindingProvider_ReturnsBindingForValidTriggerParameterType()
+        public async Task TryCreateAsync_ValidTriggerParameterType_ReturnsTriggerBinding()
         {
             Type parameterType = typeof(IReadOnlyList<SqlChange<object>>);
             ITriggerBinding binding = await CreateTriggerBindingAsync(parameterType, nameof(UserFunctionWithAttribute));
-            Assert.NotNull(binding);
+            Assert.IsType<SqlTriggerBinding<object>>(binding);
         }
 
         private static async Task<ITriggerBinding> CreateTriggerBindingAsync(Type parameterType, string methodName)
         {
             var provider = new SqlTriggerBindingProvider(
-                Mock.Of<IConfiguration>(c => c["dummyConnectionStringSetting"] == "dummyConnectionString"),
+                Mock.Of<IConfiguration>(c => c["testConnectionStringSetting"] == "testConnectionString"),
                 Mock.Of<IHostIdProvider>(),
                 Mock.Of<ILoggerFactory>(f => f.CreateLogger(It.IsAny<string>()) == Mock.Of<ILogger>()));
 
             // Possibly the simplest way to construct a ParameterInfo object.
-            ParameterInfo parameter = typeof(SqlTriggerBindingTests)
+            ParameterInfo parameter = typeof(SqlTriggerBindingProviderTests)
                 .GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Static)
                 .MakeGenericMethod(parameterType)
                 .GetParameters()[0];
@@ -79,8 +96,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 
         private static void UserFunctionWithoutAttribute<T>(T _) { }
 
-        private static void UserFunctionWithoutConnectionString<T>([SqlTrigger("dummyTableName")] T _) { }
+        private static void UserFunctionWithoutConnectionString<T>([SqlTrigger("testTableName")] T _) { }
 
-        private static void UserFunctionWithAttribute<T>([SqlTrigger("dummyTableName", ConnectionStringSetting = "dummyConnectionStringSetting")] T _) { }
+        private static void UserFunctionWithAttribute<T>([SqlTrigger("testTableName", ConnectionStringSetting = "testConnectionStringSetting")] T _) { }
     }
 }
