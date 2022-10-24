@@ -16,9 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples
     {
         /// <summary>
         /// This function verifies that serializing an item with various data types
-        /// works as expected.
-        /// Note this uses IAsyncEnumerable because IEnumerable serializes the entire table directly,
-        /// instead of each item one by one (which is where issues can occur)
+        /// works as expected when using IEnumerable.
         /// </summary>
         [FunctionName(nameof(GetProductsColumnTypesSerialization))]
         public static async Task<IActionResult> Run(
@@ -27,13 +25,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples
             [Sql("SELECT * FROM [dbo].[ProductsColumnTypes]",
                 CommandType = System.Data.CommandType.Text,
                 ConnectionStringSetting = "SqlConnectionString")]
-            IAsyncEnumerable<ProductColumnTypes> products,
+            IEnumerable<ProductColumnTypes> products,
             ILogger log)
         {
-            await foreach (ProductColumnTypes item in products)
+            foreach (ProductColumnTypes item in products)
             {
                 log.LogInformation(JsonSerializer.Serialize(item));
             }
+
             return new OkObjectResult(products);
         }
     }

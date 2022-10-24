@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -20,6 +21,7 @@ using Newtonsoft.Json.Serialization;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
 using System.Diagnostics;
 using Newtonsoft.Json.Linq;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlBindingConstants;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -57,6 +59,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const string CteName = "cte";
 
         private const string Collation = "Collation";
+
+        private const int AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES = 10;
 
         private readonly IConfiguration _configuration;
         private readonly SqlAttribute _attribute;
@@ -160,7 +164,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             var upsertRowsAsyncSw = Stopwatch.StartNew();
             using (SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
+                this._logger.LogDebugWithThreadId("BEGIN OpenUpsertRowsAsyncConnection");
                 await connection.OpenAsync();
+                this._logger.LogDebugWithThreadId("END OpenUpsertRowsAsyncConnection");
                 Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps();
 
                 string fullTableName = attribute.CommandText;
@@ -171,6 +177,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 ObjectCache cachedTables = MemoryCache.Default;
                 var tableInfo = cachedTables[cacheKey] as TableInformation;
 
+                int timeout = AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES;
+                string timeoutEnvVar = Environment.GetEnvironmentVariable("AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES");
+                if (!string.IsNullOrEmpty(timeoutEnvVar))
+                {
+                    if (int.TryParse(timeoutEnvVar, NumberStyles.Integer, CultureInfo.InvariantCulture, out timeout))
+                    {
+                        this._logger.LogDebugWithThreadId($"Overriding default table info cache timeout with new value {timeout}");
+                    }
+                    else
+                    {
+                        timeout = AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES;
+                    }
+                }
+
                 if (tableInfo == null)
                 {
                     TelemetryInstance.TrackEvent(TelemetryEventName.TableInfoCacheMiss, props);
@@ -178,8 +198,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullTableName, this._logger, GetColumnNamesFromItem(rows.First()));
                     var policy = new CacheItemPolicy
                     {
-                        // Re-look up the primary key(s) after 10 minutes (they should not change very often!)
-                        AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(10)
+                        // Re-look up the primary key(s) after timeout (default timeout is 10 minutes)
+                        AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(timeout)
                     };
 
                     cachedTables.Set(cacheKey, tableInfo, policy);
@@ -358,8 +378,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public class TableInformation
         {
-            private const string ISO_8061_DATETIME_FORMAT = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff";
-
             public IEnumerable<PropertyInfo> PrimaryKeys { get; }
 
             /// <summary>
@@ -403,7 +421,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 this.HasIdentityColumnPrimaryKeys = hasIdentityColumnPrimaryKeys;
 
                 // Convert datetime strings to ISO 8061 format to avoid potential errors on the server when converting into a datetime. This
-                // is the only format that are an international standard. 
+                // is the only format that are an international standard.
                 // https://docs.microsoft.com/previous-versions/sql/sql-server-2008-r2/ms180878(v=sql.105)
                 this.JsonSerializerSettings = new JsonSerializerSettings
                 {

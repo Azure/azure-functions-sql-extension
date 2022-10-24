@@ -229,9 +229,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// - The functionName is different than its route.<br/>
         /// - You can start multiple functions by passing in a space-separated list of function names.<br/>
         /// </remarks>
-        protected void StartFunctionHost(string functionName, SupportedLanguages language, bool useTestFolder = false, DataReceivedEventHandler customOutputHandler = null)
+        protected void StartFunctionHost(string functionName, SupportedLanguages language, bool useTestFolder = false, DataReceivedEventHandler customOutputHandler = null, Dictionary<string, string> environmentVariables = null)
         {
-            string workingDirectory = useTestFolder ? GetPathToBin() : Path.Combine(GetPathToBin(), "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), language));
+            string workingDirectory = language == SupportedLanguages.CSharp && useTestFolder ? GetPathToBin() : Path.Combine(GetPathToBin(), "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), language));
             if (!Directory.Exists(workingDirectory))
             {
                 throw new FileNotFoundException("Working directory not found at " + workingDirectory);
@@ -257,6 +257,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 RedirectStandardError = true,
                 UseShellExecute = false
             };
+
+            if (environmentVariables != null)
+            {
+                foreach (KeyValuePair<string, string> variable in environmentVariables)
+                {
+                    startInfo.EnvironmentVariables[variable.Key] = variable.Value;
+                }
+            }
 
             // Always disable telemetry during test runs
             startInfo.EnvironmentVariables[TelemetryOptoutEnvVar] = "1";
