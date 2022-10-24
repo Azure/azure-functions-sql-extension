@@ -137,7 +137,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Theory]
         [SqlInlineData("en-US")]
         [SqlInlineData("it-IT")]
-        [UnsupportedLanguages(SupportedLanguages.JavaScript)] // IAsyncEnumerable is only available in C#
+        [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.Java)] // IAsyncEnumerable is only available in C#
         public async void GetProductsColumnTypesSerializationAsyncEnumerableTest(string culture, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsColumnTypesSerializationAsyncEnumerable), lang, true);

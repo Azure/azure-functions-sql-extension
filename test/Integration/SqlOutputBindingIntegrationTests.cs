@@ -101,7 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         /// <summary>
         /// Test compatability with converting various data types to their respective
-        /// SQL server types. 
+        /// SQL server types.
         /// </summary>
         /// <param name="lang">The language to run the test against</param>
         [Theory]
