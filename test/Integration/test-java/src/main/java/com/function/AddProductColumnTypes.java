@@ -11,8 +11,11 @@ import com.microsoft.azure.functions.annotation.HttpTrigger;
 import com.microsoft.azure.functions.sql.annotation.SQLOutput;
 import com.function.Common.ProductColumnTypes;
 
+import java.math.BigDecimal;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.Optional;
-import java.util.Date;
 
 public class AddProductColumnTypes {
     @FunctionName("AddProductColumnTypes")
@@ -28,7 +31,12 @@ public class AddProductColumnTypes {
                 connectionStringSetting = "SqlConnectionString")
                 OutputBinding<ProductColumnTypes> product) {
 
-        ProductColumnTypes p = new ProductColumnTypes(Integer.parseInt(request.getQueryParameters().get("productId")), new Date(), new Date());
+        ProductColumnTypes p = new ProductColumnTypes(0, Long.MAX_VALUE, false, new BigDecimal(1.2345),
+            new BigDecimal(1.2345), new BigDecimal(1.2345), (short)0, new BigDecimal(1.2345), (short)0, 1.2345,
+            1.2345f, new Date(System.currentTimeMillis()), new Timestamp(System.currentTimeMillis()),
+            new Timestamp(System.currentTimeMillis()), new Date(System.currentTimeMillis()),
+            new Timestamp(System.currentTimeMillis()), new Time(System.currentTimeMillis()), "test", "test",
+            "test", "test", "test");//, new Byte[]{1,2,3,4,5}, new Byte[]{1,2,3,4,5});
         product.setValue(p);
 
         // Items were inserted successfully so return success, an exception would be thrown if there
