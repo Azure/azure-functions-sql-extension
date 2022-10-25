@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "samples_outofproc1": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7155",
+      "launchBrowser": false
+    }
+  }
+}
