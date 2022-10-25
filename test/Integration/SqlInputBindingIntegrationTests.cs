@@ -104,10 +104,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             HttpResponseMessage response = await this.SendInputRequest("getproductsbycost");
 
             // Verify result
-            string expectedResponse = JsonConvert.SerializeObject(productsWithCost100);
+            Product[] expectedResponse = productsWithCost100;
             string actualResponse = await response.Content.ReadAsStringAsync();
-
-            Assert.Equal(expectedResponse, TestUtils.CleanJsonString(actualResponse), StringComparer.OrdinalIgnoreCase);
+            Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse);
+            Assert.Equal(expectedResponse, actualProductResponse);
         }
 
         [Theory]
