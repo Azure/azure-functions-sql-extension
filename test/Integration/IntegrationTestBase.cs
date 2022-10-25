@@ -104,7 +104,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
                 // Either use integrated auth or SQL login depending if SA_PASSWORD is set
                 string userId = "SA";
-                string password = "Yukon900"; //  Environment.GetEnvironmentVariable("SA_PASSWORD");
+                string password = Environment.GetEnvironmentVariable("SA_PASSWORD");
                 if (string.IsNullOrEmpty(password))
                 {
                     connectionStringBuilder.IntegratedSecurity = true;

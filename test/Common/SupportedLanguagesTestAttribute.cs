@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
     /// </summary>
     public class SqlInlineDataAttribute : DataAttribute
     {
-        private readonly List<object[]> testData = new List<object[]>();
+        private readonly List<object[]> testData = new();
 
         /// <summary>
         /// Adds a language parameter to the test data which will contain the language 
