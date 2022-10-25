@@ -1,7 +1,7 @@
 {
   "version": 2,
   "dependencies": {
-    ".NETCoreApp,Version=v3.1": {
+    "net6.0": {
       "Microsoft.Azure.Functions.Worker.Extensions.Abstractions": {
         "type": "Direct",
         "requested": "[1.1.0, )",
@@ -299,11 +299,6 @@
           "Microsoft.NETCore.Targets": "1.1.0"
         }
       },
-      "System.Runtime.CompilerServices.Unsafe": {
-        "type": "Transitive",
-        "resolved": "5.0.0",
-        "contentHash": "ZD9TMpsmYJLrxbbmdvhwt9YEgG5WntEnZ/d1eH8JBX9LBp+Ju8BSBhUGbZMNVHHomWo2KVImJhTDl2hIgw/6MA=="
-      },
       "System.Security.AccessControl": {
         "type": "Transitive",
         "resolved": "5.0.0",
@@ -355,8 +350,7 @@
         "resolved": "5.0.0",
         "contentHash": "NyscU59xX6Uo91qvhOs2Ccho3AR2TnZPomo1Z0K6YpyztBPM/A5VbkzOO19sy3A3i1TtEnTxA7bCe3Us+r5MWg==",
         "dependencies": {
-          "Microsoft.NETCore.Platforms": "5.0.0",
-          "System.Runtime.CompilerServices.Unsafe": "5.0.0"
+          "Microsoft.NETCore.Platforms": "5.0.0"
         }
       },
       "System.Text.Encodings.Web": {
