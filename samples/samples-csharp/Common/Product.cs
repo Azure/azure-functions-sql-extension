@@ -10,6 +10,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common
         public string Name { get; set; }
 
         public int Cost { get; set; }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is Product)
+            {
+                var that = obj as Product;
+                return this.ProductID == that.ProductID && this.Name == that.Name && this.Cost == that.Cost;
+            }
+            return false;
+        }
     }
 
     public class ProductWithOptionalId
