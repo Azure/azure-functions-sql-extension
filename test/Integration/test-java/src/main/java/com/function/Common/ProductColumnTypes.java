@@ -1,8 +1,6 @@
 package com.function.Common;
 
 import java.math.BigDecimal;
-import java.sql.Date;
-import java.sql.Time;
 import java.sql.Timestamp;
 
 public class ProductColumnTypes {
@@ -17,25 +15,23 @@ public class ProductColumnTypes {
     private short TinyInt;
     private double Float;
     private float Real;
-    private Date Date;
+    private String Date;
     private Timestamp Datetime;
     private Timestamp Datetime2;
-    private Date DatetimeOffset;
+    private Timestamp DatetimeOffset;
     private Timestamp SmallDatetime;
-    private Time Time;
+    private String Time;
     private String Char;
     private String Varchar;
     private String Nchar;
     private String Nvarchar;
     private String UniqueIdentifier;
-    // private Byte[] Binary;
-    // private Byte[] Varbinary;
 
 
     public ProductColumnTypes(int productId, long bigInt, boolean bit, BigDecimal decimal, BigDecimal money,
-    BigDecimal numeric, short smallInt, BigDecimal smallMoney, short tinyInt, double _float, float real,
-    Date date, Timestamp datetime, Timestamp datetime2, Date datetimeOffset, Timestamp smallDatetime, Time time,
-    String _char, String varchar, String nchar, String nvarchar, String uniqueIdentifier) {
+    BigDecimal numeric, short smallInt, BigDecimal smallMoney, short tinyInt, double _float, float real, String date,
+    Timestamp datetime, Timestamp datetime2, Timestamp datetimeOffset, Timestamp smallDatetime, String time, String _char,
+    String varchar, String nchar, String nvarchar, String uniqueIdentifier) {
         ProductId = productId;
         BigInt = bigInt;
         Bit = bit;
@@ -58,8 +54,6 @@ public class ProductColumnTypes {
         Nchar = nchar;
         Nvarchar = nvarchar;
         UniqueIdentifier = uniqueIdentifier;
-        // Binary = binary;
-        // Varbinary = varbinary;
     }
 
     public int getProductId() {
@@ -146,11 +140,11 @@ public class ProductColumnTypes {
         Real = real;
     }
 
-    public Date getDate() {
+    public String getDate() {
         return Date;
     }
 
-    public void setDate(Date date) {
+    public void setDate(String date) {
         Date = date;
     }
 
@@ -170,11 +164,11 @@ public class ProductColumnTypes {
         Datetime2 = datetime2;
     }
 
-    public Date getDatetimeOffset() {
+    public Timestamp getDatetimeOffset() {
         return DatetimeOffset;
     }
 
-    public void setDatetimeOffset(Date datetimeOffset) {
+    public void setDatetimeOffset(Timestamp datetimeOffset) {
         DatetimeOffset = datetimeOffset;
     }
 
@@ -186,11 +180,11 @@ public class ProductColumnTypes {
         SmallDatetime = smallDatetime;
     }
 
-    public Time getTime() {
+    public String getTime() {
         return Time;
     }
 
-    public void setTime(Time time) {
+    public void setTime(String time) {
         Time = time;
     }
 
@@ -233,20 +227,4 @@ public class ProductColumnTypes {
     public void setUniqueIdentifier(String uniqueIdentifier) {
         UniqueIdentifier = uniqueIdentifier;
     }
-
-    // public Byte[] getBinary() {
-    //     return Binary;
-    // }
-
-    // public void setBinary(Byte[] binary) {
-    //     Binary = binary;
-    // }
-
-    // public Byte[] getVarbinary() {
-    //     return Varbinary;
-    // }
-
-    // public void setVarbinary(Byte[] varbinary) {
-    //     Varbinary = varbinary;
-    // }
 }
