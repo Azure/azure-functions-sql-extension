@@ -1,0 +1,60 @@
+trigger: none
+
+pr: none
+
+schedules: none
+
+variables:
+  versionMajor: 0 # TODO When this is bumped have versionPatch counter use versionMajorMinor instead https://github.com/Azure/azure-functions-sql-extension/issues/173
+  versionMinor: 1
+  versionMajorMinor: '$(versionMajor).$(versionMinor)'  # This variable is only used for the counter so we reset properly when either major or minor is bumped
+  versionPatch: $[counter(variables['versionMinor'], 0)] # This will reset when we bump minor version
+  version: '$(binariesVersion)'
+
+stages:
+- stage: Build
+  displayName: 'Release Build and Publish'
+
+  jobs:
+  - job: BuildJavaLibrary
+    displayName: Build Java Library
+    steps:
+      - task: Maven@3
+        displayName: Set library version
+        inputs:
+          mavenPomFile: java-library\pom.xml
+          goals: versions:set
+          options: --define=newVersion=$(version)
+
+      - task: Maven@3
+        displayName: Build library
+        inputs:
+          mavenPomFile: java-library\pom.xml
+          options: --batch-mode --define=gpg.skip --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
+
+      - powershell: |
+          $prefix = 'azure-functions-java-library-sql-$(version)'
+          $source = 'java-library'
+          $destination = '$(Build.ArtifactStagingDirectory)\$(version)'
+          New-Item $destination -ItemType Directory
+          Copy-Item "$source\pom.xml" "$destination\$prefix.pom"
+          Copy-Item "$source\target\$prefix.jar" "$destination\$prefix.jar"
+          Copy-Item "$source\target\$prefix-javadoc.jar" "$destination\$prefix-javadoc.jar"
+          Copy-Item "$source\target\$prefix-sources.jar" "$destination\$prefix-sources.jar"
+        displayName: Copy output files
+        condition: and(succeeded(), eq(variables.isTagTriggered, 'True'))
+
+      - task: ManifestGeneratorTask@0
+        displayName: Generate SBOM manifest
+        condition: and(succeeded(), eq(variables.isTagTriggered, 'True'))
+        inputs:
+          buildDropPath: $(Build.ArtifactStagingDirectory)\$(version)
+          packageName: Azure Functions SQL Java Bindings
+          packageVersion: $(version)
+
+      - publish: $(Build.ArtifactStagingDirectory)
+        displayName: Publish library package
+        condition: and(succeeded(), eq(variables.isTagTriggered, 'True'))
+        artifact: drop-java-library
+
+
