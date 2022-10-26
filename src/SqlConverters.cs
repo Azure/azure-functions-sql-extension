@@ -14,6 +14,7 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Microsoft.Extensions.Logging;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlBindingConstants;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -186,7 +187,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     var dataTable = new DataTable();
                     adapter.Fill(dataTable);
                     this._logger.LogInformation($"{dataTable.Rows.Count} row(s) queried from database: {connection.Database} using Command: {command.CommandText}");
-                    return JsonConvert.SerializeObject(dataTable);
+                    // Serialize any DateTime objects in UTC format
+                    var jsonSerializerSettings = new JsonSerializerSettings()
+                    {
+                        DateFormatString = ISO_8061_DATETIME_FORMAT
+                    };
+                    return JsonConvert.SerializeObject(dataTable, jsonSerializerSettings);
                 }
 
             }
