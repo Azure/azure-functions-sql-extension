@@ -27,7 +27,7 @@ stages:
       - task: Maven@3
         displayName: Build library
         inputs:
-          mavenPomFile: java-library\pom.xml
+          mavenPomFile: java-library/pom.xml
           options: --batch-mode --define=gpg.skip --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
 
       - powershell: |
