@@ -20,7 +20,7 @@ stages:
       - task: Maven@3
         displayName: Set library version
         inputs:
-          mavenPomFile: java-library\pom.xml
+          mavenPomFile: java-library/pom.xml
           goals: versions:set
           options: --define=newVersion=$(version)
 
@@ -33,12 +33,12 @@ stages:
       - powershell: |
           $prefix = 'azure-functions-java-library-sql-$(version)'
           $source = 'java-library'
-          $destination = '$(Build.ArtifactStagingDirectory)\$(version)'
+          $destination = '$(Build.ArtifactStagingDirectory)/$(version)'
           New-Item $destination -ItemType Directory
-          Copy-Item "$source\pom.xml" "$destination\$prefix.pom"
-          Copy-Item "$source\target\$prefix.jar" "$destination\$prefix.jar"
-          Copy-Item "$source\target\$prefix-javadoc.jar" "$destination\$prefix-javadoc.jar"
-          Copy-Item "$source\target\$prefix-sources.jar" "$destination\$prefix-sources.jar"
+          Copy-Item "$source/pom.xml" "$destination/$prefix.pom"
+          Copy-Item "$source/target/$prefix.jar" "$destination/$prefix.jar"
+          Copy-Item "$source/target/$prefix-javadoc.jar" "$destination/$prefix-javadoc.jar"
+          Copy-Item "$source/target/$prefix-sources.jar" "$destination/$prefix-sources.jar"
         displayName: Copy output files
         condition: and(succeeded(), eq(variables.isTagTriggered, 'True'))
 
@@ -46,7 +46,7 @@ stages:
         displayName: Generate SBOM manifest
         condition: and(succeeded(), eq(variables.isTagTriggered, 'True'))
         inputs:
-          buildDropPath: $(Build.ArtifactStagingDirectory)\$(version)
+          buildDropPath: $(Build.ArtifactStagingDirectory)/$(version)
           packageName: Azure Functions SQL Java Bindings
           packageVersion: $(version)
 
