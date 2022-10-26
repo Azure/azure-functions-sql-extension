@@ -7,7 +7,7 @@ variables:
   versionMinor: 1
   versionMajorMinor: '$(versionMajor).$(versionMinor)'  # This variable is only used for the counter so we reset properly when either major or minor is bumped
   versionPatch: $[counter(variables['versionMinor'], 0)] # This will reset when we bump minor version
-  version: '$(binariesVersion)'
+  version: '$(versionMajor).$(versionMinor).$(versionPatch)'
 
 stages:
 - stage: Build
@@ -40,11 +40,9 @@ stages:
           Copy-Item "$source/target/$prefix-javadoc.jar" "$destination/$prefix-javadoc.jar"
           Copy-Item "$source/target/$prefix-sources.jar" "$destination/$prefix-sources.jar"
         displayName: Copy output files
-        condition: and(succeeded(), eq(variables.isTagTriggered, 'True'))
 
       - task: ManifestGeneratorTask@0
         displayName: Generate SBOM manifest
-        condition: and(succeeded(), eq(variables.isTagTriggered, 'True'))
         inputs:
           buildDropPath: $(Build.ArtifactStagingDirectory)/$(version)
           packageName: Azure Functions SQL Java Bindings
@@ -52,7 +50,6 @@ stages:
 
       - publish: $(Build.ArtifactStagingDirectory)
         displayName: Publish library package
-        condition: and(succeeded(), eq(variables.isTagTriggered, 'True'))
         artifact: drop-java-library
 
 
