@@ -214,27 +214,6 @@
           "Microsoft.Net.Http.Headers": "2.1.0"
         }
       },
-      "Microsoft.AspNetCore.Mvc.Core": {
-        "type": "Transitive",
-        "resolved": "2.1.0",
-        "contentHash": "AtNtFLtFgZglupwiRK/9ksFg1xAXyZ1otmKtsNSFn9lIwHCQd1xZHIph7GTZiXVWn51jmauIUTUMSWdpaJ+f+A==",
-        "dependencies": {
-          "Microsoft.AspNetCore.Authentication.Core": "2.1.0",
-          "Microsoft.AspNetCore.Authorization.Policy": "2.1.0",
-          "Microsoft.AspNetCore.Hosting.Abstractions": "2.1.0",
-          "Microsoft.AspNetCore.Http": "2.1.0",
-          "Microsoft.AspNetCore.Http.Extensions": "2.1.0",
-          "Microsoft.AspNetCore.Mvc.Abstractions": "2.1.0",
-          "Microsoft.AspNetCore.ResponseCaching.Abstractions": "2.1.0",
-          "Microsoft.AspNetCore.Routing": "2.1.0",
-          "Microsoft.Extensions.DependencyInjection": "2.1.0",
-          "Microsoft.Extensions.DependencyModel": "2.1.0",
-          "Microsoft.Extensions.FileProviders.Abstractions": "2.1.0",
-          "Microsoft.Extensions.Logging.Abstractions": "2.1.0",
-          "System.Diagnostics.DiagnosticSource": "4.5.0",
-          "System.Threading.Tasks.Extensions": "4.5.0"
-        }
-      },
       "Microsoft.AspNetCore.Mvc.Formatters.Json": {
         "type": "Transitive",
         "resolved": "2.1.0",
@@ -314,6 +293,19 @@
           "Microsoft.Azure.WebJobs": "3.0.14",
           "Microsoft.Azure.WebJobs.Host.Storage": "3.0.14",
           "ncrontab.signed": "3.3.0"
+        }
+      },
+      "Microsoft.Azure.WebJobs.Extensions.Http": {
+        "type": "Transitive",
+        "resolved": "3.0.2",
+        "contentHash": "JvC3fESMMbNkYbpaJ4vkK4Xaw1yZy4HSxxqwoaI3Ls2Y5/qBrHftPy0WJQgmXcGjgE/o/aAmuixdTfrj5OQDJQ==",
+        "dependencies": {
+          "Microsoft.AspNet.WebApi.Client": "5.2.4",
+          "Microsoft.AspNetCore.Http": "2.1.0",
+          "Microsoft.AspNetCore.Mvc.Formatters.Json": "2.1.0",
+          "Microsoft.AspNetCore.Mvc.WebApiCompatShim": "2.1.0",
+          "Microsoft.AspNetCore.Routing": "2.1.0",
+          "Microsoft.Azure.WebJobs": "3.0.2"
         }
       },
       "Microsoft.Azure.WebJobs.Extensions.Storage.Blobs": {
@@ -1732,6 +1724,28 @@
           "System.Diagnostics.DiagnosticSource": "5.0.0"
         }
       },
+      "Microsoft.AspNetCore.Mvc.Core": {
+        "type": "CentralTransitive",
+        "requested": "[2.0.0, )",
+        "resolved": "2.1.0",
+        "contentHash": "AtNtFLtFgZglupwiRK/9ksFg1xAXyZ1otmKtsNSFn9lIwHCQd1xZHIph7GTZiXVWn51jmauIUTUMSWdpaJ+f+A==",
+        "dependencies": {
+          "Microsoft.AspNetCore.Authentication.Core": "2.1.0",
+          "Microsoft.AspNetCore.Authorization.Policy": "2.1.0",
+          "Microsoft.AspNetCore.Hosting.Abstractions": "2.1.0",
+          "Microsoft.AspNetCore.Http": "2.1.0",
+          "Microsoft.AspNetCore.Http.Extensions": "2.1.0",
+          "Microsoft.AspNetCore.Mvc.Abstractions": "2.1.0",
+          "Microsoft.AspNetCore.ResponseCaching.Abstractions": "2.1.0",
+          "Microsoft.AspNetCore.Routing": "2.1.0",
+          "Microsoft.Extensions.DependencyInjection": "2.1.0",
+          "Microsoft.Extensions.DependencyModel": "2.1.0",
+          "Microsoft.Extensions.FileProviders.Abstractions": "2.1.0",
+          "Microsoft.Extensions.Logging.Abstractions": "2.1.0",
+          "System.Diagnostics.DiagnosticSource": "4.5.0",
+          "System.Threading.Tasks.Extensions": "4.5.0"
+        }
+      },
       "Microsoft.Azure.WebJobs": {
         "type": "CentralTransitive",
         "requested": "[3.0.31, )",
@@ -1750,20 +1764,6 @@
           "Newtonsoft.Json": "11.0.2",
           "System.Memory.Data": "1.0.1",
           "System.Threading.Tasks.Dataflow": "4.8.0"
-        }
-      },
-      "Microsoft.Azure.WebJobs.Extensions.Http": {
-        "type": "CentralTransitive",
-        "requested": "[3.0.13, )",
-        "resolved": "3.0.2",
-        "contentHash": "JvC3fESMMbNkYbpaJ4vkK4Xaw1yZy4HSxxqwoaI3Ls2Y5/qBrHftPy0WJQgmXcGjgE/o/aAmuixdTfrj5OQDJQ==",
-        "dependencies": {
-          "Microsoft.AspNet.WebApi.Client": "5.2.4",
-          "Microsoft.AspNetCore.Http": "2.1.0",
-          "Microsoft.AspNetCore.Mvc.Formatters.Json": "2.1.0",
-          "Microsoft.AspNetCore.Mvc.WebApiCompatShim": "2.1.0",
-          "Microsoft.AspNetCore.Routing": "2.1.0",
-          "Microsoft.Azure.WebJobs": "3.0.2"
         }
       },
       "Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator": {
