@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using System;
 using System.Net.Http;
 using Newtonsoft.Json;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
@@ -34,10 +33,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             HttpResponseMessage response = await this.SendInputRequest("getproducts", cost.ToString());
 
             // Verify result
-            string expectedResponse = JsonConvert.SerializeObject(products);
+            Product[] expectedResponse = products;
             string actualResponse = await response.Content.ReadAsStringAsync();
+            Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse);
 
-            Assert.Equal(expectedResponse, TestUtils.CleanJsonString(actualResponse), StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(expectedResponse, actualProductResponse);
         }
 
         [Theory]
@@ -56,10 +56,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             HttpResponseMessage response = await this.SendInputRequest("getproducts-storedprocedure", cost.ToString());
 
             // Verify result
-            string expectedResponse = JsonConvert.SerializeObject(products);
+            Product[] expectedResponse = products;
             string actualResponse = await response.Content.ReadAsStringAsync();
+            Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse);
 
-            Assert.Equal(expectedResponse, TestUtils.CleanJsonString(actualResponse), StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(expectedResponse, actualProductResponse);
         }
 
         [Theory]
@@ -83,10 +84,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             HttpResponseMessage response = await this.SendInputRequest("getproducts-nameempty", cost.ToString());
 
             // Verify result
-            string expectedResponse = JsonConvert.SerializeObject(products);
+            Product[] expectedResponse = products;
             string actualResponse = await response.Content.ReadAsStringAsync();
+            Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse);
 
-            Assert.Equal(expectedResponse, TestUtils.CleanJsonString(actualResponse), StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(expectedResponse, actualProductResponse);
         }
 
         [Theory]
@@ -107,6 +109,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Product[] expectedResponse = productsWithCost100;
             string actualResponse = await response.Content.ReadAsStringAsync();
             Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse);
+
             Assert.Equal(expectedResponse, actualProductResponse);
         }
 
@@ -124,10 +127,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             HttpResponseMessage response = await this.SendInputRequest("getproduct-namesview");
 
             // Verify result
-            string expectedResponse = "[{\"name\":\"test\"}]";
+            // string expectedResponse = "[{\"name\":\"test\"}]";
+            Product[] expectedResponse = products;
             string actualResponse = await response.Content.ReadAsStringAsync();
+            Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse);
 
-            Assert.Equal(expectedResponse, TestUtils.CleanJsonString(actualResponse), StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(expectedResponse, actualProductResponse);
         }
 
         /// <summary>
