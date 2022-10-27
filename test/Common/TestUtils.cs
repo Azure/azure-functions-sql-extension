@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
 using System.Threading;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
@@ -27,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
                 namePrefix,
                 safeMachineName,
                 AppDomain.CurrentDomain.Id,
-                Process.GetCurrentProcess().Id,
+                Environment.ProcessId,
                 Interlocked.Increment(ref ThreadId));
         }
 
