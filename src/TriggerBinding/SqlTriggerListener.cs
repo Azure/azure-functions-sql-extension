@@ -31,6 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const int ListenerStarted = 2;
         private const int ListenerStopping = 3;
         private const int ListenerStopped = 4;
+        public const int DefaultMaxChangesPerWorker = 1000;
 
         private readonly SqlObject _userTable;
         private readonly string _connectionString;
@@ -41,6 +42,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly ScaleMonitorDescriptor _scaleMonitorDescriptor;
 
         private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps = new Dictionary<TelemetryPropertyName, string>();
+        private readonly int _maxChangesPerWorker = DefaultMaxChangesPerWorker;
 
         private SqlTableChangeMonitor<T> _changeMonitor;
         private int _listenerState = ListenerNotStarted;
@@ -68,6 +70,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // Do not convert the scale-monitor ID to lower-case string since SQL table names can be case-sensitive
             // depending on the collation of the current database.
             this._scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{userFunctionId}-SqlTrigger-{tableName}");
+
+            int? configuredMaxChangesPerWorker = configuration.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_MaxChangesPerWorker);
+            this._maxChangesPerWorker = configuredMaxChangesPerWorker ?? this._maxChangesPerWorker;
         }
 
         public void Cancel()
@@ -543,10 +548,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // certain reliability. These samples roughly cover the timespan of past 40 seconds.
             const int minSamplesForScaling = 5;
 
-            // NOTE: please ensure the Readme file and other public documentation are also updated if this value ever
-            // needs to be changed.
-            const int maxChangesPerWorker = 1000;
-
             var status = new ScaleStatus
             {
                 Vote = ScaleVote.None,
@@ -563,11 +564,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             metrics = metrics.TakeLast(minSamplesForScaling).ToArray();
 
             string counts = string.Join(", ", metrics.Select(metric => metric.UnprocessedChangeCount));
-            this._logger.LogInformation($"Unprocessed change counts: [{counts}], worker count: {workerCount}, maximum changes per worker: {maxChangesPerWorker}.");
+            this._logger.LogInformation($"Unprocessed change counts: [{counts}], worker count: {workerCount}, maximum changes per worker: {this._maxChangesPerWorker}.");
 
             // Add worker if the count of unprocessed changes per worker exceeds the maximum limit.
             long lastUnprocessedChangeCount = metrics.Last().UnprocessedChangeCount;
-            if (lastUnprocessedChangeCount > workerCount * maxChangesPerWorker)
+            if (lastUnprocessedChangeCount > workerCount * this._maxChangesPerWorker)
             {
                 status.Vote = ScaleVote.ScaleOut;
                 this._logger.LogInformation($"Requesting scale-out: Found too many unprocessed changes for table: '{this._userTable.FullName}' relative to the number of workers.");
@@ -590,7 +591,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 SqlTriggerMetrics referenceMetric = metrics.First(metric => metric.Timestamp > referenceTime);
                 long expectedUnprocessedChangeCount = (2 * metrics[metrics.Length - 1].UnprocessedChangeCount) - referenceMetric.UnprocessedChangeCount;
 
-                if (expectedUnprocessedChangeCount > workerCount * maxChangesPerWorker)
+                if (expectedUnprocessedChangeCount > workerCount * this._maxChangesPerWorker)
                 {
                     status.Vote = ScaleVote.ScaleOut;
                     this._logger.LogInformation($"Requesting scale-out: Found the unprocessed changes for table: '{this._userTable.FullName}' to be continuously increasing" +
@@ -607,7 +608,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             if (isDecreasing)
             {
                 // Scale in only if the count of unprocessed changes will not exceed the combined limit post the scale-in operation.
-                if (lastUnprocessedChangeCount <= (workerCount - 1) * maxChangesPerWorker)
+                if (lastUnprocessedChangeCount <= (workerCount - 1) * this._maxChangesPerWorker)
                 {
                     status.Vote = ScaleVote.ScaleIn;
                     this._logger.LogInformation($"Requesting scale-in: Found table: '{this._userTable.FullName}' to be either idle or the unprocessed changes to be continuously decreasing.");

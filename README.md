@@ -578,6 +578,10 @@ This controls the number of changes processed at once before being sent to the t
 
 This controls the delay in milliseconds between processing each batch of changes.
 
+#### Sql_Trigger_MaxChangesPerWorker
+
+This controls the max number of changes handled by a worker, used for scaling decision.
+
 ## More Samples
 
 ### Input Binding
