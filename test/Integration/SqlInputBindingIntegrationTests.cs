@@ -127,10 +127,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             HttpResponseMessage response = await this.SendInputRequest("getproduct-namesview");
 
             // Verify result
-            // string expectedResponse = "[{\"name\":\"test\"}]";
-            Product[] expectedResponse = products;
+            ProductName[] expectedResponse = JsonConvert.DeserializeObject<ProductName[]>("[{name:test}]");
             string actualResponse = await response.Content.ReadAsStringAsync();
-            Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse);
+            ProductName[] actualProductResponse = JsonConvert.DeserializeObject<ProductName[]>(actualResponse);
 
             Assert.Equal(expectedResponse, actualProductResponse);
         }
