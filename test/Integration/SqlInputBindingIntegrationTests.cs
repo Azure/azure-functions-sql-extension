@@ -141,7 +141,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Theory]
         [SqlInlineData("en-US")]
         [SqlInlineData("it-IT")]
-        [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.PowerShell)] // IAsyncEnumerable is only available in C#
+        [UnsupportedLanguages(SupportedLanguages.JavaScript)] // IAsyncEnumerable is only available in C#
         public async void GetProductsColumnTypesSerializationAsyncEnumerableTest(string culture, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsColumnTypesSerializationAsyncEnumerable), lang, true);
@@ -154,11 +154,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             HttpResponseMessage response = await this.SendInputRequest("getproducts-columntypesserializationasyncenumerable", $"?culture={culture}");
             // We expect the datetime and datetime2 fields to be returned in UTC format
-            JObject expectedResponse = JsonConvert.DeserializeObject<JObject>("[{productId:999,datetime:2022-10-20T12:39:13.123Z,datetime2:2022-10-20T12:39:13.123Z}]");
+            string expectedResponse = "[{\"productId\":999,\"datetime\":\"2022-10-20T12:39:13.123Z\",\"datetime2\":\"2022-10-20T12:39:13.123Z\"}]";
             string actualResponse = await response.Content.ReadAsStringAsync();
-            JObject actualProductResponse = JsonConvert.DeserializeObject<JObject>(actualResponse);
 
-            Assert.Equal(expectedResponse, actualProductResponse);
+            Assert.Equal(expectedResponse, TestUtils.CleanJsonString(actualResponse), StringComparer.OrdinalIgnoreCase);
         }
 
         /// <summary>
