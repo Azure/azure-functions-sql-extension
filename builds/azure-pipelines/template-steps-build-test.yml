@@ -79,6 +79,14 @@ steps:
     targetFolder: $(azureFunctionsExtensionBundlePath)/bin
     overWrite: true
 
+# Don't run for PRs since this currently breaks on runs from forks. We run this daily ourselves anyways.
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-roslynanalyzers.RoslynAnalyzers@3
+  inputs:
+    userProvideBuildInfo: 'autoMsBuildInfo'
+  env:
+    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+
 - script: |
     npm install
     npm run lint
@@ -103,14 +111,6 @@ steps:
     InputType: 'CommandLine'
     arguments: 'analyze $(Build.SourcesDirectory)\src\bin\${{ parameters.configuration }}\* --recurse --verbose'
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
-
-# Don't run for PRs since this currently breaks on runs from forks. We run this daily ourselves anyways.
-- task: securedevelopmentteam.vss-secure-development-tools.build-task-roslynanalyzers.RoslynAnalyzers@3
-  inputs:
-    userProvideBuildInfo: 'autoMsBuildInfo'
-  env:
-    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'), ne(variables['Build.Reason'], 'PullRequest'))
 
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@2
   inputs:
