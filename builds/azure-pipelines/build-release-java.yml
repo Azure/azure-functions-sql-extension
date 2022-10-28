@@ -6,9 +6,9 @@ steps:
       options: --batch-mode --define=gpg.skip --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
 
   - powershell: |
-      $prefix = 'azure-functions-java-library-sql-0.1.0'
+      $prefix = 'azure-functions-java-library-sql-*'
       $source = 'java-library'
-      $destination = '$(Build.ArtifactStagingDirectory)/0.1.0'
+      $destination = '$(Build.ArtifactStagingDirectory)'
       New-Item $destination -ItemType Directory
       Copy-Item "$source/pom.xml" "$destination/$prefix.pom"
       Copy-Item "$source/target/$prefix.jar" "$destination/$prefix.jar"
@@ -19,9 +19,8 @@ steps:
   - task: ManifestGeneratorTask@0
     displayName: Generate SBOM manifest
     inputs:
-      buildDropPath: $(Build.ArtifactStagingDirectory)/0.1.0
+      buildDropPath: $(Build.ArtifactStagingDirectory)
       packageName: Azure Functions SQL Java Bindings
-      packageVersion: '0.1.0'
 
   - publish: $(Build.ArtifactStagingDirectory)
     displayName: Publish library package
