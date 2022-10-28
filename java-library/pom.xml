@@ -40,14 +40,6 @@
     <tag>HEAD</tag>
   </scm>
 
-  <developers>
-    <developer>
-      <id>LucyZhang</id>
-      <name>Lucy Zhang</name>
-      <email>luczhan@microsoft.com</email>
-    </developer>
-  </developers>
-
   <distributionManagement>
     <snapshotRepository>
       <id>ossrh</id>
