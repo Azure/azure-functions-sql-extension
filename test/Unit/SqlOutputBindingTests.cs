@@ -13,8 +13,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 {
     public class SqlOutputBindingTests
     {
-        private static readonly Mock<IConfiguration> config = new Mock<IConfiguration>();
-        private static readonly Mock<ILogger> logger = new Mock<ILogger>();
+        private static readonly Mock<IConfiguration> config = new();
+        private static readonly Mock<ILogger> logger = new();
 
         [Fact]
         public void TestNullCollectorConstructorArguments()
