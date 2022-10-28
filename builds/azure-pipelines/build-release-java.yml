@@ -10,10 +10,10 @@ steps:
       $source = 'java-library'
       $destination = '$(Build.ArtifactStagingDirectory)/java-library'
       New-Item $destination -ItemType Directory
-      Copy-Item "$source/pom.xml" "$destination/$prefix.pom"
-      Copy-Item "$source/target/$prefix.jar" "$destination/$prefix.jar"
-      Copy-Item "$source/target/$prefix-javadoc.jar" "$destination/$prefix-javadoc.jar"
-      Copy-Item "$source/target/$prefix-sources.jar" "$destination/$prefix-sources.jar"
+      Copy-Item "$source/pom.xml" "$destination/"
+      Copy-Item "$source/target/$prefix.jar" "$destination/"
+      Copy-Item "$source/target/$prefix-javadoc.jar" "$destination/"
+      Copy-Item "$source/target/$prefix-sources.jar" "$destination/"
     displayName: Copy output files
 
   - task: ManifestGeneratorTask@0
