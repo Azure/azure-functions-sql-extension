@@ -1139,14 +1139,6 @@
           "System.Runtime": "4.3.0"
         }
       },
-      "System.Drawing.Common": {
-        "type": "Transitive",
-        "resolved": "5.0.0",
-        "contentHash": "SztFwAnpfKC8+sEKXAFxCBWhKQaEd97EiOL7oZJZP56zbqnLpmxACWA8aGseaUExciuEAUuR9dY8f7HkTRAdnw==",
-        "dependencies": {
-          "Microsoft.Win32.SystemEvents": "5.0.0"
-        }
-      },
       "System.Dynamic.Runtime": {
         "type": "Transitive",
         "resolved": "4.3.0",
@@ -2050,6 +2042,15 @@
         "requested": "[3.3.2, )",
         "resolved": "3.3.2",
         "contentHash": "MQc8GppZJLmjvcpEdf3EkC6ovsp7gRWt2e5mC7dcIOrgwSc+yjFd3JQ0iRqr3XrUT6rb/phv0IkEmBtbfVA7AQ=="
+      },
+      "System.Drawing.Common": {
+        "type": "CentralTransitive",
+        "requested": "[5.0.3, )",
+        "resolved": "5.0.0",
+        "contentHash": "SztFwAnpfKC8+sEKXAFxCBWhKQaEd97EiOL7oZJZP56zbqnLpmxACWA8aGseaUExciuEAUuR9dY8f7HkTRAdnw==",
+        "dependencies": {
+          "Microsoft.Win32.SystemEvents": "5.0.0"
+        }
       },
       "System.Runtime.Caching": {
         "type": "CentralTransitive",
