@@ -8,7 +8,7 @@ steps:
   - powershell: |
       $prefix = 'azure-functions-java-library-sql-*'
       $source = 'java-library'
-      $destination = '$(Build.ArtifactStagingDirectory)'
+      $destination = '$(Build.ArtifactStagingDirectory)/java-library'
       New-Item $destination -ItemType Directory
       Copy-Item "$source/pom.xml" "$destination/$prefix.pom"
       Copy-Item "$source/target/$prefix.jar" "$destination/$prefix.jar"
@@ -19,7 +19,7 @@ steps:
   - task: ManifestGeneratorTask@0
     displayName: Generate SBOM manifest
     inputs:
-      buildDropPath: $(Build.ArtifactStagingDirectory)
+      buildDropPath: $(Build.ArtifactStagingDirectory)/java-library
       packageName: Azure Functions SQL Java Bindings
 
   - publish: $(Build.ArtifactStagingDirectory)
