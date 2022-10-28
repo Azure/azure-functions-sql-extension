@@ -10,10 +10,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc
 {
     public static class AddProduct
     {
-        [Function("AddProductOutOfProc")]
+        [Function("AddProduct")]
         [SqlOutput("dbo.Products", ConnectionStringSetting = "SqlConnectionString")]
         public static Product Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "addproductoutofproc")]
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "addproduct")]
             [FromBody] Product prod)
         {
             return prod;

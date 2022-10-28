@@ -14,9 +14,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc
 {
     public static class GetProducts
     {
-        [Function("GetProductsOutOfProc")]
+        [Function("GetProducts")]
         public static IActionResult Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproductsoutofproc/{cost}")]
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts/{cost}")]
             HttpRequest req,
             [SqlInput("select * from Products where Cost = @Cost",
                 CommandType = System.Data.CommandType.Text,
