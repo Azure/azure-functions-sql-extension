@@ -1,5 +1,6 @@
 # Build output
 target/
+repo/
 *.class
 
 # Log file
