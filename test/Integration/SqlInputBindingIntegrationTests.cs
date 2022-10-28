@@ -4,7 +4,6 @@
 using System;
 using System.Net.Http;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples;
 using Xunit;
@@ -129,9 +128,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             HttpResponseMessage response = await this.SendInputRequest("getproduct-namesview");
 
             // Verify result
-            string expectedResponse = "[{\"name\":\"test\"}]"; 
+            string expectedResponse = "[{\"name\":\"test\"}]";
             string actualResponse = await response.Content.ReadAsStringAsync();
             string actualProductResponse = JsonConvert.DeserializeObject<ProductName[]>(actualResponse).ToString();
+            Console.WriteLine(actualProductResponse);
 
             Assert.Equal(expectedResponse, actualProductResponse);
         }
@@ -178,9 +178,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             HttpResponseMessage response = await this.SendInputRequest("getproducts-columntypesserialization");
             // We expect the datetime and datetime2 fields to be returned in UTC format
-            var expectedResponse = JObject.Parse("[{ProductId:999,Datetime:2022-10-20T12:39:13.123Z,Datetime2:2022-10-20T12:39:13.123Z}]");
+            string expectedResponse = "[{\"ProductId\":999,\"Datetime\":\"2022-10-20T12:39:13.123Z\",\"Datetime2\":\"2022-10-20T12:39:13.123Z\"}]";
             string actualResponse = await response.Content.ReadAsStringAsync();
-            JObject actualProductResponse = JsonConvert.DeserializeObject<JObject>(actualResponse);
+            string actualProductResponse = JsonConvert.DeserializeObject<ProductName[]>(actualResponse).ToString();
+            Console.WriteLine(actualProductResponse);
 
             Assert.Equal(expectedResponse, actualProductResponse);
         }
