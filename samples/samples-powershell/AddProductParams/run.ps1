@@ -15,6 +15,18 @@ $req_body = @{
     "cost"= $Request.Body.cost;
 };
 
+Write-Host "REQUEST BODY"
+Write-Host $req_body
+
+$req_query = @{ 
+    "productId"= $Request.QUERY.productId;
+    "name"= $Request.QUERY.name;
+    "cost"= $Request.QUERY.cost;
+};
+Write-Host "REQUEST QUERY"
+Write-Host $req_query
+
+
 # Assign the value we want to pass to the SQL Output binding. 
 # The -Name value corresponds to the name property in the function.json for the binding
 Push-OutputBinding -Name product -Value $req_body
