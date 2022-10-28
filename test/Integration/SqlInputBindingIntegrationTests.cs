@@ -4,6 +4,7 @@
 using System;
 using System.Net.Http;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples;
 using Xunit;
@@ -128,10 +129,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             HttpResponseMessage response = await this.SendInputRequest("getproduct-namesview");
 
             // Verify result
-            string expectedResponse = "[{\"name\":\"test\"}]";
+            ProductName[] expectedResponse = JsonConvert.DeserializeObject<ProductName[]>("[{name:test}]");
             string actualResponse = await response.Content.ReadAsStringAsync();
-            string actualProductResponse = JsonConvert.DeserializeObject<ProductName[]>(actualResponse).ToString();
-            Console.WriteLine(actualProductResponse);
+            ProductName[] actualProductResponse = JsonConvert.DeserializeObject<ProductName[]>(actualResponse);
 
             Assert.Equal(expectedResponse, actualProductResponse);
         }
@@ -178,10 +178,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             HttpResponseMessage response = await this.SendInputRequest("getproducts-columntypesserialization");
             // We expect the datetime and datetime2 fields to be returned in UTC format
-            string expectedResponse = "[{\"ProductId\":999,\"Datetime\":\"2022-10-20T12:39:13.123Z\",\"Datetime2\":\"2022-10-20T12:39:13.123Z\"}]";
+            var expectedResponse = JObject.Parse("[{ProductId:999,Datetime:2022-10-20T12:39:13.123Z,Datetime2:2022-10-20T12:39:13.123Z}]");
             string actualResponse = await response.Content.ReadAsStringAsync();
-            string actualProductResponse = JsonConvert.DeserializeObject<ProductName[]>(actualResponse).ToString();
-            Console.WriteLine(actualProductResponse);
+            JObject actualProductResponse = JsonConvert.DeserializeObject<JObject>(actualResponse);
 
             Assert.Equal(expectedResponse, actualProductResponse);
         }
