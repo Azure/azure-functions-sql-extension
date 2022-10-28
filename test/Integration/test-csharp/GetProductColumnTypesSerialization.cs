@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs.Extensions.Http;
@@ -19,7 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples
         /// works as expected when using IEnumerable.
         /// </summary>
         [FunctionName(nameof(GetProductsColumnTypesSerialization))]
-        public static async Task<IActionResult> Run(
+        public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-columntypesserialization")]
             HttpRequest req,
             [Sql("SELECT * FROM [dbo].[ProductsColumnTypes]",
