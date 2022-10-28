@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
         [Arguments(1)]
         [Arguments(10)]
         [Arguments(100)]
-        [Arguments(1000)]
+        // [Arguments(1000)]
         public async Task ProductsTriggerTest(int count)
         {
             await this.WaitForProductChanges(
