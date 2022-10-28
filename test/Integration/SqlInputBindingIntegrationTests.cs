@@ -129,9 +129,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             HttpResponseMessage response = await this.SendInputRequest("getproduct-namesview");
 
             // Verify result
-            ProductName[] expectedResponse = JsonConvert.DeserializeObject<ProductName[]>("[{name:test}]");
+            string expectedResponse = "[{\"name\":\"test\"}]"; 
             string actualResponse = await response.Content.ReadAsStringAsync();
-            ProductName[] actualProductResponse = JsonConvert.DeserializeObject<ProductName[]>(actualResponse);
+            string actualProductResponse = JsonConvert.DeserializeObject<ProductName[]>(actualResponse).ToString();
 
             Assert.Equal(expectedResponse, actualProductResponse);
         }
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Theory]
         [SqlInlineData("en-US")]
         [SqlInlineData("it-IT")]
-        [UnsupportedLanguages(SupportedLanguages.JavaScript)] // IAsyncEnumerable is only available in C#
+        [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.PowerShell)] // IAsyncEnumerable is only available in C#
         public async void GetProductsColumnTypesSerializationAsyncEnumerableTest(string culture, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsColumnTypesSerializationAsyncEnumerable), lang, true);
