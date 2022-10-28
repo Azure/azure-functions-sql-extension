@@ -31,6 +31,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const int ListenerStarted = 2;
         private const int ListenerStopping = 3;
         private const int ListenerStopped = 4;
+
+        // NOTE: please ensure the Readme file and other public documentation are also updated if this value ever
+        // needs to be changed.
         public const int DefaultMaxChangesPerWorker = 1000;
 
         private readonly SqlObject _userTable;
@@ -42,7 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly ScaleMonitorDescriptor _scaleMonitorDescriptor;
 
         private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps = new Dictionary<TelemetryPropertyName, string>();
-        private readonly int _maxChangesPerWorker = DefaultMaxChangesPerWorker;
+        private readonly int _maxChangesPerWorker;
 
         private SqlTableChangeMonitor<T> _changeMonitor;
         private int _listenerState = ListenerNotStarted;
@@ -72,7 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{userFunctionId}-SqlTrigger-{tableName}");
 
             int? configuredMaxChangesPerWorker = configuration.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_MaxChangesPerWorker);
-            this._maxChangesPerWorker = configuredMaxChangesPerWorker ?? this._maxChangesPerWorker;
+            this._maxChangesPerWorker = configuredMaxChangesPerWorker ?? DefaultMaxChangesPerWorker;
         }
 
         public void Cancel()
