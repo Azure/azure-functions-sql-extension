@@ -14,7 +14,7 @@ $req_body = @{
     "name"= $Request.Body.name;
     "cost"= $Request.Body.cost;
 };
-
+ 
 Write-Host "REQUEST BODY"
 Write-Host $req_body
 
