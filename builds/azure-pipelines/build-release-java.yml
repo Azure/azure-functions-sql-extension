@@ -5,6 +5,19 @@ steps:
       mavenPomFile: java-library/pom.xml
       options: --batch-mode --define=gpg.skip --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
 
+  - task: Semmle@1
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+    inputs:
+      toolVersion: 'Latest'
+      sourceCodeDirectory: '$(Build.SourcesDirectory)/java-library'
+      language: 'java'
+      buildCommandsString: 'mvn clean package'
+      querySuite: 'Required'
+      timeout: '1800'
+      ram: '16384'
+      addProjectDirToScanningExclusionList: true
+
   - powershell: |
       $prefix = 'azure-functions-java-library-sql-*'
       $source = 'java-library'
