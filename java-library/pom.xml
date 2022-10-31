@@ -4,7 +4,7 @@
 
   <groupId>com.microsoft.azure.functions</groupId>
   <artifactId>azure-functions-java-library-sql</artifactId>
-  <version>0.0.0</version>
+  <version>0.1.0</version>
   <packaging>jar</packaging>
 
   <parent>
@@ -39,14 +39,6 @@
     <url>https://github.com/Azure/azure-functions-sql-extension</url>
     <tag>HEAD</tag>
   </scm>
-
-  <developers>
-    <developer>
-      <id>LucyZhang</id>
-      <name>Lucy Zhang</name>
-      <email>luczhan@microsoft.com</email>
-    </developer>
-  </developers>
 
   <distributionManagement>
     <snapshotRepository>
