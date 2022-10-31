@@ -4,7 +4,6 @@
 using System;
 using System.Net.Http;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples;
 using Xunit;
@@ -178,11 +177,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             HttpResponseMessage response = await this.SendInputRequest("getproducts-columntypesserialization");
             // We expect the datetime and datetime2 fields to be returned in UTC format
-            var expectedResponse = JObject.Parse("[{ProductId:999,Datetime:2022-10-20T12:39:13.123Z,Datetime2:2022-10-20T12:39:13.123Z}]");
+            string expectedResponse = "[{\"ProductId\":999,\"Datetime\":\"2022-10-20T12:39:13.123Z\",\"Datetime2\":\"2022-10-20T12:39:13.123Z\"}]";
             string actualResponse = await response.Content.ReadAsStringAsync();
-            JObject actualProductResponse = JsonConvert.DeserializeObject<JObject>(actualResponse);
 
-            Assert.Equal(expectedResponse, actualProductResponse);
+            Assert.Equal(expectedResponse, TestUtils.CleanJsonString(actualResponse), StringComparer.OrdinalIgnoreCase);
         }
     }
 }
