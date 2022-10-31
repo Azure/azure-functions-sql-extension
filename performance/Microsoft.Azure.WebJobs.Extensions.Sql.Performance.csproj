@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>    
     <!-- Need to set root namespace to empty for IDE0130 to work properly - otherwise it errors out on top-level namespaces for some reason -->
     <RootNamespace></RootNamespace>
   </PropertyGroup>
