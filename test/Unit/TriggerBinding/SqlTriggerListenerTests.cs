@@ -203,13 +203,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 
         private static IScaleMonitor<SqlTriggerMetrics> GetScaleMonitor(string tableName, string userFunctionId)
         {
+            Mock<IConfiguration> mockConfig = CreateMockConfiguration("1000");
+
             return new SqlTriggerListener<object>(
                 "testConnectionString",
                 tableName,
                 userFunctionId,
                 Mock.Of<ITriggeredFunctionExecutor>(),
                 Mock.Of<ILogger>(),
-                Mock.Of<IConfiguration>());
+                mockConfig.Object);
         }
 
         private static (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) GetScaleMonitor()
@@ -218,7 +220,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
             // a thread-safe collection for storing the log messages.
             var logMessages = new List<string>();
             var mockLogger = new Mock<ILogger>();
-
+            Mock<IConfiguration> config = CreateMockConfiguration("1000");
             // Both LogInformation() and LogDebug() are extension methods. Since the extension methods are static, they
             // cannot be mocked. Hence, we need to setup callback on an inner class method that gets eventually called
             // by these methods in order to extract the log message.
@@ -235,7 +237,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
                 "testUserFunctionId",
                 Mock.Of<ITriggeredFunctionExecutor>(),
                 mockLogger.Object,
-                Mock.Of<IConfiguration>());
+                config.Object);
 
             return (monitor, logMessages);
         }
@@ -255,6 +257,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
                 }),
                 WorkerCount = workerCount,
             };
+        }
+        private static Mock<IConfiguration> CreateMockConfiguration(string maxChangesPerWorker)
+        {
+            // GetValue is an extension(static) method and cannot be mocked. However it calls GetSection which 
+            // expects us to return IConfigurationSection, which is why GetSection is mocked. 
+            var section = new Mock<IConfigurationSection>();
+            section.Setup(x => x.Value).Returns(maxChangesPerWorker);
+
+            var config = new Mock<IConfiguration>();
+            config.Setup(x => x.GetSection(It.Is<string>(k => k == "Sql_Trigger_MaxChangesPerWorker"))).Returns(section.Object);
+            return config;
         }
     }
 }

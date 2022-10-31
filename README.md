@@ -44,6 +44,7 @@ Azure SQL bindings for Azure Functions are supported for:
     - [Trigger Binding Configuration](#trigger-binding-configuration)
       - [Sql_Trigger_BatchSize](#sql_trigger_batchsize)
       - [Sql_Trigger_PollingIntervalMs](#sql_trigger_pollingintervalms)
+      - [Sql_Trigger_MaxChangesPerWorker](#sql_trigger_maxchangesperworker)
   - [More Samples](#more-samples)
     - [Input Binding](#input-binding)
       - [Query String](#query-string)
@@ -580,7 +581,7 @@ This controls the delay in milliseconds between processing each batch of changes
 
 #### Sql_Trigger_MaxChangesPerWorker
 
-This controls the max number of changes handled by a worker, used for scaling decision.
+This controls the upper limit on the number of pending changes in the user table that are allowed per application-worker. If the count of changes exceeds this limit, it may result in a scale out. The setting only applies for Azure Function Apps with runtime driven scaling enabled. See the [Scaling](#Scaling) section for more information.
 
 ## More Samples
 
