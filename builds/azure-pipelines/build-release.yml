@@ -85,5 +85,9 @@ stages:
   jobs:
   - job: BuildJavaLibrary
     displayName: Build Java Library
+
+    pool:
+      vmImage: 'ubuntu-latest'
+
     steps:
     - template: build-release-java.yml
