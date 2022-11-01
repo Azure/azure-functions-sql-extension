@@ -69,13 +69,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-
+            int? configuredMaxChangesPerWorker;
             // Do not convert the scale-monitor ID to lower-case string since SQL table names can be case-sensitive
             // depending on the collation of the current database.
             this._scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{userFunctionId}-SqlTrigger-{tableName}");
 
-            int? configuredMaxChangesPerWorker = configuration.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_MaxChangesPerWorker);
-            this._maxChangesPerWorker = configuredMaxChangesPerWorker ?? DefaultMaxChangesPerWorker;
+            //In case converting from string to int is not possible from the user input.
+            try
+            {
+                configuredMaxChangesPerWorker = configuration.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_MaxChangesPerWorker);
+            }
+            catch (Exception)
+            {
+                configuredMaxChangesPerWorker = null;
+            }
+            this._maxChangesPerWorker = (configuredMaxChangesPerWorker != null && configuredMaxChangesPerWorker > 0) ? (int)configuredMaxChangesPerWorker : DefaultMaxChangesPerWorker;
         }
 
         public void Cancel()
