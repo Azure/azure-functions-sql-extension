@@ -13,7 +13,7 @@ steps:
       sourceCodeDirectory: '$(Build.SourcesDirectory)/java-library'
       language: 'java'
       buildCommandsString: 'mvn clean package'
-      querySuite: 'Required'
+      querySuite: 'Recommended'
       timeout: '1800'
       ram: '16384'
       addProjectDirToScanningExclusionList: true
