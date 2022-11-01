@@ -25,9 +25,9 @@
 
   <!-- Copy C# Samples output to BenchmarkDotNet project bin (https://github.com/dotnet/BenchmarkDotNet/issues/946) -->
   <ItemGroup>
-    <None Include="$(OutDir)\**\*">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <Link>%(RecursiveDir)\%(Filename)%(Extension)</Link>
+    <None Include="$(OutDir)\SqlExtensionSamples\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>SqlExtensionSamples\%(RecursiveDir)\%(Filename)%(Extension)</Link>
       <Visible>True</Visible>
     </None>
   </ItemGroup>
