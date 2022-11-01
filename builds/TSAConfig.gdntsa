@@ -15,6 +15,7 @@
         "BinSkim",
         "RoslynAnalyzers",
         "CredScan",
-        "Policheck"
+        "Policheck",
+        "CodeQL"
     ]
 }

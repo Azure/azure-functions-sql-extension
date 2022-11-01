@@ -90,7 +90,7 @@ stages:
     displayName: Build Java Library
 
     pool:
-      vmImage: 'ubuntu-latest'
+      vmImage: 'windows-latest'
 
     steps:
     - template: build-release-java.yml
