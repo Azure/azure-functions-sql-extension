@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.Common;
 using Microsoft.Azure.Functions.Worker.Extension.Sql;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
+using System.Web;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc
 {
@@ -14,15 +16,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc
         [SqlOutput("dbo.Products", ConnectionStringSetting = "SqlConnectionString")]
         public static Product Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "addproduct-params")]
-            HttpRequest req)
+            HttpRequestData req)
         {
             if (req != null)
             {
                 var product = new Product()
                 {
-                    Name = req.Query["name"],
-                    ProductID = int.Parse(req.Query["productId"], null),
-                    Cost = int.Parse(req.Query["cost"], null)
+                    Name = HttpUtility.ParseQueryString(req.Url.Query)["name"],
+                    ProductID = int.Parse(HttpUtility.ParseQueryString(req.Url.Query)["productId"], null),
+                    Cost = int.Parse(HttpUtility.ParseQueryString(req.Url.Query)["cost"], null)
                 };
                 return product;
             }
