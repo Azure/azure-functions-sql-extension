@@ -82,6 +82,7 @@ stages:
 
 - stage: BuildJava
   displayName: 'Release Build and Publish Java Library'
+  dependsOn: []
   jobs:
   - job: BuildJavaLibrary
     displayName: Build Java Library
