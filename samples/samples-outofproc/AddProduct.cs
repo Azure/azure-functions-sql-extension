@@ -3,11 +3,9 @@
 
 using Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.Common;
 using Microsoft.Azure.Functions.Worker.Extension.Sql;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
-using System.IO;
-using Newtonsoft.Json;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc
 {
@@ -15,12 +13,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc
     {
         [Function("AddProduct")]
         [SqlOutput("dbo.Products", ConnectionStringSetting = "SqlConnectionString")]
-        public static Product Run(
+        public static async Task<Product> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "addproduct")]
             HttpRequestData req)
         {
-            using var bodyReader = new StreamReader(req.Body);
-            Product prod = JsonConvert.DeserializeObject<Product>(bodyReader.ReadToEnd());
+            Product prod = await req.ReadFromJsonAsync<Product>();
             return prod;
         }
     }
