@@ -433,18 +433,18 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
     module.exports = async function (context, req) {
         const employees = [
             {
-                EmployeeId = 1,
-                FirstName = "Hello",
-                LastName = "World",
-                Company = "Microsoft",
-                Team = "Functions"
+                EmployeeId : 1,
+                FirstName : "Hello",
+                LastName : "World",
+                Company : "Microsoft",
+                Team : "Functions"
             },
             {
-                EmployeeId = 2,
-                FirstName = "Hi",
-                LastName = "SQLupdate",
-                Company = "Microsoft",
-                Team = "Functions"
+                EmployeeId : 2,
+                FirstName : "Hi",
+                LastName : "SQLupdate",
+                Company : "Microsoft",
+                Team : "Functions"
             }
         ];
         context.bindings.employee = employees;
