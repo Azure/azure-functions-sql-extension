@@ -11,6 +11,7 @@ using BenchmarkDotNet.Attributes;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
 {
+    [MemoryDiagnoser]
     public class SqlInputBindingPerformance : IntegrationTestBase
     {
         [GlobalSetup]
