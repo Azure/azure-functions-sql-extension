@@ -38,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [InlineData(new int[] { 1000, 1000, 1000, 1000 })] // metrics.Length == 4.
         public void ScaleMonitorGetScaleStatus_InsufficentMetrics_ReturnsNone(int[] unprocessedChangeCounts)
         {
-            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor("1000");
+            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor();
             ScaleStatusContext context = GetScaleStatusContext(unprocessedChangeCounts, 0);
 
             ScaleStatus scaleStatus = monitor.GetScaleStatus(context);
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [InlineData(new int[] { 1000, 1000, 0, 1, 2, 3, 1000 }, 1, ScaleVote.ScaleOut)]
         public void ScaleMonitorGetScaleStatus_ExcessMetrics_IgnoresExcessMetrics(int[] unprocessedChangeCounts, int workerCount, ScaleVote scaleVote)
         {
-            (IScaleMonitor<SqlTriggerMetrics> monitor, _) = GetScaleMonitor("1000");
+            (IScaleMonitor<SqlTriggerMetrics> monitor, _) = GetScaleMonitor();
             ScaleStatusContext context = GetScaleStatusContext(unprocessedChangeCounts, workerCount);
 
             ScaleStatus scaleStatus = monitor.GetScaleStatus(context);
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [InlineData(new int[] { 0, 0, 0, 0, 10001 }, 10)]
         public void ScaleMonitorGetScaleStatus_LastCountAboveLimit_ReturnsScaleOut(int[] unprocessedChangeCounts, int workerCount)
         {
-            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor("1000");
+            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor();
             ScaleStatusContext context = GetScaleStatusContext(unprocessedChangeCounts, workerCount);
 
             ScaleStatus scaleStatus = monitor.GetScaleStatus(context);
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [InlineData(new int[] { 0, 0, 0, 0, 10000 }, 10)]
         public void ScaleMonitorGetScaleStatus_LastCountBelowLimit_ReturnsNone(int[] unprocessedChangeCounts, int workerCount)
         {
-            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor("1000");
+            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor();
             ScaleStatusContext context = GetScaleStatusContext(unprocessedChangeCounts, workerCount);
 
             ScaleStatus scaleStatus = monitor.GetScaleStatus(context);
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [InlineData(new int[] { 0, 1, 4999, 5001, 7500 }, 10)]
         public void ScaleMonitorGetScaleStatus_CountIncreasingAboveLimit_ReturnsScaleOut(int[] unprocessedChangeCounts, int workerCount)
         {
-            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor("1000");
+            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor();
             ScaleStatusContext context = GetScaleStatusContext(unprocessedChangeCounts, workerCount);
 
             ScaleStatus scaleStatus = monitor.GetScaleStatus(context);
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [InlineData(new int[] { 0, 1, 5000, 5001, 7500 }, 10)]
         public void ScaleMonitorGetScaleStatus_CountIncreasingBelowLimit_ReturnsNone(int[] unprocessedChangeCounts, int workerCount)
         {
-            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor("1000");
+            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor();
             ScaleStatusContext context = GetScaleStatusContext(unprocessedChangeCounts, workerCount);
 
             ScaleStatus scaleStatus = monitor.GetScaleStatus(context);
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [InlineData(new int[] { 9005, 9004, 9003, 9002, 9000 }, 10)]
         public void ScaleMonitorGetScaleStatus_CountDecreasingBelowLimit_ReturnsScaleIn(int[] unprocessedChangeCounts, int workerCount)
         {
-            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor("1000");
+            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor();
             ScaleStatusContext context = GetScaleStatusContext(unprocessedChangeCounts, workerCount);
 
             ScaleStatus scaleStatus = monitor.GetScaleStatus(context);
@@ -170,7 +170,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [InlineData(new int[] { 9005, 9004, 9003, 9002, 9001 }, 10)]
         public void ScaleMonitorGetScaleStatus_CountDecreasingAboveLimit_ReturnsNone(int[] unprocessedChangeCounts, int workerCount)
         {
-            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor("1000");
+            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor();
             ScaleStatusContext context = GetScaleStatusContext(unprocessedChangeCounts, workerCount);
 
             ScaleStatus scaleStatus = monitor.GetScaleStatus(context);
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [InlineData(new int[] { 1, 1, 0, 0, 0 }, 10)]
         public void ScaleMonitorGetScaleStatus_CountNotIncreasingOrDecreasing_ReturnsNone(int[] unprocessedChangeCounts, int workerCount)
         {
-            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor("1000");
+            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor();
             ScaleStatusContext context = GetScaleStatusContext(unprocessedChangeCounts, workerCount);
 
             ScaleStatus scaleStatus = monitor.GetScaleStatus(context);
@@ -203,36 +203,54 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 
         [Theory]
         [InlineData("1")]
-        [InlineData("10")]
+        [InlineData("100")]
         [InlineData("10000")]
-        public void ScaleMonitorGetScaleStatus_VerifyUserConfiguredTriggerConfig(string maxChangesPerWorker)
+        public void ScaleMonitorGetScaleStatus_UserConfiguredMaxChangesPerWorker_RespectsConfiguration(string maxChangesPerWorker)
         {
-            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor(maxChangesPerWorker);
-            ScaleStatusContext context = GetScaleStatusContext(new int[] { 100, 150, 130, 120, 90 }, 10);
+            (IScaleMonitor<SqlTriggerMetrics> monitor, _) = GetScaleMonitor(maxChangesPerWorker);
 
-            monitor.GetScaleStatus(context);
+            ScaleStatusContext context;
+            ScaleStatus scaleStatus;
 
-            Assert.Contains(logMessages, message => message.Contains($"maximum changes per worker: {maxChangesPerWorker}"));
+            int max = int.Parse(maxChangesPerWorker);
+
+            context = GetScaleStatusContext(new int[] { 0, 0, 0, 0, 10 * max }, 10);
+            scaleStatus = monitor.GetScaleStatus(context);
+            Assert.Equal(ScaleVote.None, scaleStatus.Vote);
+
+            context = GetScaleStatusContext(new int[] { 0, 0, 0, 0, (10 * max) + 1 }, 10);
+            scaleStatus = monitor.GetScaleStatus(context);
+            Assert.Equal(ScaleVote.ScaleOut, scaleStatus.Vote);
+
+            context = GetScaleStatusContext(new int[] { (9 * max) + 4, (9 * max) + 3, (9 * max) + 2, (9 * max) + 1, 9 * max }, 10);
+            scaleStatus = monitor.GetScaleStatus(context);
+            Assert.Equal(ScaleVote.ScaleIn, scaleStatus.Vote);
         }
 
         [Theory]
-        [InlineData("testValue")]
+        [InlineData("invalidValue")]
         [InlineData("-1")]
         [InlineData("0")]
-        [InlineData("1e10")]
-        public void ScaleMonitorGetScaleStatus_InvalidUserConfiguredTriggerConfig_UseDefaultValue(string maxChangesPerWorker)
+        [InlineData("10000000000")]
+        public void ScaleMonitorGetScaleStatus_InvalidUserConfiguredMaxChangesPerWorker_UsesDefaultValue(string maxChangesPerWorker)
         {
-            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor(maxChangesPerWorker);
-            ScaleStatusContext context = GetScaleStatusContext(new int[] { 100, 150, 130, 120, 90 }, 10);
+            (IScaleMonitor<SqlTriggerMetrics> monitor, _) = GetScaleMonitor(maxChangesPerWorker);
 
-            monitor.GetScaleStatus(context);
+            ScaleStatusContext context;
+            ScaleStatus scaleStatus;
 
-            Assert.Contains(logMessages, message => message.Contains($"maximum changes per worker: 1000"));
+            context = GetScaleStatusContext(new int[] { 0, 0, 0, 0, 10000 }, 10);
+            scaleStatus = monitor.GetScaleStatus(context);
+            Assert.Equal(ScaleVote.None, scaleStatus.Vote);
+
+            context = GetScaleStatusContext(new int[] { 0, 0, 0, 0, 10001 }, 10);
+            scaleStatus = monitor.GetScaleStatus(context);
+            Assert.Equal(ScaleVote.ScaleOut, scaleStatus.Vote);
         }
 
         private static IScaleMonitor<SqlTriggerMetrics> GetScaleMonitor(string tableName, string userFunctionId)
         {
-            Mock<IConfiguration> mockConfig = CreateMockConfiguration("1000");
+            Mock<IConfiguration> mockConfig = CreateMockConfiguration();
 
             return new SqlTriggerListener<object>(
                 "testConnectionString",
@@ -243,22 +261,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
                 mockConfig.Object);
         }
 
-        private static (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) GetScaleMonitor(string maxChangesPerWorker)
+        private static (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) GetScaleMonitor(string maxChangesPerWorker = null)
         {
-            // Since multiple threads are not involved when computing the scale-status, it should be okay to not use
-            // a thread-safe collection for storing the log messages.
-            var logMessages = new List<string>();
-            var mockLogger = new Mock<ILogger>();
-            Mock<IConfiguration> config = CreateMockConfiguration(maxChangesPerWorker);
-            // Both LogInformation() and LogDebug() are extension methods. Since the extension methods are static, they
-            // cannot be mocked. Hence, we need to setup callback on an inner class method that gets eventually called
-            // by these methods in order to extract the log message.
-            mockLogger
-                .Setup(logger => logger.Log(It.IsAny<LogLevel>(), 0, It.IsAny<FormattedLogValues>(), null, It.IsAny<Func<object, Exception, string>>()))
-                .Callback((LogLevel logLevel, EventId eventId, object state, Exception exception, Func<object, Exception, string> formatter) =>
-                {
-                    logMessages.Add(state.ToString());
-                });
+            (Mock<ILogger> mockLogger, List<string> logMessages) = CreateMockLogger();
+            Mock<IConfiguration> mockConfiguration = CreateMockConfiguration(maxChangesPerWorker);
 
             IScaleMonitor<SqlTriggerMetrics> monitor = new SqlTriggerListener<object>(
                 "testConnectionString",
@@ -266,7 +272,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
                 "testUserFunctionId",
                 Mock.Of<ITriggeredFunctionExecutor>(),
                 mockLogger.Object,
-                config.Object);
+                mockConfiguration.Object);
 
             return (monitor, logMessages);
         }
@@ -287,16 +293,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
                 WorkerCount = workerCount,
             };
         }
-        private static Mock<IConfiguration> CreateMockConfiguration(string maxChangesPerWorker)
-        {
-            // GetValue is an extension(static) method and cannot be mocked. However it calls GetSection which 
-            // expects us to return IConfigurationSection, which is why GetSection is mocked. 
-            var section = new Mock<IConfigurationSection>();
-            section.Setup(x => x.Value).Returns(maxChangesPerWorker);
 
-            var config = new Mock<IConfiguration>();
-            config.Setup(x => x.GetSection(It.Is<string>(k => k == "Sql_Trigger_MaxChangesPerWorker"))).Returns(section.Object);
-            return config;
+        private static (Mock<ILogger> logger, List<string> logMessages) CreateMockLogger()
+        {
+            // Since multiple threads are not involved when computing the scale-status, it should be okay to not use
+            // a thread-safe collection for storing the log messages.
+            var logMessages = new List<string>();
+            var mockLogger = new Mock<ILogger>();
+
+            // Both LogInformation and LogDebug are extension (static) methods and cannot be mocked. Hence, we need to
+            // setup callback on an inner class method that gets eventually called by these methods in order to extract
+            // the log message.
+            mockLogger
+                .Setup(logger => logger.Log(It.IsAny<LogLevel>(), 0, It.IsAny<FormattedLogValues>(), null, It.IsAny<Func<object, Exception, string>>()))
+                .Callback((LogLevel logLevel, EventId eventId, object state, Exception exception, Func<object, Exception, string> formatter) =>
+                {
+                    logMessages.Add(state.ToString());
+                });
+
+            return (mockLogger, logMessages);
+        }
+
+        private static Mock<IConfiguration> CreateMockConfiguration(string maxChangesPerWorker = null)
+        {
+            // GetValue is an extension (static) method and cannot be mocked. However, it calls GetSection which
+            // expects us to return IConfigurationSection, which is why GetSection is mocked.
+            var mockConfiguration = new Mock<IConfiguration>();
+            mockConfiguration
+                .Setup(x => x.GetSection("Sql_Trigger_MaxChangesPerWorker"))
+                .Returns(Mock.Of<IConfigurationSection>(section => section.Value == maxChangesPerWorker));
+
+            return mockConfiguration;
         }
     }
 }
