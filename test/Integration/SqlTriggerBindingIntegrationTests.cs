@@ -29,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public async Task SingleOperationTriggerTest()
         {
-            this.EnableChangeTrackingForTable("Products");
+            this.SetChangeTrackingForTable("Products");
             this.StartFunctionHost(nameof(ProductsTrigger), SupportedLanguages.CSharp);
 
             int firstId = 1;
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             const int batchSize = SqlTableChangeMonitor<object>.DefaultBatchSize * 4;
             const int firstId = 1;
             const int lastId = batchSize;
-            this.EnableChangeTrackingForTable("Products");
+            this.SetChangeTrackingForTable("Products");
             var taskCompletionSource = new TaskCompletionSource<bool>();
             DataReceivedEventHandler handler = TestUtils.CreateOutputReceievedHandler(
                 taskCompletionSource,
@@ -120,10 +120,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             const int firstId = 1;
             // Use enough items to require 5 batches to be processed - the test will
             // only wait for the expected time and timeout if the default polling
-            // interval isn't actually modified. 
+            // interval isn't actually modified.
             const int lastId = SqlTableChangeMonitor<object>.DefaultBatchSize * 5;
             const int pollingIntervalMs = SqlTableChangeMonitor<object>.DefaultPollingIntervalMs / 2;
-            this.EnableChangeTrackingForTable("Products");
+            this.SetChangeTrackingForTable("Products");
             var taskCompletionSource = new TaskCompletionSource<bool>();
             DataReceivedEventHandler handler = TestUtils.CreateOutputReceievedHandler(
                 taskCompletionSource,
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             int firstId = 1;
             int lastId = 5;
-            this.EnableChangeTrackingForTable("Products");
+            this.SetChangeTrackingForTable("Products");
             this.StartFunctionHost(nameof(ProductsTrigger), SupportedLanguages.CSharp);
 
             // 1. Insert + multiple updates to a row are treated as single insert with latest row values.
@@ -241,7 +241,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             const string Trigger1Changes = "Trigger1 Changes: ";
             const string Trigger2Changes = "Trigger2 Changes: ";
 
-            this.EnableChangeTrackingForTable("Products");
+            this.SetChangeTrackingForTable("Products");
 
             string functionList = $"{nameof(MultiFunctionTrigger.MultiFunctionTrigger1)} {nameof(MultiFunctionTrigger.MultiFunctionTrigger2)}";
             this.StartFunctionHost(functionList, SupportedLanguages.CSharp, useTestFolder: true);
@@ -363,7 +363,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public async Task MultiHostTriggerTest()
         {
-            this.EnableChangeTrackingForTable("Products");
+            this.SetChangeTrackingForTable("Products");
 
             // Prepare three function host processes.
             this.StartFunctionHost(nameof(ProductsTrigger), SupportedLanguages.CSharp);
@@ -479,11 +479,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             ");
         }
 
-        protected void EnableChangeTrackingForTable(string tableName)
+        protected void SetChangeTrackingForTable(string tableName, bool enable = true)
         {
             this.ExecuteNonQuery($@"
                 ALTER TABLE [dbo].[{tableName}]
-                ENABLE CHANGE_TRACKING;
+                {(enable ? "ENABLE" : "DISABLE")} CHANGE_TRACKING;
             ");
         }
 
@@ -559,6 +559,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             await actions();
 
             // Now wait until either we timeout or we've gotten all the expected changes, whichever comes first
+            Console.WriteLine("Waiting for product changes");
             await taskCompletion.Task.TimeoutAfter(TimeSpan.FromMilliseconds(timeoutMs), $"Timed out waiting for {operation} changes.");
 
             // Unhook handler since we're done monitoring these changes so we aren't checking other changes done later
@@ -610,7 +611,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         /// <summary>
         /// Gets a timeout value to use when processing the given number of changes, based on the
-        /// default batch size and polling interval. 
+        /// default batch size and polling interval.
         /// </summary>
         /// <param name="firstId">The first ID in the batch to process</param>
         /// <param name="lastId">The last ID in the batch to process</param>
