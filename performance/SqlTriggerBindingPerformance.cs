@@ -4,17 +4,16 @@
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.TriggerBindingSamples;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
-using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration;
 using BenchmarkDotNet.Attributes;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
 {
-    public class SqlTriggerBindingPerformance : SqlTriggerBindingIntegrationTests
+    [MemoryDiagnoser]
+    public class SqlTriggerBindingPerformance : SqlTriggerBindingPerformanceTestBase
     {
         [GlobalSetup]
         public void GlobalSetup()
         {
-            this.EnableChangeTrackingForTable("Products");
             this.StartFunctionHost(nameof(ProductsTrigger), SupportedLanguages.CSharp);
         }
 
@@ -33,19 +32,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
                 id => $"Product {id}",
                 id => id * 100,
                 this.GetBatchProcessingTimeout(1, count));
-        }
-
-        [IterationCleanup]
-        public void IterationCleanup()
-        {
-            // Delete all rows in Products table after each iteration
-            this.ExecuteNonQuery("TRUNCATE TABLE Products");
-        }
-
-        [GlobalCleanup]
-        public void GlobalCleanup()
-        {
-            this.Dispose();
         }
     }
 }
