@@ -79,8 +79,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 configuredMaxChangesPerWorker = configuration.GetValue<int>(SqlTriggerConstants.ConfigKey_SqlTrigger_MaxChangesPerWorker);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                this._logger.LogError($"Failed to resolve integer value from user configured setting '{SqlTriggerConstants.ConfigKey_SqlTrigger_MaxChangesPerWorker}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
+                TelemetryInstance.TrackException(TelemetryErrorName.InvalidConfigurationValue, ex, this._telemetryProps);
+
                 configuredMaxChangesPerWorker = DefaultMaxChangesPerWorker;
             }
             this._maxChangesPerWorker = configuredMaxChangesPerWorker > 0 ? configuredMaxChangesPerWorker : DefaultMaxChangesPerWorker;
