@@ -434,18 +434,18 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
     module.exports = async function (context, req) {
         const employees = [
             {
-                EmployeeId = 1,
-                FirstName = "Hello",
-                LastName = "World",
-                Company = "Microsoft",
-                Team = "Functions"
+                EmployeeId : 1,
+                FirstName : "Hello",
+                LastName : "World",
+                Company : "Microsoft",
+                Team : "Functions"
             },
             {
-                EmployeeId = 2,
-                FirstName = "Hi",
-                LastName = "SQLupdate",
-                Company = "Microsoft",
-                Team = "Functions"
+                EmployeeId : 2,
+                FirstName : "Hi",
+                LastName : "SQLupdate",
+                Company : "Microsoft",
+                Team : "Functions"
             }
         ];
         context.bindings.employee = employees;
@@ -953,6 +953,7 @@ public static void Run(
 ## Known Issues
 
 - Output bindings against tables with columns of data types `NTEXT`, `TEXT`, or `IMAGE` are not supported and data upserts will fail. These types [will be removed](https://docs.microsoft.com/sql/t-sql/data-types/ntext-text-and-image-transact-sql) in a future version of SQL Server and are not compatible with the `OPENJSON` function used by this Azure Functions binding.
+- Input bindings against tables with columns of data types 'DATETIME', 'DATETIME2', or 'SMALLDATETIME' will assume that the values are in UTC format.
 
 - Trigger bindings will exhibit undefined behavior if the SQL table schema gets modified while the user application is running, for example, if a column is added, renamed or deleted or if the primary key is modified or deleted. In such cases, restarting the application should help resolve any errors.
 
