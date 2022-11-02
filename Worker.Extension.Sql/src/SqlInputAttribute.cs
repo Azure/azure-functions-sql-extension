@@ -1,28 +1,20 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using System;
-using System.Data;
-using Microsoft.Azure.WebJobs.Description;
+using Microsoft.Azure.Functions.Worker.Extensions.Abstractions;
 
-namespace Microsoft.Azure.WebJobs
+namespace Microsoft.Azure.Functions.Worker.Extension.Sql
 {
-    /// <summary>
-    /// An input and output binding that can be used to either:
-    /// - Establish a connection to a SQL server database and extract the results of a query run against that database, in the case of an input binding
-    /// - Establish a connection to a SQL server database and insert rows into a given table, in the case of an output binding
-    /// </summary>
-    [Binding]
-    [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.ReturnValue)]
-    public sealed class SqlAttribute : Attribute
+    public sealed class SqlInputAttribute : InputBindingAttribute
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="SqlAttribute/>"/> class.
+        /// Creates an instance of the <see cref="SqlAttribute"/>, specifying the Sql attributes
+        /// the function supports.
         /// </summary>
-        /// <param name="commandText">The text of the command</param>
-        public SqlAttribute(string commandText)
+        /// <param name="commandText">The text of the command.</param>
+        public SqlInputAttribute(string commandText)
         {
-            this.CommandText = commandText ?? throw new ArgumentNullException(nameof(commandText));
+            this.CommandText = commandText;
         }
 
         /// <summary>
@@ -37,17 +29,15 @@ namespace Microsoft.Azure.WebJobs
         public string ConnectionStringSetting { get; set; }
 
         /// <summary>
-        /// For an input binding, either a SQL query or stored procedure that will be run in the database referred to in the ConnectionString.
-        /// For an output binding, the table name.
+        /// Either a SQL query or stored procedure that will be run in the database referred to in the ConnectionString.
         /// </summary>
-        [AutoResolve]
-        public string CommandText { get; }
+        public string CommandText { get; set; }
 
         /// <summary>
         /// Specifies whether <see cref="CommandText"/> refers to a stored procedure or SQL query string.
         /// Use <see cref="CommandType.StoredProcedure"/> for the former, <see cref="CommandType.Text"/> for the latter
         /// </summary>
-        public CommandType CommandType { get; set; } = CommandType.Text;
+        public System.Data.CommandType CommandType { get; set; } = System.Data.CommandType.Text;
 
         /// <summary>
         /// Specifies the parameters that will be used to execute the SQL query or stored procedure specified in <see cref="CommandText"/>.
@@ -58,7 +48,6 @@ namespace Microsoft.Azure.WebJobs
         /// as in "@param1=,@param2=param2"
         /// Note that neither the parameter name nor the parameter value can have ',' or '='
         /// </summary>
-        [AutoResolve]
         public string Parameters { get; set; }
     }
 }

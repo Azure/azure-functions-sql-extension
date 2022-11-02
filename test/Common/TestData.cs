@@ -17,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 
         public override bool Equals(object obj)
         {
-            if (!(obj is TestData otherData))
+            if (obj is not TestData otherData)
             {
                 return false;
             }

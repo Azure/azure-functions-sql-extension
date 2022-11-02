@@ -19,11 +19,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 {
     public class SqlInputBindingTests
     {
-        private static readonly Mock<IConfiguration> config = new Mock<IConfiguration>();
-        private static readonly Mock<IHostIdProvider> hostIdProvider = new Mock<IHostIdProvider>();
-        private static readonly Mock<ILoggerFactory> loggerFactory = new Mock<ILoggerFactory>();
-        private static readonly Mock<ILogger> logger = new Mock<ILogger>();
-        private static readonly SqlConnection connection = new SqlConnection();
+        private static readonly Mock<IConfiguration> config = new();
+        private static readonly Mock<IHostIdProvider> hostIdProvider = new();
+        private static readonly Mock<ILoggerFactory> loggerFactory = new();
+        private static readonly Mock<ILogger> logger = new();
+        private static readonly SqlConnection connection = new();
 
         [Fact]
         public void TestNullConfiguration()
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         }
 
         /// <summary>
-        /// SqlAsyncEnumerable should throw InvalidOperationExcepion when invoked with an invalid connection 
+        /// SqlAsyncEnumerable should throw InvalidOperationExcepion when invoked with an invalid connection
         /// string setting and It should fail here since we're passing an empty connection string.
         /// <summary>
         [Fact]
@@ -272,7 +272,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
             var converter = new Mock<SqlGenericsConverter<TestData>>(config.Object, logger.Object);
 
             // SQL data is missing a field
-            string json = "[{ \"ID\":1,\"Name\":\"Broom\",\"Timestamp\":\"2019-11-22T06:32:15\"}]";
+            string json = /*lang=json,strict*/ "[{ \"ID\":1,\"Name\":\"Broom\",\"Timestamp\":\"2019-11-22T06:32:15\"}]";
             converter.Setup(_ => _.BuildItemFromAttributeAsync(arg, ConvertType.IEnumerable)).ReturnsAsync(json);
             var list = new List<TestData>();
             var data = new TestData
@@ -287,7 +287,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
             Assert.True(enActual.ToList().SequenceEqual(list));
 
             // SQL data's columns are named differently than the POCO's fields
-            json = "[{ \"ID\":1,\"Product Name\":\"Broom\",\"Price\":32.5,\"Timessstamp\":\"2019-11-22T06:32:15\"}]";
+            json = /*lang=json,strict*/ "[{ \"ID\":1,\"Product Name\":\"Broom\",\"Price\":32.5,\"Timessstamp\":\"2019-11-22T06:32:15\"}]";
             converter.Setup(_ => _.BuildItemFromAttributeAsync(arg, ConvertType.IEnumerable)).ReturnsAsync(json);
             list = new List<TestData>();
             data = new TestData
@@ -301,7 +301,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
             Assert.True(enActual.ToList().SequenceEqual(list));
 
             // Confirm that the JSON fields are case-insensitive (technically malformed string, but still works)
-            json = "[{ \"id\":1,\"nAme\":\"Broom\",\"coSt\":32.5,\"TimEStamp\":\"2019-11-22T06:32:15\"}]";
+            json = /*lang=json,strict*/ "[{ \"id\":1,\"nAme\":\"Broom\",\"coSt\":32.5,\"TimEStamp\":\"2019-11-22T06:32:15\"}]";
             converter.Setup(_ => _.BuildItemFromAttributeAsync(arg, ConvertType.IEnumerable)).ReturnsAsync(json);
             list = new List<TestData>();
             data = new TestData
