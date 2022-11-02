@@ -98,6 +98,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="primaryKeyColumns">List of primary key column names in the user table</param>
         /// <param name="executor">Defines contract for triggering user function</param>
         /// <param name="logger">Facilitates logging of messages</param>
+        /// <param name="configuration">Provides configuration values</param>
         /// <param name="telemetryProps">Properties passed in telemetry events</param>
         public SqlTableChangeMonitor(
             string connectionString,

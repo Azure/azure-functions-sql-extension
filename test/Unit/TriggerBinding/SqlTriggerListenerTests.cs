@@ -201,33 +201,70 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
             Assert.Contains("Requesting no-scaling: Found the number of unprocessed changes for table: 'testTableName' to not require scaling.", logMessages);
         }
 
+        [Theory]
+        [InlineData("1")]
+        [InlineData("100")]
+        [InlineData("10000")]
+        public void ScaleMonitorGetScaleStatus_UserConfiguredMaxChangesPerWorker_RespectsConfiguration(string maxChangesPerWorker)
+        {
+            (IScaleMonitor<SqlTriggerMetrics> monitor, _) = GetScaleMonitor(maxChangesPerWorker);
+
+            ScaleStatusContext context;
+            ScaleStatus scaleStatus;
+
+            int max = int.Parse(maxChangesPerWorker);
+
+            context = GetScaleStatusContext(new int[] { 0, 0, 0, 0, 10 * max }, 10);
+            scaleStatus = monitor.GetScaleStatus(context);
+            Assert.Equal(ScaleVote.None, scaleStatus.Vote);
+
+            context = GetScaleStatusContext(new int[] { 0, 0, 0, 0, (10 * max) + 1 }, 10);
+            scaleStatus = monitor.GetScaleStatus(context);
+            Assert.Equal(ScaleVote.ScaleOut, scaleStatus.Vote);
+
+            context = GetScaleStatusContext(new int[] { (9 * max) + 4, (9 * max) + 3, (9 * max) + 2, (9 * max) + 1, 9 * max }, 10);
+            scaleStatus = monitor.GetScaleStatus(context);
+            Assert.Equal(ScaleVote.ScaleIn, scaleStatus.Vote);
+        }
+
+        [Theory]
+        [InlineData("invalidValue")]
+        [InlineData("-1")]
+        [InlineData("0")]
+        [InlineData("10000000000")]
+        public void ScaleMonitorGetScaleStatus_InvalidUserConfiguredMaxChangesPerWorker_UsesDefaultValue(string maxChangesPerWorker)
+        {
+            (IScaleMonitor<SqlTriggerMetrics> monitor, _) = GetScaleMonitor(maxChangesPerWorker);
+
+            ScaleStatusContext context;
+            ScaleStatus scaleStatus;
+
+            context = GetScaleStatusContext(new int[] { 0, 0, 0, 0, 10000 }, 10);
+            scaleStatus = monitor.GetScaleStatus(context);
+            Assert.Equal(ScaleVote.None, scaleStatus.Vote);
+
+            context = GetScaleStatusContext(new int[] { 0, 0, 0, 0, 10001 }, 10);
+            scaleStatus = monitor.GetScaleStatus(context);
+            Assert.Equal(ScaleVote.ScaleOut, scaleStatus.Vote);
+        }
+
         private static IScaleMonitor<SqlTriggerMetrics> GetScaleMonitor(string tableName, string userFunctionId)
         {
+            Mock<IConfiguration> mockConfiguration = CreateMockConfiguration();
+
             return new SqlTriggerListener<object>(
                 "testConnectionString",
                 tableName,
                 userFunctionId,
                 Mock.Of<ITriggeredFunctionExecutor>(),
                 Mock.Of<ILogger>(),
-                Mock.Of<IConfiguration>());
+                mockConfiguration.Object);
         }
 
-        private static (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) GetScaleMonitor()
+        private static (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) GetScaleMonitor(string maxChangesPerWorker = null)
         {
-            // Since multiple threads are not involved when computing the scale-status, it should be okay to not use
-            // a thread-safe collection for storing the log messages.
-            var logMessages = new List<string>();
-            var mockLogger = new Mock<ILogger>();
-
-            // Both LogInformation() and LogDebug() are extension methods. Since the extension methods are static, they
-            // cannot be mocked. Hence, we need to setup callback on an inner class method that gets eventually called
-            // by these methods in order to extract the log message.
-            mockLogger
-                .Setup(logger => logger.Log(It.IsAny<LogLevel>(), 0, It.IsAny<FormattedLogValues>(), null, It.IsAny<Func<object, Exception, string>>()))
-                .Callback((LogLevel logLevel, EventId eventId, object state, Exception exception, Func<object, Exception, string> formatter) =>
-                {
-                    logMessages.Add(state.ToString());
-                });
+            (Mock<ILogger> mockLogger, List<string> logMessages) = CreateMockLogger();
+            Mock<IConfiguration> mockConfiguration = CreateMockConfiguration(maxChangesPerWorker);
 
             IScaleMonitor<SqlTriggerMetrics> monitor = new SqlTriggerListener<object>(
                 "testConnectionString",
@@ -235,7 +272,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
                 "testUserFunctionId",
                 Mock.Of<ITriggeredFunctionExecutor>(),
                 mockLogger.Object,
-                Mock.Of<IConfiguration>());
+                mockConfiguration.Object);
 
             return (monitor, logMessages);
         }
@@ -255,6 +292,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
                 }),
                 WorkerCount = workerCount,
             };
+        }
+
+        private static (Mock<ILogger> logger, List<string> logMessages) CreateMockLogger()
+        {
+            // Since multiple threads are not involved when computing the scale-status, it should be okay to not use
+            // a thread-safe collection for storing the log messages.
+            var logMessages = new List<string>();
+            var mockLogger = new Mock<ILogger>();
+
+            // Both LogInformation and LogDebug are extension (static) methods and cannot be mocked. Hence, we need to
+            // setup callback on an inner class method that gets eventually called by these methods in order to extract
+            // the log message.
+            mockLogger
+                .Setup(logger => logger.Log(It.IsAny<LogLevel>(), 0, It.IsAny<FormattedLogValues>(), null, It.IsAny<Func<object, Exception, string>>()))
+                .Callback((LogLevel logLevel, EventId eventId, object state, Exception exception, Func<object, Exception, string> formatter) =>
+                {
+                    logMessages.Add(state.ToString());
+                });
+
+            return (mockLogger, logMessages);
+        }
+
+        private static Mock<IConfiguration> CreateMockConfiguration(string maxChangesPerWorker = null)
+        {
+            // GetValue is an extension (static) method and cannot be mocked. However, it calls GetSection which
+            // expects us to return IConfigurationSection, which is why GetSection is mocked.
+            var mockConfiguration = new Mock<IConfiguration>();
+            mockConfiguration
+                .Setup(x => x.GetSection("Sql_Trigger_MaxChangesPerWorker"))
+                .Returns(Mock.Of<IConfigurationSection>(section => section.Value == maxChangesPerWorker));
+
+            return mockConfiguration;
         }
     }
 }
