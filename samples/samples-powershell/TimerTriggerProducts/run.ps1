@@ -1,8 +1,6 @@
 using namespace System.Net
 
-# Trigger binding data passed in via param block
 $executionNumber = 0;
-param($myTimer)
 $totalUpserts = 100;
 # Write to the Azure Functions log stream.
 Write-Host "[QueueTrigger]: $Get-Date starting execution $executionNumber. Rows to generate=$totalUpserts."
