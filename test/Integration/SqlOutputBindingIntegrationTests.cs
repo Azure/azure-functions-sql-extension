@@ -244,7 +244,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
-        /// Tests that for tables with multiple primary columns (including an itemtity column) we are able to
+        /// Tests that for tables with multiple primary columns (including an identity column) we are able to
         /// insert items.
         /// </summary>
         [Theory]

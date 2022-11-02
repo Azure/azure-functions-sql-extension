@@ -13,7 +13,7 @@ $req_body = $Request.Body
 
 # Assign the value we want to pass to the SQL Output binding. 
 # The -Name value corresponds to the name property in the function.json for the binding
-Push-OutputBinding -Name product -Value $req_body
+Push-OutputBinding -Name products -Value $req_body
 
 # Assign the value to return as the HTTP response. 
 # The -Name value matches the name property in the function.json for the binding

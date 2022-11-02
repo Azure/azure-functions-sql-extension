@@ -1,7 +1,7 @@
 using namespace System.Net
 
 # Trigger binding data passed in via param block
-param($Request)
+param($queueMessage)
 $totalUpserts = 100;
 # Write to the Azure Functions log stream.
 Write-Host "[QueueTrigger]: $Get-Date starting execution $queueMessage. Rows to generate=$totalUpserts."
@@ -21,7 +21,7 @@ for ($i = 0; $i -lt $totalUpserts; $i++) {
 }
 # Assign the value we want to pass to the SQL Output binding. 
 # The -Name value corresponds to the name property in the function.json for the binding
-Push-OutputBinding -Name product -Value $products
+Push-OutputBinding -Name products -Value $products
 $duration = Get-Date - $start;
 
 Write-Host "[QueueTrigger]: $Get-Date finished execution $queueMessage. Total time to create $totalUpserts rows=$duration."

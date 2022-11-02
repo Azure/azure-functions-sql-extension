@@ -9,12 +9,12 @@ Write-Host "PowerShell function with SQL Output Binding processed a request."
 # Update req_body with the body of the request
 # Note that this expects the body to be a JSON object or array of objects 
 # which have a property matching each of the columns in the table to upsert to.
-$req_body = (@{
+$req_body = @(@{
     name="Cup";
-    cost="2";
-}, {
+    cost=2;
+}, @{
     name="Glasses";
-    cost="12";
+    cost=12;
 })
 
 # Assign the value we want to pass to the SQL Output binding. 
