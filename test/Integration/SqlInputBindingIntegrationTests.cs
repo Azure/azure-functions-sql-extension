@@ -82,7 +82,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Equal(n, this.ExecuteScalar($"select count(1) from Products where name = '' and cost = {cost}"));
 
             // Run the function
-            HttpResponseMessage response = await this.SendInputRequest("getproducts-nameempty", cost.ToString());
+            HttpResponseMessage response = await this.SendInputRequest("get`ts-nameempty", cost.ToString());
 
             // Verify result
             Product[] expectedResponse = products;
@@ -128,11 +128,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             HttpResponseMessage response = await this.SendInputRequest("getproduct-namesview");
 
             // Verify result
-            ProductName[] expectedResponse = JsonConvert.DeserializeObject<ProductName[]>("[{name:test}]");
+            string expectedResponse = "[{\"name\":\"test\"}]";
             string actualResponse = await response.Content.ReadAsStringAsync();
-            ProductName[] actualProductResponse = JsonConvert.DeserializeObject<ProductName[]>(actualResponse);
 
-            Assert.Equal(expectedResponse, actualProductResponse);
+            Assert.Equal(expectedResponse, TestUtils.CleanJsonString(actualResponse), StringComparer.OrdinalIgnoreCase);
         }
 
         /// <summary>
