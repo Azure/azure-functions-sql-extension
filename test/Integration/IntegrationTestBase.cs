@@ -433,9 +433,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     functionHost.Kill();
                     functionHost.Dispose();
                 }
-                catch (Exception e2)
+                catch (Exception ex)
                 {
-                    this.LogOutput($"Failed to stop function host, Error: {e2.Message}");
+                    this.LogOutput($"Failed to stop function host, Error: {ex.Message}");
                 }
             }
             this.FunctionHostList.Clear();
