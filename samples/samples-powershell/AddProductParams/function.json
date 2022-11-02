@@ -6,7 +6,8 @@
       "direction": "in",
       "type": "httpTrigger",
       "methods": [
-        "get"
+        "get",
+        "post"
       ],
       "route": "addproduct-params"
     },
