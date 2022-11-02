@@ -1,5 +1,6 @@
 using namespace System.Net
 
+param($myTimer)
 $executionNumber = 0;
 $totalUpserts = 100;
 # Write to the Azure Functions log stream.

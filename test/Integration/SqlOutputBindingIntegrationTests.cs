@@ -45,6 +45,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(1, "Test", 5)]
         [SqlInlineData(0, "", 0)]
         [SqlInlineData(-500, "ABCD", 580)]
+        // Currently PowerShell returns null if the output
+        // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/443
+        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
         public void AddProductParamsTest(int id, string name, int cost, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductParams), lang);
