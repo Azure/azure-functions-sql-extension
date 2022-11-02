@@ -417,6 +417,7 @@ This extension collect usage data in order to help us improve your experience. T
         GetPrimaryKeys,
         GetScaleStatus,
         GetUnprocessedChangeCount,
+        InvalidConfigurationValue,
         MissingPrimaryKeys,
         NoPrimaryKeys,
         ProcessChanges,
