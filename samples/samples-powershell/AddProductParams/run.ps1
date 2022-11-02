@@ -11,12 +11,10 @@ $req_query = @{
     "name"= $Request.QUERY.name;
     "cost"= $Request.QUERY.cost;
 };
-Write-Host "REQUEST QUERY"
-Write-Host $req_query
 
 # Assign the value we want to pass to the SQL Output binding. 
 # The -Name value corresponds to the name property in the function.json for the binding
-Push-OutputBinding -Name product -Value $req_query  ´
+Push-OutputBinding -Name product -Value $req_query
 
 # Assign the value to return as the HTTP response. 
 # The -Name value matches the name property in the function.json for the binding
