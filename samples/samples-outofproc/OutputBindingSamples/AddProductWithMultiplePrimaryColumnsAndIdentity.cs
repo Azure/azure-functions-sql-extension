@@ -27,8 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingS
         /// All other primary key columns are required to be in the object.
         /// </summary>
         /// <param name="req">The original request that triggered the function</param>
-        /// <param name="product">The created Product object</param>
-        /// <returns>The CreatedResult containing the new object that was inserted</returns>
+        /// <returns>The new product object that will be upserted</returns>
         [Function(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity))]
         [SqlOutput("dbo.ProductsWithMultiplePrimaryColumnsAndIdentity", ConnectionStringSetting = "SqlConnectionString")]
         public static MultiplePrimaryKeyProductWithoutId Run(

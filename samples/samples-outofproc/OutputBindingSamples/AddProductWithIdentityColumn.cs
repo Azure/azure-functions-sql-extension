@@ -18,8 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingS
         /// ID will be generated upon insert.
         /// </summary>
         /// <param name="req">The original request that triggered the function</param>
-        /// <param name="product">The created Product object</param>
-        /// <returns>The CreatedResult containing the new object that was inserted</returns>
+        /// <returns>The product object containing the new object that will be upserted</returns>
         [Function(nameof(AddProductWithIdentityColumn))]
         [SqlOutput("dbo.ProductsWithIdentity", ConnectionStringSetting = "SqlConnectionString")]
         public static ProductWithoutId Run(
