@@ -20,10 +20,3 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Unused parameter is required by functions binding", Scope = "member", Target = "~M:Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.InputBindingSamples.GetProductsString.Run(Microsoft.AspNetCore.Http.HttpRequest,System.String)~Microsoft.AspNetCore.Mvc.IActionResult")]
 [assembly: SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Unused parameter is required by functions binding", Scope = "member", Target = "~M:Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.InputBindingSamples.GetProductsTopN.Run(Microsoft.AspNetCore.Http.HttpRequest,System.Collections.Generic.IEnumerable{Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.Common.Product})~Microsoft.AspNetCore.Mvc.IActionResult")]
 [assembly: SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "Unused parameter is required by functions binding", Scope = "member", Target = "~M:Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingSamples.AddProductsWithIdentityColumnArray.Run(Microsoft.AspNetCore.Http.HttpRequest)~Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.Common.ProductWithoutId[]")]
-
-
-
-
-
-
-
