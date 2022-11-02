@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
             this.DisposeFunctionHosts();
             this.SetChangeTrackingForTable("Products", false);
             // Delete all rows in Products table after each iteration so we start fresh each time
-            this.ExecuteNonQuery("DELETE FROM Products");
+            this.ExecuteNonQuery("TRUNCATE TABLE Products");
             // Delete the leases table, otherwise we may end up getting blocked by leases from a previous run
             this.ExecuteNonQuery(@"DECLARE @cmd varchar(100)
 DECLARE cmds CURSOR FOR
