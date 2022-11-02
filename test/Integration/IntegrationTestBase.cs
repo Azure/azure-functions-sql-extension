@@ -394,18 +394,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 this.LogOutput($"Failed to close connection. Error: {e1.Message}");
             }
 
-            foreach (Process functionHost in this.FunctionHostList)
-            {
-                try
-                {
-                    functionHost.Kill();
-                    functionHost.Dispose();
-                }
-                catch (Exception e2)
-                {
-                    this.LogOutput($"Failed to stop function host, Error: {e2.Message}");
-                }
-            }
+            this.DisposeFunctionHosts();
 
             try
             {
@@ -430,6 +419,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
 
             GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Disposes all the running function hosts
+        /// </summary>
+        protected void DisposeFunctionHosts()
+        {
+            foreach (Process functionHost in this.FunctionHostList)
+            {
+                try
+                {
+                    functionHost.Kill();
+                    functionHost.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    this.LogOutput($"Failed to stop function host, Error: {ex.Message}");
+                }
+            }
+            this.FunctionHostList.Clear();
         }
 
         protected async Task<HttpResponseMessage> SendInputRequest(string functionName, string query = "")
