@@ -9,7 +9,7 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.Common;
 using Microsoft.Azure.Functions.Worker.Extension.Sql;
 using Microsoft.Azure.Functions.Worker;
 
-namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc
+namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.InputBindingSamples
 {
     public static class GetProductsAsyncEnumerable
     {

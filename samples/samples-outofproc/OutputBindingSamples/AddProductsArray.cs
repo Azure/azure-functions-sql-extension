@@ -7,7 +7,7 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.Common;
 using Microsoft.Azure.Functions.Worker.Extension.Sql;
 using System.Threading.Tasks;
 
-namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc
+namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingSamples
 {
     public static class AddProductsArray
     {
