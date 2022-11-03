@@ -22,6 +22,6 @@
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.7.0" />
     <PackageVersion Include="System.Net.NameResolution" Version="4.3.0" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.0.13" />
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Core" Version="2.0.1" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.0" />
   </ItemGroup>
 </Project>
