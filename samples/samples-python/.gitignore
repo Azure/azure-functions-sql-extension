@@ -1,5 +1,5 @@
 # Azure Functions localsettings file
-# local.settings.json
+local.settings.json
 
 # Azurite artifacts
 __blobstorage__
