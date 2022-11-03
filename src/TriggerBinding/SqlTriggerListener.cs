@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlTriggerConstants;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 using Microsoft.Azure.WebJobs.Host.Scale;
@@ -77,11 +78,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // In case converting from string to int is not possible from the user input.
             try
             {
-                configuredMaxChangesPerWorker = configuration.GetValue<int>(SqlTriggerConstants.ConfigKey_SqlTrigger_MaxChangesPerWorker);
+                configuredMaxChangesPerWorker = configuration.GetValue<int>(ConfigKey_SqlTrigger_MaxChangesPerWorker);
             }
             catch (Exception ex)
             {
-                this._logger.LogError($"Failed to resolve integer value from user configured setting '{SqlTriggerConstants.ConfigKey_SqlTrigger_MaxChangesPerWorker}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
+                this._logger.LogError($"Failed to resolve integer value from user configured setting '{ConfigKey_SqlTrigger_MaxChangesPerWorker}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
                 TelemetryInstance.TrackException(TelemetryErrorName.InvalidConfigurationValue, ex, this._telemetryProps);
 
                 configuredMaxChangesPerWorker = DefaultMaxChangesPerWorker;
@@ -126,7 +127,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     IReadOnlyList<(string name, string type)> primaryKeyColumns = await this.GetPrimaryKeyColumnsAsync(connection, userTableId, cancellationToken);
                     IReadOnlyList<string> userTableColumns = await this.GetUserTableColumnsAsync(connection, userTableId, cancellationToken);
 
-                    string leasesTableName = string.Format(CultureInfo.InvariantCulture, SqlTriggerConstants.LeasesTableNameFormat, $"{this._userFunctionId}_{userTableId}");
+                    string leasesTableName = string.Format(CultureInfo.InvariantCulture, LeasesTableNameFormat, $"{this._userFunctionId}_{userTableId}");
                     this._telemetryProps[TelemetryPropertyName.LeasesTableName] = leasesTableName;
 
                     var transactionSw = Stopwatch.StartNew();
@@ -328,7 +329,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new InvalidOperationException($"Found column(s) with unsupported type(s): {columnNamesAndTypes} in table: '{this._userTable.FullName}'.");
                 }
 
-                var conflictingColumnNames = userTableColumns.Intersect(SqlTriggerConstants.ReservedColumnNames).ToList();
+                var conflictingColumnNames = userTableColumns.Intersect(ReservedColumnNames).ToList();
 
                 if (conflictingColumnNames.Count > 0)
                 {
@@ -352,8 +353,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private async Task<long> CreateSchemaAsync(SqlConnection connection, SqlTransaction transaction, CancellationToken cancellationToken)
         {
             string createSchemaQuery = $@"
-                IF SCHEMA_ID(N'{SqlTriggerConstants.SchemaName}') IS NULL
-                    EXEC ('CREATE SCHEMA {SqlTriggerConstants.SchemaName}');
+                IF SCHEMA_ID(N'{SchemaName}') IS NULL
+                    EXEC ('CREATE SCHEMA {SchemaName}');
             ";
 
             this._logger.LogDebugWithThreadId($"BEGIN CreateSchema Query={createSchemaQuery}");
@@ -377,8 +378,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private async Task<long> CreateGlobalStateTableAsync(SqlConnection connection, SqlTransaction transaction, CancellationToken cancellationToken)
         {
             string createGlobalStateTableQuery = $@"
-                IF OBJECT_ID(N'{SqlTriggerConstants.GlobalStateTableName}', 'U') IS NULL
-                    CREATE TABLE {SqlTriggerConstants.GlobalStateTableName} (
+                IF OBJECT_ID(N'{GlobalStateTableName}', 'U') IS NULL
+                    CREATE TABLE {GlobalStateTableName} (
                         UserFunctionID char(16) NOT NULL,
                         UserTableID int NOT NULL,
                         LastSyncVersion bigint NOT NULL,
@@ -431,10 +432,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             string insertRowGlobalStateTableQuery = $@"
                 IF NOT EXISTS (
-                    SELECT * FROM {SqlTriggerConstants.GlobalStateTableName}
+                    SELECT * FROM {GlobalStateTableName}
                     WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {userTableId}
                 )
-                    INSERT INTO {SqlTriggerConstants.GlobalStateTableName}
+                    INSERT INTO {GlobalStateTableName}
                     VALUES ('{this._userFunctionId}', {userTableId}, {(long)minValidVersion});
             ";
 
@@ -473,9 +474,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 IF OBJECT_ID(N'{leasesTableName}', 'U') IS NULL
                     CREATE TABLE {leasesTableName} (
                         {primaryKeysWithTypes},
-                        {SqlTriggerConstants.LeasesTableChangeVersionColumnName} bigint NOT NULL,
-                        {SqlTriggerConstants.LeasesTableAttemptCountColumnName} int NOT NULL,
-                        {SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} datetime2,
+                        {LeasesTableChangeVersionColumnName} bigint NOT NULL,
+                        {LeasesTableAttemptCountColumnName} int NOT NULL,
+                        {LeasesTableLeaseExpirationTimeColumnName} datetime2,
                         PRIMARY KEY ({primaryKeys})
                     );
             ";
