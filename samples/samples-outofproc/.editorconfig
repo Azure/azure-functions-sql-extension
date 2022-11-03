@@ -1,6 +1,0 @@
-# See https://github.com/dotnet/roslyn-analyzers/blob/main/.editorconfig for an example on different settings and how they're used
-
-[*.cs]
-# Disable these until they can be fixed
-dotnet_diagnostic.IDE0005.severity = none
-

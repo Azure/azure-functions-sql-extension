@@ -5,6 +5,7 @@ using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.Functions.Worker.Extension.Sql;
 using Microsoft.Azure.Functions.Worker;
 using System.Web;
+using System.Collections.Specialized;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingSamples
 {
@@ -34,11 +35,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingS
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproductwithmultipleprimarycolumnsandidentity")]
             HttpRequestData req)
         {
+            NameValueCollection queryStrings = HttpUtility.ParseQueryString(req.Url.Query);
             var product = new MultiplePrimaryKeyProductWithoutId
             {
-                ExternalId = int.Parse(HttpUtility.ParseQueryString(req.Url.Query)["externalId"], null),
-                Name = HttpUtility.ParseQueryString(req.Url.Query)["name"],
-                Cost = int.Parse(HttpUtility.ParseQueryString(req.Url.Query)["cost"], null)
+                ExternalId = int.Parse(queryStrings["externalId"], null),
+                Name = queryStrings["name"],
+                Cost = int.Parse(queryStrings["cost"], null)
             };
             return product;
         }

@@ -6,6 +6,7 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.Common;
 using Microsoft.Azure.Functions.Worker.Extension.Sql;
 using Microsoft.Azure.Functions.Worker;
 using System.Web;
+using System.Collections.Specialized;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingSamples
 {
@@ -25,10 +26,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingS
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproductwithidentitycolumn")]
             HttpRequestData req)
         {
+            NameValueCollection queryStrings = HttpUtility.ParseQueryString(req.Url.Query);
             var product = new ProductWithoutId
             {
-                Name = HttpUtility.ParseQueryString(req.Url.Query)["name"],
-                Cost = int.Parse(HttpUtility.ParseQueryString(req.Url.Query)["cost"], null)
+                Name = queryStrings["name"],
+                Cost = int.Parse(queryStrings["cost"], null)
             };
             return product;
         }

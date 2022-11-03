@@ -2,8 +2,6 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using Microsoft.Extensions.Hosting;
-using Microsoft.Azure.Functions.Worker;
-
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc
 {
     internal class Program
