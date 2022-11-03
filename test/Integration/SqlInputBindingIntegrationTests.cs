@@ -164,6 +164,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
+        // Currently PowerShell deseralization returns it back alphabetically (with same results) as such the assertion will fail
+        // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
+        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
         public async void GetProductsColumnTypesSerializationTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsColumnTypesSerialization), lang, true);

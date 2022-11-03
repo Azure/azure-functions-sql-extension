@@ -2,14 +2,11 @@ using namespace System.Net
 
 param($myTimer)
 $executionNumber = 0;
-$totalUpserts = 100;
-# Write to the Azure Functions log stream.
-Write-Host "[QueueTrigger]: $Get-Date starting execution $executionNumber. Rows to generate=$totalUpserts."
+$totalUpserts = 1000;
 
-# Update req_body with the body of the request
-# Note that this expects the body to be a JSON object or array of objects 
-# which have a property matching each of the columns in the table to upsert to.
+# Write to the Azure Functions log stream.
 $start = Get-Date
+Write-Host "[QueueTrigger]: $start starting execution $executionNumber. Rows to generate=$totalUpserts."
 
 $products = @()
 for ($i = 0; $i -lt $totalUpserts; $i++) {
@@ -19,12 +16,12 @@ for ($i = 0; $i -lt $totalUpserts; $i++) {
         cost = 100 * $i;
     }
 }
-$duration = Get-Date - $start;
+$end = Get-Date
+$duration = New-TimeSpan -Start $start -End $end
 
 # Assign the value we want to pass to the SQL Output binding. 
 # The -Name value corresponds to the name property in the function.json for the binding
 Push-OutputBinding -Name products -Value $products
 
-Write-Host "[QueueTrigger]: $Get-Date finished execution $queueMessage. Total time to create $totalUpserts rows=$duration."
-
+Write-Host "[QueueTrigger]: $end finished execution $queueMessage. Total time to create $totalUpserts rows=$duration."
 $executionNumber += 1;

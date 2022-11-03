@@ -22,6 +22,7 @@ for ($i = 0; $i -lt $totalUpserts; $i++) {
 # Assign the value we want to pass to the SQL Output binding. 
 # The -Name value corresponds to the name property in the function.json for the binding
 Push-OutputBinding -Name products -Value $products
-$duration = Get-Date - $start;
+$end = Get-Date
+$duration = New-TimeSpan -Start $start -End $end
 
 Write-Host "[QueueTrigger]: $Get-Date finished execution $queueMessage. Total time to create $totalUpserts rows=$duration."
