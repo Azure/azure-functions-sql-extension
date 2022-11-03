@@ -69,24 +69,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            int configuredMaxChangesPerWorker;
+            int? configuredMaxChangesPerWorker;
             // Do not convert the scale-monitor ID to lower-case string since SQL table names can be case-sensitive
             // depending on the collation of the current database.
             this._scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{userFunctionId}-SqlTrigger-{tableName}");
 
-            // In case converting from string to int is not possible from the user input.
-            try
+            configuredMaxChangesPerWorker = configuration.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_MaxChangesPerWorker);
+            this._maxChangesPerWorker = configuredMaxChangesPerWorker ?? DefaultMaxChangesPerWorker;
+            if (this._maxChangesPerWorker <= 0)
             {
-                configuredMaxChangesPerWorker = configuration.GetValue<int>(SqlTriggerConstants.ConfigKey_SqlTrigger_MaxChangesPerWorker);
+                throw new ArgumentException($"Invalid value for configuration setting '{SqlTriggerConstants.ConfigKey_SqlTrigger_MaxChangesPerWorker}'. Ensure that the value is a positive integer.");
             }
-            catch (Exception ex)
-            {
-                this._logger.LogError($"Failed to resolve integer value from user configured setting '{SqlTriggerConstants.ConfigKey_SqlTrigger_MaxChangesPerWorker}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
-                TelemetryInstance.TrackException(TelemetryErrorName.InvalidConfigurationValue, ex, this._telemetryProps);
-
-                configuredMaxChangesPerWorker = DefaultMaxChangesPerWorker;
-            }
-            this._maxChangesPerWorker = configuredMaxChangesPerWorker > 0 ? configuredMaxChangesPerWorker : DefaultMaxChangesPerWorker;
         }
 
         public void Cancel()

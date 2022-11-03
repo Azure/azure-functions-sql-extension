@@ -232,20 +232,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [InlineData("-1")]
         [InlineData("0")]
         [InlineData("10000000000")]
-        public void ScaleMonitorGetScaleStatus_InvalidUserConfiguredMaxChangesPerWorker_UsesDefaultValue(string maxChangesPerWorker)
+        public void InvalidUserConfiguredMaxChangesPerWorker(string maxChangesPerWorker)
         {
-            (IScaleMonitor<SqlTriggerMetrics> monitor, _) = GetScaleMonitor(maxChangesPerWorker);
+            (Mock<ILogger> mockLogger, List<string> logMessages) = CreateMockLogger();
+            Mock<IConfiguration> mockConfiguration = CreateMockConfiguration(maxChangesPerWorker);
 
-            ScaleStatusContext context;
-            ScaleStatus scaleStatus;
-
-            context = GetScaleStatusContext(new int[] { 0, 0, 0, 0, 10000 }, 10);
-            scaleStatus = monitor.GetScaleStatus(context);
-            Assert.Equal(ScaleVote.None, scaleStatus.Vote);
-
-            context = GetScaleStatusContext(new int[] { 0, 0, 0, 0, 10001 }, 10);
-            scaleStatus = monitor.GetScaleStatus(context);
-            Assert.Equal(ScaleVote.ScaleOut, scaleStatus.Vote);
+            Assert.Throws<ArgumentException>(() => new SqlTriggerListener<object>("testConnectionString", "testTableName", "testUserFunctionId", Mock.Of<ITriggeredFunctionExecutor>(), mockLogger.Object, mockConfiguration.Object));
         }
 
         private static IScaleMonitor<SqlTriggerMetrics> GetScaleMonitor(string tableName, string userFunctionId)
