@@ -30,6 +30,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public const string ConfigKey_SqlTrigger_PollingInterval = "Sql_Trigger_PollingIntervalMs";
         public const string ConfigKey_SqlTrigger_MaxChangesPerWorker = "Sql_Trigger_MaxChangesPerWorker";
 
+        /// <summary>
+        /// The resource name to use for getting the application lock. We use the same resource name for all instances
+        /// of the function because there is some shared state across all the functions. 
+        /// </summary>
+        /// <remarks>A future improvement could be to make unique application locks for each FuncId/TableId combination so that functions
+        /// working on different tables aren't blocking each other</remarks>
         public const string AppLockResource = "_az_func_Trigger";
         /// <summary>
         /// Timeout for acquiring the application lock - 30sec chosen as a reasonable value to ensure we aren't
