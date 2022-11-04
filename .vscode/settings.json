@@ -6,6 +6,5 @@
     "debug.internalConsoleOptions": "neverOpen",
     "azureFunctions.preDeployTask": "publish (functions)",
     "omnisharp.enableEditorConfigSupport": true,
-    "omnisharp.enableRoslynAnalyzers": true,
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "omnisharp.enableRoslynAnalyzers": true
 }
