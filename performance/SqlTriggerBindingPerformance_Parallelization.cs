@@ -14,7 +14,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
         [Benchmark]
         [Arguments(2)]
         [Arguments(5)]
-        [Arguments(10)]
         public async Task MultiHost(int hostCount)
         {
             for (int i = 0; i < hostCount; ++i)
