@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.Common;
 using Microsoft.Azure.Functions.Worker.Extension.Sql;
 using Microsoft.Azure.Functions.Worker;
@@ -17,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.InputBindingSa
         // Otherwise, {name} is interpreted as a string, and the input binding returns all products
         // for which the Name column is equal to that string value
         [Function("GetProductsNameNull")]
-        public static IActionResult Run(
+        public static IEnumerable<Product> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-namenull/{name}")]
             HttpRequest req,
             [SqlInput("if @Name is null select * from Products where Name is null else select * from Products where @Name = name",
@@ -26,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.InputBindingSa
                 ConnectionStringSetting = "SqlConnectionString")]
             IEnumerable<Product> products)
         {
-            return new OkObjectResult(products);
+            return products;
         }
     }
 }

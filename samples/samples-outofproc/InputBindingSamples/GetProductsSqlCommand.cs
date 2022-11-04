@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker.Extension.Sql;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Data.SqlClient;
@@ -13,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.InputBindingSa
     {
 
         [Function("GetProductsSqlCommand")]
-        public static IActionResult Run(
+        public static string Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-sqlcommand/{cost}")]
             HttpRequest req,
             [SqlInput("select * from Products where cost = @Cost",
@@ -32,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.InputBindingSa
                     result += $"ProductID: {reader["ProductID"]},  Name: {reader["Name"]}, Cost: {reader["Cost"]}\n";
                 }
             }
-            return new OkObjectResult(result);
+            return result;
         }
     }
 }

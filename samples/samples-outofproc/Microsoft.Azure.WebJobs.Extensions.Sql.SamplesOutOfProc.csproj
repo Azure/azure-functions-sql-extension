@@ -9,7 +9,6 @@
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" />
     <PackageReference Include="Microsoft.AspNetCore.Http" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../Worker.Extension.Sql/src/Microsoft.Azure.Functions.Worker.Extension.Sql.csproj" />

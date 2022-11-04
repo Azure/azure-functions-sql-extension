@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.Common;
 using Microsoft.Azure.Functions.Worker.Extension.Sql;
 using Microsoft.Azure.Functions.Worker;
@@ -13,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.InputBindingSa
     public static class GetProductsTopN
     {
         [Function("GetProductsTopN")]
-        public static IActionResult Run(
+        public static IEnumerable<Product> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproductstopn/{count}")]
             HttpRequest req,
             [SqlInput("SELECT TOP(CAST(@Count AS INT)) * FROM Products",
@@ -22,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.InputBindingSa
                 ConnectionStringSetting = "SqlConnectionString")]
             IEnumerable<Product> products)
         {
-            return new OkObjectResult(products);
+            return products;
         }
     }
 }
