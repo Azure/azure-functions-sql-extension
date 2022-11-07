@@ -6,6 +6,7 @@ param($Request)
 # Write to the Azure Functions log stream.
 Write-Host "PowerShell function with SQL Output Binding processed a request."
 
+# Update req_query with the query of the request
 $req_query = @{ 
     "productId"= $Request.QUERY.productId;
     "name"= $Request.QUERY.name;
@@ -20,5 +21,5 @@ Push-OutputBinding -Name product -Value $req_query
 # The -Name value matches the name property in the function.json for the binding
 Push-OutputBinding -Name response -Value ([HttpResponseContext]@{
     StatusCode = [HttpStatusCode]::OK
-    Body = $req_body
+    Body = $req_query
 })
