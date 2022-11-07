@@ -366,14 +366,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     await createSchemaCommand.ExecuteNonQueryAsync(cancellationToken);
                 }
-                catch (SqlException ex)
+                catch (Exception ex)
                 {
-                    if (ex.Number == 2714)
+                    TelemetryInstance.TrackException(TelemetryErrorName.CreateSchema, ex, this._telemetryProps);
+                    var sqlEx = ex as SqlException;
+                    if (sqlEx?.Number == 2714)
                     {
-                        // This error number refers to the existing object error.
-                        // In this case, it can be ignored since the objects are never deleted.
-                        this._logger.LogError($"Failed to create schema '{SchemaName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
-                        TelemetryInstance.TrackException(TelemetryErrorName.CreateSchema, ex, this._telemetryProps);
+                        // Error 2714 is for an object of that name already existing in the database. This generally shouldn't happen
+                        // since we check for its existence in the statement but occasionally a race condition can make it so
+                        // that multiple instances will try and create the schema at once. In that case we can just ignore the
+                        // error since all we care about is that the schema exists at all.
+                        this._logger.LogWarning($"Failed to create schema '{SchemaName}'. Exception message: {ex.Message} This is informational only, function startup will continue as normal.");
                     }
                     else
                     {
