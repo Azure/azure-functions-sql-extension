@@ -12,12 +12,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
     [MemoryDiagnoser]
     public class SqlTriggerPerformance_Overrides : SqlTriggerBindingPerformanceTestBase
     {
-        // [Params(1, 10, 100, 500)]
-        [Params(1, 10)]
+        [Params(1, 10, 100, 500)]
         public int PollingIntervalMs;
 
-        [Params(500, 1000)]
-        // [Params(500, 1000, 2000)]
+        [Params(500, 1000, 2000)]
         public int BatchSize;
 
         [GlobalSetup]
@@ -36,9 +34,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
         [Benchmark]
         [Arguments(0.1)]
         [Arguments(0.5)]
-        //[Arguments(1)]
-        //[Arguments(5)]
-        // [Arguments(10)]
+        [Arguments(1)]
+        [Arguments(5)]
+        [Arguments(10)]
         public async Task Run(double numBatches)
         {
             int count = (int)(numBatches * this.BatchSize);
