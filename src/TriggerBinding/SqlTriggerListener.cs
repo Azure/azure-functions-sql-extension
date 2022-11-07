@@ -354,7 +354,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             using (var createSchemaCommand = new SqlCommand(createSchemaQuery, connection, transaction))
             {
                 var stopwatch = Stopwatch.StartNew();
-                await createSchemaCommand.ExecuteNonQueryAsync(cancellationToken);
+
+                try
+                {
+                    await createSchemaCommand.ExecuteNonQueryAsync(cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    TelemetryInstance.TrackException(TelemetryErrorName.CreateSchema, ex, this._telemetryProps);
+                    var sqlEx = ex as SqlException;
+                    if (sqlEx?.Number == 2714)
+                    {
+                        // Error 2714 is for an object of that name already existing in the database. This generally shouldn't happen
+                        // since we check for its existence in the statement but occasionally a race condition can make it so
+                        // that multiple instances will try and create the schema at once. In that case we can just ignore the
+                        // error since all we care about is that the schema exists at all.
+                        this._logger.LogWarning($"Failed to create schema '{SchemaName}'. Exception message: {ex.Message} This is informational only, function startup will continue as normal.");
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+
                 long durationMs = stopwatch.ElapsedMilliseconds;
                 this._logger.LogDebugWithThreadId($"END CreateSchema Duration={durationMs}ms");
                 return durationMs;
