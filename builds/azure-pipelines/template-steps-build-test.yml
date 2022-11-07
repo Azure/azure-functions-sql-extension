@@ -17,7 +17,7 @@ steps:
   displayName: 'Install .NET Core 3.1 sdk'
   inputs:
     packageType: sdk
-    version: '3.1.0'
+    version: '3.1.x'
 
 # Run Policheck early to avoid scanning dependency folders
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-policheck.PoliCheck@2
