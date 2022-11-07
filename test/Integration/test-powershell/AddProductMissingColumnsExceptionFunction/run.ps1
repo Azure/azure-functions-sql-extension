@@ -12,7 +12,7 @@ Write-Host "PowerShell function with SQL Output Binding processed a request."
 $req_body = @{ 
     productId=1;
     name="MissingCost";
-    # Missing Cost
+    # Cost is missing
 };
 
 # Assign the value we want to pass to the SQL Output binding. 
