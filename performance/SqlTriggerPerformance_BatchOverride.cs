@@ -12,19 +12,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
     [MemoryDiagnoser]
     public class SqlTriggerBindingPerformance_BatchOverride : SqlTriggerBindingPerformanceTestBase
     {
-        [Benchmark]
-        [Arguments(10, 1000)]
-        [Arguments(100, 1000)]
-        [Arguments(1000, 1000)]
-        [Arguments(5000, 1000)]
-        public async Task Run(int count, int batchSize)
+
+        [Params(100, 1000)]
+        public int BatchSize;
+
+        [GlobalSetup]
+        public void GlobalSetup()
         {
+            this.SetChangeTrackingForTable("Products", true);
             this.StartFunctionHost(
                 nameof(ProductsTrigger),
                 SupportedLanguages.CSharp,
                 environmentVariables: new Dictionary<string, string>() {
-                    { "Sql_Trigger_BatchSize", batchSize.ToString() }
+                    { "Sql_Trigger_BatchSize", this.BatchSize.ToString() }
                 });
+        }
+
+        [Benchmark]
+        [Arguments(0.1)]
+        [Arguments(0.5)]
+        [Arguments(1)]
+        [Arguments(5)]
+        public async Task Run(double numBatches)
+        {
+            int count = (int)(numBatches * this.BatchSize);
             await this.WaitForProductChanges(
                 1,
                 count,
@@ -32,7 +43,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
                 () => { this.InsertProducts(1, count); return Task.CompletedTask; },
                 id => $"Product {id}",
                 id => id * 100,
-                this.GetBatchProcessingTimeout(1, count, batchSize: batchSize));
+                this.GetBatchProcessingTimeout(1, count, batchSize: this.BatchSize));
         }
     }
 }

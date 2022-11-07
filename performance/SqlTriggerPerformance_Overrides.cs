@@ -12,32 +12,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
     [MemoryDiagnoser]
     public class SqlTriggerPerformance_Overrides : SqlTriggerBindingPerformanceTestBase
     {
-        [Benchmark]
-        [Arguments(10, 1000, 500)]
-        [Arguments(10, 1000, 100)]
-        [Arguments(10, 1000, 10)]
-        [Arguments(10, 1000, 1)]
-        [Arguments(100, 1000, 500)]
-        [Arguments(100, 1000, 100)]
-        [Arguments(100, 1000, 10)]
-        [Arguments(100, 1000, 1)]
-        [Arguments(1000, 1000, 500)]
-        [Arguments(1000, 1000, 100)]
-        [Arguments(1000, 1000, 10)]
-        [Arguments(1000, 1000, 1)]
-        [Arguments(5000, 1000, 500)]
-        [Arguments(5000, 1000, 100)]
-        [Arguments(5000, 1000, 10)]
-        [Arguments(5000, 1000, 1)]
-        public async Task Run(int count, int batchSize, int pollingIntervalMs)
+        // [Params(1, 10, 100, 500)]
+        [Params(1, 10)]
+        public int PollingIntervalMs;
+
+        [Params(500, 1000)]
+        // [Params(500, 1000, 2000)]
+        public int BatchSize;
+
+        [GlobalSetup]
+        public void GlobalSetup()
         {
+            this.SetChangeTrackingForTable("Products", true);
             this.StartFunctionHost(
                 nameof(ProductsTrigger),
                 SupportedLanguages.CSharp,
                 environmentVariables: new Dictionary<string, string>() {
-                    { "Sql_Trigger_BatchSize", batchSize.ToString() },
-                    { "Sql_Trigger_PollingIntervalMs", pollingIntervalMs.ToString() }
+                    { "Sql_Trigger_BatchSize", this.BatchSize.ToString() },
+                    { "Sql_Trigger_PollingIntervalMs", this.PollingIntervalMs.ToString() }
                 });
+        }
+
+        [Benchmark]
+        [Arguments(0.1)]
+        [Arguments(0.5)]
+        //[Arguments(1)]
+        //[Arguments(5)]
+        // [Arguments(10)]
+        public async Task Run(double numBatches)
+        {
+            int count = (int)(numBatches * this.BatchSize);
             await this.WaitForProductChanges(
                 1,
                 count,
@@ -45,7 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
                 () => { this.InsertProducts(1, count); return Task.CompletedTask; },
                 id => $"Product {id}",
                 id => id * 100,
-                this.GetBatchProcessingTimeout(1, count, batchSize: batchSize));
+                this.GetBatchProcessingTimeout(1, count, batchSize: this.BatchSize));
         }
     }
 }

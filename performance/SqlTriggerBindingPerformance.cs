@@ -14,6 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
         [GlobalSetup]
         public void GlobalSetup()
         {
+            this.SetChangeTrackingForTable("Products", true);
             this.StartFunctionHost(nameof(ProductsTrigger), SupportedLanguages.CSharp);
         }
 

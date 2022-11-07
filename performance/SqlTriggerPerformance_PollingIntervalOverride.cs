@@ -12,19 +12,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
     [MemoryDiagnoser]
     public class SqlTriggerBindingPerformance_PollingIntervalOverride : SqlTriggerBindingPerformanceTestBase
     {
-        [Benchmark]
-        [Arguments(1000, 500)]
-        [Arguments(1000, 100)]
-        [Arguments(1000, 10)]
-        [Arguments(1000, 1)]
-        public async Task Run(int count, int pollingIntervalMs)
+        [Params(1, 10, 100, 500, 2000)]
+        public int PollingIntervalMs;
+
+        [GlobalSetup]
+        public void GlobalSetup()
         {
+            this.SetChangeTrackingForTable("Products", true);
             this.StartFunctionHost(
                 nameof(ProductsTrigger),
                 SupportedLanguages.CSharp,
                 environmentVariables: new Dictionary<string, string>() {
-                    { "Sql_Trigger_PollingIntervalMs", pollingIntervalMs.ToString() }
+                    { "Sql_Trigger_PollingIntervalMs", this.PollingIntervalMs.ToString() }
                 });
+        }
+
+        [Benchmark]
+        public async Task Run()
+        {
+            int count = SqlTableChangeMonitor<object>.DefaultBatchSize * 2;
             await this.WaitForProductChanges(
                 1,
                 count,
@@ -32,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
                 () => { this.InsertProducts(1, count); return Task.CompletedTask; },
                 id => $"Product {id}",
                 id => id * 100,
-                this.GetBatchProcessingTimeout(1, count, pollingIntervalMs: pollingIntervalMs));
+                this.GetBatchProcessingTimeout(1, count, pollingIntervalMs: this.PollingIntervalMs));
         }
     }
 }
