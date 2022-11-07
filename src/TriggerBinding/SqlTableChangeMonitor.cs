@@ -718,6 +718,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private SqlCommand BuildUpdateTablesPreInvocation(SqlConnection connection, SqlTransaction transaction)
         {
             string updateTablesPreInvocationQuery = $@"
+                {AppLockStatements}
+
                 DECLARE @min_valid_version bigint;
                 SET @min_valid_version = CHANGE_TRACKING_MIN_VALID_VERSION({this._userTableId});
 
@@ -748,6 +750,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
 
             string getChangesQuery = $@"
+                {AppLockStatements}
+
                 DECLARE @last_sync_version bigint;
                 SELECT @last_sync_version = LastSyncVersion
                 FROM {GlobalStateTableName}
@@ -761,7 +765,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     l.{LeasesTableAttemptCountColumnName},
                     l.{LeasesTableLeaseExpirationTimeColumnName}
                 FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @last_sync_version) AS c
-                LEFT OUTER JOIN {this._leasesTableName} AS l WITH (TABLOCKX) ON {leasesTableJoinCondition}
+                LEFT OUTER JOIN {this._leasesTableName} AS l ON {leasesTableJoinCondition}
                 LEFT OUTER JOIN {this._userTable.BracketQuotedFullName} AS u ON {userTableJoinCondition}
                 WHERE
                     (l.{LeasesTableLeaseExpirationTimeColumnName} IS NULL AND
@@ -785,6 +789,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
 
             string getUnprocessedChangesQuery = $@"
+                {AppLockStatements}
+
                 DECLARE @last_sync_version bigint;
                 SELECT @last_sync_version = LastSyncVersion
                 FROM {GlobalStateTableName}
@@ -792,7 +798,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 SELECT COUNT_BIG(*)
                 FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @last_sync_version) AS c
-                LEFT OUTER JOIN {this._leasesTableName} AS l WITH (TABLOCKX) ON {leasesTableJoinCondition}
+                LEFT OUTER JOIN {this._leasesTableName} AS l ON {leasesTableJoinCondition}
                 WHERE
                     (l.{LeasesTableLeaseExpirationTimeColumnName} IS NULL AND
                        (l.{LeasesTableChangeVersionColumnName} IS NULL OR l.{LeasesTableChangeVersionColumnName} < c.{SysChangeVersionColumnName}) OR
@@ -827,8 +833,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             const string rowDataParameter = "@rowData";
             // Create the merge query that will either update the rows that already exist or insert a new one if it doesn't exist
             string query = $@"
+                    {AppLockStatements}
+
                     WITH {acquireLeasesCte} AS ( SELECT * FROM OPENJSON(@rowData) WITH ({string.Join(",", cteColumnDefinitions)}) )
-                    MERGE INTO {this._leasesTableName} WITH (TABLOCKX)
+                    MERGE INTO {this._leasesTableName}
                         AS ExistingData
                     USING {acquireLeasesCte}
                         AS NewData
@@ -859,7 +867,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string matchCondition = string.Join(" OR ", this._rowMatchConditions.Take(this._rows.Count));
 
             string renewLeasesQuery = $@"
-                UPDATE {this._leasesTableName} WITH (TABLOCKX)
+                {AppLockStatements}
+
+                UPDATE {this._leasesTableName}
                 SET {LeasesTableLeaseExpirationTimeColumnName} = DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME())
                 WHERE {matchCondition};
             ";
@@ -876,7 +886,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
         private SqlCommand BuildReleaseLeasesCommand(SqlConnection connection, SqlTransaction transaction)
         {
-            var releaseLeasesQuery = new StringBuilder("DECLARE @current_change_version bigint;\n");
+            var releaseLeasesQuery = new StringBuilder(
+$@"{AppLockStatements}
+
+DECLARE @current_change_version bigint;
+");
 
             for (int rowIndex = 0; rowIndex < this._rows.Count; rowIndex++)
             {
@@ -884,11 +898,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 releaseLeasesQuery.Append($@"
                     SELECT @current_change_version = {LeasesTableChangeVersionColumnName}
-                    FROM {this._leasesTableName} WITH (TABLOCKX)
+                    FROM {this._leasesTableName}
                     WHERE {this._rowMatchConditions[rowIndex]};
 
                     IF @current_change_version <= {changeVersion}
-                        UPDATE {this._leasesTableName} WITH (TABLOCKX)
+                        UPDATE {this._leasesTableName}
                         SET
                             {LeasesTableChangeVersionColumnName} = {changeVersion},
                             {LeasesTableAttemptCountColumnName} = 0,
@@ -914,6 +928,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
 
             string updateTablesPostInvocationQuery = $@"
+                {AppLockStatements}
+
                 DECLARE @current_last_sync_version bigint;
                 SELECT @current_last_sync_version = LastSyncVersion
                 FROM {GlobalStateTableName}
@@ -923,7 +939,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 SELECT @unprocessed_changes = COUNT(*) FROM (
                     SELECT c.{SysChangeVersionColumnName}
                     FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @current_last_sync_version) AS c
-                    LEFT OUTER JOIN {this._leasesTableName} AS l WITH (TABLOCKX) ON {leasesTableJoinCondition}
+                    LEFT OUTER JOIN {this._leasesTableName} AS l ON {leasesTableJoinCondition}
                     WHERE
                         c.{SysChangeVersionColumnName} <= {newLastSyncVersion} AND
                         ((l.{LeasesTableChangeVersionColumnName} IS NULL OR
@@ -937,7 +953,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     SET LastSyncVersion = {newLastSyncVersion}
                     WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
 
-                    DELETE FROM {this._leasesTableName} WITH (TABLOCKX) WHERE {LeasesTableChangeVersionColumnName} <= {newLastSyncVersion};
+                    DELETE FROM {this._leasesTableName} WHERE {LeasesTableChangeVersionColumnName} <= {newLastSyncVersion};
                 END
             ";
 
