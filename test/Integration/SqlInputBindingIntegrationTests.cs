@@ -34,11 +34,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             HttpResponseMessage response = await this.SendInputRequest("getproducts", cost.ToString());
 
             // Verify result
-            Product[] expectedResponse = products;
             string actualResponse = await response.Content.ReadAsStringAsync();
             Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse);
 
-            Assert.Equal(expectedResponse, actualProductResponse);
+            Assert.Equal(products, actualProductResponse);
         }
 
         [Theory]
@@ -57,11 +56,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             HttpResponseMessage response = await this.SendInputRequest("getproducts-storedprocedure", cost.ToString());
 
             // Verify result
-            Product[] expectedResponse = products;
             string actualResponse = await response.Content.ReadAsStringAsync();
             Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse);
 
-            Assert.Equal(expectedResponse, actualProductResponse);
+            Assert.Equal(products, actualProductResponse);
         }
 
         [Theory]
@@ -85,11 +83,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             HttpResponseMessage response = await this.SendInputRequest("getproducts-nameempty", cost.ToString());
 
             // Verify result
-            Product[] expectedResponse = products;
             string actualResponse = await response.Content.ReadAsStringAsync();
             Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse);
 
-            Assert.Equal(expectedResponse, actualProductResponse);
+            Assert.Equal(products, actualProductResponse);
         }
 
         [Theory]
@@ -107,11 +104,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             HttpResponseMessage response = await this.SendInputRequest("getproductsbycost");
 
             // Verify result
-            Product[] expectedResponse = productsWithCost100;
             string actualResponse = await response.Content.ReadAsStringAsync();
             Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse);
 
-            Assert.Equal(expectedResponse, actualProductResponse);
+            Assert.Equal(productsWithCost100, actualProductResponse);
         }
 
         [Theory]
@@ -164,9 +160,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        // Currently PowerShell deseralization returns it back alphabetically (with same results) as such the assertion will fail
-        // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
-        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
         public async void GetProductsColumnTypesSerializationTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsColumnTypesSerialization), lang, true);
@@ -179,10 +172,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             HttpResponseMessage response = await this.SendInputRequest("getproducts-columntypesserialization");
             // We expect the datetime and datetime2 fields to be returned in UTC format
-            string expectedResponse = "[{\"ProductId\":999,\"Datetime\":\"2022-10-20T12:39:13.123Z\",\"Datetime2\":\"2022-10-20T12:39:13.123Z\"}]";
+            ProductColumnTypes[] expectedResponse = JsonConvert.DeserializeObject<ProductColumnTypes[]>("[{\"ProductId\":999,\"Datetime\":\"2022-10-20T12:39:13.123Z\",\"Datetime2\":\"2022-10-20T12:39:13.123Z\"}]");
             string actualResponse = await response.Content.ReadAsStringAsync();
+            ProductColumnTypes[] actualProductResponse = JsonConvert.DeserializeObject<ProductColumnTypes[]>(actualResponse);
 
-            Assert.Equal(expectedResponse, TestUtils.CleanJsonString(actualResponse), StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(expectedResponse, actualProductResponse);
         }
     }
 }
