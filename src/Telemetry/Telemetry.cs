@@ -408,6 +408,8 @@ This extension collect usage data in order to help us improve your experience. T
     {
         ConsumeChangesLoop,
         Convert,
+        CreateGlobalStateTable,
+        CreateLeasesTable,
         CreateSchema,
         FlushAsync,
         GetCaseSensitivity,
