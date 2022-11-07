@@ -361,7 +361,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             using (var createSchemaCommand = new SqlCommand(createSchemaQuery, connection, transaction))
             {
                 var stopwatch = Stopwatch.StartNew();
-                await createSchemaCommand.ExecuteNonQueryAsync(cancellationToken);
+
+                try
+                {
+                    await createSchemaCommand.ExecuteNonQueryAsync(cancellationToken);
+                }
+                catch (SqlException ex)
+                {
+                    if (ex.Number == 2714)
+                    {
+                        // This error number refers to the existing object error.
+                        // In this case, it can be ignored since the objects are never deleted.
+                        this._logger.LogError($"Failed to create schema '{SchemaName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
+                        TelemetryInstance.TrackException(TelemetryErrorName.CreateSchema, ex, this._telemetryProps);
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+
                 long durationMs = stopwatch.ElapsedMilliseconds;
                 this._logger.LogDebugWithThreadId($"END CreateSchema Duration={durationMs}ms");
                 return durationMs;
