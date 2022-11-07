@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.TriggerBindingSamples;
@@ -489,10 +490,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         protected void InsertProducts(int firstId, int lastId)
         {
-            int count = lastId - firstId + 1;
-            this.ExecuteNonQuery(
-                "INSERT INTO [dbo].[Products] VALUES\n" +
-                string.Join(",\n", Enumerable.Range(firstId, count).Select(id => $"({id}, 'Product {id}', {id * 100})")) + ";");
+            // Only 1000 items are allowed to be inserted into a single INSERT statement so if we have more than 1000 batch them up into separate statements
+            var builder = new StringBuilder();
+            do
+            {
+                int batchCount = Math.Min(lastId - firstId + 1, 1000);
+                builder.Append($"INSERT INTO [dbo].[Products] VALUES {string.Join(",\n", Enumerable.Range(firstId, batchCount).Select(id => $"({id}, 'Product {id}', {id * 100})"))}; ");
+                firstId += batchCount;
+            } while (firstId < lastId);
+            this.ExecuteNonQuery(builder.ToString());
         }
 
         protected void UpdateProducts(int firstId, int lastId)
@@ -559,7 +565,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             await actions();
 
             // Now wait until either we timeout or we've gotten all the expected changes, whichever comes first
-            Console.WriteLine("Waiting for product changes");
+            Console.WriteLine($"[{DateTime.UtcNow:u}] Waiting for {operation} changes ({timeoutMs}ms)");
             await taskCompletion.Task.TimeoutAfter(TimeSpan.FromMilliseconds(timeoutMs), $"Timed out waiting for {operation} changes.");
 
             // Unhook handler since we're done monitoring these changes so we aren't checking other changes done later

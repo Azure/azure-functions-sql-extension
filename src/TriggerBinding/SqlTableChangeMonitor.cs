@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlTriggerConstants;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
@@ -126,8 +127,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._telemetryProps = telemetryProps ?? new Dictionary<TelemetryPropertyName, string>();
 
             // Check if there's config settings to override the default batch size/polling interval values
-            int? configuredBatchSize = configuration.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_BatchSize);
-            int? configuredPollingInterval = configuration.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_PollingInterval);
+            int? configuredBatchSize = configuration.GetValue<int?>(ConfigKey_SqlTrigger_BatchSize);
+            int? configuredPollingInterval = configuration.GetValue<int?>(ConfigKey_SqlTrigger_PollingInterval);
             this._batchSize = configuredBatchSize ?? this._batchSize;
             this._pollingIntervalInMs = configuredPollingInterval ?? this._pollingIntervalInMs;
             var monitorStartProps = new Dictionary<TelemetryPropertyName, string>(telemetryProps)
@@ -646,7 +647,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             var changeVersionSet = new SortedSet<long>();
             foreach (IReadOnlyDictionary<string, object> row in this._rows)
             {
-                string changeVersion = row[SqlTriggerConstants.SysChangeVersionColumnName].ToString();
+                string changeVersion = row[SysChangeVersionColumnName].ToString();
                 changeVersionSet.Add(long.Parse(changeVersion, CultureInfo.InvariantCulture));
             }
 
@@ -722,11 +723,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 DECLARE @last_sync_version bigint;
                 SELECT @last_sync_version = LastSyncVersion
-                FROM {SqlTriggerConstants.GlobalStateTableName}
+                FROM {GlobalStateTableName}
                 WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
 
                 IF @last_sync_version < @min_valid_version
-                    UPDATE {SqlTriggerConstants.GlobalStateTableName}
+                    UPDATE {GlobalStateTableName}
                     SET LastSyncVersion = @min_valid_version
                     WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
             ";
@@ -749,23 +750,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string getChangesQuery = $@"
                 DECLARE @last_sync_version bigint;
                 SELECT @last_sync_version = LastSyncVersion
-                FROM {SqlTriggerConstants.GlobalStateTableName}
+                FROM {GlobalStateTableName}
                 WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
 
                 SELECT TOP {this._batchSize}
                     {selectList},
-                    c.{SqlTriggerConstants.SysChangeVersionColumnName}, c.SYS_CHANGE_OPERATION,
-                    l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName}, l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName}, l.{SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName}
+                    c.{SysChangeVersionColumnName},
+                    c.SYS_CHANGE_OPERATION,
+                    l.{LeasesTableChangeVersionColumnName},
+                    l.{LeasesTableAttemptCountColumnName},
+                    l.{LeasesTableLeaseExpirationTimeColumnName}
                 FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @last_sync_version) AS c
                 LEFT OUTER JOIN {this._leasesTableName} AS l WITH (TABLOCKX) ON {leasesTableJoinCondition}
                 LEFT OUTER JOIN {this._userTable.BracketQuotedFullName} AS u ON {userTableJoinCondition}
                 WHERE
-                    (l.{SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} IS NULL AND
-                       (l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName} IS NULL OR l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName} < c.{SqlTriggerConstants.SysChangeVersionColumnName}) OR
-                        l.{SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} < SYSDATETIME()) AND
-                    (l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} IS NULL OR l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} < {MaxChangeProcessAttemptCount})
-                ORDER BY c.{SqlTriggerConstants.SysChangeVersionColumnName} ASC;
-            ";
+                    (l.{LeasesTableLeaseExpirationTimeColumnName} IS NULL AND
+                       (l.{LeasesTableChangeVersionColumnName} IS NULL OR l.{LeasesTableChangeVersionColumnName} < c.{SysChangeVersionColumnName}) OR
+                        l.{LeasesTableLeaseExpirationTimeColumnName} < SYSDATETIME()
+                    ) AND
+                    (l.{LeasesTableAttemptCountColumnName} IS NULL OR l.{LeasesTableAttemptCountColumnName} < {MaxChangeProcessAttemptCount})
+                ORDER BY c.{SysChangeVersionColumnName} ASC;";
 
             return new SqlCommand(getChangesQuery, connection, transaction);
         }
@@ -783,17 +787,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string getUnprocessedChangesQuery = $@"
                 DECLARE @last_sync_version bigint;
                 SELECT @last_sync_version = LastSyncVersion
-                FROM {SqlTriggerConstants.GlobalStateTableName}
+                FROM {GlobalStateTableName}
                 WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
 
                 SELECT COUNT_BIG(*)
                 FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @last_sync_version) AS c
                 LEFT OUTER JOIN {this._leasesTableName} AS l WITH (TABLOCKX) ON {leasesTableJoinCondition}
                 WHERE
-                    (l.{SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} IS NULL AND
-                       (l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName} IS NULL OR l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName} < c.{SqlTriggerConstants.SysChangeVersionColumnName}) OR
-                        l.{SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} < SYSDATETIME()) AND
-                    (l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} IS NULL OR l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} < {MaxChangeProcessAttemptCount});
+                    (l.{LeasesTableLeaseExpirationTimeColumnName} IS NULL AND
+                       (l.{LeasesTableChangeVersionColumnName} IS NULL OR l.{LeasesTableChangeVersionColumnName} < c.{SysChangeVersionColumnName}) OR
+                        l.{LeasesTableLeaseExpirationTimeColumnName} < SYSDATETIME()) AND
+                    (l.{LeasesTableAttemptCountColumnName} IS NULL OR l.{LeasesTableAttemptCountColumnName} < {MaxChangeProcessAttemptCount});
             ";
 
             return new SqlCommand(getUnprocessedChangesQuery, connection);
@@ -813,8 +817,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             IEnumerable<string> cteColumnDefinitions = this._primaryKeyColumns
                 .Select(c => $"{c.name.AsBracketQuotedString()} {c.type}")
                 // These are the internal column values that we use. Note that we use SYS_CHANGE_VERSION because that's
-                // the new version - the _az_func_ChangeVersion has the old version 
-                .Concat(new string[] { $"{SqlTriggerConstants.SysChangeVersionColumnName} bigint", $"{SqlTriggerConstants.LeasesTableAttemptCountColumnName} int" });
+                // the new version - the _az_func_ChangeVersion has the old version
+                .Concat(new string[] { $"{SysChangeVersionColumnName} bigint", $"{LeasesTableAttemptCountColumnName} int" });
             IEnumerable<string> bracketedPrimaryKeys = this._primaryKeyColumns.Select(p => p.name.AsBracketQuotedString());
 
             // Create the query that the merge statement will match the rows on
@@ -832,11 +836,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         {primaryKeyMatchingQuery}
                     WHEN MATCHED THEN
                         UPDATE SET
-                        {SqlTriggerConstants.LeasesTableChangeVersionColumnName} = NewData.{SqlTriggerConstants.SysChangeVersionColumnName},
-                        {SqlTriggerConstants.LeasesTableAttemptCountColumnName} = ExistingData.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} + 1,
-                        {SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} = DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME())
+                        {LeasesTableChangeVersionColumnName} = NewData.{SysChangeVersionColumnName},
+                        {LeasesTableAttemptCountColumnName} = ExistingData.{LeasesTableAttemptCountColumnName} + 1,
+                        {LeasesTableLeaseExpirationTimeColumnName} = DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME())
                     WHEN NOT MATCHED THEN
-                        INSERT VALUES ({string.Join(",", bracketedPrimaryKeys.Select(k => $"NewData.{k}"))}, NewData.{SqlTriggerConstants.SysChangeVersionColumnName}, 1, DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME()));";
+                        INSERT VALUES ({string.Join(",", bracketedPrimaryKeys.Select(k => $"NewData.{k}"))}, NewData.{SysChangeVersionColumnName}, 1, DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME()));";
 
             var command = new SqlCommand(query, connection, transaction);
             SqlParameter par = command.Parameters.Add(rowDataParameter, SqlDbType.NVarChar, -1);
@@ -856,7 +860,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             string renewLeasesQuery = $@"
                 UPDATE {this._leasesTableName} WITH (TABLOCKX)
-                SET {SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} = DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME())
+                SET {LeasesTableLeaseExpirationTimeColumnName} = DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME())
                 WHERE {matchCondition};
             ";
 
@@ -876,19 +880,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             for (int rowIndex = 0; rowIndex < this._rows.Count; rowIndex++)
             {
-                string changeVersion = this._rows[rowIndex][SqlTriggerConstants.SysChangeVersionColumnName].ToString();
+                string changeVersion = this._rows[rowIndex][SysChangeVersionColumnName].ToString();
 
                 releaseLeasesQuery.Append($@"
-                    SELECT @current_change_version = {SqlTriggerConstants.LeasesTableChangeVersionColumnName}
+                    SELECT @current_change_version = {LeasesTableChangeVersionColumnName}
                     FROM {this._leasesTableName} WITH (TABLOCKX)
                     WHERE {this._rowMatchConditions[rowIndex]};
 
                     IF @current_change_version <= {changeVersion}
                         UPDATE {this._leasesTableName} WITH (TABLOCKX)
                         SET
-                            {SqlTriggerConstants.LeasesTableChangeVersionColumnName} = {changeVersion},
-                            {SqlTriggerConstants.LeasesTableAttemptCountColumnName} = 0,
-                            {SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} = NULL
+                            {LeasesTableChangeVersionColumnName} = {changeVersion},
+                            {LeasesTableAttemptCountColumnName} = 0,
+                            {LeasesTableLeaseExpirationTimeColumnName} = NULL
                         WHERE {this._rowMatchConditions[rowIndex]};
                 ");
             }
@@ -912,28 +916,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string updateTablesPostInvocationQuery = $@"
                 DECLARE @current_last_sync_version bigint;
                 SELECT @current_last_sync_version = LastSyncVersion
-                FROM {SqlTriggerConstants.GlobalStateTableName}
+                FROM {GlobalStateTableName}
                 WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
 
                 DECLARE @unprocessed_changes bigint;
                 SELECT @unprocessed_changes = COUNT(*) FROM (
-                    SELECT c.{SqlTriggerConstants.SysChangeVersionColumnName}
+                    SELECT c.{SysChangeVersionColumnName}
                     FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @current_last_sync_version) AS c
                     LEFT OUTER JOIN {this._leasesTableName} AS l WITH (TABLOCKX) ON {leasesTableJoinCondition}
                     WHERE
-                        c.{SqlTriggerConstants.SysChangeVersionColumnName} <= {newLastSyncVersion} AND
-                        ((l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName} IS NULL OR
-                           l.{SqlTriggerConstants.LeasesTableChangeVersionColumnName} != c.{SqlTriggerConstants.SysChangeVersionColumnName} OR
-                           l.{SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} IS NOT NULL) AND
-                        (l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} IS NULL OR l.{SqlTriggerConstants.LeasesTableAttemptCountColumnName} < {MaxChangeProcessAttemptCount}))) AS Changes
+                        c.{SysChangeVersionColumnName} <= {newLastSyncVersion} AND
+                        ((l.{LeasesTableChangeVersionColumnName} IS NULL OR
+                           l.{LeasesTableChangeVersionColumnName} != c.{SysChangeVersionColumnName} OR
+                           l.{LeasesTableLeaseExpirationTimeColumnName} IS NOT NULL) AND
+                        (l.{LeasesTableAttemptCountColumnName} IS NULL OR l.{LeasesTableAttemptCountColumnName} < {MaxChangeProcessAttemptCount}))) AS Changes
 
                 IF @unprocessed_changes = 0 AND @current_last_sync_version < {newLastSyncVersion}
                 BEGIN
-                    UPDATE {SqlTriggerConstants.GlobalStateTableName}
+                    UPDATE {GlobalStateTableName}
                     SET LastSyncVersion = {newLastSyncVersion}
                     WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
 
-                    DELETE FROM {this._leasesTableName} WITH (TABLOCKX) WHERE {SqlTriggerConstants.LeasesTableChangeVersionColumnName} <= {newLastSyncVersion};
+                    DELETE FROM {this._leasesTableName} WITH (TABLOCKX) WHERE {LeasesTableChangeVersionColumnName} <= {newLastSyncVersion};
                 END
             ";
 
