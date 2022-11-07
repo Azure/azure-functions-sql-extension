@@ -11,8 +11,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
         [IterationCleanup]
         public void IterationCleanup()
         {
-            // Disable change tracking while cleaning up so we start off fresh for the next iteration
-            this.SetChangeTrackingForTable("Products", false);
             // Delete all rows in Products table after each iteration so we start fresh each time
             this.ExecuteNonQuery("TRUNCATE TABLE Products");
             // Clear the leases table, otherwise we may end up getting blocked by leases from a previous run
@@ -31,7 +29,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
             END
             CLOSE cmds;
             DEALLOCATE cmds");
-            this.SetChangeTrackingForTable("Products", true);
         }
 
         [GlobalCleanup]
