@@ -48,7 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// of a function are running in parallel.
         ///
         /// The trigger heavily uses transactions to ensure atomic changes, that way if an error occurs during any step of a process we aren't left
-        /// with an incomplete state. Because of this locks are placed on rows that are read/modified during the transaction, but the lock isn't
+        /// with an incomplete state. Because of this, locks are placed on rows that are read/modified during the transaction, but the lock isn't
         /// applied until the statement itself is executed. Some transactions have many statements executed in a row that touch a number of different
         /// tables so it's very easy for two transactions to get in a deadlock depending on the speed they execute their statements and the order they
         /// are processed in.
