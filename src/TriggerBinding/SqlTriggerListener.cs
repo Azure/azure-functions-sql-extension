@@ -79,7 +79,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._maxChangesPerWorker = configuredMaxChangesPerWorker ?? DefaultMaxChangesPerWorker;
             if (this._maxChangesPerWorker <= 0)
             {
-                throw new ArgumentException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_MaxChangesPerWorker}'. Ensure that the value is a positive integer.");
+                throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_MaxChangesPerWorker}'. Ensure that the value is a positive integer.");
             }
         }
 
