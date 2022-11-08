@@ -243,8 +243,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </exception>
         private async Task<IReadOnlyList<(string name, string type)>> GetPrimaryKeyColumnsAsync(SqlConnection connection, int userTableId, CancellationToken cancellationToken)
         {
+            const int NameIndex = 0, TypeIndex = 1, LengthIndex = 2, PrecisionIndex = 3, ScaleIndex = 4;
             string getPrimaryKeyColumnsQuery = $@"
-                SELECT c.name, t.name, c.max_length, c.precision, c.scale
+                SELECT 
+                    c.name, 
+                    t.name, 
+                    c.max_length, 
+                    c.precision, 
+                    c.scale
                 FROM sys.indexes AS i
                 INNER JOIN sys.index_columns AS ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
                 INNER JOIN sys.columns AS c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
@@ -262,20 +268,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 while (await reader.ReadAsync(cancellationToken))
                 {
-                    string name = reader.GetString(0);
-                    string type = reader.GetString(1);
+                    string name = reader.GetString(NameIndex);
+                    string type = reader.GetString(TypeIndex);
 
                     if (variableLengthTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
                     {
                         // Special "max" case. I'm actually not sure it's valid to have varchar(max) as a primary key because
                         // it exceeds the byte limit of an index field (900 bytes), but just in case
-                        short length = reader.GetInt16(2);
+                        short length = reader.GetInt16(LengthIndex);
                         type += length == -1 ? "(max)" : $"({length})";
                     }
                     else if (variablePrecisionTypes.Contains(type))
                     {
-                        byte precision = reader.GetByte(3);
-                        byte scale = reader.GetByte(4);
+                        byte precision = reader.GetByte(PrecisionIndex);
+                        byte scale = reader.GetByte(ScaleIndex);
                         type += $"({precision},{scale})";
                     }
 
@@ -297,8 +303,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         private async Task<IReadOnlyList<string>> GetUserTableColumnsAsync(SqlConnection connection, int userTableId, CancellationToken cancellationToken)
         {
+            const int NameIndex = 0, TypeIndex = 1, IsAssemblyTypeIndex = 2;
             string getUserTableColumnsQuery = $@"
-                SELECT c.name, t.name, t.is_assembly_type
+                SELECT 
+                    c.name, 
+                    t.name, 
+                    t.is_assembly_type
                 FROM sys.columns AS c
                 INNER JOIN sys.types AS t ON c.user_type_id = t.user_type_id
                 WHERE c.object_id = {userTableId};
@@ -313,9 +323,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 while (await reader.ReadAsync(cancellationToken))
                 {
-                    string columnName = reader.GetString(0);
-                    string columnType = reader.GetString(1);
-                    bool isAssemblyType = reader.GetBoolean(2);
+                    string columnName = reader.GetString(NameIndex);
+                    string columnType = reader.GetString(TypeIndex);
+                    bool isAssemblyType = reader.GetBoolean(IsAssemblyTypeIndex);
 
                     userTableColumns.Add(columnName);
 
@@ -374,12 +384,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     TelemetryInstance.TrackException(TelemetryErrorName.CreateSchema, ex, this._telemetryProps);
                     var sqlEx = ex as SqlException;
-                    if (sqlEx?.Number == 2714)
+                    if (sqlEx?.Number == ObjectAlreadyExistsErrorNumber)
                     {
-                        // Error 2714 is for an object of that name already existing in the database. This generally shouldn't happen
-                        // since we check for its existence in the statement but occasionally a race condition can make it so
-                        // that multiple instances will try and create the schema at once. In that case we can just ignore the
-                        // error since all we care about is that the schema exists at all.
+                        // This generally shouldn't happen since we check for its existence in the statement but occasionally
+                        // a race condition can make it so that multiple instances will try and create the schema at once.
+                        // In that case we can just ignore the error since all we care about is that the schema exists at all.
                         this._logger.LogWarning($"Failed to create schema '{SchemaName}'. Exception message: {ex.Message} This is informational only, function startup will continue as normal.");
                     }
                     else
@@ -427,12 +436,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     TelemetryInstance.TrackException(TelemetryErrorName.CreateGlobalStateTable, ex, this._telemetryProps);
                     var sqlEx = ex as SqlException;
-                    if (sqlEx?.Number == 2714)
+                    if (sqlEx?.Number == ObjectAlreadyExistsErrorNumber)
                     {
-                        // Error 2714 is for an object of that name already existing in the database. This generally shouldn't happen
-                        // since we check for its existence in the statement but occasionally a race condition can make it so
-                        // that multiple instances will try and create the table at once. In that case we can just ignore the
-                        // error since all we care about is that the table exists at all.
+                        // This generally shouldn't happen since we check for its existence in the statement but occasionally
+                        // a race condition can make it so that multiple instances will try and create the schema at once.
+                        // In that case we can just ignore the error since all we care about is that the schema exists at all.
                         this._logger.LogWarning($"Failed to create global state table '{GlobalStateTableName}'. Exception message: {ex.Message} This is informational only, function startup will continue as normal.");
                     }
                     else
@@ -545,12 +553,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     TelemetryInstance.TrackException(TelemetryErrorName.CreateLeasesTable, ex, this._telemetryProps);
                     var sqlEx = ex as SqlException;
-                    if (sqlEx?.Number == 2714)
+                    if (sqlEx?.Number == ObjectAlreadyExistsErrorNumber)
                     {
-                        // Error 2714 is for an object of that name already existing in the database. This generally shouldn't happen
-                        // since we check for its existence in the statement but occasionally a race condition can make it so
-                        // that multiple instances will try and create the table at once. In that case we can just ignore the
-                        // error since all we care about is that the table exists at all.
+                        // This generally shouldn't happen since we check for its existence in the statement but occasionally
+                        // a race condition can make it so that multiple instances will try and create the schema at once.
+                        // In that case we can just ignore the error since all we care about is that the schema exists at all.
                         this._logger.LogWarning($"Failed to create global state table '{leasesTableName}'. Exception message: {ex.Message} This is informational only, function startup will continue as normal.");
                     }
                     else
