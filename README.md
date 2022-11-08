@@ -636,7 +636,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 #### Output Binding Tutorial
 
-Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](#Create-a-SQL-Server), and that you have the 'Employee.cs' class from the [Input Binding Tutorial](#Input-Binding-Tutorial).
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](#Create-a-SQL-Server), and that you have the 'Employee.java' class from the [Input Binding Tutorial](#Input-Binding-Tutorial).
 
 - Open your app in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
