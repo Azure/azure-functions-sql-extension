@@ -32,14 +32,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         /// <summary>
         /// The resource name to use for getting the application lock. We use the same resource name for all instances
-        /// of the function because there is some shared state across all the functions. 
+        /// of the function because there is some shared state across all the functions.
         /// </summary>
         /// <remarks>A future improvement could be to make unique application locks for each FuncId/TableId combination so that functions
         /// working on different tables aren't blocking each other</remarks>
         public const string AppLockResource = "_az_func_Trigger";
         /// <summary>
         /// Timeout for acquiring the application lock - 30sec chosen as a reasonable value to ensure we aren't
-        /// hanging infinitely while also giving plenty of time for the blocking transaction to complete. 
+        /// hanging infinitely while also giving plenty of time for the blocking transaction to complete.
         /// </summary>
         public const int AppLockTimeoutMs = 30000;
 
@@ -71,5 +71,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 BEGIN
                     RAISERROR('Unable to acquire exclusive lock on {AppLockResource}. Result = %d', 16, 1, @result)
                 END;";
+
+        /// <summary>
+        /// There is already an object named '%.*ls' in the database.
+        /// </summary>
+        public const int ObjectAlreadyExistsErrorNumber = 2714;
     }
 }
