@@ -130,19 +130,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             int? configuredBatchSize = configuration.GetValue<int?>(ConfigKey_SqlTrigger_BatchSize);
             int? configuredPollingInterval = configuration.GetValue<int?>(ConfigKey_SqlTrigger_PollingInterval);
             this._batchSize = configuredBatchSize ?? this._batchSize;
-            this._pollingIntervalInMs = configuredPollingInterval ?? this._pollingIntervalInMs;
-            var monitorStartProps = new Dictionary<TelemetryPropertyName, string>(telemetryProps)
+            if (this._batchSize <= 0)
             {
-                { TelemetryPropertyName.HasConfiguredBatchSize, (configuredBatchSize != null).ToString() },
-                { TelemetryPropertyName.HasConfiguredPollingInterval, (configuredPollingInterval != null).ToString() },
-            };
+                throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_BatchSize}'. Ensure that the value is a positive integer.");
+            }
+            this._pollingIntervalInMs = configuredPollingInterval ?? this._pollingIntervalInMs;
+            if (this._pollingIntervalInMs <= 0)
+            {
+                throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_PollingInterval}'. Ensure that the value is a positive integer.");
+            }
             TelemetryInstance.TrackEvent(
                 TelemetryEventName.TriggerMonitorStart,
-                monitorStartProps,
+                new Dictionary<TelemetryPropertyName, string>(telemetryProps) {
+                        { TelemetryPropertyName.HasConfiguredBatchSize, (configuredBatchSize != null).ToString() },
+                        { TelemetryPropertyName.HasConfiguredPollingInterval, (configuredPollingInterval != null).ToString() },
+                },
                 new Dictionary<TelemetryMeasureName, double>() {
                     { TelemetryMeasureName.BatchSize, this._batchSize },
                     { TelemetryMeasureName.PollingIntervalMs, this._pollingIntervalInMs }
-            });
+                }
+            );
 
             // Prep search-conditions that will be used besides WHERE clause to match table rows.
             this._rowMatchConditions = Enumerable.Range(0, this._batchSize)
