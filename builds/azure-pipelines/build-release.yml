@@ -19,6 +19,8 @@ variables:
   versionPatch: $[counter(variables['versionMajorMinor'], 0)] # This will reset when we bump minor version
   binariesVersion: '$(versionMajor).$(versionMinor).$(versionPatch)'
   nugetVersion: '$(binariesVersion)-preview'
+  LGTM.UploadSnapshot: true
+  Semmle.SkipAnalysis: true
 
 stages:
 - stage: BuildPublish
@@ -88,7 +90,7 @@ stages:
     displayName: Build Java Library
 
     pool:
-      vmImage: 'ubuntu-latest'
+      vmImage: 'windows-latest'
 
     steps:
     - template: build-release-java.yml
