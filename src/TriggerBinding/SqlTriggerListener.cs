@@ -346,6 +346,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private async Task<long> CreateSchemaAsync(SqlConnection connection, SqlTransaction transaction, CancellationToken cancellationToken)
         {
             string createSchemaQuery = $@"
+                {AppLockStatements}
+
                 IF SCHEMA_ID(N'{SchemaName}') IS NULL
                     EXEC ('CREATE SCHEMA {SchemaName}');
             ";
@@ -393,6 +395,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private async Task<long> CreateGlobalStateTableAsync(SqlConnection connection, SqlTransaction transaction, CancellationToken cancellationToken)
         {
             string createGlobalStateTableQuery = $@"
+                {AppLockStatements}
+
                 IF OBJECT_ID(N'{GlobalStateTableName}', 'U') IS NULL
                     CREATE TABLE {GlobalStateTableName} (
                         UserFunctionID char(16) NOT NULL,
@@ -406,7 +410,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             using (var createGlobalStateTableCommand = new SqlCommand(createGlobalStateTableQuery, connection, transaction))
             {
                 var stopwatch = Stopwatch.StartNew();
-                await createGlobalStateTableCommand.ExecuteNonQueryAsync(cancellationToken);
+                try
+                {
+                    await createGlobalStateTableCommand.ExecuteNonQueryAsync(cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    TelemetryInstance.TrackException(TelemetryErrorName.CreateGlobalStateTable, ex, this._telemetryProps);
+                    var sqlEx = ex as SqlException;
+                    if (sqlEx?.Number == 2714)
+                    {
+                        // Error 2714 is for an object of that name already existing in the database. This generally shouldn't happen
+                        // since we check for its existence in the statement but occasionally a race condition can make it so
+                        // that multiple instances will try and create the table at once. In that case we can just ignore the
+                        // error since all we care about is that the table exists at all.
+                        this._logger.LogWarning($"Failed to create global state table '{GlobalStateTableName}'. Exception message: {ex.Message} This is informational only, function startup will continue as normal.");
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
                 long durationMs = stopwatch.ElapsedMilliseconds;
                 this._logger.LogDebugWithThreadId($"END CreateGlobalStateTable Duration={durationMs}ms");
                 return durationMs;
@@ -446,6 +470,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._logger.LogDebugWithThreadId($"END GetMinValidVersion MinValidVersion={minValidVersion}");
 
             string insertRowGlobalStateTableQuery = $@"
+                {AppLockStatements}
+
                 IF NOT EXISTS (
                     SELECT * FROM {GlobalStateTableName}
                     WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {userTableId}
@@ -486,6 +512,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string primaryKeys = string.Join(", ", primaryKeyColumns.Select(col => col.name.AsBracketQuotedString()));
 
             string createLeasesTableQuery = $@"
+                {AppLockStatements}
+
                 IF OBJECT_ID(N'{leasesTableName}', 'U') IS NULL
                     CREATE TABLE {leasesTableName} (
                         {primaryKeysWithTypes},
@@ -500,7 +528,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             using (var createLeasesTableCommand = new SqlCommand(createLeasesTableQuery, connection, transaction))
             {
                 var stopwatch = Stopwatch.StartNew();
-                await createLeasesTableCommand.ExecuteNonQueryAsync(cancellationToken);
+                try
+                {
+                    await createLeasesTableCommand.ExecuteNonQueryAsync(cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    TelemetryInstance.TrackException(TelemetryErrorName.CreateLeasesTable, ex, this._telemetryProps);
+                    var sqlEx = ex as SqlException;
+                    if (sqlEx?.Number == 2714)
+                    {
+                        // Error 2714 is for an object of that name already existing in the database. This generally shouldn't happen
+                        // since we check for its existence in the statement but occasionally a race condition can make it so
+                        // that multiple instances will try and create the table at once. In that case we can just ignore the
+                        // error since all we care about is that the table exists at all.
+                        this._logger.LogWarning($"Failed to create global state table '{leasesTableName}'. Exception message: {ex.Message} This is informational only, function startup will continue as normal.");
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
                 long durationMs = stopwatch.ElapsedMilliseconds;
                 this._logger.LogDebugWithThreadId($"END CreateLeasesTable Duration={durationMs}ms");
                 return durationMs;
