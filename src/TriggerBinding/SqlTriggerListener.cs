@@ -47,6 +47,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps = new Dictionary<TelemetryPropertyName, string>();
         private readonly int _maxChangesPerWorker;
+        private readonly bool _hasConfiguredMaxChangesPerWorker = false;
 
         private SqlTableChangeMonitor<T> _changeMonitor;
         private int _listenerState = ListenerNotStarted;
@@ -74,13 +75,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // Do not convert the scale-monitor ID to lower-case string since SQL table names can be case-sensitive
             // depending on the collation of the current database.
             this._scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{userFunctionId}-SqlTrigger-{tableName}");
-
             configuredMaxChangesPerWorker = configuration.GetValue<int?>(ConfigKey_SqlTrigger_MaxChangesPerWorker);
             this._maxChangesPerWorker = configuredMaxChangesPerWorker ?? DefaultMaxChangesPerWorker;
             if (this._maxChangesPerWorker <= 0)
             {
                 throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_MaxChangesPerWorker}'. Ensure that the value is a positive integer.");
             }
+            this._hasConfiguredMaxChangesPerWorker = configuredMaxChangesPerWorker != null;
         }
 
         public void Cancel()
@@ -105,7 +106,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             this.InitializeTelemetryProps();
-            TelemetryInstance.TrackEvent(TelemetryEventName.StartListenerStart, this._telemetryProps);
+            TelemetryInstance.TrackEvent(
+                TelemetryEventName.StartListenerStart,
+                new Dictionary<TelemetryPropertyName, string>(this._telemetryProps) {
+                        { TelemetryPropertyName.HasConfiguredMaxChangesPerWorker, this._hasConfiguredMaxChangesPerWorker.ToString() }
+                },
+                new Dictionary<TelemetryMeasureName, double>() {
+                    { TelemetryMeasureName.MaxChangesPerWorker, this._maxChangesPerWorker }
+                }
+            );
 
             try
             {
