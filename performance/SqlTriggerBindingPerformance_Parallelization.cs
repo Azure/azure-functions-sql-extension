@@ -11,16 +11,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
     [MemoryDiagnoser]
     public class SqlTriggerBindingPerformance_Parallelization : SqlTriggerBindingPerformanceTestBase
     {
-        [Benchmark]
-        [Arguments(2)]
-        [Arguments(5)]
-        public async Task MultiHost(int hostCount)
+        [Params(2, 5)]
+        public int HostCount;
+
+        [GlobalSetup]
+        public void GlobalSetup()
         {
-            for (int i = 0; i < hostCount; ++i)
+            this.SetChangeTrackingForTable("Products", true);
+            for (int i = 0; i < this.HostCount; ++i)
             {
                 this.StartFunctionHost(nameof(ProductsTrigger), SupportedLanguages.CSharp);
             }
+        }
 
+        [Benchmark]
+        public async Task MultiHost()
+        {
             int firstId = 1;
             int lastId = 90;
             await this.WaitForProductChanges(
