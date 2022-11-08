@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See License.txt in the project root for
+ * license information.
+ */
+
 package com.function;
 
 import com.microsoft.azure.functions.HttpMethod;
@@ -11,7 +17,6 @@ import com.microsoft.azure.functions.annotation.HttpTrigger;
 import com.microsoft.azure.functions.sql.annotation.SQLOutput;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.function.Common.Product;
 
@@ -33,10 +38,7 @@ public class AddProduct {
                 OutputBinding<Product> product) throws JsonParseException, JsonMappingException, IOException {
 
         String json = request.getBody().get();
-
         ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
-
         Product p = mapper.readValue(json, Product.class);
         product.setValue(p);
 

@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See License.txt in the project root for
+ * license information.
+ */
+
 package com.function;
 
 import com.microsoft.azure.functions.OutputBinding;
@@ -11,8 +17,8 @@ public class TimerTriggerProducts {
     public void run(
             @TimerTrigger(
                 name = "keepAliveTrigger",
-                schedule = "*/5 * * * * *"
-            ) String timerInfo,
+                schedule = "*/5 * * * * *")
+                String timerInfo,
             @SQLOutput(
                 commandText = "Products",
                 connectionStringSetting = "SqlConnectionString")

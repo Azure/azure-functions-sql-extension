@@ -1,0 +1,45 @@
+steps:
+  - task: Maven@3
+    displayName: Build library
+    inputs:
+      mavenPomFile: java-library/pom.xml
+      options: --batch-mode --define=gpg.skip --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
+
+  - task: Semmle@1
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+    inputs:
+      toolVersion: 'Latest'
+      sourceCodeDirectory: '$(Build.SourcesDirectory)/java-library'
+      language: 'java'
+      buildCommandsString: 'mvn clean package'
+      querySuite: 'Recommended'
+      timeout: '1800'
+      ram: '16384'
+      addProjectDirToScanningExclusionList: true
+
+  - powershell: |
+      $source = 'java-library'
+      $destination = '$(Build.ArtifactStagingDirectory)/java-library'
+      $jar = Get-ChildItem $source/target/*.jar | Select-Object -First 1 | Select Name
+      $jar -match '\d+\.\d+\.\d+'
+      $version = $matches[0]
+      $prefix = 'azure-functions-java-library-sql-'+$version
+      New-Item $destination -ItemType Directory
+      Copy-Item "$source/pom.xml" "$destination/$prefix.pom"
+      Copy-Item "$source/target/$prefix.jar" "$destination/"
+      Copy-Item "$source/target/$prefix-javadoc.jar" "$destination/"
+      Copy-Item "$source/target/$prefix-sources.jar" "$destination/"
+    displayName: Copy output files
+
+  - task: ManifestGeneratorTask@0
+    displayName: Generate SBOM manifest
+    inputs:
+      buildDropPath: $(Build.ArtifactStagingDirectory)/java-library
+      packageName: Azure Functions SQL Java Bindings
+
+  - publish: $(Build.ArtifactStagingDirectory)
+    displayName: Publish library package
+    artifact: drop-java-library
+
+

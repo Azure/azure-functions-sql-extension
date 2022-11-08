@@ -37,5 +37,11 @@
     </ItemGroup>
     <Copy SourceFiles="@(_JavaCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\Java\%(RecursiveDir)" />
     <Message Text="Copied Java Samples output to $(OutDir)\SqlExtensionSamples\Java" Importance="high" />
+    <ItemGroup>
+      <_PSCopyItems Include="..\samples\samples-powershell\**\*.*" />
+      <_PSCopyItems Include="Integration\test-powershell\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_PSCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\PowerShell\%(RecursiveDir)" />
+    <Message Text="Copied PS Samples output to $(OutDir)\SqlExtensionSamples\PowerShell" Importance="high" />
   </Target>
 </Project>

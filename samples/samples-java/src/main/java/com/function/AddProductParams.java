@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See License.txt in the project root for
+ * license information.
+ */
+
 package com.function;
 
 import com.microsoft.azure.functions.HttpMethod;
@@ -29,7 +35,7 @@ public class AddProductParams {
 
         Product p = new Product(
             Integer.parseInt(request.getQueryParameters().get("productId")),
-            request.getQueryParameters().get("name") == null ? "" : request.getQueryParameters().get("name"),
+            request.getQueryParameters().get("name"),
             Integer.parseInt(request.getQueryParameters().get("cost"))
         );
         product.setValue(p);

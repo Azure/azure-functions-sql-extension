@@ -15,6 +15,7 @@ Azure SQL bindings for Azure Functions are supported for:
 - .NET functions (C# in-process)
 - NodeJS functions (JavaScript/TypeScript)
 - Python functions
+- Java functions
 
 ## Table of Contents
 
@@ -32,6 +33,7 @@ Azure SQL bindings for Azure Functions are supported for:
     - [.NET functions](#net-functions)
     - [JavaScript functions](#javascript-functions)
     - [Python functions](#python-functions)
+    - [Java functions](#java-functions)
   - [More Samples](#more-samples)
     - [Input Binding](#input-binding)
       - [Query String](#query-string)
@@ -100,7 +102,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
-2. Create a function app for .NET, JavaScript, TypeScript or Python.
+2. Create a function app for .NET, JavaScript, TypeScript, Python, or Java.
 
     **.NET**
     ```bash
@@ -130,6 +132,13 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     mkdir MyApp
     cd MyApp
     func init --worker-runtime python
+    ```
+
+    **Java**
+    ```bash
+    mkdir MyApp
+    cd MyApp
+    func init --worker-runtime java
     ```
 
 3. Enable SQL bindings on the function app. More information can be found [in Microsoft Docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
@@ -165,6 +174,24 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     Add a setting in `local.settings.json` to isolate the worker dependencies.
     ```json
     "PYTHON_ISOLATE_WORKER_DEPENDENCIES": "1"
+    ```
+
+    **Java:**
+    Update the `host.json` file to the preview extension bundle.
+    ```json
+    "extensionBundle": {
+        "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
+        "version": "[4.*, 5.0.0)"
+    }
+    ```
+
+    Add the `azure-functions-java-library-sql` dependency to the pom.xml file.
+    ```xml
+    <dependency>
+        <groupId>com.microsoft.azure.functions</groupId>
+        <artifactId>azure-functions-java-library-sql</artifactId>
+        <version>0.1.0</version>
+    </dependency>
     ```
 
 ### Configure Function App
@@ -371,18 +398,18 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
     module.exports = async function (context, req) {
         const employees = [
             {
-                EmployeeId = 1,
-                FirstName = "Hello",
-                LastName = "World",
-                Company = "Microsoft",
-                Team = "Functions"
+                EmployeeId : 1,
+                FirstName : "Hello",
+                LastName : "World",
+                Company : "Microsoft",
+                Team : "Functions"
             },
             {
-                EmployeeId = 2,
-                FirstName = "Hi",
-                LastName = "SQLupdate",
-                Company = "Microsoft",
-                Team = "Functions"
+                EmployeeId : 2,
+                FirstName : "Hi",
+                LastName : "SQLupdate",
+                Company : "Microsoft",
+                Team : "Functions"
             }
         ];
         context.bindings.employee = employees;
@@ -497,6 +524,148 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
       "connectionStringSetting": "SqlConnectionString"
     }
     ```
+    *In the above, "dbo.Employees" is the name of the table our output binding is upserting into. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [Output Binding](#Output-Binding) section*
+
+- Hit 'F5' to run your code. Click the link to upsert the output array values in your SQL table. Your upserted values should launch in the browser.
+- Congratulations! You have successfully created your first SQL output binding! Checkout [Output Binding](#Output-Binding) for more information on how to use it and explore on your own!
+
+### Java functions
+
+#### Input Binding Tutorial
+
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](#Create-a-SQL-Server).
+
+- Open your app that you created in [Create a Function App](#create-a-function-app) in VSCode
+- Press 'F1' and search for 'Azure Functions: Create Function'
+- Choose HttpTrigger -> (Provide a package name) -> (Provide a function name) -> anonymous
+- In the file that opens, replace the `public HttpResponseMessage run` block with the below code.
+
+    ```java
+    public HttpResponseMessage run(
+            @HttpTrigger(
+                name = "req",
+                methods = {HttpMethod.GET, HttpMethod.POST},
+                authLevel = AuthorizationLevel.ANONYMOUS,
+                route = "getemployees")
+                HttpRequestMessage<Optional<String>> request,
+            @SQLInput(
+                commandText = "SELECT * FROM Employees",
+                commandType = "Text",
+                connectionStringSetting = "SqlConnectionString")
+                Employee[] employees) {
+
+        return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(employees).build();
+    }
+    ```
+
+    *In the above, "select * from Employees" is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [Input Binding](#Input-Binding) section*
+
+- Add 'import com.microsoft.azure.functions.sql.annotation.SQLInput;' 
+- Create a new file and call it 'Employee.java'
+- Paste the below in the file. These are the column names of our SQL table.
+
+    ```java
+    package com.function.Common;
+
+    public class Employee {
+        private int EmployeeId;
+        private String LastName;
+        private String FirstName;
+        private String Company;
+        private String Team;
+
+        public Employee() {
+        }
+
+        public Employee(int employeeId, String lastName, String firstName, String company, String team) {
+            EmployeeId = employeeId;
+            LastName = lastName;
+            FirstName = firstName;
+            Company = company;
+            Team = team;
+        }
+
+        public int getEmployeeId() {
+            return EmployeeId;
+        }
+
+        public void setEmployeeId(int employeeId) {
+            this.EmployeeId = employeeId;
+        }
+
+        public String getLastName() {
+            return LastName;
+        }
+
+        public void setLastName(String lastName) {
+            this.LastName = lastName;
+        }
+
+        public String getFirstName() {
+            return FirstName;
+        }
+
+        public void setFirstName(String firstName) {
+            this.FirstName = firstName;
+        }
+
+        public String getCompany() {
+            return Company;
+        }
+
+        public void setCompany(String company) {
+            this.Company = company;
+        }
+
+        public String getTeam() {
+            return Team;
+        }
+
+        public void setTeam(String team) {
+            this.Team = team;
+        }
+    }
+    ```
+
+- Navigate back to your HttpTriggerJava file.
+- Open the local.settings.json file, and in the brackets for "Values," verify there is a 'SqlConnectionString.' If not, add it.
+- Hit 'F5' to run your code. This will start up the Functions Host with a local HTTP Trigger and SQL Input Binding.
+- Click the link that appears in your terminal.
+- You should see your database output in the browser window.
+- Congratulations! You have successfully created your first SQL input binding! Checkout [Input Binding](#Input-Binding) for more information on how to use it and explore on your own!
+
+#### Output Binding Tutorial
+
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](#Create-a-SQL-Server), and that you have the 'Employee.java' class from the [Input Binding Tutorial](#Input-Binding-Tutorial).
+
+- Open your app in VSCode
+- Press 'F1' and search for 'Azure Functions: Create Function'
+- Choose HttpTrigger -> (Provide a package name) -> (Provide a function name) -> anonymous
+- In the file that opens, replace the `public HttpResponseMessage run` block with the below code.
+
+    ```java
+    public HttpResponseMessage run(
+            @HttpTrigger(
+                name = "req",
+                methods = {HttpMethod.GET},
+                authLevel = AuthorizationLevel.ANONYMOUS,
+                route = "addemployees-array")
+                HttpRequestMessage<Optional<String>> request,
+            @SQLOutput(
+                commandText = "dbo.Employees",
+                connectionStringSetting = "SqlConnectionString")
+                OutputBinding<Employee[]> output) {
+
+        output = new Employee[]
+            {
+                new Employee(1, "Hello", "World", "Microsoft", "Functions"),
+                new Employee(2, "Hi", "SQLupdate", "Microsoft", "Functions")
+            };
+
+        return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(output).build();
+    }
+    ```
+
     *In the above, "dbo.Employees" is the name of the table our output binding is upserting into. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [Output Binding](#Output-Binding) section*
 
 - Hit 'F5' to run your code. Click the link to upsert the output array values in your SQL table. Your upserted values should launch in the browser.

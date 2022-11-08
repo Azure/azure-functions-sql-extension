@@ -19,7 +19,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public SqlOutputBindingIntegrationTests(ITestOutputHelper output) : base(output)
         {
         }
-
         [Theory]
         [SqlInlineData(1, "Test", 5)]
         [SqlInlineData(0, "", 0)]
@@ -46,6 +45,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(1, "Test", 5)]
         [SqlInlineData(0, "", 0)]
         [SqlInlineData(-500, "ABCD", 580)]
+        // Currently PowerShell returns null when the parameter for name is an empty string
+        // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/443
+        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
         public void AddProductParamsTest(int id, string name, int cost, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductParams), lang);
@@ -123,7 +125,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.Java)] // Collectors are only available in C#
+        [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.PowerShell, SupportedLanguages.Java)] // Collectors are only available in C#
         public void AddProductsCollectorTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsCollector), lang);
@@ -216,6 +218,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
+        // Currently PowerShell gives an error due to the deserialization of the object
+        // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
+        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
         public void AddProductWithIdentity(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithIdentityColumn), lang);
@@ -236,6 +241,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
+        // Currently PowerShell gives an error due to the deserialization of the object
+        // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
+        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
         public void AddProductsWithIdentityColumnArray(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsWithIdentityColumnArray), lang);
@@ -246,11 +254,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
-        /// Tests that for tables with multiple primary columns (including an itemtity column) we are able to
+        /// Tests that for tables with multiple primary columns (including an identity column) we are able to
         /// insert items.
         /// </summary>
         [Theory]
         [SqlInlineData()]
+        // Currently PowerShell gives an error due to the deserialization of the object
+        // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
+        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
         public void AddProductWithIdentity_MultiplePrimaryColumns(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), lang);
@@ -330,6 +341,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
+        // Currently PowerShell gives an error due to the deserialization of the object
+        // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
+        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
         public void AddProductWithIdentity_MissingPrimaryColumn(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), lang);
@@ -390,6 +404,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
+        // Currently PowerShell gives an unknown error (when testing locally we get a missing primary key error)
+        // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
+        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
         public void AddProductWithDefaultPKTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithDefaultPK), lang);

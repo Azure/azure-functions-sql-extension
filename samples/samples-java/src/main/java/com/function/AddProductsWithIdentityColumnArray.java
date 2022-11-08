@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See License.txt in the project root for
+ * license information.
+ */
+
 package com.function;
 
 import com.microsoft.azure.functions.HttpMethod;
@@ -28,7 +34,8 @@ public class AddProductsWithIdentityColumnArray {
 
         ProductWithoutId[] p = new ProductWithoutId[] {
             new ProductWithoutId("Cup", 2),
-            new ProductWithoutId("Glasses", 12) };
+            new ProductWithoutId("Glasses", 12)
+        };
         products.setValue(p);
 
         return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(products).build();

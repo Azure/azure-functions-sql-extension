@@ -72,6 +72,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
     {
         CSharp,
         JavaScript,
+        PowerShell,
         Java
     };
 }
