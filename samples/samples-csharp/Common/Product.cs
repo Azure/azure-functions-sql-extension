@@ -34,6 +34,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common
     public class ProductName
     {
         public string Name { get; set; }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is Product)
+            {
+                var that = obj as Product;
+                return this.Name == that.Name;
+            }
+            return false;
+        }
     }
 
     public class ProductWithDefaultPK
