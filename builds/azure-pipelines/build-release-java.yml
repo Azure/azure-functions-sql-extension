@@ -19,11 +19,14 @@ steps:
       addProjectDirToScanningExclusionList: true
 
   - powershell: |
-      $prefix = 'azure-functions-java-library-sql-*'
       $source = 'java-library'
       $destination = '$(Build.ArtifactStagingDirectory)/java-library'
+      $jar = Get-ChildItem $source/target/*.jar | Select-Object -First 1 | Select Name
+      $jar -match '\d+\.\d+\.\d+'
+      $version = $matches[0]
+      $prefix = 'azure-functions-java-library-sql-'+$version
       New-Item $destination -ItemType Directory
-      Copy-Item "$source/pom.xml" "$destination/"
+      Copy-Item "$source/pom.xml" "$destination/$prefix.pom"
       Copy-Item "$source/target/$prefix.jar" "$destination/"
       Copy-Item "$source/target/$prefix-javadoc.jar" "$destination/"
       Copy-Item "$source/target/$prefix-sources.jar" "$destination/"
