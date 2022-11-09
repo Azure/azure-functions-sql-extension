@@ -1,6 +1,6 @@
 # SQL Extension .NET Worker
 
-Welcome to the Sql Extension .NET Worker Repository. The .NET Worker provides .NET 6 support for SQL Bindings in Azure Functions, introducing an **Isolated Model**, running as an out-of-process language worker that is separate from the Azure Functions runtime. This allows you to have full control over your application's dependencies as well as other new features like a middleware pipeline. A .NET Isolated function app works differently than a .NET Core 3.1 function app. For .NET Isolated, you build an executable that imports the .NET Isolated language worker as a NuGet package. Your app includes a [`Program.cs`](vscode-file://vscode-app/c:/Users/makoripa/AppData/Local/Programs/Azure%20Data%20Studio/resources/app/out/vs/code/electron-browser/workbench/samples/samples-outofproc/Program.cs) that starts the worker.
+Welcome to the Sql Extension .NET Worker Repository. The .NET Worker provides .NET 6 support for SQL Bindings in Azure Functions, introducing an **Isolated Model**, running as an out-of-process language worker that is separate from the Azure Functions runtime. This allows you to have full control over your application's dependencies as well as other new features like a middleware pipeline. A .NET Isolated function app works differently than a .NET Core 3.1 function app. For .NET Isolated, you build an executable that imports the .NET Isolated language worker as a NuGet package. Your app includes a [`Program.cs`](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-outofproc/Program.cs) that starts the worker.
 
 ## Binding Model
 
@@ -22,21 +22,20 @@ Download .NET 6.0 [from here](https://dotnet.microsoft.com/download/dotnet/6.0)
 
 To download Core Tools, please check out our docs at [Azure Functions Core Tools](https://github.com/Azure/azure-functions-core-tools)
 
-### Create a .NET Isolated project
+### Create an Isolated Function App
 
-In an empty directory, run `func init` and select `dotnet (Isolated Process)`.
+1. In an empty directory, run `func init` and select `dotnet (Isolated Process)`.
 
-### Add a function
-
+2. Add a function: 
 Run `func new` and select `HttpTrigger` trigger. Fill in the function name.
 
-### Configure function App
+### Configure Function App
 
 1. Get your SQL connection string
     
     Local SQL Server - Use this connection string, replacing the placeholder values for the database and password.  
       
-    `Server=localhost;Initial Catalog={db_name};Persist Security Info=False;User ID=sa;Password={your_password};` Azure SQL Server - Browse to the SQL Database resource in the \[Azure portal\](https://ms.portal.azure.com/)  
+    `Server=localhost;Initial Catalog={db_name};Persist Security Info=False;User ID=sa;Password={your_password};` Azure SQL Server - Browse to the SQL Database resource in the [Azure portal](https://ms.portal.azure.com/)  
     \- In the left blade click on the **Connection Strings** tab  
     \- Copy the **SQL Authentication** connection string  
       
@@ -78,9 +77,9 @@ Run `func host start` in the sample function app directory.
 
 #### Input Binding Tutorial
 
-Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](#Create-a-SQL-Server).
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](https://github.com/Azure/azure-functions-sql-extension/blob/main/README.md#Create-a-SQL-Server).
 
-- Open your app that you created in [Create a Function App](#create-a-function-app) in VSCode
+- Open your app that you created in [Create a Function App](#create-an-isolated-function-app) in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a function name) -> Company.namespace -> anonymous
 - In the file that opens, replace the `public static async Task<IActionResult> Run` block with the below code.
@@ -90,12 +89,12 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
     public static async Task<IActionResult> Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "employees")] HttpRequest req,
         ILogger log,
-        [SqlInput("select * from Employees",
+        [SqlInput("SELECT * FROM Employees",
         CommandType = System.Data.CommandType.Text,
         ConnectionStringSetting = "SqlConnectionString")]
-        IEnumerable<Employee> employee)
+        IEnumerable<Employee> employees)
     {
-        return new OkObjectResult(employee);
+        return new OkObjectResult(employees);
     }
     ```
 
@@ -128,7 +127,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 #### Output Binding Tutorial
 
-Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](#Create-a-SQL-Server), and that you have the 'Employee.cs' class from the [Input Binding Tutorial](#Input-Binding-Tutorial).
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](https://github.com/Azure/azure-functions-sql-extension/blob/main/README.md#Create-a-SQL-Server), and that you have the 'Employee.cs' class from the [Input Binding Tutorial](#Input-Binding-Tutorial).
 
 - Open your app in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
@@ -173,7 +172,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Congratulations! You have successfully created your first out of proc SQL output binding! Checkout [Output Binding](https://github.com/Azure/azure-functions-sql-extension/blob/main/README.md#Output-Binding) for more information on how to use it and explore on your own!
 
 ## Differences from in-process bindings
-As stated in the functions [documentation](https://learn.microsoft.com/en-us/azure/azure-functions/dotnet-isolated-process-guide#output-bindings)
+As stated in the functions [documentation](https://learn.microsoft.com/azure/azure-functions/dotnet-isolated-process-guide#output-bindings)
 - Because .NET isolated projects run in a separate worker process, bindings can't take advantage of rich binding classes, such as ICollector<T>, IAsyncCollector<T>, and CloudBlockBlob.
 - There's also no direct support for types inherited from underlying service SDKs, such as SqlCommand. Instead, bindings rely on strings, arrays, and serializable types, such as plain old class objects (POCOs).
 - For HTTP triggers, you must use HttpRequestData and HttpResponseData to access the request and response data. This is because you don't have access to the original HTTP request and response objects when running out-of-process.
