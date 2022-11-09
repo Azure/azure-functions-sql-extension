@@ -320,18 +320,34 @@ This extension collect usage data in order to help us improve your experience. T
     /// </summary>
     public enum TelemetryEventName
     {
+        AcquireLeaseEnd,
+        AcquireLeaseStart,
         AddAsync,
-        Create,
         Convert,
+        Create,
         Error,
         FlushAsync,
         GetCaseSensitivity,
+        GetChangesEnd,
+        GetChangesStart,
         GetColumnDefinitions,
         GetPrimaryKeys,
+        GetScaleStatus,
         GetTableInfoEnd,
         GetTableInfoStart,
+        ReleaseLeasesEnd,
+        ReleaseLeasesStart,
+        RenewLeasesEnd,
+        RenewLeasesStart,
+        StartListenerEnd,
+        StartListenerStart,
+        StopListenerEnd,
+        StopListenerStart,
         TableInfoCacheHit,
         TableInfoCacheMiss,
+        TriggerFunctionEnd,
+        TriggerFunctionStart,
+        TriggerMonitorStart,
         UpsertEnd,
         UpsertStart,
     }
@@ -341,13 +357,21 @@ This extension collect usage data in order to help us improve your experience. T
     /// </summary>
     public enum TelemetryPropertyName
     {
+        ErrorCode,
         ErrorName,
         ExceptionType,
         HasIdentityColumn,
+        HasConfiguredBatchSize,
+        HasConfiguredMaxChangesPerWorker,
+        HasConfiguredPollingInterval,
+        LeasesTableName,
         QueryType,
+        ScaleRecommendation,
         ServerVersion,
+        TriggerMetrics,
         Type,
-        ErrorCode
+        UserFunctionId,
+        WorkerCount,
     }
 
     /// <summary>
@@ -355,13 +379,28 @@ This extension collect usage data in order to help us improve your experience. T
     /// </summary>
     public enum TelemetryMeasureName
     {
+        AcquireLeasesDurationMs,
         BatchCount,
+        BatchSize,
         CommandDurationMs,
+        CreatedSchemaDurationMs,
+        CreateGlobalStateTableDurationMs,
+        CreateLeasesTableDurationMs,
         DurationMs,
         GetCaseSensitivityDurationMs,
+        GetChangesDurationMs,
         GetColumnDefinitionsDurationMs,
         GetPrimaryKeysDurationMs,
-        TransactionDurationMs
+        GetUnprocessedChangesDurationMs,
+        InsertGlobalStateTableRowDurationMs,
+        MaxChangesPerWorker,
+        PollingIntervalMs,
+        ReleaseLeasesDurationMs,
+        RetryAttemptNumber,
+        SetLastSyncVersionDurationMs,
+        TransactionDurationMs,
+        UnprocessedChangeCount,
+        UpdateLastSyncVersionDurationMs,
     }
 
     /// <summary>
@@ -369,15 +408,31 @@ This extension collect usage data in order to help us improve your experience. T
     /// </summary>
     public enum TelemetryErrorName
     {
+        ConsumeChangesLoop,
         Convert,
+        CreateGlobalStateTable,
+        CreateLeasesTable,
+        CreateSchema,
         FlushAsync,
         GetCaseSensitivity,
+        GetChanges,
+        GetChangesRollback,
         GetColumnDefinitions,
         GetColumnDefinitionsTableDoesNotExist,
         GetPrimaryKeys,
-        NoPrimaryKeys,
+        GetScaleStatus,
+        GetUnprocessedChangeCount,
+        InvalidConfigurationValue,
         MissingPrimaryKeys,
+        NoPrimaryKeys,
+        ProcessChanges,
         PropsNotExistOnTable,
+        ReleaseLeases,
+        ReleaseLeasesNoRetriesLeft,
+        ReleaseLeasesRollback,
+        RenewLeases,
+        RenewLeasesLoop,
+        StartListener,
         Upsert,
         UpsertRollback,
     }
