@@ -1,22 +1,23 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using Microsoft.Data.SqlClient;
-using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 using System;
+using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
+using Microsoft.Data.SqlClient;
 using Xunit;
 using Xunit.Abstractions;
-using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
-using Microsoft.AspNetCore.WebUtilities;
-using System.Collections.Generic;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
@@ -24,9 +25,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     public class IntegrationTestBase : IDisposable
     {
         /// <summary>
-        /// Host process for Azure Function CLI
+        /// The first Function Host process that was started. Null if no process has been started yet.
         /// </summary>
-        protected Process FunctionHost { get; private set; }
+        protected Process FunctionHost => this.FunctionHostList.FirstOrDefault();
+
+        /// <summary>
+        /// Host processes for Azure Function CLI.
+        /// </summary>
+        protected List<Process> FunctionHostList { get; } = new List<Process>();
 
         /// <summary>
         /// Host process for Azurite local storage emulator. This is required for non-HTTP trigger functions:
@@ -177,56 +183,58 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// - The functionName is different than its route.<br/>
         /// - You can start multiple functions by passing in a space-separated list of function names.<br/>
         /// </remarks>
-        protected void StartFunctionHost(string functionName, SupportedLanguages language, bool useTestFolder = false, DataReceivedEventHandler customOutputHandler = null, Dictionary<string, string> environmentVariables = null)
+        protected void StartFunctionHost(string functionName, SupportedLanguages language, bool useTestFolder = false, DataReceivedEventHandler customOutputHandler = null, IDictionary<string, string> environmentVariables = null)
         {
             string workingDirectory = language == SupportedLanguages.CSharp && useTestFolder ? GetPathToBin() : Path.Combine(GetPathToBin(), "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), language));
             if (!Directory.Exists(workingDirectory))
             {
                 throw new FileNotFoundException("Working directory not found at " + workingDirectory);
             }
+
+            // Use a different port for each new host process, starting with the default port number: 7071.
+            int port = this.Port + this.FunctionHostList.Count;
+
             var startInfo = new ProcessStartInfo
             {
                 // The full path to the Functions CLI is required in the ProcessStartInfo because UseShellExecute is set to false.
                 // We cannot both use shell execute and redirect output at the same time: https://docs.microsoft.com//dotnet/api/system.diagnostics.processstartinfo.redirectstandardoutput#remarks
                 FileName = GetFunctionsCoreToolsPath(),
-                Arguments = $"start --verbose --port {this.Port} --functions {functionName}",
+                Arguments = $"start --verbose --port {port} --functions {functionName}",
                 WorkingDirectory = workingDirectory,
                 WindowStyle = ProcessWindowStyle.Hidden,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false
             };
-
             if (environmentVariables != null)
             {
-                foreach (KeyValuePair<string, string> variable in environmentVariables)
-                {
-                    startInfo.EnvironmentVariables[variable.Key] = variable.Value;
-                }
+                environmentVariables.ToList().ForEach(ev => startInfo.EnvironmentVariables[ev.Key] = ev.Value);
             }
 
             // Always disable telemetry during test runs
             startInfo.EnvironmentVariables[TelemetryOptoutEnvVar] = "1";
 
             this.LogOutput($"Starting {startInfo.FileName} {startInfo.Arguments} in {startInfo.WorkingDirectory}");
-            this.FunctionHost = new Process
+
+            var functionHost = new Process
             {
                 StartInfo = startInfo
             };
 
+            this.FunctionHostList.Add(functionHost);
+
             // Register all handlers before starting the functions host process.
             var taskCompletionSource = new TaskCompletionSource<bool>();
-            this.FunctionHost.OutputDataReceived += this.TestOutputHandler;
-            this.FunctionHost.OutputDataReceived += SignalStartupHandler;
+            functionHost.OutputDataReceived += SignalStartupHandler;
             this.FunctionHost.OutputDataReceived += customOutputHandler;
 
-            this.FunctionHost.ErrorDataReceived += this.TestOutputHandler;
+            functionHost.Start();
+            functionHost.OutputDataReceived += this.GetTestOutputHandler(functionHost.Id);
+            functionHost.ErrorDataReceived += this.GetTestOutputHandler(functionHost.Id);
+            functionHost.BeginOutputReadLine();
+            functionHost.BeginErrorReadLine();
 
-            this.FunctionHost.Start();
-            this.FunctionHost.BeginOutputReadLine();
-            this.FunctionHost.BeginErrorReadLine();
-
-            this.LogOutput($"Waiting for Azure Function host to start...");
+            this.LogOutput("Waiting for Azure Function host to start...");
 
             const int FunctionHostStartupTimeoutInSeconds = 60;
             bool isCompleted = taskCompletionSource.Task.Wait(TimeSpan.FromSeconds(FunctionHostStartupTimeoutInSeconds));
@@ -237,7 +245,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             const int BufferTimeInSeconds = 5;
             Task.Delay(TimeSpan.FromSeconds(BufferTimeInSeconds)).Wait();
 
-            this.LogOutput($"Azure Function host started!");
+            this.LogOutput("Azure Function host started!");
             this.FunctionHost.OutputDataReceived -= SignalStartupHandler;
 
             void SignalStartupHandler(object sender, DataReceivedEventArgs e)
@@ -297,11 +305,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
         }
 
-        private void TestOutputHandler(object sender, DataReceivedEventArgs e)
+        private DataReceivedEventHandler GetTestOutputHandler(int processId)
         {
-            if (e != null && !string.IsNullOrEmpty(e.Data))
+            return TestOutputHandler;
+
+            void TestOutputHandler(object sender, DataReceivedEventArgs e)
             {
-                this.LogOutput(e.Data);
+                if (!string.IsNullOrEmpty(e.Data))
+                {
+                    this.LogOutput($"[{processId}] {e.Data}");
+                }
             }
         }
 
@@ -381,15 +394,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 this.LogOutput($"Failed to close connection. Error: {e1.Message}");
             }
 
-            try
-            {
-                this.FunctionHost?.Kill();
-                this.FunctionHost?.Dispose();
-            }
-            catch (Exception e2)
-            {
-                this.LogOutput($"Failed to stop function host, Error: {e2.Message}");
-            }
+            this.DisposeFunctionHosts();
 
             try
             {
@@ -414,6 +419,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
 
             GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Disposes all the running function hosts
+        /// </summary>
+        protected void DisposeFunctionHosts()
+        {
+            foreach (Process functionHost in this.FunctionHostList)
+            {
+                try
+                {
+                    functionHost.Kill();
+                    functionHost.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    this.LogOutput($"Failed to stop function host, Error: {ex.Message}");
+                }
+            }
+            this.FunctionHostList.Clear();
         }
 
         protected async Task<HttpResponseMessage> SendInputRequest(string functionName, string query = "")

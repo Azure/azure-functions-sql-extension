@@ -56,7 +56,7 @@ Our integration tests are based on functions from the samples project. To run in
                this.StartFunctionHost(nameof(<FUNCTIONNAME>), lang); // Replace <FUNCTIONNAME> with the class name of the function this test is running against
             // test code here
         }
-   ```  
+   ```
    Ex: When the test has parameters:
 
    ```
@@ -87,3 +87,19 @@ Our integration tests are based on functions from the samples project. To run in
             // test code here
         }
    ```
+
+## Troubleshooting Tests
+
+This section lists some things to try to help troubleshoot test failures
+
+### Enable debug logging on the Function
+
+Enabling debug logging can greatly increase the information available which can help track down issues or understand at least where the problem may be. To enable debug logging for the Function open [host.json](../samples/samples-csharp/host.json) and add the following property to the `logLevel` section, then rebuild and re-run your test.
+
+```json
+"logLevel": {
+    "default": "Debug"
+}
+```
+
+WARNING : Doing this will add a not-insignificant overhead to the test run duration from writing all the additional content to the log files, which may cause timeouts to occur in tests. If this happens you can temporarily increase those timeouts while debug logging is enabled to avoid having unexpected failures.

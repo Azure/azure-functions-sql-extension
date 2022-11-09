@@ -4,7 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
+using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 {
@@ -157,6 +160,53 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         public static string CleanJsonString(string jsonStr)
         {
             return jsonStr.Trim().Replace(" ", "").Replace(Environment.NewLine, "");
+        }
+
+        public static async Task<TResult> TimeoutAfter<TResult>(this Task<TResult> task, TimeSpan timeout, string message = "The operation has timed out.")
+        {
+
+            using var timeoutCancellationTokenSource = new CancellationTokenSource();
+
+            Task completedTask = await Task.WhenAny(task, Task.Delay(timeout, timeoutCancellationTokenSource.Token));
+            if (completedTask == task)
+            {
+                timeoutCancellationTokenSource.Cancel();
+                return await task;  // Very important in order to propagate exceptions
+            }
+            else
+            {
+                throw new TimeoutException(message);
+            }
+        }
+
+        /// <summary>
+        /// Creates a DataReceievedEventHandler that will wait for the specified regex and then check that
+        /// the matched group matches the expected value.
+        /// </summary>
+        /// <param name="taskCompletionSource">The task completion source to signal when the value is received</param>
+        /// <param name="regex">The regex. This must have a single group match for the specific value being looked for</param>
+        /// <param name="valueName">The name of the value to output if the match fails</param>
+        /// <param name="expectedValue">The value expected to be equal to the matched group from the regex</param>
+        /// <returns>The event handler</returns>
+        public static DataReceivedEventHandler CreateOutputReceievedHandler(TaskCompletionSource<bool> taskCompletionSource, string regex, string valueName, string expectedValue)
+        {
+            return (object sender, DataReceivedEventArgs e) =>
+            {
+                Match match = Regex.Match(e.Data, regex);
+                if (match.Success)
+                {
+                    // We found the line so now check that the group matches our expected value
+                    string actualValue = match.Groups[1].Value;
+                    if (actualValue == expectedValue)
+                    {
+                        taskCompletionSource.SetResult(true);
+                    }
+                    else
+                    {
+                        taskCompletionSource.SetException(new Exception($"Expected {valueName} value of {expectedValue} but got value {actualValue}"));
+                    }
+                }
+            };
         }
     }
 }
