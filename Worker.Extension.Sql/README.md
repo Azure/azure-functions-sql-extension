@@ -24,9 +24,17 @@ To download Core Tools, please check out our docs at [Azure Functions Core Tools
 
 ### Create an Isolated Function App
 
-1. In an empty directory, run `func init` and select `dotnet (Isolated Process)`.
+Run the below in the Terminal/CLI or with PowerShell.
 
-2. Add a function: 
+    ```
+    mkdir MyApp
+    cd MyApp
+    func init --worker-runtime dotnet (Isolated Process)
+    ```
+
+   or in an empty directory, run `func init` and select `dotnet (Isolated Process)`
+
+### Add a function: 
 Run `func new` and select `HttpTrigger` trigger. Fill in the function name.
 
 ### Configure Function App
@@ -79,7 +87,7 @@ Run `func host start` in the sample function app directory.
 
 Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](https://github.com/Azure/azure-functions-sql-extension/blob/main/README.md#Create-a-SQL-Server).
 
-- Open your app that you created in [Create a Function App](#create-an-isolated-function-app) in VSCode
+- Open your app that you created in [Create a Function App](#create-an-isolated-function-app) in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a function name) -> Company.namespace -> anonymous
 - In the file that opens, replace the `public static async Task<IActionResult> Run` block with the below code.
