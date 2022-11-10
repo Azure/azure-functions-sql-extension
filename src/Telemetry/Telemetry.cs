@@ -96,7 +96,7 @@ This extension collect usage data in order to help us improve your experience. T
                 {
                     return;
                 }
-                this._logger.LogInformation($"Sending event {eventName}");
+                this._logger.LogTrace($"Sending event {eventName}");
 
                 //continue task in existing parallel thread
                 this._trackEventTask = this._trackEventTask.ContinueWith(
@@ -119,7 +119,7 @@ This extension collect usage data in order to help us improve your experience. T
                 {
                     return;
                 }
-                this._logger.LogInformation($"Sending exception event: {exception.Message}");
+                this._logger.LogTrace($"Sending exception event: {exception.Message}");
                 properties = properties != null ? new Dictionary<TelemetryPropertyName, string>(properties) : new Dictionary<TelemetryPropertyName, string>();
                 properties[TelemetryPropertyName.ErrorName] = errorName.ToString();
                 properties[TelemetryPropertyName.ErrorCode] = ExtractErrorCode(exception);
