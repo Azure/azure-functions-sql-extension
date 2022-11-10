@@ -2,6 +2,12 @@
 
 [![Build Status](https://mssqltools.visualstudio.com/CrossPlatBuildScripts/_apis/build/status/SQL%20Bindings/SQL%20Bindings%20-%20Nightly?branchName=main)](https://mssqltools.visualstudio.com/CrossPlatBuildScripts/_build/latest?definitionId=481&branchName=main)
 
+## Table of Contents
+  - [Introduction](#introduction)
+  - [Known Issues](#known-issues)
+  - [Telemetry](#telemetry)
+  - [Trademarks](#trademarks)
+
 ## Introduction
 
 This repository contains the Azure SQL bindings for Azure Functions extension code as well as a quick start tutorial and samples illustrating how to use the binding in different ways. The types of bindings supported are:
@@ -10,31 +16,15 @@ This repository contains the Azure SQL bindings for Azure Functions extension co
 - **Output Binding**: takes a list of rows and upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
 - **Trigger Binding**: monitors the user table for changes (i.e., row inserts, updates, and deletes) and invokes the function with updated rows.
 
-See the language specific guides for further details on support and usage of these bindings in the supported languages.
+See the language-specific guides for further details on support and usage of the Azure SQL bindings for Azure Functions in the supported languages:
 
-- [.NET](./docs/BindingsGuide_Dotnet.md)
+- [.NET (C# in-process)](./docs/BindingsGuide_Dotnet.md)
 - [Java](./docs/BindingsGuide_Java.md)
 - [Javascript](./docs/BindingsGuide_Javascript.md)
 - [Python](./docs/BindingsGuide_Python.md)
 - [PowerShell](./docs/BindingsGuide_PowerShell.md)
 
 Further information on the Azure SQL binding for Azure Functions is also available in the [Azure Functions docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
-
-Azure SQL bindings for Azure Functions are supported for:
-- .NET functions (C# in-process)
-- NodeJS functions (JavaScript/TypeScript)
-- Python functions
-- Java functions
-- PowerShell functions
-
-## Table of Contents
-
-- [Azure SQL bindings for Azure Functions - Preview](#azure-sql-bindings-for-azure-functions---preview)
-  - [Introduction](#introduction)
-  - [Table of Contents](#table-of-contents)
-  - [Known Issues](#known-issues)
-  - [Telemetry](#telemetry)
-  - [Trademarks](#trademarks)
 
 ## Known Issues
 
