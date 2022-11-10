@@ -4,11 +4,18 @@
 
 ## Introduction
 
-This repository contains the Azure SQL bindings for Azure Functions extension code as well as a quick start tutorial and samples illustrating how to use the binding in different ways.  A high level explanation of the bindings is provided below. Additional information for each is in their respective pages.
+This repository contains the Azure SQL bindings for Azure Functions extension code as well as a quick start tutorial and samples illustrating how to use the binding in different ways. The types of bindings supported are:
 
-- [**Input Binding**](https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/InputBinding.md): takes a SQL query to run and returns the output of the query in the function.
-- [**Output Binding**](https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/OutputBinding.md): takes a list of rows and upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
-- [**Trigger Binding**](https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/TriggerBinding.md): monitors the user table for changes (i.e., row inserts, updates, and deletes) and invokes the function with updated rows.
+- **Input Binding**: takes a SQL query to run and returns the output of the query in the function.
+- **Output Binding**: takes a list of rows and upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
+- **Trigger Binding**: monitors the user table for changes (i.e., row inserts, updates, and deletes) and invokes the function with updated rows.
+
+See the language specific guides for further details on support and usage of these bindings in the supported languages.
+
+- [.NET](./BindingsGuide_Dotnet.md)
+- [Java](./BindingsGuide_Java.md)
+- [Javascript](./BindingsGuide_Javascript.md)
+- [Python](./BindingsGuide_Python.md)
 
 Further information on the Azure SQL binding for Azure Functions is also available in the [Azure Functions docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
 
@@ -20,7 +27,7 @@ Azure SQL bindings for Azure Functions are supported for:
 
 ## Table of Contents
 
-- [Azure SQL binding for Azure Functions - Preview](#azure-sql-binding-for-azure-functions---preview)
+- [Azure SQL bindings for Azure Functions - Preview](#azure-sql-bindings-for-azure-functions---preview)
   - [Introduction](#introduction)
   - [Table of Contents](#table-of-contents)
   - [Known Issues](#known-issues)

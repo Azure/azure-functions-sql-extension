@@ -2,7 +2,7 @@
 
 ## Input Binding
 
-### SqlAttribute for Input Bindings
+### SQLInput Attribute
 
 _TODO_
 
@@ -119,13 +119,13 @@ _TODO_
 
 ## Output Binding
 
-### SqlAttribute for Output Bindings
+### SQLOutput Attribute
 
 _TODO_
 
 ### Setup for Output Bindings
 
-Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./QuickStart.md#create-a-sql-server), and that you have the 'Employee.java' class from the [Input Binding Guide](./InputBinding.md#java).
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./QuickStart.md#create-a-sql-server), and that you have the 'Employee.java' class from the [Setup for Input Bindings](#setup-for-input-bindings) section.
 
 - Open your app in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'
@@ -184,12 +184,12 @@ Normally either of these are false then an error will be thrown. Below are the s
 #### Identity Columns
 In the case where one of the primary key columns is an identity column, there are two options based on how the function defines the output object:
 
-1. If the identity column isn't included in the output object then a straight insert is always performed with the other column values. See [AddProductWithIdentityColumn](../samples/samples-csharp/OutputBindingSamples/AddProductWithIdentityColumn.cs) for an example.
-2. If the identity column is included (even if it's an optional nullable value) then a merge is performed similar to what happens when no identity column is present. This merge will either insert a new row or update an existing row based on the existence of a row that matches the primary keys (including the identity column). See [AddProductWithIdentityColumnIncluded](../samples/samples-csharp/OutputBindingSamples/AddProductWithIdentityColumnIncluded.cs) for an example.
+1. If the identity column isn't included in the output object then a straight insert is always performed with the other column values. See [AddProductWithIdentityColumn](../samples/samples-java/src/main/java/com/function/AddProductWithIdentityColumn.java) for an example.
+2. If the identity column is included (even if it's an optional nullable value) then a merge is performed similar to what happens when no identity column is present. This merge will either insert a new row or update an existing row based on the existence of a row that matches the primary keys (including the identity column). See [AddProductWithIdentityColumnIncluded](../samples/samples-java/src/main/java/com/function/AddProductWithIdentityColumnIncluded.java) for an example.
 
 #### Columns with Default Values
 In the case where one of the primary key columns has a default value, there are also two options based on how the function defines the output object:
-1. If the column with a default value is not included in the output object, then a straight insert is always performed with the other values. See [AddProductWithDefaultPK](../samples/samples-csharp/OutputBindingSamples/AddProductWithDefaultPK.cs) for an example.
+1. If the column with a default value is not included in the output object, then a straight insert is always performed with the other values. See [AddProductWithDefaultPK](../samples/samples-java/src/main/java/com/function/AddProductWithDefaultPK.java) for an example.
 2. If the column with a default value is included then a merge is performed similar to what happens when no default column is present. If there is a nullable column with a default value, then the provided column value in the output object will be upserted even if it is null.
 
 ## Trigger Binding

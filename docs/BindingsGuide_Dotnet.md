@@ -51,7 +51,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
     ```csharp
     namespace Company.Function {
-        public class Employee{
+        public class Employee {
             public int EmployeeId { get; set; }
             public string LastName { get; set; }
             public string FirstName { get; set; }
@@ -206,7 +206,7 @@ The output binding takes two [arguments](https://github.com/Azure/azure-function
 
 The following are valid binding types for the rows to be upserted into the table:
 
-- **ICollector&lt;T&gt;/IAsyncCollector&lt;T&gt;**: Each element is a row represented by `T`, where `T` is a user-defined POCO, or Plain Old C# Object. `T` should follow the structure of a row in the queried table. See the [Query String](./InputBinding.md#query-string) for an example of what `T` should look like.
+- **ICollector&lt;T&gt;/IAsyncCollector&lt;T&gt;**: Each element is a row represented by `T`, where `T` is a user-defined POCO, or Plain Old C# Object. `T` should follow the structure of a row in the queried table. See the [Query String](#query-string) for an example of what `T` should look like.
 - **T**: Used when just one row is to be upserted into the table.
 - **T[]**: Each element is again a row of the result represented by `T`. This output binding type requires manual instantiation of the array in the function.
 
@@ -214,7 +214,7 @@ The repo contains examples of each of these binding types [here](https://github.
 
 ### Setup for Output Bindings
 
-Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./QuickStart.md#create-a-sql-server), and that you have the 'Employee.cs' class from the [Input Binding Guide](./InputBinding.md#net).
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./QuickStart.md#create-a-sql-server), and that you have the 'Employee.cs' class from the [Setup for Input Bindings](#setup-for-input-bindings) section.
 
 - Open your app in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
@@ -462,7 +462,7 @@ public static void Run(
 }
 ```
 
-Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./QuickStart.md#create-a-sql-server), and that you have the 'Employee.cs' file from the [Input Binding Guide](./InputBinding.md).
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./QuickStart.md#create-a-sql-server), and that you have the 'Employee.cs' file from the [Setup for Input Bindings](#setup-for-input-bindings) section.
 
 - Create a new file with the following content:
 
