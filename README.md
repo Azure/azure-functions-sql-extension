@@ -16,6 +16,7 @@ See the language specific guides for further details on support and usage of the
 - [Java](./docs/BindingsGuide_Java.md)
 - [Javascript](./docs/BindingsGuide_Javascript.md)
 - [Python](./docs/BindingsGuide_Python.md)
+- [PowerShell](./docs/BindingsGuide_PowerShell.md)
 
 Further information on the Azure SQL binding for Azure Functions is also available in the [Azure Functions docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
 
@@ -24,6 +25,7 @@ Azure SQL bindings for Azure Functions are supported for:
 - NodeJS functions (JavaScript/TypeScript)
 - Python functions
 - Java functions
+- PowerShell functions
 
 ## Table of Contents
 
