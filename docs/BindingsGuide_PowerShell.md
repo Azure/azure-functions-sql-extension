@@ -114,7 +114,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Open your app in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger ->  (Provide a function name) -> anonymous
-- In the file that opens (`index.js`), replace the `module.exports = async function (context, req)` block with the below code.
+- In the file that opens (`run.ps1`), replace the code within the file the below code.
 
    ```powershell
     using namespace System.Net
@@ -150,7 +150,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
     })
     ```
 
-- We also need to add the SQL output binding for the `context.bindings.employee` property. Open the function.json file.
+- We also need to add the SQL output binding for the `employee` parameter. Open the function.json file.
 - Paste the below in the file as an additional entry to the "bindings": [] array.
 
     ```json
