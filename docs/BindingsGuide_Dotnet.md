@@ -18,7 +18,7 @@ The following are valid binding types for the result of the query/stored procedu
 - **String**: A JSON string representation of the rows of the result (an example is provided [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-csharp/InputBindingSamples/GetProductsString.cs)).
 - **SqlCommand**: The SqlCommand is populated with the appropriate query and parameters, but the associated connection is not opened. It is the responsiblity of the user to execute the command and read in the results. This is useful in the case that the user wants more control over how the results are read in. An example is provided [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-csharp/InputBindingSamples/GetProductsSqlCommand.cs).
 
-The repo contains examples of each of these binding types [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharp/InputBindingSamples). A few examples are also included [below](#samples).
+The repo contains examples of each of these binding types [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharp/InputBindingSamples). A few examples are also included [below](#samples-for-input-bindings).
 
 ### Setup for Input Bindings
 
@@ -210,7 +210,7 @@ The following are valid binding types for the rows to be upserted into the table
 - **T**: Used when just one row is to be upserted into the table.
 - **T[]**: Each element is again a row of the result represented by `T`. This output binding type requires manual instantiation of the array in the function.
 
-The repo contains examples of each of these binding types [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharp/OutputBindingSamples). A few examples are also included [below](#samples).
+The repo contains examples of each of these binding types [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharp/OutputBindingSamples). A few examples are also included [below](#samples-for-output-bindings).
 
 ### Setup for Output Bindings
 
@@ -385,7 +385,7 @@ The trigger binding takes two [arguments](https://github.com/Azure/azure-functio
 
 The trigger binding can bind to type `IReadOnlyList<SqlChange<T>>`:
 
-- **IReadOnlyList<SqlChange\<T\>>**: If there are multiple rows updated in the SQL table, the user function will get invoked with a batch of changes, where each element is a `SqlChange` object. Here `T` is a generic type-argument that can be substituted with a user-defined POCO, or Plain Old C# Object, representing the user table row. The POCO should therefore follow the schema of the queried table. See the [Query String](./QuickStart.md#query-string) section for an example of what the POCO should look like. The two properties of class `SqlChange<T>` are `Item` of type `T` which represents the table row and `Operation` of type `SqlChangeOperation` which indicates the kind of row operation (insert, update, or delete) that triggered the user function.
+- **IReadOnlyList<SqlChange\<T\>>**: If there are multiple rows updated in the SQL table, the user function will get invoked with a batch of changes, where each element is a `SqlChange` object. Here `T` is a generic type-argument that can be substituted with a user-defined POCO, or Plain Old C# Object, representing the user table row. The POCO should therefore follow the schema of the queried table. See the [Query String](#query-string) section for an example of what the POCO should look like. The two properties of class `SqlChange<T>` are `Item` of type `T` which represents the table row and `Operation` of type `SqlChangeOperation` which indicates the kind of row operation (insert, update, or delete) that triggered the user function.
 
 Note that for insert and update operations, the user function receives POCO object containing the latest values of table columns. For delete operation, only the properties corresponding to the primary keys of the row are populated.
 

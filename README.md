@@ -12,10 +12,10 @@ This repository contains the Azure SQL bindings for Azure Functions extension co
 
 See the language specific guides for further details on support and usage of these bindings in the supported languages.
 
-- [.NET](./BindingsGuide_Dotnet.md)
-- [Java](./BindingsGuide_Java.md)
-- [Javascript](./BindingsGuide_Javascript.md)
-- [Python](./BindingsGuide_Python.md)
+- [.NET](./docs/BindingsGuide_Dotnet.md)
+- [Java](./docs/BindingsGuide_Java.md)
+- [Javascript](./docs/BindingsGuide_Javascript.md)
+- [Python](./docs/BindingsGuide_Python.md)
 
 Further information on the Azure SQL binding for Azure Functions is also available in the [Azure Functions docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
 
