@@ -91,6 +91,13 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     func init --worker-runtime java
     ```
 
+    **PowerShell**
+    ```bash
+    mkdir MyApp
+    cd MyApp
+    func init --worker-runtime powershell
+    ```
+
 3. Enable SQL bindings on the function app. More information can be found [in Microsoft Docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
 
     **.NET:** Install the extension.
@@ -143,6 +150,15 @@ These steps can be done in the Terminal/CLI or with PowerShell.
         <artifactId>azure-functions-java-library-sql</artifactId>
         <version>0.1.0</version>
     </dependency>
+    ```
+
+     **PowerShell:**
+    Update the `host.json` file to the preview extension bundle.
+    ```json
+    "extensionBundle": {
+        "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
+        "version": "[4.*, 5.0.0)"
+    }
     ```
 
 ## Configure Function App
@@ -199,3 +215,4 @@ Once you have your Function App you need to configure it for use with Azure SQL 
 - [Java](./BindingsGuide_Java.md)
 - [Javascript](./BindingsGuide_Javascript.md)
 - [Python](./BindingsGuide_Python.md)
+- [PowerShell](./BindingsGuide_PowerShell.md)
