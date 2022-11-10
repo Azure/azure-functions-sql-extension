@@ -193,4 +193,9 @@ Once you have your Function App you need to configure it for use with Azure SQL 
     }
     ```
 
-2. You have setup your local environment and are now ready to create your first Azure Function with SQL bindings! Continue to the [input](./InputBinding.md), [output](./OutputBinding.md) and [trigger](./TriggerBinding.md) binding pages for more information on each type of binding.
+2. You have setup your local environment and are now ready to create your first Azure Function with SQL bindings! Continue to the language specific guides for the next steps in creating and configuration your function!
+
+- [.NET](./BindingsGuide_Dotnet.md)
+- [Java](./BindingsGuide_Java.md)
+- [Javascript](./BindingsGuide_Javascript.md)
+- [Python](./BindingsGuide_Python.md)
