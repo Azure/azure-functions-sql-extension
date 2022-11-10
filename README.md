@@ -20,7 +20,7 @@ See the language-specific guides for further details on support and usage of the
 
 - [.NET (C# in-process)](./docs/BindingsGuide_Dotnet.md)
 - [Java](./docs/BindingsGuide_Java.md)
-- [NodeJS (JavaScript/TypeScript)](./docs/BindingsGuide_Javascript.md)
+- [Javascript](./docs/BindingsGuide_Javascript.md)
 - [Python](./docs/BindingsGuide_Python.md)
 - [PowerShell](./docs/BindingsGuide_PowerShell.md)
 
