@@ -4,12 +4,12 @@ This document contains a list of all repositories related to SQL Bindings.
 ## Docs
 [Azure SQL bindings for Functions | Microsoft Docs ](https://aka.ms/sqlbindings)
 
-## SQL Bindings VSCode Extension
+## SQL Bindings VS Code Extension
 This extension enables users to develop Azure Functions with SQL Bindings.
 
 [azuredatastudio/extensions/sql-bindings at main · microsoft/azuredatastudio (github.com)](https://github.com/microsoft/azuredatastudio/tree/main/extensions/sql-bindings)
 
-STS contains the logic for adding a SQL binding to an existing Azure Function.
+SQL Tools Service contains the logic for adding a SQL binding to an existing Azure Function.
 
 [sqltoolsservice/src/Microsoft.SqlTools.ServiceLayer/AzureFunctions at main · microsoft/sqltoolsservice (github.com)](https://github.com/microsoft/sqltoolsservice/tree/main/src/Microsoft.SqlTools.ServiceLayer/AzureFunctions)
 
