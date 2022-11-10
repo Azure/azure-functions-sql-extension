@@ -39,3 +39,6 @@ End to end tests for SQL Bindings in the Python Worker.
 
 [Azure/azure-functions-python-worker: Python worker for Azure Functions. (github.com)](https://github.com/Azure/azure-functions-python-worker)
 
+### PowerShell Worker
+PowerShell language worker for Azure Functions.
+[Azure/azure-functions-powershell-worker: PowerShell worker for Azure Functions. (github.com)](https://github.com/Azure/azure-functions-powershell-worker)
