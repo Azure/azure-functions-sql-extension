@@ -1,5 +1,23 @@
 # Azure SQL bindings for Azure Functions - .NET
 
+## Setup Function App
+1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
+
+2. Create a function app for .NET:
+    ```bash
+    mkdir MyApp
+    cd MyApp
+    func init --worker-runtime dotnet
+    ```
+
+3. Enable SQL bindings on the function app. More information can be found [in Microsoft Docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
+
+    Install the extension.
+
+    ```powershell
+    dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql --prerelease
+    ```
+
 ## Input Binding
 
 ### SqlAttribute for Input Bindings

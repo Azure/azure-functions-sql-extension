@@ -1,5 +1,25 @@
 # Azure SQL bindings for Azure Functions - PowerShell
 
+## Setup Function App
+1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
+
+2. Create a function app for PowerShell:
+    ```bash
+    mkdir MyApp
+    cd MyApp
+    func init --worker-runtime powershell
+    ```
+
+3. Enable SQL bindings on the function app. More information can be found [in Microsoft Docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
+
+    Update the `host.json` file to the preview extension bundle.
+    ```json
+    "extensionBundle": {
+        "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
+        "version": "[4.*, 5.0.0)"
+    }
+    ```
+
 ## Input Binding
 
 ### function.json Properties for Input Bindings

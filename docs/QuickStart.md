@@ -52,7 +52,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
-2. Create a function app for .NET, JavaScript, TypeScript, Python or Java.
+2. Create a function app for .NET, JavaScript, TypeScript, Python, Java or PowerShell.
 
     **.NET**
     ```bash

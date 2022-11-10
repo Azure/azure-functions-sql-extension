@@ -1,10 +1,39 @@
 # Azure SQL bindings for Azure Functions - Java
 
+## Setup Function App
+1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
+
+2. Create a function app for Java:
+    ```bash
+    mkdir MyApp
+    cd MyApp
+    func init --worker-runtime java
+    ```
+
+3. Enable SQL bindings on the function app. More information can be found [in Microsoft Docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
+
+    Update the `host.json` file to the preview extension bundle.
+    ```json
+    "extensionBundle": {
+        "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
+        "version": "[4.*, 5.0.0)"
+    }
+    ```
+
 ## Input Binding
 
 ### SQLInput Attribute
 
-_TODO_
+In the Java functions runtime library, use the @SQLInput annotation (com.microsoft.azure.functions.sql.annotation.SQLInput) on parameters whose value would come from Azure SQL. This annotation supports the following elements:
+
+| Element |Description|
+|---------|---------|
+| **commandText** | Required. The Transact-SQL query command or name of the stored procedure executed by the binding.  |
+| **connectionStringSetting** | The name of an app setting that contains the connection string for the database against which the query or stored procedure is being executed. This value isn't the actual connection string and must instead resolve to an environment variable name. | 
+| **commandType** | A [CommandType](/dotnet/api/system.data.commandtype) value, which is [Text](/dotnet/api/system.data.commandtype#fields) for a query and [StoredProcedure](/dotnet/api/system.data.commandtype#fields) for a stored procedure. |
+| **parameters** | Zero or more parameter values passed to the command during execution as a single string. Must follow the format `@param1=param1,@param2=param2`. Neither the parameter name nor the parameter value can contain a comma (`,`) or an equals sign (`=`). |
+
+When you're developing locally, add your application settings in the local.settings.json file in the Values collection.
 
 ### Setup for Input Bindings
 
@@ -121,7 +150,14 @@ _TODO_
 
 ### SQLOutput Attribute
 
-_TODO_
+In the Java functions runtime library, use the @SQLOutput annotation (com.microsoft.azure.functions.sql.annotation.SQLOutput) on parameters whose value would come from Azure SQL. This annotation supports the following elements:
+
+| Element |Description|
+|---------|---------|
+| **commandText** | Required. The name of the table being written to by the binding.  |
+| **connectionStringSetting** | Required. The name of an app setting that contains the connection string for the database to which data is being written. This isn't the actual connection string and must instead resolve to an environment variable. | 
+
+When you're developing locally, add your application settings in the local.settings.json file in the Values collection.
 
 ### Setup for Output Bindings
 
