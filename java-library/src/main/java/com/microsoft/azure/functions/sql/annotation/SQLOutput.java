@@ -19,6 +19,11 @@
 @CustomBinding(direction = "out", name = "sql", type = "sql")
 public @interface SQLOutput {
     /**
+     * The variable name used in function.json.
+     */
+    String name() default "sql";
+
+    /**
      * Name of the table to upsert data to.
      */
     String commandText() default "";

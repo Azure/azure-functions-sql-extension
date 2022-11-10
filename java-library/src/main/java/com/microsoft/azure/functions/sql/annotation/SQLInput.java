@@ -18,6 +18,11 @@ import com.microsoft.azure.functions.annotation.CustomBinding;
 @CustomBinding(direction = "in", name = "sql", type = "sql")
 public @interface SQLInput {
     /**
+     * The variable name used in function.json.
+     */
+    String name() default "sql";
+
+    /**
      * Query string or name of stored procedure to be run.
      */
     String commandText() default "";
