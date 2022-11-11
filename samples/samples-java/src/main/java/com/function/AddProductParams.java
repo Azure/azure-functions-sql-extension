@@ -29,6 +29,7 @@ public class AddProductParams {
                 route = "addproduct-params")
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
+                name = "product",
                 commandText = "Products",
                 connectionStringSetting = "SqlConnectionString")
                 OutputBinding<Product> product) {

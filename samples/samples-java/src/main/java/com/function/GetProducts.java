@@ -28,6 +28,7 @@ public class GetProducts {
                 route = "getproducts/{cost}")
                 HttpRequestMessage<Optional<String>> request,
             @SQLInput(
+                name = "products",
                 commandText = "SELECT * FROM Products WHERE Cost = @Cost",
                 commandType = "Text",
                 parameters = "@Cost={cost}",

@@ -28,6 +28,7 @@ public class AddProductWithMultiplePrimaryColumnsAndIdentity {
                 route = "addproductwithmultipleprimarycolumnsandidentity")
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
+                name = "product",
                 commandText = "ProductsWithMultiplePrimaryColumnsAndIdentity",
                 connectionStringSetting = "SqlConnectionString")
                 OutputBinding<MultiplePrimaryKeyProductWithoutId> product) {

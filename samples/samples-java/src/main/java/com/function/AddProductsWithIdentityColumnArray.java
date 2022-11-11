@@ -28,6 +28,7 @@ public class AddProductsWithIdentityColumnArray {
                 authLevel = AuthorizationLevel.ANONYMOUS,
                 route = "addproductswithidentitycolumnarray") HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
+                name = "products",
                 commandText = "dbo.ProductsWithIdentity",
                 connectionStringSetting = "SqlConnectionString")
                 OutputBinding<ProductWithoutId[]> products) {
