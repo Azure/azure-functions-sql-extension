@@ -28,6 +28,7 @@ public class GetProductsStoredProcedureFromAppSetting {
                 route = "getproductsbycost")
                 HttpRequestMessage<Optional<String>> request,
             @SQLInput(
+                name = "products",
                 commandText = "%Sp_SelectCost%",
                 commandType = "StoredProcedure",
                 parameters = "@Cost=%ProductCost%",

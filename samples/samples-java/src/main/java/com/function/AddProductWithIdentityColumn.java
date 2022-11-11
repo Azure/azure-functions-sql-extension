@@ -28,6 +28,7 @@ public class AddProductWithIdentityColumn {
                 route = "addproductwithidentitycolumn")
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
+                name = "product",
                 commandText = "ProductsWithIdentity",
                 connectionStringSetting = "SqlConnectionString")
                 OutputBinding<ProductWithoutId> product) {
