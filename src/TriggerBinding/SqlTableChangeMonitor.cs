@@ -483,56 +483,68 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             if (this._state == State.ProcessingChanges)
             {
-                try
+                using (SqlTransaction transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead))
                 {
-                    // I don't think I need a transaction for renewing leases. If this worker reads in a row from the
-                    // leases table and determines that it corresponds to its batch of changes, but then that row gets
-                    // deleted by a cleanup task, it shouldn't renew the lease on it anyways.
-                    using (SqlCommand renewLeasesCommand = this.BuildRenewLeasesCommand(connection))
+                    try
                     {
-                        TelemetryInstance.TrackEvent(TelemetryEventName.RenewLeasesStart, this._telemetryProps);
-                        this._logger.LogDebugWithThreadId($"BEGIN RenewLeases Query={renewLeasesCommand.CommandText}");
-                        var stopwatch = Stopwatch.StartNew();
-
-                        await renewLeasesCommand.ExecuteNonQueryAsync(token);
-
-                        long durationMs = stopwatch.ElapsedMilliseconds;
-                        this._logger.LogDebugWithThreadId($"END RenewLeases Duration={durationMs}ms");
-                        var measures = new Dictionary<TelemetryMeasureName, double>
+                        using (SqlCommand renewLeasesCommand = this.BuildRenewLeasesCommand(connection, transaction))
                         {
-                            [TelemetryMeasureName.DurationMs] = durationMs,
-                        };
+                            TelemetryInstance.TrackEvent(TelemetryEventName.RenewLeasesStart, this._telemetryProps);
+                            this._logger.LogDebugWithThreadId($"BEGIN RenewLeases Query={renewLeasesCommand.CommandText}");
+                            var stopwatch = Stopwatch.StartNew();
 
-                        TelemetryInstance.TrackEvent(TelemetryEventName.RenewLeasesEnd, this._telemetryProps, measures);
+                            await renewLeasesCommand.ExecuteNonQueryAsync(token);
+
+                            long durationMs = stopwatch.ElapsedMilliseconds;
+                            this._logger.LogDebugWithThreadId($"END RenewLeases Duration={durationMs}ms");
+                            var measures = new Dictionary<TelemetryMeasureName, double>
+                            {
+                                [TelemetryMeasureName.DurationMs] = durationMs,
+                            };
+
+                            TelemetryInstance.TrackEvent(TelemetryEventName.RenewLeasesEnd, this._telemetryProps, measures);
+
+                            transaction.Commit();
+                        }
                     }
-                }
-                catch (Exception e)
-                {
-                    // This catch block is necessary so that the finally block is executed even in the case of an exception
-                    // (see https://docs.microsoft.com/dotnet/csharp/language-reference/keywords/try-finally, third
-                    // paragraph). If we fail to renew the leases, multiple workers could be processing the same change
-                    // data, but we have functionality in place to deal with this (see design doc).
-                    this._logger.LogError($"Failed to renew leases due to exception: {e.GetType()}. Exception message: {e.Message}");
-                    TelemetryInstance.TrackException(TelemetryErrorName.RenewLeases, e, this._telemetryProps);
-                }
-                finally
-                {
-                    // Do we want to update this count even in the case of a failure to renew the leases? Probably,
-                    // because the count is simply meant to indicate how much time the other thread has spent processing
-                    // changes essentially.
-                    this._leaseRenewalCount += 1;
-
-                    // If this thread has been cancelled, then the _cancellationTokenSourceExecutor could have already
-                    // been disposed so shouldn't cancel it.
-                    if (this._leaseRenewalCount == MaxLeaseRenewalCount && !token.IsCancellationRequested)
+                    catch (Exception e)
                     {
-                        this._logger.LogWarning("Call to execute the function (TryExecuteAsync) seems to be stuck, so it is being cancelled");
+                        // This catch block is necessary so that the finally block is executed even in the case of an exception
+                        // (see https://docs.microsoft.com/dotnet/csharp/language-reference/keywords/try-finally, third
+                        // paragraph). If we fail to renew the leases, multiple workers could be processing the same change
+                        // data, but we have functionality in place to deal with this (see design doc).
+                        this._logger.LogError($"Failed to renew leases due to exception: {e.GetType()}. Exception message: {e.Message}");
+                        TelemetryInstance.TrackException(TelemetryErrorName.RenewLeases, e, this._telemetryProps);
 
-                        // If we keep renewing the leases, the thread responsible for processing the changes is stuck.
-                        // If it's stuck, it has to be stuck in the function execution call (I think), so we should
-                        // cancel the call.
-                        this._cancellationTokenSourceExecutor.Cancel();
-                        this._cancellationTokenSourceExecutor = new CancellationTokenSource();
+                        try
+                        {
+                            transaction.Rollback();
+                        }
+                        catch (Exception e2)
+                        {
+                            this._logger.LogError($"RenewLeases - Failed to rollback transaction due to exception: {e2.GetType()}. Exception message: {e2.Message}");
+                            TelemetryInstance.TrackException(TelemetryErrorName.RenewLeasesRollback, e2, this._telemetryProps);
+                        }
+                    }
+                    finally
+                    {
+                        // Do we want to update this count even in the case of a failure to renew the leases? Probably,
+                        // because the count is simply meant to indicate how much time the other thread has spent processing
+                        // changes essentially.
+                        this._leaseRenewalCount += 1;
+
+                        // If this thread has been cancelled, then the _cancellationTokenSourceExecutor could have already
+                        // been disposed so shouldn't cancel it.
+                        if (this._leaseRenewalCount == MaxLeaseRenewalCount && !token.IsCancellationRequested)
+                        {
+                            this._logger.LogWarning("Call to execute the function (TryExecuteAsync) seems to be stuck, so it is being cancelled");
+
+                            // If we keep renewing the leases, the thread responsible for processing the changes is stuck.
+                            // If it's stuck, it has to be stuck in the function execution call (I think), so we should
+                            // cancel the call.
+                            this._cancellationTokenSourceExecutor.Cancel();
+                            this._cancellationTokenSourceExecutor = new CancellationTokenSource();
+                        }
                     }
                 }
             }
