@@ -185,15 +185,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     await connection.OpenAsync();
                     this._logger.LogDebugWithThreadId("END OpenGetUnprocessedChangesConnection");
 
-                    using (SqlCommand getUnprocessedChangesCommand = this.BuildGetUnprocessedChangesCommand(connection))
+                    // Use a transaction to automatically release the app lock when we're done executing the query
+                    using (SqlTransaction transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead))
                     {
-                        this._logger.LogDebugWithThreadId($"BEGIN GetUnprocessedChangeCount Query={getUnprocessedChangesCommand.CommandText}");
-                        var commandSw = Stopwatch.StartNew();
-                        unprocessedChangeCount = (long)await getUnprocessedChangesCommand.ExecuteScalarAsync();
-                        getUnprocessedChangesDurationMs = commandSw.ElapsedMilliseconds;
-                    }
+                        try
+                        {
+                            using (SqlCommand getUnprocessedChangesCommand = this.BuildGetUnprocessedChangesCommand(connection, transaction))
+                            {
+                                this._logger.LogInformation("Getting change count");
+                                this._logger.LogDebugWithThreadId($"BEGIN GetUnprocessedChangeCount Query={getUnprocessedChangesCommand.CommandText}");
+                                var commandSw = Stopwatch.StartNew();
+                                unprocessedChangeCount = (long)await getUnprocessedChangesCommand.ExecuteScalarAsync();
+                                getUnprocessedChangesDurationMs = commandSw.ElapsedMilliseconds;
+                            }
 
-                    this._logger.LogDebugWithThreadId($"END GetUnprocessedChangeCount Duration={getUnprocessedChangesDurationMs}ms Count={unprocessedChangeCount}");
+                            this._logger.LogDebugWithThreadId($"END GetUnprocessedChangeCount Duration={getUnprocessedChangesDurationMs}ms Count={unprocessedChangeCount}");
+                            transaction.Commit();
+                        }
+                        catch (Exception)
+                        {
+                            try
+                            {
+                                transaction.Rollback();
+                            }
+                            catch (Exception ex2)
+                            {
+                                this._logger.LogError($"GetUnprocessedChangeCount : Failed to rollback transaction due to exception: {ex2.GetType()}. Exception message: {ex2.Message}");
+                                TelemetryInstance.TrackException(TelemetryErrorName.GetUnprocessedChangeCountRollback, ex2, this._telemetryProps);
+                            }
+                            throw;
+                        }
+                    }
                 }
 
                 var measures = new Dictionary<TelemetryMeasureName, double>
@@ -802,8 +824,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// used by workers to get the changes for processing.
         /// </summary>
         /// <param name="connection">The connection to add to the returned SqlCommand</param>
+        /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-        private SqlCommand BuildGetUnprocessedChangesCommand(SqlConnection connection)
+        private SqlCommand BuildGetUnprocessedChangesCommand(SqlConnection connection, SqlTransaction transaction)
         {
             string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
 
@@ -825,7 +848,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     (l.{LeasesTableAttemptCountColumnName} IS NULL OR l.{LeasesTableAttemptCountColumnName} < {MaxChangeProcessAttemptCount});
             ";
 
-            return new SqlCommand(getUnprocessedChangesQuery, connection);
+            return new SqlCommand(getUnprocessedChangesQuery, connection, transaction);
         }
 
         /// <summary>
@@ -880,8 +903,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Builds the query to renew leases on the rows in "_rows" (<see cref="RenewLeasesAsync(CancellationToken)"/>).
         /// </summary>
         /// <param name="connection">The connection to add to the returned SqlCommand</param>
+        /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-        private SqlCommand BuildRenewLeasesCommand(SqlConnection connection)
+        private SqlCommand BuildRenewLeasesCommand(SqlConnection connection, SqlTransaction transaction)
         {
             string matchCondition = string.Join(" OR ", this._rowMatchConditions.Take(this._rows.Count));
 
@@ -893,7 +917,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 WHERE {matchCondition};
             ";
 
-            return this.GetSqlCommandWithParameters(renewLeasesQuery, connection, null, this._rows);
+            return this.GetSqlCommandWithParameters(renewLeasesQuery, connection, transaction, this._rows);
         }
 
         /// <summary>
