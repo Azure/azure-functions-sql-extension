@@ -14,6 +14,12 @@ steps:
 - script: npm install -g azurite
   displayName: 'Install Azurite Local Storage Emulator'
 
+# This step is necessary because npm installs to a non-traditional location on Windows hosted agents
+# This sets the path to npm global installations as a variable which then gets passed to the .NET run task
+- bash: echo "##vso[task.setvariable variable=nodeModulesPath]$(npm root -g)"
+  displayName: 'Set npm installation path for Windows'
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
+
 - task: DockerInstaller@0
   displayName: Docker Installer
   inputs:
@@ -63,3 +69,6 @@ steps:
     docker rm sql1
   displayName: 'Stop and Remove SQL Server Image'
   condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
+
+- publish: $(System.DefaultWorkingDirectory)/performance/BenchmarkDotNet.Artifacts
+  artifact: BenchmarkDotNet.Artifacts
