@@ -21,6 +21,7 @@ public class QueueTriggerProducts {
                 connection = "AzureWebJobsStorage")
             String queueMessage,
             @SQLOutput(
+                name = "products",
                 commandText = "Products",
                 connectionStringSetting = "SqlConnectionString")
                 OutputBinding<Product[]> products) {

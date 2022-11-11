@@ -33,6 +33,7 @@ public class AddProductWithDefaultPK {
                 route = "addproductwithdefaultpk")
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
+                name = "product",
                 commandText = "dbo.ProductsWithDefaultPK",
                 connectionStringSetting = "SqlConnectionString")
                 OutputBinding<ProductWithDefaultPK> product) throws JsonParseException, JsonMappingException, IOException {
