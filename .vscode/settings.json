@@ -1,8 +1,8 @@
 {
     "azureFunctions.projectSubpath": "samples/samples-csharp",
-    "azureFunctions.deploySubpath": "samples/samples-csharp/bin/Release/netcoreapp3.1/publish",
+    "azureFunctions.deploySubpath": "samples/samples-csharp/bin/Release/net6/publish",
     "azureFunctions.projectLanguage": "C#",
-    "azureFunctions.projectRuntime": "~3",
+    "azureFunctions.projectRuntime": "~4",
     "debug.internalConsoleOptions": "neverOpen",
     "azureFunctions.preDeployTask": "publish (functions)",
     "omnisharp.enableEditorConfigSupport": true,
