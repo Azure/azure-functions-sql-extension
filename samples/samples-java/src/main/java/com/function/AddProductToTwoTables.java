@@ -23,6 +23,10 @@ import com.function.Common.Product;
 import java.io.IOException;
 import java.util.Optional;
 
+/**
+ * This function uses two SQL output bindings to upsert the product in the request body to the
+ * Products and ProductsWithIdentity tables.
+ */
 public class AddProductToTwoTables {
     @FunctionName("AddProductToTwoTables")
     public HttpResponseMessage run(

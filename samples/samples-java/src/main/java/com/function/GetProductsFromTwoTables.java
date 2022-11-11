@@ -18,6 +18,10 @@ import com.microsoft.azure.functions.sql.annotation.SQLInput;
 
 import java.util.Optional;
 
+/**
+ * This function uses two SQL input bindings to get products from the Products and ProductsWithIdentity tables
+ * and returns the combined results as a JSON array in the body of the HttpResponseMessage.
+ */
 public class GetProductsFromTwoTables {
     @FunctionName("GetProductsFromTwoTables")
     public HttpResponseMessage run(
