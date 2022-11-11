@@ -57,27 +57,17 @@ steps:
 # Run each benchmark test separately so that failures in one don't block all the others
 - ${{ each test in parameters.tests }}:
   - task: DotNetCoreCLI@2
-    displayName: 'Run BenchmarkDotNet'
+    displayName: Run ${{ test }} suite
     env:
       TEST_SERVER: '$(testServer)'
       NODE_MODULES_PATH: '$(nodeModulesPath)'
-      AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
-    inputs:
-      command: run
-      arguments: '-c ${{ parameters.configuration }} ${{ test }}'
-      workingDirectory: performance
-    condition: and(succeeded(), ne(variables['Agent.OS'], 'linux'))
-
-  - task: DotNetCoreCLI@2
-    displayName: 'Run BenchmarkDotNet on Linux'
-    env:
       SA_PASSWORD: '$(serverPassword)'
       AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
     inputs:
       command: run
       arguments: '-c ${{ parameters.configuration }} ${{ test }}'
       workingDirectory: performance
-    condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
+    condition: succeeded()
 
 - script: |
     docker stop sql1
