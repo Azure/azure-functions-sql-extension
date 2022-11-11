@@ -44,6 +44,7 @@ steps:
   inputs:
     command: run
     arguments: '-c ${{ parameters.configuration }}'
+    workingDirectory: performance
   condition: and(succeeded(), ne(variables['Agent.OS'], 'linux'))
 
 - task: DotNetCoreCLI@2
@@ -54,6 +55,7 @@ steps:
   inputs:
     command: run
     arguments: '-c ${{ parameters.configuration }}'
+    workingDirectory: performance
   condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
 - script: |
