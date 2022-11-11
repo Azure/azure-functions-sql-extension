@@ -6,6 +6,8 @@ schedules: [ ]
 
 variables:
   configuration: 'Release'
+  serverPassword: ''
+  nodeModulesPath: ''
   LGTM.UploadSnapshot: true
   Semmle.SkipAnalysis: true
 

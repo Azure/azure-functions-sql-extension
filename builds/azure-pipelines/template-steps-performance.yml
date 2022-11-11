@@ -15,10 +15,6 @@ parameters:
       - trigger_overrides
       - trigger_parallel
 
-variables:
-  - serverPassword: ''
-  - nodeModulesPath: ''
-
 steps:
 - task: UseDotNet@2
   displayName: 'Install .NET SDK'
