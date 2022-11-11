@@ -16,12 +16,12 @@
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.PARAMETER, ElementType.METHOD })
-@CustomBinding(direction = "out", name = "sql", type = "sql")
+@CustomBinding(direction = "out", name = "", type = "sql")
 public @interface SQLOutput {
     /**
      * The variable name used in function.json.
      */
-    String name() default "sql";
+    String name();
 
     /**
      * Name of the table to upsert data to.

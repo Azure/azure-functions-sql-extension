@@ -33,6 +33,7 @@ public class AddProductsArray {
                 route = "addproducts-array")
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
+                name = "products",
                 commandText = "Products",
                 connectionStringSetting = "SqlConnectionString")
                 OutputBinding<Product[]> products) throws JsonParseException, JsonMappingException, IOException {

@@ -28,6 +28,7 @@ public class GetProductNamesView {
                 route = "getproduct-namesview")
                 HttpRequestMessage<Optional<String>> request,
             @SQLInput(
+                name = "productNames",
                 commandText = "SELECT * FROM ProductNames",
                 commandType = "Text",
                 connectionStringSetting = "SqlConnectionString")
