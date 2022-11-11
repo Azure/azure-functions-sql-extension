@@ -215,11 +215,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Tests that for tables with an identity column we are able to insert items.
         /// </summary>
-        [Theory]
+        [Theory, Trait("Test", "Unstable")]
         [SqlInlineData()]
         // Currently PowerShell gives an error due to the deserialization of the object
         // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
-        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
+        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
         public void AddProductWithIdentity(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithIdentityColumn), lang);
@@ -238,11 +238,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Tests that for tables with an identity column we are able to insert multiple items at once
         /// </summary>
-        [Theory]
+        [Theory, Trait("Test", "Unstable")]
         [SqlInlineData()]
         // Currently PowerShell gives an error due to the deserialization of the object
         // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
-        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
+        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
         public void AddProductsWithIdentityColumnArray(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsWithIdentityColumnArray), lang);
@@ -256,11 +256,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// Tests that for tables with multiple primary columns (including an identity column) we are able to
         /// insert items.
         /// </summary>
-        [Theory]
+        [Theory, Trait("Test", "Unstable")]
         [SqlInlineData()]
         // Currently PowerShell gives an error due to the deserialization of the object
         // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
-        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
+        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
         public void AddProductWithIdentity_MultiplePrimaryColumns(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), lang);
@@ -338,11 +338,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// Tests that when using a table with an identity column along with other primary 
         /// keys an error is thrown if at least one of the primary keys is missing.
         /// </summary>
-        [Theory]
+        [Theory, Trait("Test", "Unstable")]
         [SqlInlineData()]
         // Currently PowerShell gives an error due to the deserialization of the object
         // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
-        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
+        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
         public void AddProductWithIdentity_MissingPrimaryColumn(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), lang);
@@ -401,11 +401,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// Tests that a row is inserted successfully when the object is missing
         /// the primary key column with a default value.
         /// </summary>
-        [Theory]
+        [Theory, Trait("Test", "UnstablePKTest")]
         [SqlInlineData()]
         // Currently PowerShell gives an unknown error (when testing locally we get a missing primary key error)
         // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
-        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
+        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript)]
         public void AddProductWithDefaultPKTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithDefaultPK), lang);

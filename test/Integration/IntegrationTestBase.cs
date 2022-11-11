@@ -9,7 +9,6 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.WebUtilities;
@@ -198,7 +197,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 // The full path to the Functions CLI is required in the ProcessStartInfo because UseShellExecute is set to false.
                 // We cannot both use shell execute and redirect output at the same time: https://docs.microsoft.com//dotnet/api/system.diagnostics.processstartinfo.redirectstandardoutput#remarks
-                FileName = GetFunctionsCoreToolsPath(),
+                FileName = "/usr/local/bin/func",
                 Arguments = $"start --verbose --port {port} --functions {functionName}",
                 WorkingDirectory = workingDirectory,
                 WindowStyle = ProcessWindowStyle.Hidden,
@@ -260,38 +259,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             taskCompletionSource.Task.Wait(60000);
         }
 
-        private static string GetFunctionsCoreToolsPath()
-        {
-            // Determine npm install path from either env var set by pipeline or OS defaults
-            // Pipeline env var is needed as the Windows hosted agents installs to a non-traditional location
-            string nodeModulesPath = Environment.GetEnvironmentVariable("NODE_MODULES_PATH");
-            if (string.IsNullOrEmpty(nodeModulesPath))
-            {
-                nodeModulesPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
-                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\node_modules\") :
-                    @"/usr/local/lib/node_modules";
-            }
+        // private static string GetFunctionsCoreToolsPath()
+        // {
+        //     // Determine npm install path from either env var set by pipeline or OS defaults
+        //     // Pipeline env var is needed as the Windows hosted agents installs to a non-traditional location
+        //     string nodeModulesPath = Environment.GetEnvironmentVariable("NODE_MODULES_PATH");
+        //     if (string.IsNullOrEmpty(nodeModulesPath))
+        //     {
+        //         nodeModulesPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
+        //             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\node_modules\") :
+        //             @"/usr/local/lib/node_modules";
+        //     }
 
-            string funcExe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "func.exe" : "func";
-            string funcPath = Path.Combine(nodeModulesPath, "azure-functions-core-tools", "bin", funcExe);
+        //     string funcExe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "func.exe" : "func";
+        //     string funcPath = Path.Combine(nodeModulesPath, "azure-functions-core-tools", "bin", funcExe);
 
-            if (!File.Exists(funcPath))
-            {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    // Search Program Files folder as well
-                    string programFilesFuncPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Microsoft", "Azure Functions Core Tools", funcExe);
-                    if (File.Exists(programFilesFuncPath))
-                    {
-                        return programFilesFuncPath;
-                    }
-                    throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath} or {programFilesFuncPath}");
-                }
-                throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath}");
-            }
+        //     if (!File.Exists(funcPath))
+        //     {
+        //         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        //         {
+        //             // Search Program Files folder as well
+        //             string programFilesFuncPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Microsoft", "Azure Functions Core Tools", funcExe);
+        //             if (File.Exists(programFilesFuncPath))
+        //             {
+        //                 return programFilesFuncPath;
+        //             }
+        //             throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath} or {programFilesFuncPath}");
+        //         }
+        //         throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath}");
+        //     }
 
-            return funcPath;
-        }
+        //     return funcPath;
+        // }
 
         private void LogOutput(string output)
         {
