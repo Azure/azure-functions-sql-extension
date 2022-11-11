@@ -287,6 +287,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     }
                     throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath} or {programFilesFuncPath}");
                 }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    // Search Mac to see if brew installed location has azure function core tools
+                    string usrBinFuncPath = Path.Combine("/usr", "local", "bin", "func");
+                    if (File.Exists(usrBinFuncPath))
+                    {
+                        return usrBinFuncPath;
+                    }
+                    throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath} or {usrBinFuncPath}");
+                }
+                else
+                {
+                    throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath}");
+                }
                 throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath}");
             }
 
