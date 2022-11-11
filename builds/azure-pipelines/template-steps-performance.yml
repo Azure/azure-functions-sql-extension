@@ -15,6 +15,10 @@ parameters:
       - trigger_overrides
       - trigger_parallel
 
+variables:
+  - serverPassword: ''
+  - nodeModulesPath: ''
+
 steps:
 - task: UseDotNet@2
   displayName: 'Install .NET SDK'
@@ -29,10 +33,9 @@ steps:
 
 # This step is necessary because npm installs to a non-traditional location on Windows hosted agents
 # This sets the path to npm global installations as a variable which then gets passed to the .NET run task
-# We do it for all OSes to ensure the variable is set correctly regardless
 - bash: echo "##vso[task.setvariable variable=nodeModulesPath]$(npm root -g)"
-  displayName: 'Set npm installation path'
-  condition: succeeded()
+  displayName: 'Set npm installation path for Windows'
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: DockerInstaller@0
   displayName: Docker Installer
