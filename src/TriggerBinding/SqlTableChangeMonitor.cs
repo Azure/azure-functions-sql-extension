@@ -505,6 +505,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             if (this._state == State.ProcessingChanges)
             {
+                // Use a transaction to automatically release the app lock when we're done executing the query
                 using (SqlTransaction transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead))
                 {
                     try
