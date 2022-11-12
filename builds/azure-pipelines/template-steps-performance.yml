@@ -54,7 +54,7 @@ steps:
   displayName: Start Server in Docker Container
   condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
-# Run each benchmark test separately so that failures in one don't block all the others
+# Run each benchmark test separately so that failures in one don't block all the others from running
 - ${{ each test in parameters.tests }}:
   - task: DotNetCoreCLI@2
     displayName: Run ${{ test }} suite
@@ -67,7 +67,7 @@ steps:
       command: run
       arguments: '-c ${{ parameters.configuration }} ${{ test }}'
       workingDirectory: performance
-    condition: succeeded()
+    continueOnError: true
 
 - script: |
     docker stop sql1
@@ -77,3 +77,4 @@ steps:
 
 - publish: $(System.DefaultWorkingDirectory)/performance/BenchmarkDotNet.Artifacts
   artifact: BenchmarkDotNet.Artifacts-$(variables['Agent.OS'])
+  condition: succeeded()
