@@ -76,5 +76,6 @@ steps:
   condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
 - publish: $(System.DefaultWorkingDirectory)/performance/BenchmarkDotNet.Artifacts
+  displayName: Publish BenchmarkDotNet.Artifacts
   artifact: BenchmarkDotNet.Artifacts-$(variables['Agent.OS'])
-  condition: succeeded()
+  condition: succeededOrFailed()
