@@ -1,6 +1,9 @@
 # Azure SQL bindings for Azure Functions - .NET
 
 ## Setup Function App
+
+These instructions will guide you through creating your Function App and adding the SQL binding extension. This only needs to be done once for every function app you create.
+
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
 2. Create a function app for .NET:
