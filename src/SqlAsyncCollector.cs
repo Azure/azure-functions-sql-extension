@@ -560,13 +560,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     var cmdCollation = new SqlCommand(getDatabaseCollationQuery, sqlConnection);
                     using (SqlDataReader rdr = await cmdCollation.ExecuteReaderAsync())
                     {
+                        string collation = "";
                         while (await rdr.ReadAsync())
                         {
-                            caseSensitive = GetCaseSensitivityFromCollation(rdr[Collation].ToString());
+                            collation = rdr[Collation].ToString();
+                            caseSensitive = GetCaseSensitivityFromCollation(collation);
                         }
                         caseSensitiveSw.Stop();
                         TelemetryInstance.TrackDuration(TelemetryEventName.GetCaseSensitivity, caseSensitiveSw.ElapsedMilliseconds, sqlConnProps);
-                        logger.LogDebugWithThreadId($"END GetCaseSensitivity Duration={caseSensitiveSw.ElapsedMilliseconds}ms");
+                        logger.LogDebugWithThreadId($"END GetCaseSensitivity Collation={collation} CaseSensitive={caseSensitive} Duration={caseSensitiveSw.ElapsedMilliseconds}ms");
                     }
                 }
                 catch (Exception ex)
