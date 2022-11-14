@@ -28,11 +28,9 @@ Further information on the Azure SQL binding for Azure Functions is also availab
 
 ## Supported SQL Server Versions
 
-This extension uses the [OPENJSON](https://learn.microsoft.com/sql/t-sql/functions/openjson-transact-sql) statement which requires SQL Server 2016 or higher and a database compatibility level of 130+. Older versions will currently fail to execute properly.
+This extension uses the [OPENJSON](https://learn.microsoft.com/sql/t-sql/functions/openjson-transact-sql) statement which requires a database compatibility level of 130 or higher (2016 or higher). To view or change the compatibility level of your database, see [this documentation article](https://learn.microsoft.com/sql/relational-databases/databases/view-or-change-the-compatibility-level-of-a-database) for more information.
 
-For more information about options to upgrade versions see the [SQL Server end of support options](https://learn.microsoft.com/sql/sql-server/end-of-support/sql-server-end-of-support-overview) page.
-
-Azure SQL Databases are fully supported.
+Databases on SQL Server, Azure SQL Database, or Azure SQL Managed Instance which meet the compatibility level requirement above are supported.
 
 ## Known Issues
 
