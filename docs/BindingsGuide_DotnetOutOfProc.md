@@ -29,7 +29,7 @@ Run the below in the Terminal/CLI or with PowerShell.
     ```
     mkdir MyApp
     cd MyApp
-    func init --worker-runtime dotnet (Isolated Process)
+    func init --worker-runtime dotnetIsolated
     ```
 
    or in an empty directory, run `func init` and select `dotnet (Isolated Process)`
