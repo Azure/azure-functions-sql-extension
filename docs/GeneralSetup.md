@@ -48,6 +48,119 @@ ALTER TABLE ['{table_name}'] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED (['{prima
 
 Now you will need a Function App to add the binding to. If you have one created already you can skip this step.
 
+These steps can be done in the Terminal/CLI or with PowerShell.
+
+1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
+
+2. Create a function app for .NET, JavaScript, TypeScript, Python or Java.
+
+    **.NET**
+    ```bash
+    mkdir MyApp
+    cd MyApp
+    func init --worker-runtime dotnet
+    ```
+
+    **JavaScript (NodeJS)**
+    ```bash
+    mkdir MyApp
+    cd MyApp
+    func init --worker-runtime node --language javascript
+    ```
+
+    **TypeScript (NodeJS)**
+    ```bash
+    mkdir MyApp
+    cd MyApp
+    func init --worker-runtime node --language typescript
+    ```
+
+    **Python**
+
+    *See [#250](https://github.com/Azure/azure-functions-sql-extension/issues/250) before starting.*
+    ```bash
+    mkdir MyApp
+    cd MyApp
+    func init --worker-runtime python
+    ```
+
+    **Java**
+    ```bash
+    mkdir MyApp
+    cd MyApp
+    func init --worker-runtime java
+    ```
+
+    **PowerShell**
+    ```bash
+    mkdir MyApp
+    cd MyApp
+    func init --worker-runtime powershell
+    ```
+
+3. Enable SQL bindings on the function app. More information can be found [in Microsoft Docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
+
+    **.NET:** Install the extension.
+
+    ```powershell
+    dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql --prerelease
+    ```
+
+    **JavaScript and TypeScript:** Update the `host.json` file to the preview extension bundle.
+    ```json
+    "extensionBundle": {
+        "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
+        "version": "[4.*, 5.0.0)"
+    }
+    ```
+
+    **Python:**
+
+    Update the `host.json` file to the preview extension bundle.
+    ```json
+    "extensionBundle": {
+        "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
+        "version": "[4.*, 5.0.0)"
+    }
+    ```
+
+    Add a preview version of the Python functions library to `requirements.txt`.
+    ```txt
+    azure-functions==1.11.3b1
+    ```
+
+    Add a setting in `local.settings.json` to isolate the worker dependencies.
+    ```json
+    "PYTHON_ISOLATE_WORKER_DEPENDENCIES": "1"
+    ```
+
+    **Java:**
+    Update the `host.json` file to the preview extension bundle.
+    ```json
+    "extensionBundle": {
+        "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
+        "version": "[4.*, 5.0.0)"
+    }
+    ```
+
+    Add the `azure-functions-java-library-sql` dependency to the pom.xml file.
+    ```xml
+    <dependency>
+        <groupId>com.microsoft.azure.functions</groupId>
+        <artifactId>azure-functions-java-library-sql</artifactId>
+        <version>0.1.0</version>
+    </dependency>
+    ```
+
+     **PowerShell:**
+    Update the `host.json` file to the preview extension bundle.
+    ```json
+    "extensionBundle": {
+        "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
+        "version": "[4.*, 5.0.0)"
+    }
+    ```
+
 ## Configure Function App
 
 Once you have your Function App you need to configure it for use with Azure SQL bindings for Azure Functions.
@@ -78,22 +191,6 @@ Once you have your Function App you need to configure it for use with Azure SQL 
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "AzureWebJobsDashboard": "UseDevelopmentStorage=true",
     "SqlConnectionString": "{connection_string}"
-    ```
-
-4. Verify your `host.json` looks like the below:
-
-    ```json
-    {
-        "version": "2.0",
-        "logging": {
-            "applicationInsights": {
-                "samplingExcludedTypes": "Request",
-                "samplingSettings": {
-                    "isEnabled": true
-                }
-            }
-        }
-    }
     ```
 
 You have setup your local environment and are now ready to create your first Azure Function with SQL bindings! Continue to the language specific guides for the next steps in creating and configuration your function!

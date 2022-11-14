@@ -2,7 +2,7 @@
 
 ## Setup Function App
 
-These instructions will guide you through creating your Function App and adding the SQL binding extension. This only needs to be done once for every function app you create.
+These instructions will guide you through creating your Function App and adding the SQL binding extension. This only needs to be done once for every function app you create. If you have one created already you can skip this step.
 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
@@ -30,7 +30,7 @@ These instructions will guide you through creating your Function App and adding 
 In the Java functions runtime library, use the @SQLInput annotation (com.microsoft.azure.functions.sql.annotation.SQLInput) on parameters whose value comes from the query specified by commandText. This annotation supports the following elements:
 | Element |Description|
 |---------|---------|
-|**name** |  Required. The name of the variable that represents the query results in function code. | 
+|**name** |  Required. The variable name used in function.json. | 
 | **commandText** | Required. The Transact-SQL query command or name of the stored procedure executed by the binding.  |
 | **connectionStringSetting** | Required. The name of an app setting that contains the connection string for the database against which the query or stored procedure is being executed. This value isn't the actual connection string and must instead resolve to an environment variable name.  Optional keywords in the connection string value are [available to refine SQL bindings connectivity](https://aka.ms/sqlbindings#sql-connection-string). |
 | **commandType** | A [CommandType](https://learn.microsoft.com/dotnet/api/system.data.commandtype) value, which is [Text](https://learn.microsoft.com/dotnet/api/system.data.commandtype#fields) for a query and [StoredProcedure](https://learn.microsoft.com/dotnet/api/system.data.commandtype#fields) for a stored procedure. |
@@ -40,9 +40,9 @@ When you're developing locally, add your application settings in the local.setti
 
 ### Setup for Input Bindings
 
-Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./QuickStart.md#create-a-sql-server).
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server).
 
-- Open your app that you created in [Create a Function App](./QuickStart.md#create-a-function-app) in VS Code
+- Open your app that you created in [Create a Function App](./GeneralSetup.md#create-a-function-app) in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a package name) -> (Provide a function name) -> anonymous
 - In the file that opens, replace the `public HttpResponseMessage run` block with the below code.
@@ -143,7 +143,7 @@ _TODO_
 
 #### Stored Procedure
 
-_TODO_
+_TODO_f
 
 #### IAsyncEnumerable
 
@@ -157,7 +157,7 @@ In the Java functions runtime library, use the @SQLOutput annotation (com.micros
 
 | Element |Description|
 |---------|---------|
-|**name** |  Required. The name of the variable that represents the query results in function code. | 
+|**name** |  Required. The variable name used in function.json. | 
 | **commandText** | Required. The name of the table being written to by the binding.  |
 | **connectionStringSetting** | Required. The name of an app setting that contains the connection string for the database to which data is being written. This isn't the actual connection string and must instead resolve to an environment variable. Optional keywords in the connection string value are [available to refine SQL bindings connectivity](https://aka.ms/sqlbindings#sql-connection-string). |
 
@@ -165,7 +165,7 @@ When you're developing locally, add your application settings in the local.setti
 
 ### Setup for Output Bindings
 
-Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./QuickStart.md#create-a-sql-server), and that you have the 'Employee.java' class from the [Setup for Input Bindings](#setup-for-input-bindings) section.
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server), and that you have the 'Employee.java' class from the [Setup for Input Bindings](#setup-for-input-bindings) section.
 
 - Open your app in VSCode
 - Press 'F1' and search for 'Azure Functions: Create Function'

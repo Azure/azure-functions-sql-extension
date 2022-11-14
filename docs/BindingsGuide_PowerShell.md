@@ -2,7 +2,7 @@
 
 ## Setup Function App
 
-These instructions will guide you through creating your Function App and adding the SQL binding extension. This only needs to be done once for every function app you create.
+These instructions will guide you through creating your Function App and adding the SQL binding extension. This only needs to be done once for every function app you create. If you have one created already you can skip this step.
 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
@@ -41,9 +41,9 @@ The following table explains the binding configuration properties that you set i
 
 ### Setup for Input Bindings
 
-Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./QuickStart.md#create-a-sql-server).
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server).
 
-- Open your app that you created in [Create a Function App](./QuickStart.md#create-a-function-app) in VS Code
+- Open your app that you created in [Create a Function App](./GeneralSetup.md#create-a-function-app) in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a function name) -> anonymous
 - In the file that opens (`run.ps1`), replace the code within the file the below code.
@@ -117,7 +117,7 @@ The following table explains the binding configuration properties that you set i
 
 ### Setup for Output Bindings
 
-Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./QuickStart.md#create-a-sql-server).
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server).
 
 - Open your app in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'

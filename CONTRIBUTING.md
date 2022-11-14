@@ -12,7 +12,7 @@ This project has adopted the Microsoft Open Source Code of Conduct. For more inf
 
 ### SQL Setup
 
-In order to test changes it is suggested that you have a SQL server set up to connect to and run queries against. Instructions to set this up can be found in the [Quick Start Guide](./docs/QuickStart.md)
+In order to test changes it is suggested that you have a SQL server set up to connect to and run queries against. Instructions to set this up can be found in the [Quick Start Guide](./docs/GeneralSetup.md)
 
 ### Set Up Development Environment
 
@@ -28,6 +28,6 @@ code .
 3. Install extensions when prompted after VS Code opens
    - Note: This includes the Azure Functions, C#, and editorconfig extensions
 
-4. Configure the Function App located in the [samples](./samples) folder by following the instructions [here](./docs/QuickStart.md#configure-function-app)
+4. Configure the Function App located in the [samples](./samples) folder by following the instructions [here](./docs/GeneralSetup.md#configure-function-app)
 
 5. Press F5 to run SQL bindings samples that are included in this repo. The output window should display startup information as well as the function endpoints that were started.
