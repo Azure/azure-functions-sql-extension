@@ -32,6 +32,8 @@ This extension uses the [OPENJSON](https://learn.microsoft.com/sql/t-sql/functio
 
 For more information about options to upgrade versions see the [SQL Server end of support options](https://learn.microsoft.com/sql/sql-server/end-of-support/sql-server-end-of-support-overview) page.
 
+Azure SQL Databases are fully supported.
+
 ## Known Issues
 
 - Output bindings against tables with columns of data types `NTEXT`, `TEXT`, or `IMAGE` are not supported and data upserts will fail. These types [will be removed](https://docs.microsoft.com/sql/t-sql/data-types/ntext-text-and-image-transact-sql) in a future version of SQL Server and are not compatible with the `OPENJSON` function used by this Azure Functions binding.
