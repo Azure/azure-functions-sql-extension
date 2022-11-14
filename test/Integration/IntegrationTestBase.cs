@@ -48,7 +48,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Connection string to the master database on the test server, mainly used for database setup and teardown.
         /// </summary>
-        private string MasterConnectionString;
+        protected string MasterConnectionString;
+
+        /// <summary>
+        /// Connection string to the database created for the test
+        /// </summary>
+        protected string DbConnectionString;
 
         /// <summary>
         /// Name of the database used for the current test.
@@ -135,7 +140,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // Setup connection
             connectionStringBuilder.InitialCatalog = this.DatabaseName;
-            this.Connection = new SqlConnection(connectionStringBuilder.ToString());
+            this.DbConnectionString = connectionStringBuilder.ToString();
+            this.Connection = new SqlConnection(this.DbConnectionString);
             this.Connection.Open();
 
             // Create the database definition
