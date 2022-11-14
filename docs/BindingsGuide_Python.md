@@ -13,17 +13,20 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Open your app that you created in [Create a Function App](./QuickStart.md#create-a-function-app) in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a function name) -> anonymous
-- In the file that opens (`__init__.py`), replace the `def main(req: func.HttpRequest) -> func.HttpResponse:` block with the below code.
+- In the file that opens (`__init__.py`), replace the generated function with the following
 
     ```python
-    def main(req: func.HttpRequest, employee: func.SqlRowList) -> func.HttpResponse:
-    rows = list(map(lambda r: json.loads(r.to_json()), employee))
+    import azure.functions as func
+    import json
 
-    return func.HttpResponse(
-        json.dumps(rows),
-        status_code=200,
-        mimetype="application/json"
-    )
+    def main(req: func.HttpRequest, employee: func.SqlRowList) -> func.HttpResponse:
+        rows = list(map(lambda r: json.loads(r.to_json()), employee))
+
+        return func.HttpResponse(
+            json.dumps(rows),
+            status_code=200,
+            mimetype="application/json"
+        )
     ```
 
 - Add an import json statement to the top of the file.
