@@ -1,4 +1,4 @@
-# SQL Extension .NET Worker
+# # Azure SQL bindings for Azure Functions - .NET (Isolated Process)
 
 Welcome to the Sql Extension .NET Worker Repository. The .NET Worker provides .NET 6 support for SQL Bindings in Azure Functions, introducing an **Isolated Model**, running as an out-of-process language worker that is separate from the Azure Functions runtime. This allows you to have full control over your application's dependencies as well as other new features like a middleware pipeline. A .NET Isolated function app works differently than a .NET Core 3.1 function app. For .NET Isolated, you build an executable that imports the .NET Isolated language worker as a NuGet package. Your app includes a [`Program.cs`](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-outofproc/Program.cs) that starts the worker.
 
