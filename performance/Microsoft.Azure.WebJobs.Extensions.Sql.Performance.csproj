@@ -11,8 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
-	<ProjectReference Include="..\test\Microsoft.Azure.WebJobs.Extensions.Sql.Tests.csproj" />
-	<ProjectReference Include="..\samples\samples-csharp\Microsoft.Azure.WebJobs.Extensions.Sql.Samples.csproj" />
+    <ProjectReference Include="..\test\Microsoft.Azure.WebJobs.Extensions.Sql.Tests.csproj" />
+    <ProjectReference Include="..\samples\samples-csharp\Microsoft.Azure.WebJobs.Extensions.Sql.Samples.csproj" />
   </ItemGroup>
 
   <Target Name="CopySamples" AfterTargets="Build">
