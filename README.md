@@ -26,6 +26,12 @@ See the language-specific guides for further details on support and usage of the
 
 Further information on the Azure SQL binding for Azure Functions is also available in the [Azure Functions docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
 
+## Supported SQL Server Versions
+
+This extension supports all versions of SQL Server currently in support under the [Product and Services Lifecycle](https://learn.microsoft.com/lifecycle/products) (currently SQL Server 2014 or higher). Using versions of SQL Server that are out of support may result in unexpected or incorrect behavior, so it is recommended to only use supported versions with this extension.
+
+For more information about options with out-of-support versions see the [SQL Server end of support options](https://learn.microsoft.com/sql/sql-server/end-of-support/sql-server-end-of-support-overview) page.
+
 ## Known Issues
 
 - Output bindings against tables with columns of data types `NTEXT`, `TEXT`, or `IMAGE` are not supported and data upserts will fail. These types [will be removed](https://docs.microsoft.com/sql/t-sql/data-types/ntext-text-and-image-transact-sql) in a future version of SQL Server and are not compatible with the `OPENJSON` function used by this Azure Functions binding.
