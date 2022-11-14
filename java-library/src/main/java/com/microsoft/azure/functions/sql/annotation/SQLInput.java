@@ -15,8 +15,13 @@ import com.microsoft.azure.functions.annotation.CustomBinding;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.PARAMETER)
-@CustomBinding(direction = "in", name = "sql", type = "sql")
+@CustomBinding(direction = "in", name = "", type = "sql")
 public @interface SQLInput {
+    /**
+     * The variable name used in function.json.
+     */
+    String name();
+
     /**
      * Query string or name of stored procedure to be run.
      */
