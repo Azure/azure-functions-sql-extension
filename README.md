@@ -28,15 +28,14 @@ Further information on the Azure SQL binding for Azure Functions is also availab
 
 ## Supported SQL Server Versions
 
-This extension supports all versions of SQL Server currently in support under the [Product and Services Lifecycle](https://learn.microsoft.com/lifecycle/products) (currently SQL Server 2014 or higher). Using versions of SQL Server that are out of support may result in unexpected or incorrect behavior, so it is recommended to only use supported versions with this extension.
+This extension uses the [OPENJSON](https://learn.microsoft.com/sql/t-sql/functions/openjson-transact-sql) statement which requires SQL Server 2016 or higher and a database compatibility level of 130+. Older versions will currently fail to execute properly.
 
-For more information about options with out-of-support versions see the [SQL Server end of support options](https://learn.microsoft.com/sql/sql-server/end-of-support/sql-server-end-of-support-overview) page.
+For more information about options to upgrade versions see the [SQL Server end of support options](https://learn.microsoft.com/sql/sql-server/end-of-support/sql-server-end-of-support-overview) page.
 
 ## Known Issues
 
 - Output bindings against tables with columns of data types `NTEXT`, `TEXT`, or `IMAGE` are not supported and data upserts will fail. These types [will be removed](https://docs.microsoft.com/sql/t-sql/data-types/ntext-text-and-image-transact-sql) in a future version of SQL Server and are not compatible with the `OPENJSON` function used by this Azure Functions binding.
 - Input bindings against tables with columns of data types 'DATETIME', 'DATETIME2', or 'SMALLDATETIME' will assume that the values are in UTC format.
-
 - Trigger bindings will exhibit undefined behavior if the SQL table schema gets modified while the user application is running, for example, if a column is added, renamed or deleted or if the primary key is modified or deleted. In such cases, restarting the application should help resolve any errors.
 
 ## Telemetry
