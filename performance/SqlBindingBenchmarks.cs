@@ -1,21 +1,46 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System.Linq;
 using BenchmarkDotNet.Running;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
 {
     public class SqlBindingPerformance
     {
-        public static void Main()
+        public static void Main(string[] args)
         {
-            BenchmarkRunner.Run<SqlInputBindingPerformance>();
-            BenchmarkRunner.Run<SqlOutputBindingPerformance>();
-            BenchmarkRunner.Run<SqlTriggerBindingPerformance>();
-            BenchmarkRunner.Run<SqlTriggerBindingPerformance_BatchOverride>();
-            BenchmarkRunner.Run<SqlTriggerBindingPerformance_PollingIntervalOverride>();
-            BenchmarkRunner.Run<SqlTriggerPerformance_Overrides>();
-            BenchmarkRunner.Run<SqlTriggerBindingPerformance_Parallelization>();
+            bool runAll = args.Length == 0;
+
+            // **IMPORTANT** If changing these make sure to update template-steps-performance.yml as well
+            if (runAll || args.Contains("input"))
+            {
+                BenchmarkRunner.Run<SqlInputBindingPerformance>();
+            }
+            if (runAll || args.Contains("output"))
+            {
+                BenchmarkRunner.Run<SqlOutputBindingPerformance>();
+            }
+            if (runAll || args.Contains("trigger"))
+            {
+                BenchmarkRunner.Run<SqlTriggerBindingPerformance>();
+            }
+            if (runAll || args.Contains("trigger_batch"))
+            {
+                BenchmarkRunner.Run<SqlTriggerBindingPerformance_BatchOverride>();
+            }
+            if (runAll || args.Contains("trigger_poll"))
+            {
+                BenchmarkRunner.Run<SqlTriggerBindingPerformance_PollingIntervalOverride>();
+            }
+            if (runAll || args.Contains("trigger_overrides"))
+            {
+                BenchmarkRunner.Run<SqlTriggerPerformance_Overrides>();
+            }
+            if (runAll || args.Contains("trigger_parallel"))
+            {
+                BenchmarkRunner.Run<SqlTriggerBindingPerformance_Parallelization>();
+            }
         }
     }
 }
