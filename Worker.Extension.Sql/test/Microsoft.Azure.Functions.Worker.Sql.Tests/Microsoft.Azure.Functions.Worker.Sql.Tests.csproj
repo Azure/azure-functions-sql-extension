@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AzureFunctionsVersion>v4</AzureFunctionsVersion>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\samples\samples-outofproc\Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.csproj" />
+    <ProjectReference Include="..\..\src\Microsoft.Azure.Functions.Worker.Extension.Sql.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="host.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="local.settings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+  <Target Name="CopySamples" AfterTargets="Build">
+    <ItemGroup>
+      <_CopyItems Include="..\..\..\samples\samples-outofproc\bin\$(Configuration)\$(TargetFramework)\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_CopyItems)" DestinationFolder="$(OutDir)\SqlExtensionWorkerSamples\%(RecursiveDir)" />
+    <Message Text="Copied C# Samples output to $(OutDir)\SqlExtensionWorkerSamples\" Importance="high" />
+  </Target>
+</Project>
