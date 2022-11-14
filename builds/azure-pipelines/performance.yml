@@ -18,7 +18,7 @@ stages:
   jobs:
   - job: BuildTest
     displayName: 'Build and Test on '
-
+    timeoutInMinutes: "90"
     strategy:
       matrix:
         # Disabling performance tests on macOS due to issues with running MSSQL on Docker
