@@ -6,5 +6,8 @@
     "debug.internalConsoleOptions": "neverOpen",
     "azureFunctions.preDeployTask": "publish (functions)",
     "omnisharp.enableEditorConfigSupport": true,
-    "omnisharp.enableRoslynAnalyzers": true
+    "omnisharp.enableRoslynAnalyzers": true,
+	"yaml.schemas": {
+		"https://raw.githubusercontent.com/microsoft/azure-pipelines-vscode/master/service-schema.json": "builds/azure-pipelines/**/*.yml"
+	},
 }
