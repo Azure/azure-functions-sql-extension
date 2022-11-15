@@ -77,5 +77,5 @@ steps:
 
 - publish: $(System.DefaultWorkingDirectory)/performance/BenchmarkDotNet.Artifacts
   displayName: Publish BenchmarkDotNet.Artifacts
-  artifact: BenchmarkDotNet.Artifacts-${{ variables['Agent.OS'] }}
+  artifact: BenchmarkDotNet.Artifacts-$(Agent.OS)
   condition: succeededOrFailed()
