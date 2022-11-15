@@ -20,6 +20,7 @@ public class TimerTriggerProducts {
                 schedule = "*/5 * * * * *")
                 String timerInfo,
             @SQLOutput(
+                name = "products",
                 commandText = "Products",
                 connectionStringSetting = "SqlConnectionString")
                 OutputBinding<Product[]> products) {

@@ -28,6 +28,7 @@ public class GetProductsStoredProcedure {
                 route = "getproducts-storedprocedure/{cost}")
                 HttpRequestMessage<Optional<String>> request,
             @SQLInput(
+                name = "products",
                 commandText = "SelectProductsCost",
                 commandType = "StoredProcedure",
                 parameters = "@Cost={cost}",

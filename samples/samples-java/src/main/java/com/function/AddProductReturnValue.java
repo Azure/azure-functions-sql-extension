@@ -23,6 +23,7 @@ import java.util.Optional;
 public class AddProductReturnValue {
     @FunctionName("AddProductReturnValue")
     @SQLOutput(
+        name = "product",
         commandText = "Products",
         connectionStringSetting = "SqlConnectionString")
     public Product run(

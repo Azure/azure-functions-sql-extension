@@ -33,6 +33,7 @@ public class AddProduct {
                 route = "addproduct")
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
+                name = "product",
                 commandText = "Products",
                 connectionStringSetting = "SqlConnectionString")
                 OutputBinding<Product> product) throws JsonParseException, JsonMappingException, IOException {

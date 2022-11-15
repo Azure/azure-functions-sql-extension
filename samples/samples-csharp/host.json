@@ -6,6 +6,9 @@
             "samplingSettings": {
                 "isEnabled": true
             }
+        },
+        "logLevel": {
+          "default": "Debug"
         }
     }
 }
