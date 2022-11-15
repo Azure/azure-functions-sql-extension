@@ -18,7 +18,7 @@ The following are valid binding types for the result of the query/stored procedu
 
 - **IEnumerable&lt;T&gt;**: Each element is a row of the result represented by `T`, where `T` is a user-defined POCO, or Plain Old C# Object. `T` should follow the structure of a row in the queried table. See the [Query String](#query-string) section for an example of what `T` should look like.
 - **IAsyncEnumerable&lt;T&gt;**: Each element is again a row of the result represented by `T`, but the rows are retrieved "lazily". A row of the result is only retrieved when `MoveNextAsync` is called on the enumerator. This is useful in the case that the query can return a very large amount of rows.
-- **String**: A JSON string representation of the rows of the result (an example is provided [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-csharp/InputBindingSamples/GetProductsString.cs)).
+- **String**: A JSON string representation of the rows of the result (an example is provided [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-outpofproc/InputBindingSamples/GetProductsString.cs)).
 
 **Note**: There's also no direct support for types inherited from underlying service SDKs, such as SqlCommand. Instead, bindings rely on strings, arrays, and serializable types, such as plain old class objects (POCOs).
 
@@ -142,7 +142,7 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
   public static IEnumerable<Product> Run(
       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-namenull/{name}")]
       HttpRequest req,
-      [Sql("if @Name is null select * from Products where Name is null else select * from Products where @Name = name",
+      [SqlInput("if @Name is null select * from Products where Name is null else select * from Products where @Name = name",
           CommandType = System.Data.CommandType.Text,
           Parameters = "@Name={name}",
           ConnectionStringSetting = "SqlConnectionString")]
@@ -161,7 +161,7 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
   public static IActionResult Run(
       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-storedprocedure/{cost}")]
       HttpRequest req,
-      [Sql("SelectProductsCost",
+      [SqlInput("SelectProductsCost",
           CommandType = System.Data.CommandType.StoredProcedure,
           Parameters = "@Cost={cost}",
           ConnectionStringSetting = "SqlConnectionString")]
@@ -216,7 +216,7 @@ Each element is a row represented by `T`, where `T` is a user-defined POCO, or P
 - **T[]**: Each element is again a row of the result represented by `T`. This output binding type requires manual instantiation of the array in the function.
 **Note**: As stated in the functions [documentation](https://learn.microsoft.com/azure/azure-functions/dotnet-isolated-process-guide#output-bindings)
 - Because .NET isolated projects run in a separate worker process, bindings can't take advantage of rich binding classes, such as ICollector<T>, IAsyncCollector<T>, and CloudBlockBlob.
-The repo contains examples of each of these binding types [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharp/OutputBindingSamples). A few examples are also included [below](#samples-for-output-bindings).
+The repo contains examples of each of these binding types [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-outofproc/OutputBindingSamples). A few examples are also included [below](#samples-for-output-bindings).
 
 ### Setup for Output Bindings
 
@@ -258,7 +258,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
     }
     ```
 
-    *In the above, "dbo.Employees" is the name of the table our output binding is upserting into. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [SqlAttribute for Output Bindings](#sqloutputattribute-for-output-bindings) section*
+    *In the above, "dbo.Employees" is the name of the table our output binding is upserting into. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [SqloutputAttribute for Output Bindings](#sqloutputattribute-for-output-bindings) section*
 
 - Hit 'F5' to run your code. Click the link to upsert the output array values in your SQL table. Your upserted values should launch in the browser.
 - Congratulations! You have successfully created your first out of process SQL output binding!
@@ -318,7 +318,7 @@ In the case where one of the primary key columns has a default value, there are 
 2. If the column with a default value is included then a merge is performed similar to what happens when no default column is present. If there is a nullable column with a default value, then the provided column value in the output object will be upserted even if it is null.
 
 ## Key differences with .NET (Isolated Process)
-Please refer to the functions documentation [here](https://learn.microsoft.com/azure/azure-functions/dotnet-isolated-process-guide#output-bindings)
+Please refer to the functions documentation [here](https://learn.microsoft.com/azure/azure-functions/dotnet-isolated-in-process-differences)
 - Because .NET isolated projects run in a separate worker process, bindings can't take advantage of rich binding classes, such as ICollector<T>, IAsyncCollector<T>, and CloudBlockBlob.
 - There's also no direct support for types inherited from underlying service SDKs, such as SqlCommand. Instead, bindings rely on strings, arrays, and serializable types, such as plain old class objects (POCOs).
 - For HTTP triggers, you must use HttpRequestData and HttpResponseData to access the request and response data. This is because you don't have access to the original HTTP request and response objects when running out-of-process.
