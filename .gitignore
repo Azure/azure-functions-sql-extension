@@ -360,5 +360,9 @@ __azurite_db*__.json
 # Python virtual environment
 .venv
 
-# Mac OS X 
+# Mac OS X
 .DS_Store
+
+# Java build files
+repo/
+target/
