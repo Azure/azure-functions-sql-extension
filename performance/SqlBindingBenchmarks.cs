@@ -61,7 +61,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
             }
             finally
             {
-                azuriteHost.Kill()
+                azuriteHost.Kill();
                 azuriteHost.Dispose();
             }
 
