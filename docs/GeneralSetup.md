@@ -167,7 +167,7 @@ Once you have your Function App you need to configure it for use with Azure SQL 
 
 1. Ensure you have Azure Storage Emulator running. This is specific to the sample functions in this repository with a non-HTTP trigger. For information on the Azure Storage Emulator, refer to the docs on its use in [functions local development](https://docs.microsoft.com/azure/azure-functions/functions-app-settings#azurewebjobsstorage) and [installation](https://docs.microsoft.com/azure/storage/common/storage-use-emulator#get-the-storage-emulator).
 
-1. Get your SQL connection string
+2. Get your SQL connection string
 
    <details>
    <summary>Local SQL Server</summary>
@@ -185,7 +185,7 @@ Once you have your Function App you need to configure it for use with Azure SQL 
     (<i>Note: when pasting in the connection string, you will need to replace part of the connection string where it says '{your_password}' with your Azure SQL Server password</i>)
    </details>
 
-1. Open the generated `local.settings.json` file and in the `Values` section verify you have the below. If not, add the below and replace `{connection_string}` with the your connection string from the previous step:
+3. Open the generated `local.settings.json` file and in the `Values` section verify you have the below. If not, add the below and replace `{connection_string}` with the your connection string from the previous step:
 
     ```json
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
@@ -193,23 +193,7 @@ Once you have your Function App you need to configure it for use with Azure SQL 
     "SqlConnectionString": "{connection_string}"
     ```
 
-1. Verify your `host.json` looks like the below:
-
-    ```json
-    {
-        "version": "2.0",
-        "logging": {
-            "applicationInsights": {
-                "samplingExcludedTypes": "Request",
-                "samplingSettings": {
-                    "isEnabled": true
-                }
-            }
-        }
-    }
-    ```
-
-2. You have setup your local environment and are now ready to create your first Azure Function with SQL bindings! Continue to the language specific guides for the next steps in creating and configuration your function!
+You have setup your local environment and are now ready to create your first Azure Function with SQL bindings! Continue to the language specific guides for the next steps in creating and configuration your function!
 
 - [.NET](./BindingsGuide_Dotnet.md)
 - [Java](./BindingsGuide_Java.md)

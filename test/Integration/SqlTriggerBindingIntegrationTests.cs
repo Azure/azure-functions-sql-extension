@@ -630,8 +630,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             int calculatedTimeout = (int)(Math.Ceiling((double)changesToProcess / batchSize // The number of batches to process
                 / this.FunctionHostList.Count) // The number of function host processes
                 * pollingIntervalMs // The length to process each batch
-                * 2); // Double to add buffer time for processing results
-            return Math.Max(calculatedTimeout, 2000); // Always have a timeout of at least 2sec to ensure we have time for processing the results
+                * 2); // Double to add buffer time for processing results & writing log messages
+
+            // Always have a timeout of at least 10sec since there's a certain amount of overhead
+            // always expected from each run regardless of the number of batches being processed and the delay
+            // These tests aren't testing performance so giving extra processing time is fine as long as the
+            // results themselves are correct
+            return Math.Max(calculatedTimeout, 10000);
         }
     }
 }
