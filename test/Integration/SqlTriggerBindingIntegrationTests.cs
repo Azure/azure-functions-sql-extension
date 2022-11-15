@@ -486,10 +486,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.SetChangeTrackingForTable("Products");
             IConfiguration configuration = new ConfigurationBuilder().Build();
             var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "func-id", Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<ILogger>(), configuration);
-            var tokenSource = new CancellationTokenSource();
-            await listener.StartAsync(tokenSource.Token);
+            await listener.StartAsync(CancellationToken.None);
             // Cancel immediately so the listener doesn't start processing the changes
-            tokenSource.Cancel();
+            await listener.StopAsync(CancellationToken.None);
             SqlTriggerMetrics metrics = await listener.GetMetricsAsync();
             Assert.True(metrics.UnprocessedChangeCount == 0, "There should initially be 0 unprocessed changes");
             this.InsertProducts(1, 5);
