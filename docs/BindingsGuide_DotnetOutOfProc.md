@@ -1,4 +1,5 @@
  # Azure SQL bindings for Azure Functions - .NET (Isolated Process)
+ 
  ## Binding Model
 
 .NET Isolated introduces a new binding model, slightly different from the binding model exposed in .NET Core 3 Azure Functions. More information can be [found here](https://github.com/Azure/azure-functions-dotnet-worker/wiki/.NET-Worker-bindings). Please review our samples for usage information.
