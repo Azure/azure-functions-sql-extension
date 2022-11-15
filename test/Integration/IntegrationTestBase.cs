@@ -48,12 +48,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Connection string to the master database on the test server, mainly used for database setup and teardown.
         /// </summary>
-        protected string MasterConnectionString;
+        private string MasterConnectionString;
 
         /// <summary>
         /// Connection string to the database created for the test
         /// </summary>
-        protected string DbConnectionString;
+        protected string DbConnectionString { get; private set; }
 
         /// <summary>
         /// Name of the database used for the current test.

@@ -14,6 +14,7 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Moq;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
@@ -484,7 +485,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             this.SetChangeTrackingForTable("Products");
             IConfiguration configuration = new ConfigurationBuilder().Build();
-            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "func-id", new Moq.Mock<ITriggeredFunctionExecutor>().Object, new Moq.Mock<ILogger>().Object, configuration);
+            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "func-id", Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<ILogger>(), configuration);
             var tokenSource = new CancellationTokenSource();
             await listener.StartAsync(tokenSource.Token);
             // Cancel immediately so the listener doesn't start processing the changes
