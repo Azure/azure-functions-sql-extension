@@ -174,26 +174,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     WorkingDirectory = workingDirectory,
                     WindowStyle = ProcessWindowStyle.Hidden,
                     RedirectStandardOutput = true,
+                    RedirectStandardError = true,
                     UseShellExecute = false
                 }
             };
 
             var taskCompletionSource = new TaskCompletionSource<bool>();
-            this.Mvn.OutputDataReceived += this.TestOutputHandler;
             this.Mvn.OutputDataReceived += SignalStartupHandler;
 
             this.Mvn.Start();
-
+            this.Mvn.OutputDataReceived += this.GetTestOutputHandler();
+            this.Mvn.ErrorDataReceived += this.GetTestOutputHandler();
             this.Mvn.BeginOutputReadLine();
+            this.Mvn.BeginErrorReadLine();
 
-            this.LogOutput($"Building Java function app");
+            this.LogOutput($"Building Java function app...");
 
             const int buildJavaAppTimeoutInSeconds = 60;
             bool isCompleted = taskCompletionSource.Task.Wait(TimeSpan.FromSeconds(buildJavaAppTimeoutInSeconds));
             Assert.True(isCompleted, "Java function app did not build successfully");
 
+            this.LogOutput("Java build successful!");
             this.Mvn.OutputDataReceived -= SignalStartupHandler;
-            this.Mvn.OutputDataReceived -= this.TestOutputHandler;
 
             void SignalStartupHandler(object sender, DataReceivedEventArgs e)
             {
@@ -290,14 +292,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.FunctionHost.OutputDataReceived += customOutputHandler;
 
             functionHost.Start();
-            functionHost.OutputDataReceived += this.GetTestOutputHandler(functionHost.Id);
-            functionHost.ErrorDataReceived += this.GetTestOutputHandler(functionHost.Id);
+            functionHost.OutputDataReceived += this.GetTestOutputHandler(functionHost.Id.ToString());
+            functionHost.ErrorDataReceived += this.GetTestOutputHandler(functionHost.Id.ToString());
             functionHost.BeginOutputReadLine();
             functionHost.BeginErrorReadLine();
 
             this.LogOutput("Waiting for Azure Function host to start...");
 
-            const int FunctionHostStartupTimeoutInSeconds = 60;
+            const int FunctionHostStartupTimeoutInSeconds = 120;
             bool isCompleted = taskCompletionSource.Task.Wait(TimeSpan.FromSeconds(FunctionHostStartupTimeoutInSeconds));
             Assert.True(isCompleted, "Functions host did not start within specified time.");
 
@@ -318,7 +320,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     taskCompletionSource.SetResult(true);
                 }
             };
-            taskCompletionSource.Task.Wait(60000);
+            taskCompletionSource.Task.Wait(120000);
         }
 
         private static string GetFunctionsCoreToolsPath()
@@ -366,7 +368,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
         }
 
-        private DataReceivedEventHandler GetTestOutputHandler(int processId)
+        private DataReceivedEventHandler GetTestOutputHandler(string processId = null)
         {
             return TestOutputHandler;
 
