@@ -94,7 +94,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             TelemetryInstance.TrackCreate(CreateType.SqlAsyncCollector);
             using (SqlConnection connection = BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
+                this._logger.LogDebugWithThreadId("BEGIN OpenSqlAsyncCollectorVerifyDatabaseSupportedConnection");
                 connection.Open();
+                this._logger.LogDebugWithThreadId("END OpenSqlAsyncCollectorVerifyDatabaseSupportedConnection");
                 VerifyDatabaseSupported(connection, logger, CancellationToken.None).Wait();
             }
         }
