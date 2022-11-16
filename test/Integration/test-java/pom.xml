@@ -17,14 +17,6 @@
         <functionAppName>test-java-1666041146813</functionAppName>
     </properties>
 
-    <repositories>
-        <repository>
-            <id>data-local</id>
-            <name>data</name>
-            <url>file:${basedir}/repo</url>
-        </repository>
-    </repositories>
-
     <dependencies>
         <dependency>
             <groupId>com.microsoft.azure.functions</groupId>
@@ -35,7 +27,7 @@
         <dependency>
             <groupId>com.microsoft.azure.functions</groupId>
             <artifactId>azure-functions-java-library-sql</artifactId>
-            <version>0.1.3</version>
+            <version>0.1.1</version>
         </dependency>
 
         <dependency>

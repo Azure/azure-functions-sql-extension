@@ -25,16 +25,13 @@ public class AddProductColumnTypes {
                 route = "addproduct-columntypes")
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
+                name = "product",
                 commandText = "dbo.ProductsColumnTypes",
                 connectionStringSetting = "SqlConnectionString")
                 OutputBinding<ProductColumnTypes> product) {
 
-        ProductColumnTypes p = new ProductColumnTypes(0, Long.MAX_VALUE, false, new BigDecimal(1.2345),
-            new BigDecimal(1.2345), new BigDecimal(1.2345), (short)0, new BigDecimal(1.2345), (short)0, 1.2345,
-            1.2345f, "2022-10-25", new Timestamp(System.currentTimeMillis()),
-            new Timestamp(System.currentTimeMillis()), new Timestamp(System.currentTimeMillis()),
-            new Timestamp(System.currentTimeMillis()), "10:10:53", "test", "test", "test", "test",
-            "6B29FC40-CA47-1067-B31D-00DD010662DA");
+        ProductColumnTypes p = new ProductColumnTypes(0, new Timestamp(System.currentTimeMillis()),
+            new Timestamp(System.currentTimeMillis()));
         product.setValue(p);
 
         // Items were inserted successfully so return success, an exception would be thrown if there

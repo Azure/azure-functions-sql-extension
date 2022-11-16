@@ -27,6 +27,7 @@ public class GetProductsColumnTypesSerialization {
                 route = "getproducts-columntypesserialization")
                 HttpRequestMessage<Optional<String>> request,
             @SQLInput(
+                name = "products",
                 commandText = "SELECT * FROM [dbo].[ProductsColumnTypes]",
                 commandType = "Text",
                 connectionStringSetting = "SqlConnectionString")

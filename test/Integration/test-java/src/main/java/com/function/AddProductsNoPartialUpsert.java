@@ -23,6 +23,7 @@ public class AddProductsNoPartialUpsert {
                 route = "addproduct-nopartialupsert")
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
+                name = "products",
                 commandText = "dbo.ProductsNameNotNull",
                 connectionStringSetting = "SqlConnectionString")
                 OutputBinding<Product[]> products) {

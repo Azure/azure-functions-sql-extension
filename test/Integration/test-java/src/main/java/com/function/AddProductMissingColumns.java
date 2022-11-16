@@ -23,6 +23,7 @@ public class AddProductMissingColumns {
                 route = "addproduct-missingcolumns")
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
+                name = "product",
                 commandText = "dbo.Products",
                 connectionStringSetting = "SqlConnectionString")
                 OutputBinding<ProductMissingColumns> product) {

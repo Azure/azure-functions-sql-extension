@@ -26,6 +26,7 @@ public class AddProductMissingColumnsExceptionFunction {
                 route = "addproduct-missingcolumnsexception")
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
+                name = "product",
                 commandText = "dbo.ProductsCostNotNull",
                 connectionStringSetting = "SqlConnectionString")
                 OutputBinding<ProductMissingColumns> product) {

@@ -23,6 +23,7 @@ public class AddProductExtraColumns {
                 route = "addproduct-extracolumns")
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
+                name = "product",
                 commandText = "dbo.Products",
                 connectionStringSetting = "SqlConnectionString")
                 OutputBinding<ProductExtraColumns> product) {
