@@ -251,15 +251,6 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
             taskCompletionSource.Task.Wait(60000);
         }
 
-        /* private static void StartHostOutOfProc()
-        {
-            IHost host = new HostBuilder()
-                .ConfigureFunctionsWorkerDefaults()
-                .Build();
-
-            host.Run();
-        } */
-
         private static string GetFunctionsCoreToolsPath()
         {
             // Determine npm install path from either env var set by pipeline or OS defaults
@@ -465,18 +456,6 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
             string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
 
             return this.SendPostRequest(requestUri, query);
-        }
-
-        protected Task<HttpResponseMessage> SendOutputPostRequest(string functionName, IDictionary<string, string>? query = null)
-        {
-            string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
-
-            if (query != null)
-            {
-                requestUri = QueryHelpers.AddQueryString(requestUri, query);
-            }
-
-            return this.SendPostRequest(requestUri);
         }
 
         protected void InsertProducts(Product[] products)

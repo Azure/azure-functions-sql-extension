@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
                 { "cost", cost.ToString() }
             };
 
-            this.SendOutputPostRequest("addproduct-params", query).Wait();
+            this.SendOutputGetRequest("addproduct-params", query).Wait();
 
             // Verify result
             Assert.Equal(name, this.ExecuteScalar($"select Name from Products where ProductId={id}"));
@@ -92,72 +92,6 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
             Assert.Equal(2, this.ExecuteScalar("SELECT Cost FROM Products WHERE ProductId = 1"));
             Assert.Equal(2, this.ExecuteScalar("SELECT ProductId FROM Products WHERE Cost = 12"));
         }
-
-        /*         /// <summary>
-                /// Test compatability with converting various data types to their respective
-                /// SQL server types.
-                /// </summary>
-                [Theory]
-                [InlineData()]
-                public void AddProductColumnTypesTest()
-                {
-                    this.StartFunctionHost(nameof(AddProductColumnTypes), true);
-
-                    var queryParameters = new Dictionary<string, string>()
-                    {
-                        { "productId", "999" }
-                    };
-
-                    this.SendOutputGetRequest("addproduct-columntypes", queryParameters).Wait();
-
-                    // If we get here then the test is successful - an exception will be thrown if there were any problems
-                }
-
-                [Theory]
-                [InlineData()]
-                public void AddProductExtraColumnsTest()
-                {
-                    this.StartFunctionHost(nameof(AddProductExtraColumns), true);
-
-                    // Since ProductExtraColumns has columns that does not exist in the table,
-                    // no rows should be added to the table.
-                    Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-extracolumns").Wait());
-                    Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM Products"));
-                }
-
-                [Theory]
-                [InlineData()]
-                public void AddProductMissingColumnsTest()
-                {
-                    this.StartFunctionHost(nameof(AddProductMissingColumns), true);
-
-                    // Even though the ProductMissingColumns object is missing the Cost column,
-                    // the row should still be added successfully since Cost can be null.
-                    this.SendOutputPostRequest("addproduct-missingcolumns", string.Empty).Wait();
-                    Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM Products"));
-                }
-
-                [Theory]
-                [InlineData()]
-                public void AddProductMissingColumnsNotNullTest()
-                {
-                    this.StartFunctionHost(nameof(AddProductMissingColumnsExceptionFunction), true);
-
-                    // Since the Sql table does not allow null for the Cost column,
-                    // inserting a row without a Cost value should throw an Exception.
-                    Assert.Throws<AggregateException>(() => this.SendOutputPostRequest("addproduct-missingcolumnsexception", string.Empty).Wait());
-                }
-
-                /* [Theory]
-                [InlineData()]
-                public void AddProductNoPartialUpsertTest()
-                {
-                    this.StartFunctionHost(nameof(AddProductsNoPartialUpsert), true);
-
-                    Assert.Throws<AggregateException>(() => this.SendOutputPostRequest("addproducts-nopartialupsert", string.Empty).Wait());
-                    // No rows should be upserted since there was a row with an invalid value
-                    Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsNameNotNull"));
-                } */
 
         /// <summary>
         /// Tests that for tables with an identity column we are able to insert items.
@@ -313,12 +247,12 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
 
             // The upsert should fail since the database is case sensitive and the column name "ProductId"
             // does not match the POCO field "ProductID"
-            Assert.Throws<AggregateException>(() => this.SendOutputPostRequest("addproduct-params", query).Wait());
+            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-params", query).Wait());
 
             // Change database collation back to case insensitive
             this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
 
-            this.SendOutputPostRequest("addproduct-params", query).Wait();
+            this.SendOutputGetRequest("addproduct-params", query).Wait();
 
             // Verify result
             Assert.Equal("test", this.ExecuteScalar($"select Name from Products where ProductId={1}"));
