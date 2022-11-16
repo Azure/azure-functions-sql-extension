@@ -434,7 +434,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             bool foundExpectedMessage = false;
             this.StartFunctionHost(nameof(AddProductParams), lang, false, (object sender, DataReceivedEventArgs e) =>
             {
-                if (e.Data.Contains("SQL bindings require a database compatibility level of 130 or higher to function"))
+                if (e.Data.Contains("SQL bindings require a database compatibility level of 130 or higher to function. Current compatibility level = 120"))
                 {
                     foundExpectedMessage = true;
                 }
