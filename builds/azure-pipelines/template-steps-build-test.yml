@@ -10,7 +10,6 @@ steps:
 - task: UseDotNet@2
   displayName: 'Install .NET SDK'
   inputs:
-    packageType: 'sdk'
     useGlobalJson: true
 
 # Install .Net Core 3.1.0 as PowerShell tests are unable to find 3.1.0 framework to run tests
@@ -248,6 +247,12 @@ steps:
     custom: pack
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) --no-build -p:PackageVersion="${{ parameters.nugetVersion }}" -p:GeneratePackageOnBuild=false'
+
+- task: DotNetCoreCLI@2
+  displayName: '.NET Version'
+  inputs:
+    command: custom
+    arguments: '--version'
 
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'
