@@ -8,9 +8,9 @@ Write-Host "PowerShell function with SQL Output Binding processed a request."
 
 # Update req_query with the body of the request
 $req_query = @{
-    externalId=$Request.QUERY.externalId;
+    externalId=[int]$Request.QUERY.externalId;
     name=$Request.QUERY.name;
-    cost=$Request.QUERY.cost;
+    cost=[int]$Request.QUERY.cost;
 };
 
 # Assign the value we want to pass to the SQL Output binding. 

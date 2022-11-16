@@ -10,7 +10,7 @@ Write-Host "PowerShell function with SQL Output Binding processed a request."
 # Note that this expects the body to be a JSON object or array of objects 
 # which have a property matching each of the columns in the table to upsert to.
 $req_query = @{ 
-    ProductId=$Request.QUERY.productId;
+    ProductId=[int]$Request.QUERY.productId;
     Datetime=Get-Date -AsUTC;
     Datetime2=Get-Date -AsUTC;
 };
