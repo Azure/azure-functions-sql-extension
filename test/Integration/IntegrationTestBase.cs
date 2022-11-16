@@ -404,7 +404,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             try
             {
-                this.AzuriteHost?.Kill();
+                this.AzuriteHost?.Kill(true);
                 this.AzuriteHost?.Dispose();
             }
             catch (Exception e3)
