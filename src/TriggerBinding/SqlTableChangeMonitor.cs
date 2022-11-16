@@ -185,15 +185,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     await connection.OpenAsync();
                     this._logger.LogDebugWithThreadId("END OpenGetUnprocessedChangesConnection");
 
-                    using (SqlCommand getUnprocessedChangesCommand = this.BuildGetUnprocessedChangesCommand(connection))
+                    // Use a transaction to automatically release the app lock when we're done executing the query
+                    using (SqlTransaction transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead))
                     {
-                        this._logger.LogDebugWithThreadId($"BEGIN GetUnprocessedChangeCount Query={getUnprocessedChangesCommand.CommandText}");
-                        var commandSw = Stopwatch.StartNew();
-                        unprocessedChangeCount = (long)await getUnprocessedChangesCommand.ExecuteScalarAsync();
-                        getUnprocessedChangesDurationMs = commandSw.ElapsedMilliseconds;
-                    }
+                        try
+                        {
+                            using (SqlCommand getUnprocessedChangesCommand = this.BuildGetUnprocessedChangesCommand(connection, transaction))
+                            {
+                                this._logger.LogInformation("Getting change count");
+                                this._logger.LogDebugWithThreadId($"BEGIN GetUnprocessedChangeCount Query={getUnprocessedChangesCommand.CommandText}");
+                                var commandSw = Stopwatch.StartNew();
+                                unprocessedChangeCount = (long)await getUnprocessedChangesCommand.ExecuteScalarAsync();
+                                getUnprocessedChangesDurationMs = commandSw.ElapsedMilliseconds;
+                            }
 
-                    this._logger.LogDebugWithThreadId($"END GetUnprocessedChangeCount Duration={getUnprocessedChangesDurationMs}ms Count={unprocessedChangeCount}");
+                            this._logger.LogDebugWithThreadId($"END GetUnprocessedChangeCount Duration={getUnprocessedChangesDurationMs}ms Count={unprocessedChangeCount}");
+                            transaction.Commit();
+                        }
+                        catch (Exception)
+                        {
+                            try
+                            {
+                                transaction.Rollback();
+                            }
+                            catch (Exception ex2)
+                            {
+                                this._logger.LogError($"GetUnprocessedChangeCount : Failed to rollback transaction due to exception: {ex2.GetType()}. Exception message: {ex2.Message}");
+                                TelemetryInstance.TrackException(TelemetryErrorName.GetUnprocessedChangeCountRollback, ex2, this._telemetryProps);
+                            }
+                            throw;
+                        }
+                    }
                 }
 
                 var measures = new Dictionary<TelemetryMeasureName, double>
@@ -206,6 +228,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 this._logger.LogError($"Failed to query count of unprocessed changes for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
                 TelemetryInstance.TrackException(TelemetryErrorName.GetUnprocessedChangeCount, ex, this._telemetryProps);
+                throw;
             }
 
             return unprocessedChangeCount;
@@ -483,56 +506,69 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             if (this._state == State.ProcessingChanges)
             {
-                try
+                // Use a transaction to automatically release the app lock when we're done executing the query
+                using (SqlTransaction transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead))
                 {
-                    // I don't think I need a transaction for renewing leases. If this worker reads in a row from the
-                    // leases table and determines that it corresponds to its batch of changes, but then that row gets
-                    // deleted by a cleanup task, it shouldn't renew the lease on it anyways.
-                    using (SqlCommand renewLeasesCommand = this.BuildRenewLeasesCommand(connection))
+                    try
                     {
-                        TelemetryInstance.TrackEvent(TelemetryEventName.RenewLeasesStart, this._telemetryProps);
-                        this._logger.LogDebugWithThreadId($"BEGIN RenewLeases Query={renewLeasesCommand.CommandText}");
-                        var stopwatch = Stopwatch.StartNew();
-
-                        await renewLeasesCommand.ExecuteNonQueryAsync(token);
-
-                        long durationMs = stopwatch.ElapsedMilliseconds;
-                        this._logger.LogDebugWithThreadId($"END RenewLeases Duration={durationMs}ms");
-                        var measures = new Dictionary<TelemetryMeasureName, double>
+                        using (SqlCommand renewLeasesCommand = this.BuildRenewLeasesCommand(connection, transaction))
                         {
-                            [TelemetryMeasureName.DurationMs] = durationMs,
-                        };
+                            TelemetryInstance.TrackEvent(TelemetryEventName.RenewLeasesStart, this._telemetryProps);
+                            this._logger.LogDebugWithThreadId($"BEGIN RenewLeases Query={renewLeasesCommand.CommandText}");
+                            var stopwatch = Stopwatch.StartNew();
 
-                        TelemetryInstance.TrackEvent(TelemetryEventName.RenewLeasesEnd, this._telemetryProps, measures);
+                            await renewLeasesCommand.ExecuteNonQueryAsync(token);
+
+                            long durationMs = stopwatch.ElapsedMilliseconds;
+                            this._logger.LogDebugWithThreadId($"END RenewLeases Duration={durationMs}ms");
+                            var measures = new Dictionary<TelemetryMeasureName, double>
+                            {
+                                [TelemetryMeasureName.DurationMs] = durationMs,
+                            };
+
+                            TelemetryInstance.TrackEvent(TelemetryEventName.RenewLeasesEnd, this._telemetryProps, measures);
+
+                            transaction.Commit();
+                        }
                     }
-                }
-                catch (Exception e)
-                {
-                    // This catch block is necessary so that the finally block is executed even in the case of an exception
-                    // (see https://docs.microsoft.com/dotnet/csharp/language-reference/keywords/try-finally, third
-                    // paragraph). If we fail to renew the leases, multiple workers could be processing the same change
-                    // data, but we have functionality in place to deal with this (see design doc).
-                    this._logger.LogError($"Failed to renew leases due to exception: {e.GetType()}. Exception message: {e.Message}");
-                    TelemetryInstance.TrackException(TelemetryErrorName.RenewLeases, e, this._telemetryProps);
-                }
-                finally
-                {
-                    // Do we want to update this count even in the case of a failure to renew the leases? Probably,
-                    // because the count is simply meant to indicate how much time the other thread has spent processing
-                    // changes essentially.
-                    this._leaseRenewalCount += 1;
-
-                    // If this thread has been cancelled, then the _cancellationTokenSourceExecutor could have already
-                    // been disposed so shouldn't cancel it.
-                    if (this._leaseRenewalCount == MaxLeaseRenewalCount && !token.IsCancellationRequested)
+                    catch (Exception e)
                     {
-                        this._logger.LogWarning("Call to execute the function (TryExecuteAsync) seems to be stuck, so it is being cancelled");
+                        // This catch block is necessary so that the finally block is executed even in the case of an exception
+                        // (see https://docs.microsoft.com/dotnet/csharp/language-reference/keywords/try-finally, third
+                        // paragraph). If we fail to renew the leases, multiple workers could be processing the same change
+                        // data, but we have functionality in place to deal with this (see design doc).
+                        this._logger.LogError($"Failed to renew leases due to exception: {e.GetType()}. Exception message: {e.Message}");
+                        TelemetryInstance.TrackException(TelemetryErrorName.RenewLeases, e, this._telemetryProps);
 
-                        // If we keep renewing the leases, the thread responsible for processing the changes is stuck.
-                        // If it's stuck, it has to be stuck in the function execution call (I think), so we should
-                        // cancel the call.
-                        this._cancellationTokenSourceExecutor.Cancel();
-                        this._cancellationTokenSourceExecutor = new CancellationTokenSource();
+                        try
+                        {
+                            transaction.Rollback();
+                        }
+                        catch (Exception e2)
+                        {
+                            this._logger.LogError($"RenewLeases - Failed to rollback transaction due to exception: {e2.GetType()}. Exception message: {e2.Message}");
+                            TelemetryInstance.TrackException(TelemetryErrorName.RenewLeasesRollback, e2, this._telemetryProps);
+                        }
+                    }
+                    finally
+                    {
+                        // Do we want to update this count even in the case of a failure to renew the leases? Probably,
+                        // because the count is simply meant to indicate how much time the other thread has spent processing
+                        // changes essentially.
+                        this._leaseRenewalCount += 1;
+
+                        // If this thread has been cancelled, then the _cancellationTokenSourceExecutor could have already
+                        // been disposed so shouldn't cancel it.
+                        if (this._leaseRenewalCount == MaxLeaseRenewalCount && !token.IsCancellationRequested)
+                        {
+                            this._logger.LogWarning("Call to execute the function (TryExecuteAsync) seems to be stuck, so it is being cancelled");
+
+                            // If we keep renewing the leases, the thread responsible for processing the changes is stuck.
+                            // If it's stuck, it has to be stuck in the function execution call (I think), so we should
+                            // cancel the call.
+                            this._cancellationTokenSourceExecutor.Cancel();
+                            this._cancellationTokenSourceExecutor = new CancellationTokenSource();
+                        }
                     }
                 }
             }
@@ -790,8 +826,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// used by workers to get the changes for processing.
         /// </summary>
         /// <param name="connection">The connection to add to the returned SqlCommand</param>
+        /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-        private SqlCommand BuildGetUnprocessedChangesCommand(SqlConnection connection)
+        private SqlCommand BuildGetUnprocessedChangesCommand(SqlConnection connection, SqlTransaction transaction)
         {
             string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
 
@@ -813,7 +850,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     (l.{LeasesTableAttemptCountColumnName} IS NULL OR l.{LeasesTableAttemptCountColumnName} < {MaxChangeProcessAttemptCount});
             ";
 
-            return new SqlCommand(getUnprocessedChangesQuery, connection);
+            return new SqlCommand(getUnprocessedChangesQuery, connection, transaction);
         }
 
         /// <summary>
@@ -868,8 +905,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Builds the query to renew leases on the rows in "_rows" (<see cref="RenewLeasesAsync(CancellationToken)"/>).
         /// </summary>
         /// <param name="connection">The connection to add to the returned SqlCommand</param>
+        /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-        private SqlCommand BuildRenewLeasesCommand(SqlConnection connection)
+        private SqlCommand BuildRenewLeasesCommand(SqlConnection connection, SqlTransaction transaction)
         {
             string matchCondition = string.Join(" OR ", this._rowMatchConditions.Take(this._rows.Count));
 
@@ -881,7 +919,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 WHERE {matchCondition};
             ";
 
-            return this.GetSqlCommandWithParameters(renewLeasesQuery, connection, null, this._rows);
+            return this.GetSqlCommandWithParameters(renewLeasesQuery, connection, transaction, this._rows);
         }
 
         /// <summary>

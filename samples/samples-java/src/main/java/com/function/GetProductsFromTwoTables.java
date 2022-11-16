@@ -18,14 +18,18 @@ import com.microsoft.azure.functions.sql.annotation.SQLInput;
 
 import java.util.Optional;
 
-public class GetProducts {
-    @FunctionName("GetProducts")
+/**
+ * This function uses two SQL input bindings to get products from the Products and ProductsWithIdentity tables
+ * and returns the combined results as a JSON array in the body of the HttpResponseMessage.
+ */
+public class GetProductsFromTwoTables {
+    @FunctionName("GetProductsFromTwoTables")
     public HttpResponseMessage run(
             @HttpTrigger(
                 name = "req",
                 methods = {HttpMethod.GET},
                 authLevel = AuthorizationLevel.ANONYMOUS,
-                route = "getproducts/{cost}")
+                route = "getproductsfromtwotables/{cost}")
                 HttpRequestMessage<Optional<String>> request,
             @SQLInput(
                 name = "products",
@@ -33,8 +37,19 @@ public class GetProducts {
                 commandType = "Text",
                 parameters = "@Cost={cost}",
                 connectionStringSetting = "SqlConnectionString")
-                Product[] products) {
+                Product[] products,
+            @SQLInput(
+                name = "productsWithIdentity",
+                commandText = "SELECT * FROM ProductsWithIdentity WHERE Cost = @Cost",
+                commandType = "Text",
+                parameters = "@Cost={cost}",
+                connectionStringSetting = "SqlConnectionString")
+                Product[] productsWithIdentity) {
 
-        return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(products).build();
+        Product[] allProducts = new Product[products.length + productsWithIdentity.length];
+        System.arraycopy(products, 0, allProducts, 0, products.length);
+        System.arraycopy(productsWithIdentity, 0, allProducts, products.length, productsWithIdentity.length);
+
+        return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(allProducts).build();
     }
 }

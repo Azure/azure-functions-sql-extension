@@ -23,25 +23,35 @@ import com.function.Common.Product;
 import java.io.IOException;
 import java.util.Optional;
 
-public class AddProduct {
-    @FunctionName("AddProduct")
+/**
+ * This function uses two SQL output bindings to upsert the product in the request body to the
+ * Products and ProductsWithIdentity tables.
+ */
+public class AddProductToTwoTables {
+    @FunctionName("AddProductToTwoTables")
     public HttpResponseMessage run(
             @HttpTrigger(
                 name = "req",
                 methods = {HttpMethod.POST},
                 authLevel = AuthorizationLevel.ANONYMOUS,
-                route = "addproduct")
+                route = "addproducttotwotables")
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
                 name = "product",
                 commandText = "Products",
                 connectionStringSetting = "SqlConnectionString")
-                OutputBinding<Product> product) throws JsonParseException, JsonMappingException, IOException {
+                OutputBinding<Product> product,
+            @SQLOutput(
+                name = "productWithIdentity",
+                commandText = "ProductsWithIdentity",
+                connectionStringSetting = "SqlConnectionString")
+                OutputBinding<Product> productWithIdentity) throws JsonParseException, JsonMappingException, IOException {
 
         String json = request.getBody().get();
         ObjectMapper mapper = new ObjectMapper();
         Product p = mapper.readValue(json, Product.class);
         product.setValue(p);
+        productWithIdentity.setValue(p);
 
         return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(product).build();
     }

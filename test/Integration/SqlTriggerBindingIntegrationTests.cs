@@ -6,10 +6,15 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.TriggerBindingSamples;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
+using Microsoft.Azure.WebJobs.Host.Executors;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
@@ -471,6 +476,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 "Could not find change tracking enabled for table: 'dbo.Products'.");
         }
 
+        /// <summary>
+        /// Tests that the GetMetrics call works correctly.
+        /// </summary>
+        /// <remarks>We call this directly since there isn't a way to test scaling locally - with this we at least verify the methods called don't throw unexpectedly.</remarks>
+        [Fact]
+        public async void GetMetricsTest()
+        {
+            this.SetChangeTrackingForTable("Products");
+            IConfiguration configuration = new ConfigurationBuilder().Build();
+            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "func-id", Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<ILogger>(), configuration);
+            await listener.StartAsync(CancellationToken.None);
+            // Cancel immediately so the listener doesn't start processing the changes
+            await listener.StopAsync(CancellationToken.None);
+            SqlTriggerMetrics metrics = await listener.GetMetricsAsync();
+            Assert.True(metrics.UnprocessedChangeCount == 0, "There should initially be 0 unprocessed changes");
+            this.InsertProducts(1, 5);
+            metrics = await listener.GetMetricsAsync();
+            Assert.True(metrics.UnprocessedChangeCount == 5, $"There should be 5 unprocessed changes after insertion. Actual={metrics.UnprocessedChangeCount}");
+        }
+
         private void EnableChangeTrackingForDatabase()
         {
             this.ExecuteNonQuery($@"
@@ -630,8 +655,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             int calculatedTimeout = (int)(Math.Ceiling((double)changesToProcess / batchSize // The number of batches to process
                 / this.FunctionHostList.Count) // The number of function host processes
                 * pollingIntervalMs // The length to process each batch
-                * 2); // Double to add buffer time for processing results
-            return Math.Max(calculatedTimeout, 2000); // Always have a timeout of at least 2sec to ensure we have time for processing the results
+                * 2); // Double to add buffer time for processing results & writing log messages
+
+            // Always have a timeout of at least 10sec since there's a certain amount of overhead
+            // always expected from each run regardless of the number of batches being processed and the delay
+            // These tests aren't testing performance so giving extra processing time is fine as long as the
+            // results themselves are correct
+            return Math.Max(calculatedTimeout, 10000);
         }
     }
 }

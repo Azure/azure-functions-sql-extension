@@ -1,5 +1,26 @@
 # Azure SQL bindings for Azure Functions - .NET
 
+## Setup Function App
+
+These instructions will guide you through creating your Function App and adding the SQL binding extension. This only needs to be done once for every function app you create. If you have one created already you can skip this step.
+
+1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
+
+2. Create a function app for .NET:
+    ```bash
+    mkdir MyApp
+    cd MyApp
+    func init --worker-runtime dotnet
+    ```
+
+3. Enable SQL bindings on the function app. More information can be found [in Microsoft Docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
+
+    Install the extension.
+
+    ```powershell
+    dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql --prerelease
+    ```
+
 ## Input Binding
 
 ### SqlAttribute for Input Bindings
@@ -22,9 +43,9 @@ The repo contains examples of each of these binding types [here](https://github.
 
 ### Setup for Input Bindings
 
-Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./QuickStart.md#create-a-sql-server).
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server).
 
-- Open your app that you created in [Create a Function App](./QuickStart.md#create-a-function-app) in VS Code
+- Open your app that you created in [Create a Function App](./GeneralSetup.md#create-a-function-app) in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a function name) -> Company.namespace -> anonymous
 - In the file that opens, replace the `public static async Task<IActionResult> Run` block with the below code.
@@ -214,7 +235,7 @@ The repo contains examples of each of these binding types [here](https://github.
 
 ### Setup for Output Bindings
 
-Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./QuickStart.md#create-a-sql-server), and that you have the 'Employee.cs' class from the [Setup for Input Bindings](#setup-for-input-bindings) section.
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server), and that you have the 'Employee.cs' class from the [Setup for Input Bindings](#setup-for-input-bindings) section.
 
 - Open your app in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
@@ -462,7 +483,7 @@ public static void Run(
 }
 ```
 
-Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./QuickStart.md#create-a-sql-server), and that you have the 'Employee.cs' file from the [Setup for Input Bindings](#setup-for-input-bindings) section.
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server), and that you have the 'Employee.cs' file from the [Setup for Input Bindings](#setup-for-input-bindings) section.
 
 - Create a new file with the following content:
 
