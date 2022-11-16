@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using System;
-using System.Collections.Generic;
 using Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingSamples;
 using Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.Common;
 using Xunit;
@@ -25,11 +23,11 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
         {
             this.StartFunctionHost(nameof(AddProduct));
 
-            var query = new Dictionary<string, string>()
+            var query = new Dictionary<string, object>()
             {
-                { "productId", id.ToString() },
+                { "productId", id },
                 { "name", name },
-                { "cost", cost.ToString() }
+                { "cost", cost }
             };
 
             this.SendOutputPostRequest("addproduct", JsonConvert.SerializeObject(query)).Wait();
@@ -54,7 +52,7 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
                 { "cost", cost.ToString() }
             };
 
-            this.SendOutputGetRequest("addproduct-params", query).Wait();
+            this.SendOutputPostRequest("addproduct-params", query).Wait();
 
             // Verify result
             Assert.Equal(name, this.ExecuteScalar($"select Name from Products where ProductId={id}"));
@@ -315,12 +313,12 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
 
             // The upsert should fail since the database is case sensitive and the column name "ProductId"
             // does not match the POCO field "ProductID"
-            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-params", query).Wait());
+            Assert.Throws<AggregateException>(() => this.SendOutputPostRequest("addproduct-params", query).Wait());
 
             // Change database collation back to case insensitive
             this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
 
-            this.SendOutputGetRequest("addproduct-params", query).Wait();
+            this.SendOutputPostRequest("addproduct-params", query).Wait();
 
             // Verify result
             Assert.Equal("test", this.ExecuteScalar($"select Name from Products where ProductId={1}"));
@@ -335,10 +333,10 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
         public void AddProductWithDefaultPKTest()
         {
             this.StartFunctionHost(nameof(AddProductWithDefaultPK));
-            var product = new Dictionary<string, string>()
+            var product = new Dictionary<string, object>()
             {
                 { "name", "MyProduct" },
-                { "cost", "1" }
+                { "cost", 1 }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
             this.SendOutputPostRequest("addproductwithdefaultpk", JsonConvert.SerializeObject(product)).Wait();

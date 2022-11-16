@@ -1,13 +1,9 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Common
 {
@@ -44,7 +40,7 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Common
         public static int ExecuteNonQuery(
             IDbConnection connection,
             string commandText,
-            Predicate<Exception> catchException = null)
+            Predicate<Exception>? catchException = null)
         {
             if (connection == null)
             {
@@ -86,10 +82,10 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Common
         /// <param name="catchException">Optional exception handling.  Pass back 'true' to handle the
         /// exception, 'false' to throw. If Null is passed in then all exceptions are thrown.</param>
         /// <returns>The scalar result</returns>
-        public static object ExecuteScalar(
+        public static object? ExecuteScalar(
             IDbConnection connection,
             string commandText,
-            Predicate<Exception> catchException = null)
+            Predicate<Exception>? catchException = null)
         {
             if (connection == null)
             {
@@ -192,18 +188,21 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Common
         {
             return (object sender, DataReceivedEventArgs e) =>
             {
-                Match match = Regex.Match(e.Data, regex);
-                if (match.Success)
+                if (e.Data != null)
                 {
-                    // We found the line so now check that the group matches our expected value
-                    string actualValue = match.Groups[1].Value;
-                    if (actualValue == expectedValue)
+                    Match match = Regex.Match(e.Data, regex);
+                    if (match.Success)
                     {
-                        taskCompletionSource.SetResult(true);
-                    }
-                    else
-                    {
-                        taskCompletionSource.SetException(new Exception($"Expected {valueName} value of {expectedValue} but got value {actualValue}"));
+                        // We found the line so now check that the group matches our expected value
+                        string actualValue = match.Groups[1].Value;
+                        if (actualValue == expectedValue)
+                        {
+                            taskCompletionSource.SetResult(true);
+                        }
+                        else
+                        {
+                            taskCompletionSource.SetException(new Exception($"Expected {valueName} value of {expectedValue} but got value {actualValue}"));
+                        }
                     }
                 }
             };

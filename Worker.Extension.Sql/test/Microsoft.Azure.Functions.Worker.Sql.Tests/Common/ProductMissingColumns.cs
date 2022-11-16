@@ -7,6 +7,6 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Common
     {
         public int ProductID { get; set; }
 
-        public string Name { get; set; }
+        public string? Name { get; set; }
     }
 }

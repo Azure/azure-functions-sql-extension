@@ -1,25 +1,17 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using System;
-using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.Common;
 using Microsoft.Azure.Functions.Worker.Sql.Tests.Common;
 using Microsoft.Data.SqlClient;
 using Xunit;
 using Xunit.Abstractions;
-using Microsoft.Extensions.Hosting;
-// using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 
 namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
 {
@@ -60,14 +52,14 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
         /// Output redirect for XUnit tests.
         /// Please use LogOutput() instead of Console or Debug.
         /// </summary>
-        protected ITestOutputHelper TestOutput { get; private set; }
+        protected ITestOutputHelper? TestOutput { get; private set; }
 
         /// <summary>
         /// The port the Functions Host is running on. Default is 7071.
         /// </summary>
         protected int Port { get; private set; } = 7071;
 
-        public IntegrationTestBase(ITestOutputHelper output = null)
+        public IntegrationTestBase(ITestOutputHelper? output = null)
         {
             this.TestOutput = output;
             this.SetupDatabase();
@@ -85,8 +77,8 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
         private void SetupDatabase()
         {
             SqlConnectionStringBuilder connectionStringBuilder;
-            string connectionString = Environment.GetEnvironmentVariable("TEST_CONNECTION_STRING");
-            if (connectionString != null)
+            string connectionString = Environment.GetEnvironmentVariable("TEST_CONNECTION_STRING") ?? string.Empty;
+            if (!string.IsNullOrEmpty(connectionString))
             {
                 this.MasterConnectionString = connectionString;
                 connectionStringBuilder = new SqlConnectionStringBuilder(connectionString);
@@ -94,7 +86,7 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
             else
             {
                 // Get the test server name from environment variable "TEST_SERVER", default to localhost if not set
-                string testServer = Environment.GetEnvironmentVariable("TEST_SERVER");
+                string testServer = Environment.GetEnvironmentVariable("TEST_SERVER") ?? string.Empty;
                 if (string.IsNullOrEmpty(testServer))
                 {
                     testServer = "localhost";
@@ -111,7 +103,7 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
 
                 // Either use integrated auth or SQL login depending if SA_PASSWORD is set
                 string userId = "SA";
-                string password = Environment.GetEnvironmentVariable("SA_PASSWORD");
+                string password = Environment.GetEnvironmentVariable("SA_PASSWORD") ?? string.Empty;
                 if (string.IsNullOrEmpty(password))
                 {
                     connectionStringBuilder.IntegratedSecurity = true;
@@ -184,9 +176,8 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
         /// - The functionName is different than its route.<br/>
         /// - You can start multiple functions by passing in a space-separated list of function names.<br/>
         /// </remarks>
-        protected void StartFunctionHost(string functionName, bool useTestFolder = false, DataReceivedEventHandler customOutputHandler = null, IDictionary<string, string> environmentVariables = null)
+        protected void StartFunctionHost(string functionName, bool useTestFolder = false, DataReceivedEventHandler? customOutputHandler = null, IDictionary<string, string>? environmentVariables = null)
         {
-            IntegrationTestBase.StartHostOutOfProc();
             string workingDirectory = useTestFolder ? GetPathToBin() : Path.Combine(GetPathToBin(), "SqlExtensionWorkerSamples");
             if (!Directory.Exists(workingDirectory))
             {
@@ -208,13 +199,11 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
                 RedirectStandardError = true,
                 UseShellExecute = false
             };
-            if (environmentVariables != null)
-            {
-                environmentVariables.ToList().ForEach(ev => startInfo.EnvironmentVariables[ev.Key] = ev.Value);
-            }
+
+            environmentVariables?.ToList().ForEach(ev => startInfo.EnvironmentVariables[ev.Key] = ev.Value);
 
             // Always disable telemetry during test runs
-            // startInfo.EnvironmentVariables[TelemetryOptoutEnvVar] = "1";
+            startInfo.EnvironmentVariables["AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT"] = "1";
 
             this.LogOutput($"Starting {startInfo.FileName} {startInfo.Arguments} in {startInfo.WorkingDirectory}");
 
@@ -262,20 +251,20 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
             taskCompletionSource.Task.Wait(60000);
         }
 
-        private static void StartHostOutOfProc()
+        /* private static void StartHostOutOfProc()
         {
             IHost host = new HostBuilder()
                 .ConfigureFunctionsWorkerDefaults()
                 .Build();
 
             host.Run();
-        }
+        } */
 
         private static string GetFunctionsCoreToolsPath()
         {
             // Determine npm install path from either env var set by pipeline or OS defaults
             // Pipeline env var is needed as the Windows hosted agents installs to a non-traditional location
-            string nodeModulesPath = Environment.GetEnvironmentVariable("NODE_MODULES_PATH");
+            string nodeModulesPath = Environment.GetEnvironmentVariable("NODE_MODULES_PATH") ?? string.Empty;
             if (string.IsNullOrEmpty(nodeModulesPath))
             {
                 nodeModulesPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
@@ -350,7 +339,7 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
             return response;
         }
 
-        protected async Task<HttpResponseMessage> SendPostRequest(string requestUri, string json, bool verifySuccess = true)
+        protected async Task<HttpResponseMessage> SendPostRequest(string requestUri, string json = "", bool verifySuccess = true)
         {
             this.LogOutput("Sending POST request: " + requestUri);
 
@@ -382,14 +371,14 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
         /// <summary>
         /// Executes a command against the current connection and the result is returned.
         /// </summary>
-        protected object ExecuteScalar(string commandText)
+        protected object? ExecuteScalar(string commandText)
         {
             return TestUtils.ExecuteScalar(this.Connection, commandText);
         }
 
         private static string GetPathToBin()
         {
-            return Path.GetDirectoryName(Assembly.GetAssembly(typeof(Product)).Location);
+            return Path.GetDirectoryName(Assembly.GetAssembly(typeof(Product))?.Location) ?? string.Empty;
         }
 
         public void Dispose()
@@ -409,7 +398,7 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
 
             try
             {
-                this.AzuriteHost?.Kill();
+                this.AzuriteHost?.Kill(true);
                 this.AzuriteHost?.Dispose();
             }
             catch (Exception e3)
@@ -459,7 +448,7 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
             return await this.SendGetRequest(requestUri);
         }
 
-        protected Task<HttpResponseMessage> SendOutputGetRequest(string functionName, IDictionary<string, string> query = null)
+        protected Task<HttpResponseMessage> SendOutputGetRequest(string functionName, IDictionary<string, string>? query = null)
         {
             string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
 
@@ -476,6 +465,18 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
             string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
 
             return this.SendPostRequest(requestUri, query);
+        }
+
+        protected Task<HttpResponseMessage> SendOutputPostRequest(string functionName, IDictionary<string, string>? query = null)
+        {
+            string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
+
+            if (query != null)
+            {
+                requestUri = QueryHelpers.AddQueryString(requestUri, query);
+            }
+
+            return this.SendPostRequest(requestUri);
         }
 
         protected void InsertProducts(Product[] products)

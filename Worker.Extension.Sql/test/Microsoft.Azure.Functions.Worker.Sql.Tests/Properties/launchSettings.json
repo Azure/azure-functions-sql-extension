@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "Microsoft_Azure_Functions_Worker_Sql_Tests": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7237",
+      "launchBrowser": false
+    }
+  }
+}

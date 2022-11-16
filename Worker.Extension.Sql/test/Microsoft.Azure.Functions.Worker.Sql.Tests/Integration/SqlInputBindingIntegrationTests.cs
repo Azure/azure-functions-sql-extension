@@ -1,15 +1,12 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using System;
-using System.Net.Http;
 using Newtonsoft.Json;
 using Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.Common;
 using Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.InputBindingSamples;
 using Xunit;
 using Xunit.Abstractions;
 using Microsoft.Azure.Functions.Worker.Sql.Tests.Common;
-using System.Threading.Tasks;
 
 namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
 {
@@ -32,14 +29,14 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
             Product[] products = GetProductsWithSameCost(n, cost);
             this.InsertProducts(products);
 
+            string expectedResponse = JsonConvert.SerializeObject(products);
             // Run the function
             HttpResponseMessage response = await this.SendInputRequest("getproducts", cost.ToString());
 
             // Verify result
             string actualResponse = await response.Content.ReadAsStringAsync();
-            Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse);
 
-            Assert.Equal(products, actualProductResponse);
+            Assert.Equal(expectedResponse, TestUtils.CleanJsonString(actualResponse), StringComparer.OrdinalIgnoreCase);
         }
 
         [Theory]
@@ -54,14 +51,14 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
             Product[] products = GetProductsWithSameCost(n, cost);
             this.InsertProducts(products);
 
+            string expectedResponse = JsonConvert.SerializeObject(products);
             // Run the function
             HttpResponseMessage response = await this.SendInputRequest("getproducts-storedprocedure", cost.ToString());
 
             // Verify result
             string actualResponse = await response.Content.ReadAsStringAsync();
-            Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse);
 
-            Assert.Equal(products, actualProductResponse);
+            Assert.Equal(expectedResponse, TestUtils.CleanJsonString(actualResponse), StringComparer.OrdinalIgnoreCase);
         }
 
         [Theory]
@@ -81,14 +78,14 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
 
             Assert.Equal(n, this.ExecuteScalar($"select count(1) from Products where name = '' and cost = {cost}"));
 
+            string expectedResponse = JsonConvert.SerializeObject(products);
             // Run the function
             HttpResponseMessage response = await this.SendInputRequest("getproducts-nameempty", cost.ToString());
 
             // Verify result
             string actualResponse = await response.Content.ReadAsStringAsync();
-            Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse);
 
-            Assert.Equal(products, actualProductResponse);
+            Assert.Equal(expectedResponse, TestUtils.CleanJsonString(actualResponse), StringComparer.OrdinalIgnoreCase);
         }
 
         [Fact]
@@ -101,14 +98,15 @@ namespace Microsoft.Azure.Functions.Worker.Sql.Tests.Integration
             this.InsertProducts(products);
             Product[] productsWithCost100 = GetProducts(1, 100);
 
+            string expectedResponse = JsonConvert.SerializeObject(productsWithCost100);
             // Run the function
             HttpResponseMessage response = await this.SendInputRequest("getproductsbycost");
 
             // Verify result
             string actualResponse = await response.Content.ReadAsStringAsync();
-            Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse);
+            Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse) ?? Array.Empty<Product>();
 
-            Assert.Equal(productsWithCost100, actualProductResponse);
+            Assert.Equal(expectedResponse, TestUtils.CleanJsonString(actualResponse), StringComparer.OrdinalIgnoreCase);
         }
 
         [Fact]

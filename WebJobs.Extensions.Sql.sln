@@ -30,6 +30,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.Functions.W
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc", "samples\samples-outofproc\Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.csproj", "{BD0CE086-1778-4B08-905F-6766399C1D44}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{15E2582D-5B94-4F62-82C6-57F5571DD0BA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.Functions.Worker.Sql.Tests", "Worker.Extension.Sql\test\Microsoft.Azure.Functions.Worker.Sql.Tests\Microsoft.Azure.Functions.Worker.Sql.Tests.csproj", "{BC8F9F8D-0601-4C45-B00B-A21DBFA6C0D6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -60,6 +64,10 @@ Global
 		{BD0CE086-1778-4B08-905F-6766399C1D44}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BD0CE086-1778-4B08-905F-6766399C1D44}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BD0CE086-1778-4B08-905F-6766399C1D44}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BC8F9F8D-0601-4C45-B00B-A21DBFA6C0D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BC8F9F8D-0601-4C45-B00B-A21DBFA6C0D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BC8F9F8D-0601-4C45-B00B-A21DBFA6C0D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BC8F9F8D-0601-4C45-B00B-A21DBFA6C0D6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -71,6 +79,8 @@ Global
 		{1A5148B7-F877-4813-852C-F94D6EF795E8} = {F0F3562F-9176-4461-98E4-13D38D3DD056}
 		{84D97605-F1BF-4083-9C93-2B68A9FBB00F} = {605E19C0-3A77-477F-928E-85B8972B734D}
 		{BD0CE086-1778-4B08-905F-6766399C1D44} = {3691FB44-971D-43FD-9B2F-916B8CE689DB}
+		{15E2582D-5B94-4F62-82C6-57F5571DD0BA} = {605E19C0-3A77-477F-928E-85B8972B734D}
+		{BC8F9F8D-0601-4C45-B00B-A21DBFA6C0D6} = {15E2582D-5B94-4F62-82C6-57F5571DD0BA}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {49902AA5-150F-4567-B562-4AA8549B2CF4}
