@@ -10,6 +10,7 @@ using Xunit;
 using Xunit.Abstractions;
 using Newtonsoft.Json;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
+using System.Diagnostics;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -418,6 +419,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.SendOutputPostRequest("addproductwithdefaultpk", JsonConvert.SerializeObject(product)).Wait();
             this.SendOutputPostRequest("addproductwithdefaultpk", JsonConvert.SerializeObject(product)).Wait();
             Assert.Equal(2, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
+        }
+
+        /// <summary>
+        /// Tests that when using an unsupported database the expected error is thrown
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        public void UnsupportedDatabaseThrows(SupportedLanguages lang)
+        {
+            // Change database compat level to unsupported version
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET COMPATIBILITY_LEVEL = 120");
+
+            bool foundExpectedMessage = false;
+            this.StartFunctionHost(nameof(AddProductParams), lang, false, (object sender, DataReceivedEventArgs e) =>
+            {
+                if (e.Data.Contains("SQL bindings require a database compatibility level of 130 or higher to function"))
+                {
+                    foundExpectedMessage = true;
+                }
+            });
+
+            var query = new Dictionary<string, string>()
+            {
+                { "productId", "1" },
+                { "name", "test" },
+                { "cost", "100" }
+            };
+
+            // The upsert should fail since the database compat level is not supported
+            Exception exception = Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-params", query).Wait());
+            // Verify the message contains the expected error so that other errors don't mistakenly make this test pass
+            Assert.True(foundExpectedMessage, "Did not find expected error message in output");
         }
     }
 }
