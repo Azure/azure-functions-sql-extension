@@ -436,7 +436,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 try
                 {
-                    functionHost.Kill();
+                    functionHost.Kill(true);
                     functionHost.Dispose();
                 }
                 catch (Exception ex)
