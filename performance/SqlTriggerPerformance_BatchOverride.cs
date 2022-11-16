@@ -35,18 +35,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
         [Arguments(5)]
         public async Task Run(double numBatches)
         {
-            await this.RunWithDisposeOnError(async () =>
-            {
-                int count = (int)(numBatches * this.BatchSize);
-                await this.WaitForProductChanges(
-                    1,
-                    count,
-                    SqlChangeOperation.Insert,
-                    () => { this.InsertProducts(1, count); return Task.CompletedTask; },
-                    id => $"Product {id}",
-                    id => id * 100,
-                    this.GetBatchProcessingTimeout(1, count, batchSize: this.BatchSize));
-            });
+            int count = (int)(numBatches * this.BatchSize);
+            await this.WaitForProductChanges(
+                1,
+                count,
+                SqlChangeOperation.Insert,
+                () => { this.InsertProducts(1, count); return Task.CompletedTask; },
+                id => $"Product {id}",
+                id => id * 100,
+                this.GetBatchProcessingTimeout(1, count, batchSize: this.BatchSize));
         }
     }
 }

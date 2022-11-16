@@ -30,18 +30,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
         [Benchmark]
         public async Task Run()
         {
-            await this.RunWithDisposeOnError(async () =>
-            {
-                int count = SqlTableChangeMonitor<object>.DefaultBatchSize * 2;
-                await this.WaitForProductChanges(
-                    1,
-                    count,
-                    SqlChangeOperation.Insert,
-                    () => { this.InsertProducts(1, count); return Task.CompletedTask; },
-                    id => $"Product {id}",
-                    id => id * 100,
-                    this.GetBatchProcessingTimeout(1, count, pollingIntervalMs: this.PollingIntervalMs));
-            });
+            int count = SqlTableChangeMonitor<object>.DefaultBatchSize * 2;
+            await this.WaitForProductChanges(
+                1,
+                count,
+                SqlChangeOperation.Insert,
+                () => { this.InsertProducts(1, count); return Task.CompletedTask; },
+                id => $"Product {id}",
+                id => id * 100,
+                this.GetBatchProcessingTimeout(1, count, pollingIntervalMs: this.PollingIntervalMs));
         }
     }
 }

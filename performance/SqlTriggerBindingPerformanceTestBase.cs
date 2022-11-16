@@ -3,8 +3,6 @@
 
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration;
 using BenchmarkDotNet.Attributes;
-using System;
-using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
 {
@@ -31,32 +29,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
             END
             CLOSE cmds;
             DEALLOCATE cmds");
-        }
-
-        protected async Task RunWithDisposeOnError(Func<Task> action)
-        {
-            try
-            {
-                await action();
-            }
-            catch
-            {
-                this.Dispose();
-                throw;
-            }
-        }
-
-        protected void RunWithDisposeOnError(Action action)
-        {
-            try
-            {
-                action();
-            }
-            catch
-            {
-                this.Dispose();
-                throw;
-            }
         }
 
         [GlobalCleanup]
