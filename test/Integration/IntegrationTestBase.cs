@@ -51,6 +51,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         private string MasterConnectionString;
 
         /// <summary>
+        /// Connection string to the database created for the test
+        /// </summary>
+        protected string DbConnectionString { get; private set; }
+
+        /// <summary>
         /// Name of the database used for the current test.
         /// </summary>
         protected string DatabaseName { get; private set; }
@@ -135,7 +140,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // Setup connection
             connectionStringBuilder.InitialCatalog = this.DatabaseName;
-            this.Connection = new SqlConnection(connectionStringBuilder.ToString());
+            this.DbConnectionString = connectionStringBuilder.ToString();
+            this.Connection = new SqlConnection(this.DbConnectionString);
             this.Connection.Open();
 
             // Create the database definition
@@ -398,7 +404,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             try
             {
-                this.AzuriteHost?.Kill();
+                this.AzuriteHost?.Kill(true);
                 this.AzuriteHost?.Dispose();
             }
             catch (Exception e3)
@@ -430,7 +436,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 try
                 {
-                    functionHost.Kill();
+                    functionHost.Kill(true);
                     functionHost.Dispose();
                 }
                 catch (Exception ex)
