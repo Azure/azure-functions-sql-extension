@@ -228,6 +228,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 this._logger.LogError($"Failed to query count of unprocessed changes for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
                 TelemetryInstance.TrackException(TelemetryErrorName.GetUnprocessedChangeCount, ex, this._telemetryProps);
+                throw;
             }
 
             return unprocessedChangeCount;
