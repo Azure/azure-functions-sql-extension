@@ -617,9 +617,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         {
                             this._logger.LogDebugWithThreadId($"BEGIN ReleaseLeases Query={releaseLeasesCommand.CommandText}");
                             var commandSw = Stopwatch.StartNew();
-                            await releaseLeasesCommand.ExecuteNonQueryAsync(token);
+                            int rowsUpdated = await releaseLeasesCommand.ExecuteNonQueryAsync(token);
                             releaseLeasesDurationMs = commandSw.ElapsedMilliseconds;
-                            this._logger.LogDebugWithThreadId($"END ReleaseLeases Duration={releaseLeasesDurationMs}ms");
+                            this._logger.LogDebugWithThreadId($"END ReleaseLeases Duration={releaseLeasesDurationMs}ms RowsUpdated={rowsUpdated}");
                         }
 
                         // Update the global state table if we have processed all changes with ChangeVersion <= newLastSyncVersion,
@@ -946,7 +946,7 @@ $@"{AppLockStatements}
 
 WITH {releaseLeasesCte} AS ( SELECT * FROM OPENJSON(@rowData) WITH ({string.Join(",", cteColumnDefinitions)}) )
 UPDATE {this._leasesTableName}
-SET 
+SET
     {LeasesTableChangeVersionColumnName} = cte.{SysChangeVersionColumnName},
     {LeasesTableAttemptCountColumnName} = 0,
     {LeasesTableLeaseExpirationTimeColumnName} = NULL
