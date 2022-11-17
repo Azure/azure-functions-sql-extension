@@ -23,7 +23,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(1, "Test", 5)]
         [SqlInlineData(0, "", 0)]
         [SqlInlineData(-500, "ABCD", 580)]
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript, SupportedLanguages.PowerShell)]
         public void AddProductTest(int id, string name, int cost, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProduct), lang);
