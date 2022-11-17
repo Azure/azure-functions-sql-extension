@@ -78,6 +78,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.TestOutput = output;
             this.SetupDatabase();
             this.StartAzurite();
+            this.BuildJavaFunctionApps();
         }
 
         /// <summary>
@@ -167,15 +168,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
+        /// Build the samples-java and test-java projects.
+        /// </summary>
+        private void BuildJavaFunctionApps()
+        {
+            // To build Java function apps while running tests locally, you need to have Maven installed
+            // and the MAVEN_PATH environment variable set to the path to the mvn.cmd file.
+            // The Java projects are built using the Maven task in ADO pipelines.
+            string mavenPath = Environment.GetEnvironmentVariable("MAVEN_PATH");
+            if (!string.IsNullOrEmpty(mavenPath))
+            {
+                // Build samples-java
+                string samplesJavaPath = Path.Combine(GetPathToBin(), "SqlExtensionSamples", "Java");
+                this.BuildJavaFunctionApp(mavenPath, samplesJavaPath);
+
+                // Build test-java
+                string testJavaPath = Path.Combine(GetPathToBin(), "..", "..", "..", "Integration", "test-java");
+                this.BuildJavaFunctionApp(mavenPath, testJavaPath);
+            }
+        }
+
+        /// <summary>
         /// Run `mvn clean package` to build the Java function app.
         /// </summary>
-        private void BuildJavaFunctionApp(string workingDirectory)
+        private void BuildJavaFunctionApp(string mavenPath, string workingDirectory)
         {
             this.Mvn = new Process()
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = GetMavenPath(),
+                    FileName = mavenPath,
                     Arguments = "clean package",
                     WorkingDirectory = workingDirectory,
                     WindowStyle = ProcessWindowStyle.Hidden,
@@ -186,6 +208,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             };
 
             var taskCompletionSource = new TaskCompletionSource<bool>();
+            void SignalStartupHandler(object sender, DataReceivedEventArgs e)
+            {
+                if (e.Data?.Contains("BUILD SUCCESS") == true)
+                {
+                    taskCompletionSource.SetResult(true);
+                }
+            };
             this.Mvn.OutputDataReceived += SignalStartupHandler;
 
             this.Mvn.Start();
@@ -202,26 +231,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             this.LogOutput("Java build successful!");
             this.Mvn.OutputDataReceived -= SignalStartupHandler;
-
-            void SignalStartupHandler(object sender, DataReceivedEventArgs e)
-            {
-                if (e.Data?.Contains("BUILD SUCCESS") == true)
-                {
-                    taskCompletionSource.SetResult(true);
-                }
-            };
-            taskCompletionSource.Task.Wait(6000);
-        }
-
-        private static string GetMavenPath()
-        {
-            string mavenPath = Environment.GetEnvironmentVariable("MAVEN_PATH");
-            if (string.IsNullOrEmpty(mavenPath))
-            {
-                mavenPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-                "chocolatey", "lib", "maven", "apache-maven-3.8.6", "bin", "mvn.cmd");
-            }
-            return mavenPath;
         }
 
         /// <summary>
@@ -260,7 +269,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             if (language == SupportedLanguages.Java)
             {
                 workingDirectory = useTestFolder ? Path.Combine(GetPathToBin(), "..", "..", "..", "Integration", "test-java") : workingDirectory;
-                this.BuildJavaFunctionApp(workingDirectory);
                 string projectName = useTestFolder ? "test-java-1666041146813" : "samples-java-1665766173929";
                 workingDirectory = Path.Combine(workingDirectory, "target", "azure-functions", projectName);
             }

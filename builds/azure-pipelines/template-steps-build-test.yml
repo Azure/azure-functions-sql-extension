@@ -248,6 +248,18 @@ steps:
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) --no-build -p:PackageVersion="${{ parameters.nugetVersion }}" -p:GeneratePackageOnBuild=false'
 
+- task: Maven@3
+  displayName: Build Java Samples
+  inputs:
+    mavenPomFile: samples/samples-java/pom.xml
+    options: --batch-mode --define=gpg.skip --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
+
+- task: Maven@3
+  displayName: Build Java Tests
+  inputs:
+    mavenPomFile: test/Integration/test-java/pom.xml
+    options: --batch-mode --define=gpg.skip --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
+
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'
   env:

@@ -17,7 +17,6 @@ import com.microsoft.azure.functions.annotation.HttpTrigger;
 import com.microsoft.azure.functions.sql.annotation.SQLOutput;
 import com.function.Common.ProductColumnTypes;
 
-import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Optional;
 
