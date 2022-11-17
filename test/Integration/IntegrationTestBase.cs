@@ -175,7 +175,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = "mvn",
+                    FileName = GetMavenPath(),
                     Arguments = "clean package",
                     WorkingDirectory = workingDirectory,
                     WindowStyle = ProcessWindowStyle.Hidden,
@@ -211,6 +211,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 }
             };
             taskCompletionSource.Task.Wait(6000);
+        }
+
+        private static GetMavenPath()
+        {
+            string mavenPath = Environment.GetEnvironmentVariable("MAVEN_PATH");
+            if (string.IsNullOrEmpty(mavenPath))
+            {
+                mavenPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramData), @"chocolatey\lib\maven\apache-maven-*\bin\mvn.cmd");
+            }
+            return mavenPath;
         }
 
         /// <summary>
