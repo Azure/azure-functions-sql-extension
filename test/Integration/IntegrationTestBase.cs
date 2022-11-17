@@ -218,7 +218,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             string mavenPath = Environment.GetEnvironmentVariable("MAVEN_PATH");
             if (string.IsNullOrEmpty(mavenPath))
             {
-                mavenPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), @"chocolatey\lib\maven\apache-maven-*\bin\mvn.cmd");
+                mavenPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                "chocolatey", "lib", "maven", "apache-maven-3.8.6", "bin", "mvn.cmd");
             }
             return mavenPath;
         }
