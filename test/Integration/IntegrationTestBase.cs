@@ -213,12 +213,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             taskCompletionSource.Task.Wait(6000);
         }
 
-        private static GetMavenPath()
+        private static string GetMavenPath()
         {
             string mavenPath = Environment.GetEnvironmentVariable("MAVEN_PATH");
             if (string.IsNullOrEmpty(mavenPath))
             {
-                mavenPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramData), @"chocolatey\lib\maven\apache-maven-*\bin\mvn.cmd");
+                mavenPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), @"chocolatey\lib\maven\apache-maven-*\bin\mvn.cmd");
             }
             return mavenPath;
         }
