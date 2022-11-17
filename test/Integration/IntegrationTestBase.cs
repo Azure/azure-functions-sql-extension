@@ -175,7 +175,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = GetMavenPath(),
+                    FileName = "mvn",
                     Arguments = "clean package",
                     WorkingDirectory = workingDirectory,
                     WindowStyle = ProcessWindowStyle.Hidden,
@@ -211,12 +211,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 }
             };
             taskCompletionSource.Task.Wait(6000);
-        }
-
-        private static string GetMavenPath()
-        {
-            string mavenPath = Environment.GetEnvironmentVariable("MAVEN_PATH");
-            return mavenPath;
         }
 
         /// <summary>
