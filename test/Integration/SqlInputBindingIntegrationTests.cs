@@ -160,7 +160,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java)]// TODO: https://github.com/Azure/azure-functions-sql-extension/issues/515
+        // Java worker returns timestamps in local time zone
+        // https://github.com/Azure/azure-functions-sql-extension/issues/515
+        [UnsupportedLanguages(SupportedLanguages.Java)]
         public async void GetProductsColumnTypesSerializationTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsColumnTypesSerialization), lang, true);

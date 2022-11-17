@@ -23,6 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(1, "Test", 5)]
         [SqlInlineData(0, "", 0)]
         [SqlInlineData(-500, "ABCD", 580)]
+        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript, SupportedLanguages.PowerShell)]
         public void AddProductTest(int id, string name, int cost, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProduct), lang);
@@ -45,9 +46,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(1, "Test", 5)]
         [SqlInlineData(0, "", 0)]
         [SqlInlineData(-500, "ABCD", 580)]
-        // Currently PowerShell returns null when the parameter for name is an empty string
+        // Currently PowerShell and Java functions return null when the parameter for name is an empty string
         // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/443
-        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
+        [UnsupportedLanguages(SupportedLanguages.PowerShell, SupportedLanguages.Java)]
         public void AddProductParamsTest(int id, string name, int cost, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductParams), lang);
@@ -68,6 +69,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
+        // ProductID (POCO field) does not match ProductId (table column) and JSON
+        // serialization is case sensitive in Java
+        // TODO: https://github.com/Azure/azure-functions-sql-extension/issues/411
+        [UnsupportedLanguages(SupportedLanguages.Java)]
         public void AddProductArrayTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsArray), lang);
@@ -108,7 +113,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <param name="lang">The language to run the test against</param>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java)] // TODO: add test for all column types added in ProductsColumnTypes.java
         public void AddProductColumnTypesTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductColumnTypes), lang, true);
@@ -336,7 +340,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
-        /// Tests that when using a table with an identity column along with other primary 
+        /// Tests that when using a table with an identity column along with other primary
         /// keys an error is thrown if at least one of the primary keys is missing.
         /// </summary>
         [Theory]
@@ -360,11 +364,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
-        /// Tests that when using a case sensitive database, an error is thrown if 
+        /// Tests that when using a case sensitive database, an error is thrown if
         /// the POCO fields case and column names case do not match.
         /// </summary>
         [Theory]
         [SqlInlineData()]
+        // JSON serialization is case sensitive in Java
+        // TODO: https://github.com/Azure/azure-functions-sql-extension/issues/411
+        [UnsupportedLanguages(SupportedLanguages.Java)]
         public void AddProductCaseSensitiveTest(SupportedLanguages lang)
         {
             // Set table info cache timeout to 0 minutes so that new collation gets picked up
