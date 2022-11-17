@@ -2,10 +2,8 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Moq;
-using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 using Xunit;
 using Microsoft.Extensions.Logging;
 
