@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlTriggerConstants;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlBindingUtilities;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 using Microsoft.Azure.WebJobs.Host.Scale;
@@ -124,6 +125,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     await connection.OpenAsync(cancellationToken);
                     this._logger.LogDebugWithThreadId("END OpenListenerConnection");
                     this._telemetryProps.AddConnectionProps(connection);
+
+                    await VerifyDatabaseSupported(connection, this._logger, cancellationToken);
 
                     int userTableId = await this.GetUserTableIdAsync(connection, cancellationToken);
                     IReadOnlyList<(string name, string type)> primaryKeyColumns = await this.GetPrimaryKeyColumnsAsync(connection, userTableId, cancellationToken);

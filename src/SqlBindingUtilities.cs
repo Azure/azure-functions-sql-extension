@@ -5,8 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Threading.Tasks;
+using System.Threading;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -169,6 +172,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public static string AsSingleQuoteEscapedString(this string s)
         {
             return s.Replace("'", "''");
+        }
+
+        /// <summary>
+        /// Verifies that the database we're connected to is supported
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Throw if an error occurs while querying the compatibility level or if the database is not supported</exception>
+        public static async Task VerifyDatabaseSupported(SqlConnection connection, ILogger logger, CancellationToken cancellationToken)
+        {
+            // Need at least 130 for OPENJSON support
+            const int MIN_SUPPORTED_COMPAT_LEVEL = 130;
+
+            string verifyDatabaseSupportedQuery = $"SELECT compatibility_level FROM sys.databases WHERE Name = DB_NAME()";
+
+            logger.LogDebugWithThreadId($"BEGIN VerifyDatabaseSupported Query={verifyDatabaseSupportedQuery}");
+            using (var verifyDatabaseSupportedCommand = new SqlCommand(verifyDatabaseSupportedQuery, connection))
+            using (SqlDataReader reader = await verifyDatabaseSupportedCommand.ExecuteReaderAsync(cancellationToken))
+            {
+                if (!await reader.ReadAsync(cancellationToken))
+                {
+                    throw new InvalidOperationException($"Received empty response when verifying whether the database is currently supported.");
+                }
+
+                int compatLevel = reader.GetByte(0);
+
+                logger.LogDebugWithThreadId($"END GetUserTableId CompatLevel={compatLevel}");
+                if (compatLevel < MIN_SUPPORTED_COMPAT_LEVEL)
+                {
+                    throw new InvalidOperationException($"SQL bindings require a database compatibility level of 130 or higher to function. Current compatibility level = {compatLevel}");
+                }
+            }
         }
     }
 }
