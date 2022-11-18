@@ -496,6 +496,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.True(metrics.UnprocessedChangeCount == 5, $"There should be 5 unprocessed changes after insertion. Actual={metrics.UnprocessedChangeCount}");
         }
 
+        /// <summary>
+        /// Tests that when using an unsupported database the expected error is thrown
+        /// </summary>
+        [Fact]
+        public void UnsupportedDatabaseThrows()
+        {
+            // Change database compat level to unsupported version
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET COMPATIBILITY_LEVEL = 120");
+
+            this.StartFunctionHostAndWaitForError(
+                nameof(ProductsTrigger),
+                false,
+                "SQL bindings require a database compatibility level of 130 or higher to function. Current compatibility level = 120");
+        }
+
         private void EnableChangeTrackingForDatabase()
         {
             this.ExecuteNonQuery($@"
