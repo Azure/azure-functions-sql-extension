@@ -649,7 +649,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             bool isCompleted = tcs.Task.Wait(TimeSpan.FromSeconds(BufferTimeForErrorInSeconds));
 
             this.FunctionHost.OutputDataReceived -= OutputHandler;
-            this.FunctionHost.Kill();
+            this.FunctionHost.Kill(true);
 
             Assert.True(isCompleted, "Functions host did not log failure to start SQL trigger listener within specified time.");
             Assert.Equal(expectedErrorMessage, errorMessage);
