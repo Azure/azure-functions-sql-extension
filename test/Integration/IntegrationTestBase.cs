@@ -121,6 +121,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 }
             };
             getExtensionBundlePath.OutputDataReceived += ExtensionBundlePathHandler;
+            getExtensionBundlePath.OutputDataReceived += this.GetTestOutputHandler(maven.Id);
+            getExtensionBundlePath.ErrorDataReceived += this.GetTestOutputHandler(maven.Id);
             getExtensionBundlePath.Start();
             getExtensionBundlePath.BeginOutputReadLine();
             this.LogOutput("Getting extension bundle path...");
