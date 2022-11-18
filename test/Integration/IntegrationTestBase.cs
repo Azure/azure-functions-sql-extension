@@ -35,12 +35,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         protected List<Process> FunctionHostList { get; } = new List<Process>();
 
         /// <summary>
-        /// Host process for Azurite local storage emulator. This is required for non-HTTP trigger functions:
-        /// https://docs.microsoft.com/azure/azure-functions/functions-develop-local
-        /// </summary>
-        private Process AzuriteHost;
-
-        /// <summary>
         /// Connection to the database for the current test.
         /// </summary>
         private DbConnection Connection;
@@ -75,7 +69,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             this.TestOutput = output;
             this.SetupDatabase();
-            this.StartAzurite();
         }
 
         /// <summary>
@@ -162,24 +155,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 this.LogOutput($"Executing script ${file}");
                 this.ExecuteNonQuery(File.ReadAllText(file));
             }
-        }
-
-        /// <summary>
-        /// This starts the Azurite storage emulator.
-        /// </summary>
-        protected void StartAzurite()
-        {
-            this.AzuriteHost = new Process()
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "azurite",
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    UseShellExecute = true
-                }
-            };
-
-            this.AzuriteHost.Start();
         }
 
         /// <summary>
@@ -397,16 +372,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
 
             this.DisposeFunctionHosts();
-
-            try
-            {
-                this.AzuriteHost?.Kill(true);
-                this.AzuriteHost?.Dispose();
-            }
-            catch (Exception e3)
-            {
-                this.LogOutput($"Failed to stop Azurite, Error: {e3.Message}");
-            }
 
             try
             {
