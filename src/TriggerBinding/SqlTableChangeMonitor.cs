@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
@@ -19,7 +18,6 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Microsoft.Extensions.Configuration;
 using System.Data;
-using MoreLinq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -619,9 +617,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         {
                             this._logger.LogDebugWithThreadId($"BEGIN ReleaseLeases Query={releaseLeasesCommand.CommandText}");
                             var commandSw = Stopwatch.StartNew();
-                            await releaseLeasesCommand.ExecuteNonQueryAsync(token);
+                            int rowsUpdated = await releaseLeasesCommand.ExecuteNonQueryAsync(token);
                             releaseLeasesDurationMs = commandSw.ElapsedMilliseconds;
-                            this._logger.LogDebugWithThreadId($"END ReleaseLeases Duration={releaseLeasesDurationMs}ms");
+                            this._logger.LogDebugWithThreadId($"END ReleaseLeases Duration={releaseLeasesDurationMs}ms RowsUpdated={rowsUpdated}");
                         }
 
                         // Update the global state table if we have processed all changes with ChangeVersion <= newLastSyncVersion,
@@ -931,32 +929,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
         private SqlCommand BuildReleaseLeasesCommand(SqlConnection connection, SqlTransaction transaction)
         {
-            var releaseLeasesQuery = new StringBuilder(
+            // The column definitions to use for the CTE
+            IEnumerable<string> cteColumnDefinitions = this._primaryKeyColumns
+                .Select(c => $"{c.name.AsBracketQuotedString()} {c.type}")
+                // Also bring in the SYS_CHANGE_VERSION column to compare against
+                .Append($"{SysChangeVersionColumnName} bigint");
+            IEnumerable<string> bracketedPrimaryKeys = this._primaryKeyColumns.Select(p => p.name.AsBracketQuotedString());
+
+            // Create the query that the update statement will match the rows on
+            string primaryKeyMatchingQuery = string.Join(" AND ", bracketedPrimaryKeys.Select(key => $"l.{key} = cte.{key}"));
+            const string releaseLeasesCte = "releaseLeasesCte";
+            const string rowDataParameter = "@rowData";
+
+            string releaseLeasesQuery =
 $@"{AppLockStatements}
 
-DECLARE @current_change_version bigint;
-");
+WITH {releaseLeasesCte} AS ( SELECT * FROM OPENJSON(@rowData) WITH ({string.Join(",", cteColumnDefinitions)}) )
+UPDATE {this._leasesTableName}
+SET
+    {LeasesTableChangeVersionColumnName} = cte.{SysChangeVersionColumnName},
+    {LeasesTableAttemptCountColumnName} = 0,
+    {LeasesTableLeaseExpirationTimeColumnName} = NULL
+FROM {this._leasesTableName} l INNER JOIN releaseLeasesCte cte ON {primaryKeyMatchingQuery}
+WHERE l.{LeasesTableChangeVersionColumnName} <= cte.{SysChangeVersionColumnName};";
 
-            for (int rowIndex = 0; rowIndex < this._rows.Count; rowIndex++)
-            {
-                string changeVersion = this._rows[rowIndex][SysChangeVersionColumnName].ToString();
-
-                releaseLeasesQuery.Append($@"
-                    SELECT @current_change_version = {LeasesTableChangeVersionColumnName}
-                    FROM {this._leasesTableName}
-                    WHERE {this._rowMatchConditions[rowIndex]};
-
-                    IF @current_change_version <= {changeVersion}
-                        UPDATE {this._leasesTableName}
-                        SET
-                            {LeasesTableChangeVersionColumnName} = {changeVersion},
-                            {LeasesTableAttemptCountColumnName} = 0,
-                            {LeasesTableLeaseExpirationTimeColumnName} = NULL
-                        WHERE {this._rowMatchConditions[rowIndex]};
-                ");
-            }
-
-            return this.GetSqlCommandWithParameters(releaseLeasesQuery.ToString(), connection, transaction, this._rows);
+            var command = new SqlCommand(releaseLeasesQuery, connection, transaction);
+            SqlParameter par = command.Parameters.Add(rowDataParameter, SqlDbType.NVarChar, -1);
+            string rowData = JsonConvert.SerializeObject(this._rows);
+            par.Value = rowData;
+            return command;
         }
 
         /// <summary>
