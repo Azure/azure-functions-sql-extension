@@ -40,8 +40,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         private Process AzuriteHost;
 
-        private Process Mvn;
-
         /// <summary>
         /// Connection to the database for the current test.
         /// </summary>
@@ -193,7 +191,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         private void BuildJavaFunctionApp(string mavenPath, string workingDirectory)
         {
-            this.Mvn = new Process()
+            var maven = new Process()
             {
                 StartInfo = new ProcessStartInfo
                 {
@@ -201,36 +199,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     Arguments = "clean package",
                     WorkingDirectory = workingDirectory,
                     WindowStyle = ProcessWindowStyle.Hidden,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false
+                    UseShellExecute = true
                 }
             };
 
-            var taskCompletionSource = new TaskCompletionSource<bool>();
-            void SignalStartupHandler(object sender, DataReceivedEventArgs e)
-            {
-                if (e.Data?.Contains("BUILD SUCCESS") == true)
-                {
-                    taskCompletionSource.SetResult(true);
-                }
-            };
-            this.Mvn.OutputDataReceived += SignalStartupHandler;
-
-            this.Mvn.Start();
-            this.Mvn.OutputDataReceived += this.GetTestOutputHandler();
-            this.Mvn.ErrorDataReceived += this.GetTestOutputHandler();
-            this.Mvn.BeginOutputReadLine();
-            this.Mvn.BeginErrorReadLine();
-
+            maven.Start();
             this.LogOutput($"Building Java function app...");
 
-            const int buildJavaAppTimeoutInSeconds = 60;
-            bool isCompleted = taskCompletionSource.Task.Wait(TimeSpan.FromSeconds(buildJavaAppTimeoutInSeconds));
+            const int buildJavaAppTimeoutInMs = 60000;
+            maven.WaitForExit(buildJavaAppTimeoutInMs);
+
+            bool isCompleted = maven.ExitCode == 0;
             Assert.True(isCompleted, "Java function app did not build successfully");
 
             this.LogOutput("Java build successful!");
-            this.Mvn.OutputDataReceived -= SignalStartupHandler;
         }
 
         /// <summary>
@@ -311,14 +293,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.FunctionHost.OutputDataReceived += customOutputHandler;
 
             functionHost.Start();
-            functionHost.OutputDataReceived += this.GetTestOutputHandler(functionHost.Id.ToString());
-            functionHost.ErrorDataReceived += this.GetTestOutputHandler(functionHost.Id.ToString());
+            functionHost.OutputDataReceived += this.GetTestOutputHandler(functionHost.Id);
+            functionHost.ErrorDataReceived += this.GetTestOutputHandler(functionHost.Id);
             functionHost.BeginOutputReadLine();
             functionHost.BeginErrorReadLine();
 
             this.LogOutput("Waiting for Azure Function host to start...");
 
-            const int FunctionHostStartupTimeoutInSeconds = 120;
+            const int FunctionHostStartupTimeoutInSeconds = 60;
             bool isCompleted = taskCompletionSource.Task.Wait(TimeSpan.FromSeconds(FunctionHostStartupTimeoutInSeconds));
             Assert.True(isCompleted, "Functions host did not start within specified time.");
 
@@ -339,7 +321,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     taskCompletionSource.SetResult(true);
                 }
             };
-            taskCompletionSource.Task.Wait(120000);
         }
 
         private static string GetFunctionsCoreToolsPath()
@@ -387,7 +368,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
         }
 
-        private DataReceivedEventHandler GetTestOutputHandler(string processId = null)
+        private DataReceivedEventHandler GetTestOutputHandler(int processId)
         {
             return TestOutputHandler;
 
