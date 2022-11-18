@@ -270,10 +270,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 RedirectStandardError = true,
                 UseShellExecute = false
             };
-            if (environmentVariables != null)
-            {
-                environmentVariables.ToList().ForEach(ev => startInfo.EnvironmentVariables[ev.Key] = ev.Value);
-            }
+            environmentVariables?.ToList().ForEach(ev => startInfo.EnvironmentVariables[ev.Key] = ev.Value);
 
             // Always disable telemetry during test runs
             startInfo.EnvironmentVariables[TelemetryOptoutEnvVar] = "1";
@@ -289,8 +286,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // Register all handlers before starting the functions host process.
             var taskCompletionSource = new TaskCompletionSource<bool>();
+            void SignalStartupHandler(object sender, DataReceivedEventArgs e)
+            {
+                // This string is printed after the function host is started up - use this to ensure that we wait long enough
+                // since sometimes the host can take a little while to fully start up
+                if (e.Data?.Contains(" Host initialized ") == true)
+                {
+                    taskCompletionSource.SetResult(true);
+                }
+            };
             functionHost.OutputDataReceived += SignalStartupHandler;
-            this.FunctionHost.OutputDataReceived += customOutputHandler;
+            functionHost.OutputDataReceived += customOutputHandler;
 
             functionHost.Start();
             functionHost.OutputDataReceived += this.GetTestOutputHandler(functionHost.Id);
@@ -310,17 +316,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Task.Delay(TimeSpan.FromSeconds(BufferTimeInSeconds)).Wait();
 
             this.LogOutput("Azure Function host started!");
-            this.FunctionHost.OutputDataReceived -= SignalStartupHandler;
-
-            void SignalStartupHandler(object sender, DataReceivedEventArgs e)
-            {
-                // This string is printed after the function host is started up - use this to ensure that we wait long enough
-                // since sometimes the host can take a little while to fully start up
-                if (e.Data?.Contains(" Host initialized ") == true)
-                {
-                    taskCompletionSource.SetResult(true);
-                }
-            };
+            functionHost.OutputDataReceived -= SignalStartupHandler;
         }
 
         private static string GetFunctionsCoreToolsPath()
@@ -370,8 +366,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         private DataReceivedEventHandler GetTestOutputHandler(int processId)
         {
-            return TestOutputHandler;
-
             void TestOutputHandler(object sender, DataReceivedEventArgs e)
             {
                 if (!string.IsNullOrEmpty(e.Data))
@@ -379,6 +373,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     this.LogOutput($"[{processId}] {e.Data}");
                 }
             }
+            return TestOutputHandler;
         }
 
         protected async Task<HttpResponseMessage> SendGetRequest(string requestUri, bool verifySuccess = true)
@@ -493,8 +488,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 try
                 {
+                    functionHost.CancelOutputRead();
+                    functionHost.CancelErrorRead();
                     functionHost.Kill(true);
                     functionHost.Dispose();
+                    functionHost.WaitForExit();
                 }
                 catch (Exception ex)
                 {

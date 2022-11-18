@@ -26,11 +26,16 @@ See the language-specific guides for further details on support and usage of the
 
 Further information on the Azure SQL binding for Azure Functions is also available in the [Azure Functions docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
 
+## Supported SQL Server Versions
+
+This extension uses the [OPENJSON](https://learn.microsoft.com/sql/t-sql/functions/openjson-transact-sql) statement which requires a database compatibility level of 130 or higher (2016 or higher). To view or change the compatibility level of your database, see [this documentation article](https://learn.microsoft.com/sql/relational-databases/databases/view-or-change-the-compatibility-level-of-a-database) for more information.
+
+Databases on SQL Server, Azure SQL Database, or Azure SQL Managed Instance which meet the compatibility level requirement above are supported.
+
 ## Known Issues
 
 - Output bindings against tables with columns of data types `NTEXT`, `TEXT`, or `IMAGE` are not supported and data upserts will fail. These types [will be removed](https://docs.microsoft.com/sql/t-sql/data-types/ntext-text-and-image-transact-sql) in a future version of SQL Server and are not compatible with the `OPENJSON` function used by this Azure Functions binding.
 - Input bindings against tables with columns of data types 'DATETIME', 'DATETIME2', or 'SMALLDATETIME' will assume that the values are in UTC format.
-
 - Trigger bindings will exhibit undefined behavior if the SQL table schema gets modified while the user application is running, for example, if a column is added, renamed or deleted or if the primary key is modified or deleted. In such cases, restarting the application should help resolve any errors.
 
 ## Telemetry
