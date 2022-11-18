@@ -74,8 +74,65 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public IntegrationTestBase(ITestOutputHelper output = null)
         {
             this.TestOutput = output;
+            this.CopyLatestSqlExtensionToBundle();
             this.SetupDatabase();
             this.StartAzurite();
+        }
+
+        /// <summary>
+        /// Copy the latest build of the SqlExtension dll to the Azure Functions extension bundle.
+        /// </summary>
+        private void CopyLatestSqlExtensionToBundle()
+        {
+            string extensionBundleBinPath = Path.Combine(this.GetExtensionBundlePath(), "bin");
+            string sqlDllPath = Path.Combine(GetPathToBin(), "Microsoft.Azure.WebJobs.Extensions.Sql.dll");
+            File.Copy(sqlDllPath, Path.Combine(extensionBundleBinPath, "Microsoft.Azure.WebJobs.Extensions.Sql.dll"), true);
+            this.LogOutput($"Copied {sqlDllPath} to {extensionBundleBinPath}");
+        }
+
+        /// <summary>
+        /// Get the path to the extension bundle.
+        /// </summary>
+        private string GetExtensionBundlePath()
+        {
+            // Run `func GetExtensionBundlePath` from the samples-js directory to get the path to the correct extension bundle.
+            var getExtensionBundlePath = new Process()
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = GetFunctionsCoreToolsPath(),
+                    Arguments = $"GetExtensionBundlePath",
+                    WorkingDirectory = Path.Combine(GetPathToBin(), "..", "..", "..", "..", "samples", "samples-js"),
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false
+                }
+            };
+
+            string extensionBundlePath = "";
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            void ExtensionBundlePathHandler(object sender, DataReceivedEventArgs e)
+            {
+                if (e.Data != null)
+                {
+                    extensionBundlePath = e.Data;
+                    taskCompletionSource.SetResult(true);
+                }
+            };
+            getExtensionBundlePath.OutputDataReceived += ExtensionBundlePathHandler;
+            getExtensionBundlePath.Start();
+            getExtensionBundlePath.BeginOutputReadLine();
+            this.LogOutput("Getting extension bundle path...");
+
+            const int GetExtensionBundlePathTimeoutInSeconds = 60;
+            bool isCompleted = taskCompletionSource.Task.Wait(TimeSpan.FromSeconds(GetExtensionBundlePathTimeoutInSeconds));
+            Assert.True(isCompleted, "Could not get extension bundle path within specified time.");
+
+            this.LogOutput("Extension bundle path: " + extensionBundlePath);
+            getExtensionBundlePath.OutputDataReceived -= ExtensionBundlePathHandler;
+
+            return extensionBundlePath;
         }
 
         /// <summary>
