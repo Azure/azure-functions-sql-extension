@@ -249,12 +249,6 @@ steps:
     arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) --no-build -p:PackageVersion="${{ parameters.nugetVersion }}" -p:GeneratePackageOnBuild=false'
 
 - task: DotNetCoreCLI@2
-  displayName: '.NET Version'
-  inputs:
-    command: custom
-    arguments: '--version'
-
-- task: DotNetCoreCLI@2
   displayName: '.NET Test'
   env:
     TEST_SERVER: '$(testServer)'
