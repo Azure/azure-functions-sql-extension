@@ -12,6 +12,9 @@ $req_query = @{
     cost=[int]$Request.QUERY.cost;
 };
 
+Write-Host "Name equals $($req_query.name)"
+Write-Host "Cost equals $($req_query.cost)"
+
 # Assign the value we want to pass to the SQL Output binding. 
 # The -Name value corresponds to the name property in the function.json for the binding
 Push-OutputBinding -Name product -Value $req_query

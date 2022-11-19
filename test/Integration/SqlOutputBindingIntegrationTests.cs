@@ -45,8 +45,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(1, "Test", 5)]
         [SqlInlineData(0, "", 0)]
         [SqlInlineData(-500, "ABCD", 580)]
-        // Currently PowerShell returns null when the parameter for name is an empty string
-        // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/443
+        // Add Support to nullable types in query string to be added in the powershell worker
+        // Currently use a workaround through the TriggerMetadata for PowerShell Azure Functions
+        // Issue link: https://github.com/Azure/azure-functions-powershell-worker/issues/895
         public void AddProductParamsTest(int id, string name, int cost, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductParams), lang);
