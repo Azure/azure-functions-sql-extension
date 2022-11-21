@@ -12,12 +12,13 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
-    [Collection("IntegrationTests")]
+    [Collection(IntegrationTestsCollection.Name)]
     public class SqlInputBindingIntegrationTests : IntegrationTestBase
     {
         public SqlInputBindingIntegrationTests(ITestOutputHelper output) : base(output)
         {
         }
+
         [Theory]
         [SqlInlineData(0, 100)]
         [SqlInlineData(1, -500)]
