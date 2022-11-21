@@ -21,7 +21,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
-    [Collection("IntegrationTests")]
+    [Collection(IntegrationTestsCollection.Name)]
     public class SqlTriggerBindingIntegrationTests : IntegrationTestBase
     {
         public SqlTriggerBindingIntegrationTests(ITestOutputHelper output = null) : base(output)
