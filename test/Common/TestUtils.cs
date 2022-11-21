@@ -5,9 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 {
@@ -207,6 +210,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
                     }
                 }
             };
+        }
+
+        public static string GetPathToBin()
+        {
+            return Path.GetDirectoryName(Assembly.GetAssembly(typeof(Product)).Location);
         }
     }
 }

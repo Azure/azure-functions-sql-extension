@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -69,7 +68,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             this.TestOutput = output;
             this.SetupDatabase();
-            this.BuildJavaFunctionApps();
         }
 
         /// <summary>
@@ -141,9 +139,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // Create the database definition
             // Create these in a specific order since things like views require that their underlying objects have been created already
             // Ideally all the sql files would be in a sqlproj and can just be deployed
-            this.ExecuteAllScriptsInFolder(Path.Combine(GetPathToBin(), "Database", "Tables"));
-            this.ExecuteAllScriptsInFolder(Path.Combine(GetPathToBin(), "Database", "Views"));
-            this.ExecuteAllScriptsInFolder(Path.Combine(GetPathToBin(), "Database", "StoredProcedures"));
+            this.ExecuteAllScriptsInFolder(Path.Combine(TestUtils.GetPathToBin(), "Database", "Tables"));
+            this.ExecuteAllScriptsInFolder(Path.Combine(TestUtils.GetPathToBin(), "Database", "Views"));
+            this.ExecuteAllScriptsInFolder(Path.Combine(TestUtils.GetPathToBin(), "Database", "StoredProcedures"));
 
             // Set SqlConnectionString env var for the Function to use
             Environment.SetEnvironmentVariable("SqlConnectionString", connectionStringBuilder.ToString());
@@ -159,47 +157,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
-        /// Build the samples-java and test-java projects.
-        /// </summary>
-        private void BuildJavaFunctionApps()
-        {
-            string samplesJavaPath = Path.Combine(GetPathToBin(), "SqlExtensionSamples", "Java");
-            this.BuildJavaFunctionApp(samplesJavaPath);
-
-            string testJavaPath = Path.Combine(GetPathToBin(), "..", "..", "..", "Integration", "test-java");
-            this.BuildJavaFunctionApp(testJavaPath);
-        }
-
-        /// <summary>
-        /// Run `mvn clean package` to build the Java function app.
-        /// </summary>
-        private void BuildJavaFunctionApp(string workingDirectory)
-        {
-            var maven = new Process()
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "mvn",
-                    Arguments = "clean package",
-                    WorkingDirectory = workingDirectory,
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    UseShellExecute = true
-                }
-            };
-
-            maven.Start();
-            this.LogOutput($"Building Java function app...");
-
-            const int buildJavaAppTimeoutInMs = 60000;
-            maven.WaitForExit(buildJavaAppTimeoutInMs);
-
-            bool isCompleted = maven.ExitCode == 0;
-            Assert.True(isCompleted, "Java function app did not build successfully");
-
-            this.LogOutput("Java build successful!");
-        }
-
-        /// <summary>
         /// This starts the Functions runtime with the specified function(s).
         /// </summary>
         /// <remarks>
@@ -208,7 +165,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </remarks>
         protected void StartFunctionHost(string functionName, SupportedLanguages language, bool useTestFolder = false, DataReceivedEventHandler customOutputHandler = null, IDictionary<string, string> environmentVariables = null)
         {
-            string workingDirectory = language == SupportedLanguages.CSharp && useTestFolder ? GetPathToBin() : Path.Combine(GetPathToBin(), "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), language));
+            string workingDirectory = language == SupportedLanguages.CSharp && useTestFolder ? TestUtils.GetPathToBin() : Path.Combine(TestUtils.GetPathToBin(), "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), language));
             if (!Directory.Exists(workingDirectory))
             {
                 throw new FileNotFoundException("Working directory not found at " + workingDirectory);
@@ -216,7 +173,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             if (language == SupportedLanguages.Java)
             {
-                workingDirectory = useTestFolder ? Path.Combine(GetPathToBin(), "..", "..", "..", "Integration", "test-java") : workingDirectory;
+                workingDirectory = useTestFolder ? Path.Combine(TestUtils.GetPathToBin(), "..", "..", "..", "Integration", "test-java") : workingDirectory;
                 string projectName = useTestFolder ? "test-java-1666041146813" : "samples-java-1665766173929";
                 workingDirectory = Path.Combine(workingDirectory, "target", "azure-functions", projectName);
             }
@@ -400,10 +357,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             return TestUtils.ExecuteScalar(this.Connection, commandText);
         }
 
-        private static string GetPathToBin()
-        {
-            return Path.GetDirectoryName(Assembly.GetAssembly(typeof(Product)).Location);
-        }
 
         public void Dispose()
         {
