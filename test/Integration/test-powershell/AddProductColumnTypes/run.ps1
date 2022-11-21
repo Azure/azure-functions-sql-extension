@@ -11,7 +11,7 @@ Write-Host "PowerShell function with SQL Output Binding processed a request."
 # which have a property matching each of the columns in the table to upsert to.
 $req_query = @{ 
     ProductId=[int]$Request.QUERY.productId;
-    Datetime=Get=Date;
+    Datetime=Get-Date;
     Datetime2=Get-Date;
 };
 
