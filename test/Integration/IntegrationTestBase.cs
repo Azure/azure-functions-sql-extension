@@ -170,32 +170,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         private void BuildJavaFunctionApps()
         {
-            // To build Java function apps while running tests locally, you need to have Maven installed
-            // and the MAVEN_PATH environment variable set to the path to the mvn.cmd file.
-            // The Java projects are built using the Maven task in ADO pipelines.
-            string mavenPath = Environment.GetEnvironmentVariable("MAVEN_PATH");
-            if (!string.IsNullOrEmpty(mavenPath))
-            {
-                // Build samples-java
-                string samplesJavaPath = Path.Combine(GetPathToBin(), "SqlExtensionSamples", "Java");
-                this.BuildJavaFunctionApp(mavenPath, samplesJavaPath);
+            string samplesJavaPath = Path.Combine(GetPathToBin(), "SqlExtensionSamples", "Java");
+            this.BuildJavaFunctionApp(samplesJavaPath);
 
-                // Build test-java
-                string testJavaPath = Path.Combine(GetPathToBin(), "..", "..", "..", "Integration", "test-java");
-                this.BuildJavaFunctionApp(mavenPath, testJavaPath);
-            }
+            string testJavaPath = Path.Combine(GetPathToBin(), "..", "..", "..", "Integration", "test-java");
+            this.BuildJavaFunctionApp(testJavaPath);
         }
 
         /// <summary>
         /// Run `mvn clean package` to build the Java function app.
         /// </summary>
-        private void BuildJavaFunctionApp(string mavenPath, string workingDirectory)
+        private void BuildJavaFunctionApp(string workingDirectory)
         {
             var maven = new Process()
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = mavenPath,
+                    FileName = "mvn",
                     Arguments = "clean package",
                     WorkingDirectory = workingDirectory,
                     WindowStyle = ProcessWindowStyle.Hidden,
