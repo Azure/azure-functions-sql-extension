@@ -275,10 +275,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     }
                     throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath} or {usrBinFuncPath}");
                 }
-                else
-                {
-                    throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath}");
-                }
                 throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath}");
             }
 
