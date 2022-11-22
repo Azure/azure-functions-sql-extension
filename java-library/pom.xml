@@ -4,7 +4,7 @@
 
   <groupId>com.microsoft.azure.functions</groupId>
   <artifactId>azure-functions-java-library-sql</artifactId>
-  <version>0.1.1</version> <!-- Update the dependency version in samples-java/pom.xml too if this version is updated. -->
+  <version>0.1.1</version> <!-- Update the dependency version in samples-java/pom.xml and test-java/pom.xml if this version is updated. -->
   <packaging>jar</packaging>
 
   <parent>
@@ -115,7 +115,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>${maven-checkstyle.version}</version>
+        <version>3.0.0</version>
         <configuration>
           <configLocation>checkstyle.xml</configLocation>
           <consoleOutput>true</consoleOutput>
