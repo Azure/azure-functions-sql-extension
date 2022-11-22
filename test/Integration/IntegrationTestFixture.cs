@@ -3,6 +3,9 @@
 
 using System;
 using System.Diagnostics;
+using System.IO;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
+using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -17,9 +20,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         private Process AzuriteHost;
 
-        public IntegrationTestFixture()
+        public IntegrationTestFixture(bool buildJava = true)
         {
             this.StartAzurite();
+            if (buildJava)
+            {
+                BuildJavaFunctionApps();
+            }
+
         }
 
         /// <summary>
@@ -39,6 +47,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             };
 
             this.AzuriteHost.Start();
+        }
+
+        /// <summary>
+        /// Build the samples-java and test-java projects.
+        /// </summary>
+        private static void BuildJavaFunctionApps()
+        {
+            string samplesJavaPath = Path.Combine(TestUtils.GetPathToBin(), "SqlExtensionSamples", "Java");
+            BuildJavaFunctionApp(samplesJavaPath);
+
+            string testJavaPath = Path.Combine(TestUtils.GetPathToBin(), "..", "..", "..", "Integration", "test-java");
+            BuildJavaFunctionApp(testJavaPath);
+        }
+
+        /// <summary>
+        /// Run `mvn clean package` to build the Java function app.
+        /// </summary>
+        private static void BuildJavaFunctionApp(string workingDirectory)
+        {
+            var maven = new Process()
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "mvn",
+                    Arguments = "clean package",
+                    WorkingDirectory = workingDirectory,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    UseShellExecute = true
+                }
+            };
+
+            maven.Start();
+
+            const int buildJavaAppTimeoutInMs = 60000;
+            maven.WaitForExit(buildJavaAppTimeoutInMs);
+
+            bool isCompleted = maven.ExitCode == 0;
+            Assert.True(isCompleted, "Java function app did not build successfully");
         }
 
         public void Dispose()
