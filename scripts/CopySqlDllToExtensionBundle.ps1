@@ -1,5 +1,11 @@
 # Run this script from the root of the repository to copy the latest
-# SQL extension dll to the extension bundle.
+# SQL extension dll to the extension bundle. This is required to test
+# the latest extension changes when running samples/test.
+#
+# To revert this fun `func GetExtensionBundlePath` manually from the
+# `samples-js` folder and delete the folder it returns. The next time a
+# function referencing the bundle is launched the host will download 
+# a clean copy of the bundle to use.
 
 # Run `func GetExtensionBundlePath` from samples-js to get the correct path to the extension bundle. 
 # This assumes that the same bundle will be used for all non-.NET sample functions which should 
