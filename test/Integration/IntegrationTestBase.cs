@@ -35,12 +35,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         protected List<Process> FunctionHostList { get; } = new List<Process>();
 
         /// <summary>
-        /// Host process for Azurite local storage emulator. This is required for non-HTTP trigger functions:
-        /// https://docs.microsoft.com/azure/azure-functions/functions-develop-local
-        /// </summary>
-        private Process AzuriteHost;
-
-        /// <summary>
         /// Connection to the database for the current test.
         /// </summary>
         private DbConnection Connection;
@@ -75,7 +69,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             this.TestOutput = output;
             this.SetupDatabase();
-            this.StartAzurite();
         }
 
         /// <summary>
@@ -165,24 +158,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
-        /// This starts the Azurite storage emulator.
-        /// </summary>
-        protected void StartAzurite()
-        {
-            this.AzuriteHost = new Process()
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "azurite",
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    UseShellExecute = true
-                }
-            };
-
-            this.AzuriteHost.Start();
-        }
-
-        /// <summary>
         /// This starts the Functions runtime with the specified function(s).
         /// </summary>
         /// <remarks>
@@ -212,10 +187,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 RedirectStandardError = true,
                 UseShellExecute = false
             };
-            if (environmentVariables != null)
-            {
-                environmentVariables.ToList().ForEach(ev => startInfo.EnvironmentVariables[ev.Key] = ev.Value);
-            }
+            environmentVariables?.ToList().ForEach(ev => startInfo.EnvironmentVariables[ev.Key] = ev.Value);
 
             // Always disable telemetry during test runs
             startInfo.EnvironmentVariables[TelemetryOptoutEnvVar] = "1";
@@ -231,8 +203,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // Register all handlers before starting the functions host process.
             var taskCompletionSource = new TaskCompletionSource<bool>();
+            void SignalStartupHandler(object sender, DataReceivedEventArgs e)
+            {
+                // This string is printed after the function host is started up - use this to ensure that we wait long enough
+                // since sometimes the host can take a little while to fully start up
+                if (e.Data?.Contains(" Host initialized ") == true)
+                {
+                    taskCompletionSource.SetResult(true);
+                }
+            };
             functionHost.OutputDataReceived += SignalStartupHandler;
-            this.FunctionHost.OutputDataReceived += customOutputHandler;
+            functionHost.OutputDataReceived += customOutputHandler;
 
             functionHost.Start();
             functionHost.OutputDataReceived += this.GetTestOutputHandler(functionHost.Id);
@@ -252,17 +233,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Task.Delay(TimeSpan.FromSeconds(BufferTimeInSeconds)).Wait();
 
             this.LogOutput("Azure Function host started!");
-            this.FunctionHost.OutputDataReceived -= SignalStartupHandler;
+            functionHost.OutputDataReceived -= SignalStartupHandler;
 
-            void SignalStartupHandler(object sender, DataReceivedEventArgs e)
-            {
-                // This string is printed after the function host is started up - use this to ensure that we wait long enough
-                // since sometimes the host can take a little while to fully start up
-                if (e.Data?.Contains(" Host initialized ") == true)
-                {
-                    taskCompletionSource.SetResult(true);
-                }
-            };
             taskCompletionSource.Task.Wait(60000);
         }
 
@@ -327,8 +299,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         private DataReceivedEventHandler GetTestOutputHandler(int processId)
         {
-            return TestOutputHandler;
-
             void TestOutputHandler(object sender, DataReceivedEventArgs e)
             {
                 if (!string.IsNullOrEmpty(e.Data))
@@ -336,6 +306,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     this.LogOutput($"[{processId}] {e.Data}");
                 }
             }
+            return TestOutputHandler;
         }
 
         protected async Task<HttpResponseMessage> SendGetRequest(string requestUri, bool verifySuccess = true)
@@ -418,16 +389,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             try
             {
-                this.AzuriteHost?.Kill();
-                this.AzuriteHost?.Dispose();
-            }
-            catch (Exception e3)
-            {
-                this.LogOutput($"Failed to stop Azurite, Error: {e3.Message}");
-            }
-
-            try
-            {
                 // Drop the test database
                 using var masterConnection = new SqlConnection(this.MasterConnectionString);
                 masterConnection.Open();
@@ -450,8 +411,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 try
                 {
-                    functionHost.Kill();
+                    functionHost.CancelOutputRead();
+                    functionHost.CancelErrorRead();
+                    functionHost.Kill(true);
                     functionHost.Dispose();
+                    functionHost.WaitForExit();
                 }
                 catch (Exception ex)
                 {
