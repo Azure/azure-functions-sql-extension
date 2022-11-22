@@ -12,10 +12,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
     [MemoryDiagnoser]
     public class SqlTriggerPerformance_Overrides : SqlTriggerBindingPerformanceTestBase
     {
-        [Params(1, 10, 100, 500)]
+        [Params(1, 500)]
         public int PollingIntervalMs;
 
-        [Params(500, 1000, 2000)]
+        [Params(500, 2000)]
         public int BatchSize;
 
         [GlobalSetup]
