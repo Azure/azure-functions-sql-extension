@@ -578,7 +578,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 if (e.Data != null && (index = e.Data.IndexOf(messagePrefix, StringComparison.Ordinal)) >= 0)
                 {
                     string json = e.Data[(index + messagePrefix.Length)..];
-                    IReadOnlyList<SqlChange<Product>> changes = JsonConvert.DeserializeObject<IReadOnlyList<SqlChange<Product>>>(json);
+                    IReadOnlyList<SqlChange<Product>> changes;
+                    try
+                    {
+                        changes = JsonConvert.DeserializeObject<IReadOnlyList<SqlChange<Product>>>(json);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidOperationException($"Exception deserializing JSON content. Error={ex.Message} Json=\"{json}\"", ex);
+                    }
                     foreach (SqlChange<Product> change in changes)
                     {
                         Assert.Equal(operation, change.Operation); // Expected change operation
