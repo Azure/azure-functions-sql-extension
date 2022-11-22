@@ -166,16 +166,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         protected void StartFunctionHost(string functionName, SupportedLanguages language, bool useTestFolder = false, DataReceivedEventHandler customOutputHandler = null, IDictionary<string, string> environmentVariables = null)
         {
             string workingDirectory = language == SupportedLanguages.CSharp && useTestFolder ? TestUtils.GetPathToBin() : Path.Combine(TestUtils.GetPathToBin(), "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), language));
-            if (!Directory.Exists(workingDirectory))
-            {
-                throw new FileNotFoundException("Working directory not found at " + workingDirectory);
-            }
-
             if (language == SupportedLanguages.Java)
             {
                 workingDirectory = useTestFolder ? Path.Combine(TestUtils.GetPathToBin(), "..", "..", "..", "Integration", "test-java") : workingDirectory;
                 string projectName = useTestFolder ? "test-java-1666041146813" : "samples-java-1665766173929";
                 workingDirectory = Path.Combine(workingDirectory, "target", "azure-functions", projectName);
+            }
+
+            if (!Directory.Exists(workingDirectory))
+            {
+                throw new FileNotFoundException("Working directory not found at " + workingDirectory);
             }
 
             // Use a different port for each new host process, starting with the default port number: 7071.

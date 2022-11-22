@@ -3,6 +3,8 @@ steps:
     displayName: Build library
     inputs:
       mavenPomFile: java-library/pom.xml
+      # batch-mode and Slf4jMavenTransferListener definition are used to make the build logging verbose
+      # update-snapshot forces a check for updated library dependencies
       options: --batch-mode --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
       checkStyleRunAnalysis: true
 

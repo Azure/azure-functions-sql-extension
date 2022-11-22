@@ -252,12 +252,16 @@ steps:
   displayName: Build Java Samples
   inputs:
     mavenPomFile: samples/samples-java/pom.xml
+    # batch-mode and Slf4jMavenTransferListener definition are used to make the build logging verbose
+    # update-snapshot forces a check for updated library dependencies
     options: --batch-mode --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
 
 - task: Maven@3
   displayName: Build Java Tests
   inputs:
     mavenPomFile: test/Integration/test-java/pom.xml
+    # batch-mode and Slf4jMavenTransferListener definition are used to make the build logging verbose
+    # update-snapshot forces a check for updated library dependencies
     options: --batch-mode --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
 
 - task: DotNetCoreCLI@2
