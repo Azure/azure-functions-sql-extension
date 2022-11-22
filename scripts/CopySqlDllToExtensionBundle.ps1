@@ -2,7 +2,7 @@
 # SQL extension dll to the extension bundle. This is required to test
 # the latest extension changes when running samples/test.
 #
-# To revert this fun `func GetExtensionBundlePath` manually from the
+# To revert this run `func GetExtensionBundlePath` manually from the
 # `samples-js` folder and delete the folder it returns. The next time a
 # function referencing the bundle is launched the host will download 
 # a clean copy of the bundle to use.
