@@ -2,18 +2,18 @@
   <PropertyGroup>
     <TargetFramework>net6</TargetFramework>
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Functions.Worker" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Timer" />
-    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Storage.Queues" />
     <PackageReference Include="Microsoft.AspNetCore.Http" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../../Worker.Extension.Sql/src/Microsoft.Azure.Functions.Worker.Extension.Sql.csproj" />
+    <ProjectReference Include="..\Worker.Extension.Sql\src\Microsoft.Azure.Functions.Worker.Extension.Sql.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">
@@ -25,6 +25,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Properties\" />
+    <Using Include="System.Threading.ExecutionContext" Alias="ExecutionContext"/>
   </ItemGroup>
 </Project>
