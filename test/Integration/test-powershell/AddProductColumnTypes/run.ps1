@@ -1,7 +1,7 @@
 using namespace System.Net
 
 # Trigger binding data passed in via param block
-param($Request)
+param($Request, $TriggerMetadata)
 
 # Write to the Azure Functions log stream.
 Write-Host "PowerShell function with SQL Output Binding processed a request."

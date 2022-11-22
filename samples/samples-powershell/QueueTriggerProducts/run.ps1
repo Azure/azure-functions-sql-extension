@@ -1,7 +1,7 @@
 using namespace System.Net
 
 # Trigger binding data passed in via param block
-param($queueMessage)
+param($queueMessage, $TriggerMetadata)
 $totalUpserts = 100;
 # Write to the Azure Functions log stream.
 Write-Host "[QueueTrigger]: $Get-Date starting execution $queueMessage. Rows to generate=$totalUpserts."

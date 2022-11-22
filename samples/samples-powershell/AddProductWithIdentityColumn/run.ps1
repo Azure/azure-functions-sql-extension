@@ -8,8 +8,8 @@ Write-Host "PowerShell function with SQL Output Binding processed a request."
 
 # Update req_query with the query of the request
 $req_query = @{
-    name=$TriggerMetadata["name"];
-    cost=$TriggerMetadata["cost"];
+    name=$Request.QUERY.name;
+    cost=$Request.QUERY.cost;
 };
 
 # Assign the value we want to pass to the SQL Output binding. 

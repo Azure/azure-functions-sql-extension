@@ -13,7 +13,7 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
-    [Collection("IntegrationTests"), Trait("Category", "Output")]
+    [Collection("IntegrationTests")]
     public class SqlOutputBindingIntegrationTests : IntegrationTestBase
     {
         public SqlOutputBindingIntegrationTests(ITestOutputHelper output) : base(output)
@@ -215,10 +215,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Tests that for tables with an identity column we are able to insert items.
         /// </summary>
-        [Theory, Trait("Category", "quick")]
+        [Theory]
         [SqlInlineData()]
         // Currently PowerShell gives an error due to the deserialization of the object
         // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
+        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
         public void AddProductWithIdentity(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithIdentityColumn), lang);
@@ -341,6 +342,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         // Currently PowerShell gives an error due to the deserialization of the object
         // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
+        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
         public void AddProductWithIdentity_MissingPrimaryColumn(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), lang);
