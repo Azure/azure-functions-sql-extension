@@ -33,6 +33,11 @@
     <Copy SourceFiles="@(_JsCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\JavaScript\%(RecursiveDir)" />
     <Message Text="Copied JS Samples output to $(OutDir)\SqlExtensionSamples\JavaScript" Importance="high" />
     <ItemGroup>
+      <_JavaCopyItems Include="..\samples\samples-java\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_JavaCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\Java\%(RecursiveDir)" />
+    <Message Text="Copied Java Samples output to $(OutDir)\SqlExtensionSamples\Java" Importance="high" />
+    <ItemGroup>
       <_PSCopyItems Include="..\samples\samples-powershell\**\*.*" />
       <_PSCopyItems Include="Integration\test-powershell\**\*.*" />
     </ItemGroup>
