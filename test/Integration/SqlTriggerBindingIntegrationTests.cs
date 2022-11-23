@@ -578,6 +578,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 if (e.Data != null && (index = e.Data.IndexOf(messagePrefix, StringComparison.Ordinal)) >= 0)
                 {
                     string json = e.Data[(index + messagePrefix.Length)..];
+                    // Sometimes we'll get messages that have extra logging content on the same line - so to prevent that from breaking
+                    // the deserialization we look for the end of the changes array and only use that.
+                    // (This is fine since we control what content is in the array so know that none of the items have a ] in them)
+                    json = json[..(json.IndexOf(']') + 1)];
                     IReadOnlyList<SqlChange<Product>> changes;
                     try
                     {
