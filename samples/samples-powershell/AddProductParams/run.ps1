@@ -7,7 +7,8 @@ param($Request, $TriggerMetadata)
 Write-Host "PowerShell function with SQL Output Binding processed a request."
 
 # Update req_query with the query of the request
-# Currently use a workaround through the TriggerMetadata for PowerShell Azure Functions
+# Currently the Powershell worker does not allow empty/null values to be passed through the
+# query parameters. We use TriggerMetadata here as a workaround for that issue. 
 # Issue link: https://github.com/Azure/azure-functions-powershell-worker/issues/895
 $req_query = @{ 
     "productId"= $TriggerMetadata["productId"];
