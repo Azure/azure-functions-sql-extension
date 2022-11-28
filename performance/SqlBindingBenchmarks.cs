@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
         {
             bool runAll = args.Length == 0;
 
-            using var testFixture = new BaseTestFixture(false);
+            using var testFixture = new BaseTestFixture();
 
             // **IMPORTANT** If changing these make sure to update template-steps-performance.yml as well
             if (runAll || args.Contains("input"))

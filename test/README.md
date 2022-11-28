@@ -35,6 +35,9 @@ Our integration tests are based on functions from the samples project. To run in
 ### Extension Bundle
    If you've made any changes to the CSharp extension, you will need to run the CopySqlDllToExtensionBundle.Ps1 to update your local extension bundle so that the tests can run against your latest changes.
 
+### Running Java Tests
+   Run `mvn clean package` from the samples/samples-java and test/Integration/test-java folders to build the Java Azure Functions before running the tests.
+
  ## Adding New Integration Tests
    When adding a new integration test for a function follow these steps:
 
