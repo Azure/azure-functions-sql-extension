@@ -578,7 +578,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 if (e.Data != null && (index = e.Data.IndexOf(messagePrefix, StringComparison.Ordinal)) >= 0)
                 {
                     string json = e.Data[(index + messagePrefix.Length)..];
-                    IReadOnlyList<SqlChange<Product>> changes = JsonConvert.DeserializeObject<IReadOnlyList<SqlChange<Product>>>(json);
+                    // Sometimes we'll get messages that have extra logging content on the same line - so to prevent that from breaking
+                    // the deserialization we look for the end of the changes array and only use that.
+                    // (This is fine since we control what content is in the array so know that none of the items have a ] in them)
+                    json = json[..(json.IndexOf(']') + 1)];
+                    IReadOnlyList<SqlChange<Product>> changes;
+                    try
+                    {
+                        changes = JsonConvert.DeserializeObject<IReadOnlyList<SqlChange<Product>>>(json);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidOperationException($"Exception deserializing JSON content. Error={ex.Message} Json=\"{json}\"", ex);
+                    }
                     foreach (SqlChange<Product> change in changes)
                     {
                         Assert.Equal(operation, change.Operation); // Expected change operation
