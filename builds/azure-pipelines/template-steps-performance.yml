@@ -54,6 +54,10 @@ steps:
   displayName: Start Server in Docker Container
   condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
+- powershell: $(System.DefaultWorkingDirectory)/builds/scripts/UpdateLogLevel.ps1
+  displayName: Set logging level
+  condition: and(succeeded(), ne(variables['AFSQLEXT_TEST_LOGLEVEL'], ''))
+
 # Run each benchmark test separately so that failures in one don't block all the others from running
 - ${{ each test in parameters.tests }}:
   - task: DotNetCoreCLI@2
