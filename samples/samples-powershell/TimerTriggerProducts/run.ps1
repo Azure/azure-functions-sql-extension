@@ -1,6 +1,6 @@
 using namespace System.Net
 
-param($myTimer)
+param($myTimer, $TriggerMetadata)
 $executionNumber = 0;
 $totalUpserts = 1000;
 
