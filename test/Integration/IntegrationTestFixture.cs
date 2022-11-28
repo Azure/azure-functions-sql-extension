@@ -12,15 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     /// <summary>
     /// Test fixture containing one-time setup code for Integration tests. See https://xunit.net/docs/shared-context for more details
     /// </summary>
-    public class IntegrationTestFixture : BaseTestFixture
-    {
-        public IntegrationTestFixture() : base(true) { }
-    }
-
-    /// <summary>
-    /// Base test fixture - xUnit doesn't allow parameterized constructors so the benchmark tests will use this directly.
-    /// </summary>
-    public class BaseTestFixture : IDisposable
+    public class IntegrationTestFixture : IDisposable
     {
         /// <summary>
         /// Host process for Azurite local storage emulator. This is required for non-HTTP trigger functions:
@@ -28,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         private Process AzuriteHost;
 
-        public BaseTestFixture()
+        public IntegrationTestFixture()
         {
             this.StartAzurite();
         }
