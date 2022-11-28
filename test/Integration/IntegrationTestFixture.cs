@@ -3,9 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.IO;
-using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
-using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
