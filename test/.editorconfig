@@ -8,3 +8,4 @@ dotnet_diagnostic.CA1305.severity = silent # Specify IFormatProvider - this isn'
 dotnet_diagnostic.CA1707.severity = silent # Identifiers should not contain underscores - this helps make test names more readable
 dotnet_diagnostic.CA2201.severity = silent # Do not raise reserved exception types - tests can throw whatever they want
 dotnet_diagnostic.CS0659.severity = silent # overrides Object.Equals but does not override Object.GetHashCode() - not necessary for our tests
+dotnet_diagnostic.CA1711.severity = silent # Identifiers should not have incorrect suffix - Fine for tests

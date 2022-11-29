@@ -32,6 +32,12 @@ Our integration tests are based on functions from the samples project. To run in
      ### Azure SQL Database
      To use an Azure SQL Database, set the `TEST_CONNECTION_STRING` environment variable to your Azure SQL Database connection string.
 
+### Extension Bundle
+   If you've made any changes to the CSharp extension, you will need to run the CopySqlDllToExtensionBundle.Ps1 to update your local extension bundle so that the tests can run against your latest changes.
+
+### Running Java Tests
+   Run the BuildJavaProjectsAndRunIntegrationTests.ps1 script in the scripts folder from the root of the repo to build the java projects and run the integration tests.
+
  ## Adding New Integration Tests
    When adding a new integration test for a function follow these steps:
 

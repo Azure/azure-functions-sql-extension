@@ -1,7 +1,7 @@
 using namespace System.Net
 
 # Trigger binding data passed in via param block
-param($Request)
+param($Request, $TriggerMetadata)
 $totalUpserts = 1000;
 
 $products = @()

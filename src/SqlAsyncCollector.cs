@@ -11,7 +11,6 @@ using System.Runtime.Caching;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -22,6 +21,8 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
 using System.Diagnostics;
 using Newtonsoft.Json.Linq;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlBindingConstants;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlBindingUtilities;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -91,6 +92,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
             this._logger = logger;
             TelemetryInstance.TrackCreate(CreateType.SqlAsyncCollector);
+            using (SqlConnection connection = BuildConnection(attribute.ConnectionStringSetting, configuration))
+            {
+                this._logger.LogDebugWithThreadId("BEGIN OpenSqlAsyncCollectorVerifyDatabaseSupportedConnection");
+                connection.Open();
+                this._logger.LogDebugWithThreadId("END OpenSqlAsyncCollectorVerifyDatabaseSupportedConnection");
+                VerifyDatabaseSupported(connection, logger, CancellationToken.None).Wait();
+            }
         }
 
         /// <summary>
@@ -162,7 +170,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             this._logger.LogDebugWithThreadId("BEGIN UpsertRowsAsync");
             var upsertRowsAsyncSw = Stopwatch.StartNew();
-            using (SqlConnection connection = SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, configuration))
+            using (SqlConnection connection = BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
                 this._logger.LogDebugWithThreadId("BEGIN OpenUpsertRowsAsyncConnection");
                 await connection.OpenAsync();
