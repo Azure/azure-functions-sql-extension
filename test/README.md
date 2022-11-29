@@ -109,3 +109,9 @@ Enabling debug logging can greatly increase the information available which can 
 ```
 
 WARNING : Doing this will add a not-insignificant overhead to the test run duration from writing all the additional content to the log files, which may cause timeouts to occur in tests. If this happens you can temporarily increase those timeouts while debug logging is enabled to avoid having unexpected failures.
+
+## General Troubleshooting
+
+### Getting error "OmniSharp.Extensions.JsonRpc.RpcErrorException" when debugging Powershell functions
+
+See https://github.com/microsoft/vscode-azurefunctions/issues/3223 for details and suggestions, but generally updating to Powershell 7.2+ should fix this. Make sure you're setting the default terminal to Powershell 7 and then reloading VS Code before trying to launch and debug the functions.
