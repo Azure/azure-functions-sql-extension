@@ -5,7 +5,8 @@
 			"type": "func",
 			"command": "host start",
 			"problemMatcher": "$func-powershell-watch",
-			"isBackground": true
+			"isBackground": true,
+			"label": "func: host start"
 		}
 	]
 }
