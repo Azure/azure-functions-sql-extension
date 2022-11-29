@@ -110,6 +110,8 @@ Enabling debug logging can greatly increase the information available which can 
 
 WARNING : Doing this will add a not-insignificant overhead to the test run duration from writing all the additional content to the log files, which may cause timeouts to occur in tests. If this happens you can temporarily increase those timeouts while debug logging is enabled to avoid having unexpected failures.
 
+To enable debug logging in the pipelines set the `AFSQLEXT_TEST_LOGLEVEL` pipeline variable to the desired value (such as `Debug`) and it will use that value when running tests instead of the default.
+
 ## General Troubleshooting
 
 ### Getting error "OmniSharp.Extensions.JsonRpc.RpcErrorException" when debugging Powershell functions
