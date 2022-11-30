@@ -1,17 +1,18 @@
 {
-	"version": "2.0.0",
-	"tasks": [
+    "version": "2.0.0",
+    "tasks": [
         {
             "type": "func",
             "command": "host start",
             "problemMatcher": "$func-node-watch",
             "isBackground": true,
-            "dependsOn": "npm install (functions)"
+            "dependsOn": "npm install (functions)",
+            "label": "func: host start"
         },
         {
             "type": "shell",
             "label": "npm install (functions)",
-            "command": "npm install"
+            "command": "npm install",
         },
         {
             "type": "shell",
