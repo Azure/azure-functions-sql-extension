@@ -9,7 +9,8 @@
 			"options": {
 				"cwd": "${workspaceFolder}/target/azure-functions/test-java-1666041146813"
 			},
-			"dependsOn": "package (functions)"
+			"dependsOn": "package (functions)",
+			"label": "func: host start"
 		},
 		{
 			"label": "package (functions)",

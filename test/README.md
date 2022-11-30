@@ -94,9 +94,48 @@ Our integration tests are based on functions from the samples project. To run in
         }
    ```
 
-## Troubleshooting Tests
+## Troubleshooting Test Failures
 
 This section lists some things to try to help troubleshoot test failures
+
+### Debug Integration tests
+
+You can debug tests locally by following these steps.
+
+The first part is to identify what you want to debug so you know which process to attach to. There are between 2 and 3 different processes to attach to :
+
+#### Test Runner
+
+To debug the test code itself (anything under the `test` folder) you will need to attach to the VS Test Runner that's running the tests.
+
+Visual Studio : Right click on the test in the test explorer and click "Debug"
+Visual Studio Code : Install a test explorer extension such as [.NET Core Test Explorer](https://marketplace.visualstudio.com/items?itemName=formulahendry.dotnet-test-explorer), go to the Tests panel, find the `.NET Test Explorer` view, right click the test you want to run and click "Debug Test"
+
+#### Function Host
+
+To debug either any core extension code (anything under the `src` folder) OR function code for .NET In-Process tests you will need to attach to the Function Host that's running the functions.
+
+To do this and be able to set breakpoints before the test runs you will need to follow these steps :
+
+1. Go to [IntegrationTestBase.cs](./Integration/IntegrationTestBase.cs) and in `StartFunctionHost` add a `return;` on the first line - this is to skip having the test start up the function host itself (since you'll be doing it manually)
+2. `cd` to the directory containing the functions to run - this will be in the `test/bin/Debug/net6/SqlExtensionSamples/<LANG>` folder (e.g. `test/bin/Debug/net6/SqlExtensionSamples/samples-csharp`)
+3. Run `func host start --functions <FUNCTION_NAME>` - replacing `<FUNCTION_NAME>` with the name of the function you want to debug (e.g. `func host start --functions AddProduct`)
+4. Attach to the func.exe process
+   * Visual Studio : Use `Attach to Process...`.
+   * VS Code you can use `Attach to Function Host` debug target (at the root level of the project)
+
+    **NOTE** If you don't see your breakpoints appear make sure you're using the correct version of the extension DLL. For non-.NET languages this will mean copying over the latest locally built version to the extension bundle as detailed [here](#extension-bundle). If you don't do this the host will be using a different version of the DLL that you won't have symbols for so breakpoints won't be able to load.
+5. Run your test
+
+#### Function Worker (Non .NET Isolated Functions only)
+
+For all functions that run in a worker process (which is everything other than .NET In-Process functions) if you need to debug the function code itself then you will need to use the native debugger to attach to the process. The easiest way to do that is to follow these steps:
+
+1. Open up a new instance of VS Code into the samples/test folder containing the function you want to debug (e.g. `samples/samples-powershell` or `test/Integration/test-powershell`)
+2. Modify the `.vscode/tasks.json` file for that folder and add `--functions <FUNCTION_NAME>` to the end of the command property for `func: host start`. (e.g. `"command": "host start --functions AddProduct"`)
+3. Update the `local.settings.json` in that folder and fill in the value for `SqlConnectionString` (since the test is no longer controlling the startup of the function host)
+4. Click F5 to run the `Attach to <LANG> Functions` target, this will launch the specified function and attach the debugger to it
+5. Run your test
 
 ### Enable debug logging on the Function
 
