@@ -43,11 +43,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         /// <param name="commandText">The scalar T-SQL command.</param>
         /// <param name="catchException">Optional exception handling.  Pass back 'true' to handle the
         /// exception, 'false' to throw. If Null is passed in then all exceptions are thrown.</param>
+        /// <param name="message">Optional message to write when this query is executed. Defaults to writing the query commandText</param>
         /// <returns>The number of rows affected</returns>
         public static int ExecuteNonQuery(
             IDbConnection connection,
             string commandText,
-            Predicate<Exception> catchException = null)
+            Predicate<Exception> catchException = null,
+            string message = null)
         {
             if (connection == null)
             {
@@ -57,6 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
             {
                 throw new ArgumentNullException(nameof(commandText));
             }
+            message ??= $"Executing non-query {commandText}";
 
             using (IDbCommand cmd = connection.CreateCommand())
             {
@@ -65,8 +68,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 
                     cmd.CommandText = commandText;
                     cmd.CommandType = CommandType.Text;
-                    cmd.CommandTimeout = 60000; // Increase from default 30s to prevent timeouts while connecting to Azure SQL DB
-                    Console.WriteLine($"Executing non-query {commandText}");
+                    cmd.CommandTimeout = 60; // Increase from default 30s to prevent timeouts while connecting to Azure SQL DB
+                    Console.WriteLine(message);
                     return cmd.ExecuteNonQuery();
                 }
                 catch (Exception ex)

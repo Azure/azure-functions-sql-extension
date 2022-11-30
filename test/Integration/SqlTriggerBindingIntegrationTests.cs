@@ -530,6 +530,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         protected void InsertProducts(int firstId, int lastId)
         {
+            string message = $"Inserting products with ID from {firstId}-{lastId}";
             // Only 1000 items are allowed to be inserted into a single INSERT statement so if we have more than 1000 batch them up into separate statements
             var builder = new StringBuilder();
             do
@@ -538,7 +539,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 builder.Append($"INSERT INTO [dbo].[Products] VALUES {string.Join(",\n", Enumerable.Range(firstId, batchCount).Select(id => $"({id}, 'Product {id}', {id * 100})"))}; ");
                 firstId += batchCount;
             } while (firstId < lastId);
-            this.ExecuteNonQuery(builder.ToString());
+            this.ExecuteNonQuery(builder.ToString(), message);
         }
 
         protected void UpdateProducts(int firstId, int lastId)
