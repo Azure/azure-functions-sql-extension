@@ -365,20 +365,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                         TelemetryInstance.TrackEvent(TelemetryEventName.GetChangesEnd, this._telemetryProps, measures);
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
-                        this._logger.LogError($"Failed to query list of changes for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
-                        TelemetryInstance.TrackException(TelemetryErrorName.GetChanges, ex, this._telemetryProps);
-
                         try
                         {
                             transaction.Rollback();
                         }
-                        catch (Exception ex2)
+                        catch (Exception ex)
                         {
-                            this._logger.LogError($"Failed to rollback transaction due to exception: {ex2.GetType()}. Exception message: {ex2.Message}");
-                            TelemetryInstance.TrackException(TelemetryErrorName.GetChangesRollback, ex2, this._telemetryProps);
+                            this._logger.LogError($"Failed to rollback transaction due to exception: {ex.GetType()}. Exception message: {ex.Message}");
+                            TelemetryInstance.TrackException(TelemetryErrorName.GetChangesRollback, ex, this._telemetryProps);
                         }
+                        throw;
                     }
                 }
             }
