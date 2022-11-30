@@ -423,7 +423,6 @@ This extension collect usage data in order to help us improve your experience. T
         GetScaleStatus,
         GetUnprocessedChangeCount,
         GetUnprocessedChangeCountRollback,
-        InvalidConfigurationValue,
         MissingPrimaryKeys,
         NoPrimaryKeys,
         ProcessChanges,
@@ -435,6 +434,7 @@ This extension collect usage data in order to help us improve your experience. T
         RenewLeasesLoop,
         RenewLeasesRollback,
         StartListener,
+        TriggerFunction,
         Upsert,
         UpsertRollback,
     }

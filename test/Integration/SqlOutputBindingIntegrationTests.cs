@@ -133,7 +133,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.PowerShell, SupportedLanguages.OutOfProc, SupportedLanguages.Java)] // Collectors are only available in C#
+        [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.PowerShell, SupportedLanguages.Java, SupportedLanguages.OutOfProc)] // Collectors are only available in C#
         public void AddProductsCollectorTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsCollector), lang);
@@ -439,10 +439,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.OutOfProc)]
         public async Task UnsupportedDatabaseThrows(SupportedLanguages lang)
         {
             // Change database compat level to unsupported version
-            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET COMPATIBILITY_LEVEL = 120");
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET COMPATIBILITY_LEVEL = 120;");
 
             var foundExpectedMessageSource = new TaskCompletionSource<bool>();
             this.StartFunctionHost(nameof(AddProductParams), lang, false, (object sender, DataReceivedEventArgs e) =>
