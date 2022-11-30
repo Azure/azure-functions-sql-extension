@@ -137,7 +137,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Theory]
         [SqlInlineData("en-US")]
         [SqlInlineData("it-IT")]
-        [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.PowerShell, SupportedLanguages.Java)] // IAsyncEnumerable is only available in C#
+        [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.PowerShell, SupportedLanguages.Java, SupportedLanguages.OutOfProc)] // IAsyncEnumerable is only available in C#
         public async void GetProductsColumnTypesSerializationAsyncEnumerableTest(string culture, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsColumnTypesSerializationAsyncEnumerable), lang, true);
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         // Java worker returns timestamps in local time zone
         // https://github.com/Azure/azure-functions-sql-extension/issues/515
-        [UnsupportedLanguages(SupportedLanguages.Java)]
+        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc)]
         public async void GetProductsColumnTypesSerializationTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsColumnTypesSerialization), lang, true);
