@@ -19,6 +19,12 @@
             "type": "coreclr",
             "request": "attach",
             "processName": "func.exe"
+        },
+        {
+            "name": "Attach to Function Host Mac",
+            "type": "coreclr",
+            "request": "attach",
+            "processName": "func"
         }
     ]
 }

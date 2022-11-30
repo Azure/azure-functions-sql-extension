@@ -224,11 +224,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Tests that for tables with an identity column we are able to insert items.
         /// </summary>
-        [Theory]
+        [Theory, Trait("Category", "ID")]
         [SqlInlineData()]
         // Currently PowerShell gives an error due to the deserialization of the object
         // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
-        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
+        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript, SupportedLanguages.Java)]
         public void AddProductWithIdentity(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithIdentityColumn), lang);
