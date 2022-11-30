@@ -44,6 +44,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
             {
                 BenchmarkRunner.Run<SqlTriggerBindingPerformance_Parallelization>();
             }
+            if (runAll || args.Contains("trigger_changerate"))
+            {
+                BenchmarkRunner.Run<SqlTriggerBindingPerformance_ChangeRate>();
+            }
         }
     }
 }
