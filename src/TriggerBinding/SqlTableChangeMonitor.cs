@@ -446,7 +446,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         // In the future might make sense to retry executing the function, but for now we just let
                         // another worker try.
                         this._logger.LogError($"Failed to trigger user function for table: '{this._userTable.FullName} due to exception: {result.Exception.GetType()}. Exception message: {result.Exception.Message}");
-                        TelemetryInstance.TrackException(TelemetryErrorName.ProcessChanges, result.Exception, this._telemetryProps, measures);
+                        TelemetryInstance.TrackException(TelemetryErrorName.TriggerFunction, result.Exception, this._telemetryProps, measures);
 
                         await this.ClearRowsAsync();
                     }
