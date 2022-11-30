@@ -31,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             ");
         }
 
-        protected void SetChangeTrackingForTable(string tableName, bool enable = true)
+        public void SetChangeTrackingForTable(string tableName, bool enable = true)
         {
             this.ExecuteNonQuery($@"
                 ALTER TABLE [dbo].[{tableName}]
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             ");
         }
 
-        protected void InsertProducts(int firstId, int lastId)
+        public void InsertProducts(int firstId, int lastId)
         {
             // Only 1000 items are allowed to be inserted into a single INSERT statement so if we have more than 1000 batch them up into separate statements
             var builder = new StringBuilder();
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 "WHERE ProductId IN (" + string.Join(", ", Enumerable.Range(firstId, count)) + ");");
         }
 
-        protected async Task WaitForProductChanges(
+        public async Task WaitForProductChanges(
             int firstId,
             int lastId,
             SqlChangeOperation operation,
