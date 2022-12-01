@@ -18,14 +18,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingS
         public static List<Product> Run(
             [TimerTrigger("*/5 * * * * *")] TimerInfo req, FunctionContext context)
         {
-            var products = new List<Product>();
             int totalUpserts = 1000;
 
             List<Product> newProducts = ProductUtilities.GetNewProducts(totalUpserts);
-            foreach (Product product in newProducts)
-            {
-                products.Add(product);
-            }
 
             return newProducts;
         }

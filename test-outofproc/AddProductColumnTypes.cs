@@ -26,7 +26,7 @@ namespace DotnetIsolatedTests
             var product = new ProductColumnTypes()
             {
                 ProductID = int.Parse(queryStrings["productId"], null),
-                Datetime = DateTime.UtcNow,
+                Datetime = DateTime.UtcNow.Date,
                 Datetime2 = DateTime.UtcNow
             };
 
