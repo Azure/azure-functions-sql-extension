@@ -1,14 +1,44 @@
- # Azure SQL bindings for Azure Functions - .NET (Isolated Process)
- 
- ## Binding Model
+# Azure SQL bindings for Azure Functions - .NET (Isolated Process)
+
+## Table of Contents
+- [Azure SQL bindings for Azure Functions - .NET (Isolated Process)](#azure-sql-bindings-for-azure-functions---net-isolated-process)
+  - [Table of Contents](#table-of-contents)
+  - [Binding Model](#binding-model)
+  - [Key differences with .NET (Isolated Process)](#key-differences-with-net-isolated-process)
+  - [Input Binding](#input-binding)
+    - [SqlInputAttribute for Input Bindings](#sqlinputattribute-for-input-bindings)
+    - [Setup for Input Bindings](#setup-for-input-bindings)
+    - [Samples for Input Bindings](#samples-for-input-bindings)
+      - [Query String](#query-string)
+      - [Empty Parameter Value](#empty-parameter-value)
+      - [Null Parameter Value](#null-parameter-value)
+      - [Stored Procedure](#stored-procedure)
+      - [IAsyncEnumerable](#iasyncenumerable)
+  - [Output Binding](#output-binding)
+    - [SqlOutputAttribute for Output Bindings](#sqloutputattribute-for-output-bindings)
+    - [Setup for Output Bindings](#setup-for-output-bindings)
+    - [Samples for Output Bindings](#samples-for-output-bindings)
+      - [Array](#array)
+      - [Single Row](#single-row)
+  - [Trigger Binding](#trigger-binding)
+
+## Binding Model
 
 .NET Isolated introduces a new binding model, slightly different from the binding model exposed in .NET Core 3 Azure Functions. More information can be [found here](https://github.com/Azure/azure-functions-dotnet-worker/wiki/.NET-Worker-bindings). Please review our samples for usage information.
 
- ## Input Binding
+## Key differences with .NET (Isolated Process)
+Please refer to the functions documentation [here](https://learn.microsoft.com/azure/azure-functions/dotnet-isolated-in-process-differences)
+- Because .NET isolated projects run in a separate worker process, bindings can't take advantage of rich binding classes, such as ICollector<T>, IAsyncCollector<T>, and CloudBlockBlob.
+- There's also no direct support for types inherited from underlying service SDKs, such as SqlCommand. Instead, bindings rely on strings, arrays, and serializable types, such as plain old class objects (POCOs).
+- For HTTP triggers, you must use HttpRequestData and HttpResponseData to access the request and response data. This is because you don't have access to the original HTTP request and response objects when running out-of-process.
+
+## Input Binding
+
+See [Input Binding Overview](./BindingsOverview.md#input-binding) for general information about the Azure SQL Input binding.
 
 ### SqlInputAttribute for Input Bindings
 
-An input binding takes four [arguments](https://github.com/Azure/azure-functions-sql-extension/blob/main/Worker.Extension.Sql/src/SqlInputAttribute.cs):
+The [SqlInputAttribute](https://github.com/Azure/azure-functions-sql-extension/blob/main/Worker.Extension.Sql/src/SqlInputAttribute.cs) takes four arguments:
 
 - **CommandText**: Passed as a constructor argument to the binding. Represents either a query string or the name of a stored procedure.
 - **CommandType**: Specifies whether CommandText is a query (`System.Data.CommandType.Text`) or a stored procedure (`System.Data.CommandType.StoredProcedure`)
@@ -197,15 +227,14 @@ public static async Task<List<Product>> Run(
     return productList;
 }
 ```
+
 ## Output Binding
+
+See [Output Binding Overview](./BindingsOverview.md#output-binding) for general information about the Azure SQL Output binding.
 
 ### SqlOutputAttribute for Output Bindings
 
-The output binding takes a list of rows to be upserted into a user table. If the primary key value of the row already exists in the table, the row is interpreted as an update, meaning that the values of the other columns in the table for that primary key are updated. If the primary key value does not exist in the table, the row is interpreted as an insert. The upserting of the rows is batched by the output binding code.
-
-  > **NOTE:** By default the Output binding uses the T-SQL [MERGE](https://docs.microsoft.com/sql/t-sql/statements/merge-transact-sql) statement which requires [SELECT](https://docs.microsoft.com/sql/t-sql/statements/merge-transact-sql#permissions) permissions on the target database.
-
-The output binding takes two [arguments](https://github.com/Azure/azure-functions-sql-extension/blob/main/Worker.Extension.Sql/src/SqlOutputAttribute.cs):
+The [SqlOutputAttribute](https://github.com/Azure/azure-functions-sql-extension/blob/main/Worker.Extension.Sql/src/SqlOutputAttribute.cs) takes two arguments:
 
 - **CommandText**: Passed as a constructor argument to the binding. Represents the name of the table into which rows will be upserted.
 - **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
@@ -298,28 +327,6 @@ public static Task<Product> Run(
 }
 ```
 
-### Primary Key Special Cases
+## Trigger Binding
 
-Typically Output Bindings require two things :
-
-1. The table being upserted to contains a Primary Key constraint (composed of one or more columns)
-2. Each of those columns must be present in the POCO object used in the attribute
-
-Normally either of these are false then an error will be thrown. Below are the situations in which this is not the case :
-
-#### Identity Columns
-In the case where one of the primary key columns is an identity column, there are two options based on how the function defines the output object:
-
-1. If the identity column isn't included in the output object then a straight insert is always performed with the other column values. See [AddProductWithIdentityColumn](../samples/samples-outofproc/OutputBindingSamples/AddProductWithIdentityColumn.cs) for an example.
-2. If the identity column is included (even if it's an optional nullable value) then a merge is performed similar to what happens when no identity column is present. This merge will either insert a new row or update an existing row based on the existence of a row that matches the primary keys (including the identity column). See [AddProductWithIdentityColumnIncluded](../samples/samples-outofproc/OutputBindingSamples/AddProductWithIdentityColumnIncluded.cs) for an example.
-
-#### Columns with Default Values
-In the case where one of the primary key columns has a default value, there are also two options based on how the function defines the output object:
-1. If the column with a default value is not included in the output object, then a straight insert is always performed with the other values. See [AddProductWithDefaultPK](../samples/samples-outofproc/OutputBindingSamples/AddProductWithDefaultPK.cs) for an example.
-2. If the column with a default value is included then a merge is performed similar to what happens when no default column is present. If there is a nullable column with a default value, then the provided column value in the output object will be upserted even if it is null.
-
-## Key differences with .NET (Isolated Process)
-Please refer to the functions documentation [here](https://learn.microsoft.com/azure/azure-functions/dotnet-isolated-in-process-differences)
-- Because .NET isolated projects run in a separate worker process, bindings can't take advantage of rich binding classes, such as ICollector<T>, IAsyncCollector<T>, and CloudBlockBlob.
-- There's also no direct support for types inherited from underlying service SDKs, such as SqlCommand. Instead, bindings rely on strings, arrays, and serializable types, such as plain old class objects (POCOs).
-- For HTTP triggers, you must use HttpRequestData and HttpResponseData to access the request and response data. This is because you don't have access to the original HTTP request and response objects when running out-of-process.
+> Trigger binding support is only available for in-proc C# functions at present.

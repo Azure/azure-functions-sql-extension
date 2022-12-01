@@ -1,5 +1,27 @@
 # Azure SQL bindings for Azure Functions - Java
 
+## Table of Contents
+- [Azure SQL bindings for Azure Functions - Java](#azure-sql-bindings-for-azure-functions---java)
+  - [Table of Contents](#table-of-contents)
+  - [Setup Function App](#setup-function-app)
+  - [Input Binding](#input-binding)
+    - [SQLInput Attribute](#sqlinput-attribute)
+    - [Setup for Input Bindings](#setup-for-input-bindings)
+    - [Samples for Input Bindings](#samples-for-input-bindings)
+      - [Query String](#query-string)
+      - [Empty Parameter Value](#empty-parameter-value)
+      - [Null Parameter Value](#null-parameter-value)
+      - [Stored Procedure](#stored-procedure)
+      - [IAsyncEnumerable](#iasyncenumerable)
+  - [Output Binding](#output-binding)
+    - [SQLOutput Attribute](#sqloutput-attribute)
+    - [Setup for Output Bindings](#setup-for-output-bindings)
+    - [Samples for Output Bindings](#samples-for-output-bindings)
+      - [ICollector\<T\>/IAsyncCollector\<T\>](#icollectortiasynccollectort)
+      - [Array](#array)
+      - [Single Row](#single-row)
+  - [Trigger Binding](#trigger-binding)
+
 ## Setup Function App
 
 These instructions will guide you through creating your Function App and adding the SQL binding extension. This only needs to be done once for every function app you create. If you have one created already you can skip this step.
@@ -25,12 +47,15 @@ These instructions will guide you through creating your Function App and adding 
 
 ## Input Binding
 
+See [Input Binding Overview](./BindingsOverview.md#input-binding) for general information about the Azure SQL Input binding.
+
 ### SQLInput Attribute
 
 In the Java functions runtime library, use the @SQLInput annotation (com.microsoft.azure.functions.sql.annotation.SQLInput) on parameters whose value comes from the query specified by commandText. This annotation supports the following elements:
+
 | Element |Description|
 |---------|---------|
-|**name** |  Required. The variable name used in function.json. | 
+|**name** |  Required. The variable name used in function.json. |
 | **commandText** | Required. The Transact-SQL query command or name of the stored procedure executed by the binding.  |
 | **connectionStringSetting** | Required. The name of an app setting that contains the connection string for the database against which the query or stored procedure is being executed. This value isn't the actual connection string and must instead resolve to an environment variable name.  Optional keywords in the connection string value are [available to refine SQL bindings connectivity](https://aka.ms/sqlbindings#sql-connection-string). |
 | **commandType** | A [CommandType](https://learn.microsoft.com/dotnet/api/system.data.commandtype) value, which is [Text](https://learn.microsoft.com/dotnet/api/system.data.commandtype#fields) for a query and [StoredProcedure](https://learn.microsoft.com/dotnet/api/system.data.commandtype#fields) for a stored procedure. |
@@ -143,7 +168,7 @@ _TODO_
 
 #### Stored Procedure
 
-_TODO_f
+_TODO_
 
 #### IAsyncEnumerable
 
@@ -151,13 +176,15 @@ _TODO_
 
 ## Output Binding
 
+See [Output Binding Overview](./BindingsOverview.md#output-binding) for general information about the Azure SQL Output binding.
+
 ### SQLOutput Attribute
 
 In the Java functions runtime library, use the @SQLOutput annotation (com.microsoft.azure.functions.sql.annotation.SQLOutput) on parameters whose values you want to upsert into the target table. This annotation supports the following elements:
 
 | Element |Description|
 |---------|---------|
-|**name** |  Required. The variable name used in function.json. | 
+|**name** |  Required. The variable name used in function.json. |
 | **commandText** | Required. The name of the table being written to by the binding.  |
 | **connectionStringSetting** | Required. The name of an app setting that contains the connection string for the database to which data is being written. This isn't the actual connection string and must instead resolve to an environment variable. Optional keywords in the connection string value are [available to refine SQL bindings connectivity](https://aka.ms/sqlbindings#sql-connection-string). |
 
@@ -212,26 +239,6 @@ _TODO_
 
 _TODO_
 
-### Primary Key Special Cases
-
-Typically Output Bindings require two things :
-
-1. The table being upserted to contains a Primary Key constraint (composed of one or more columns)
-2. Each of those columns must be present in the POCO object used in the attribute
-
-Normally either of these are false then an error will be thrown. Below are the situations in which this is not the case :
-
-#### Identity Columns
-In the case where one of the primary key columns is an identity column, there are two options based on how the function defines the output object:
-
-1. If the identity column isn't included in the output object then a straight insert is always performed with the other column values. See [AddProductWithIdentityColumn](../samples/samples-java/src/main/java/com/function/AddProductWithIdentityColumn.java) for an example.
-2. If the identity column is included (even if it's an optional nullable value) then a merge is performed similar to what happens when no identity column is present. This merge will either insert a new row or update an existing row based on the existence of a row that matches the primary keys (including the identity column). See [AddProductWithIdentityColumnIncluded](../samples/samples-java/src/main/java/com/function/AddProductWithIdentityColumnIncluded.java) for an example.
-
-#### Columns with Default Values
-In the case where one of the primary key columns has a default value, there are also two options based on how the function defines the output object:
-1. If the column with a default value is not included in the output object, then a straight insert is always performed with the other values. See [AddProductWithDefaultPK](../samples/samples-java/src/main/java/com/function/AddProductWithDefaultPK.java) for an example.
-2. If the column with a default value is included then a merge is performed similar to what happens when no default column is present. If there is a nullable column with a default value, then the provided column value in the output object will be upserted even if it is null.
-
 ## Trigger Binding
 
-> Trigger binding support is only available for C# functions at present.
+> Trigger binding support is only available for in-proc C# functions at present.
