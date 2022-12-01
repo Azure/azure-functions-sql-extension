@@ -1,5 +1,24 @@
 # Azure SQL bindings for Azure Functions - Overview
 
+## Table of Contents
+- [Azure SQL bindings for Azure Functions - Overview](#azure-sql-bindings-for-azure-functions---overview)
+  - [Table of Contents](#table-of-contents)
+  - [Input Binding](#input-binding)
+  - [Output Binding](#output-binding)
+    - [Primary Key Special Cases](#primary-key-special-cases)
+      - [Identity Columns](#identity-columns)
+      - [Columns with Default Values](#columns-with-default-values)
+  - [Trigger Binding](#trigger-binding)
+    - [Change Tracking](#change-tracking)
+    - [Internal State Tables](#internal-state-tables)
+      - [az\_func.GlobalState](#az_funcglobalstate)
+      - [az\_func.Leases\_\*](#az_funcleases_)
+    - [Configuration for Trigger Bindings](#configuration-for-trigger-bindings)
+      - [Sql\_Trigger\_BatchSize](#sql_trigger_batchsize)
+      - [Sql\_Trigger\_PollingIntervalMs](#sql_trigger_pollingintervalms)
+      - [Sql\_Trigger\_MaxChangesPerWorker](#sql_trigger_maxchangesperworker)
+    - [Scaling for Trigger Bindings](#scaling-for-trigger-bindings)
+
 ## Input Binding
 
 Azure SQL Input bindings take a SQL query to run and returns the output of the query in the function.
