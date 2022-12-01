@@ -195,8 +195,8 @@ Once you have your Function App you need to configure it for use with Azure SQL 
 
 You have setup your local environment and are now ready to create your first Azure Function with SQL bindings! Continue to the language specific guides for the next steps in creating and configuration your function!
 
-- [.NET](./BindingsGuide_Dotnet.md)
-- [Java](./BindingsGuide_Java.md)
-- [Javascript](./BindingsGuide_Javascript.md)
-- [Python](./BindingsGuide_Python.md)
-- [PowerShell](./BindingsGuide_PowerShell.md)
+- [.NET](./SetupGuide_Dotnet.md)
+- [Java](./SetupGuide_Java.md)
+- [Javascript](./SetupGuide_Javascript.md)
+- [Python](./SetupGuide_Python.md)
+- [PowerShell](./SetupGuide_PowerShell.md)

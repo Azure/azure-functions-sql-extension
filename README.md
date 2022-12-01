@@ -3,7 +3,10 @@
 [![Build Status](https://mssqltools.visualstudio.com/CrossPlatBuildScripts/_apis/build/status/SQL%20Bindings/SQL%20Bindings%20-%20Nightly?branchName=main)](https://mssqltools.visualstudio.com/CrossPlatBuildScripts/_build/latest?definitionId=481&branchName=main)
 
 ## Table of Contents
+- [Azure SQL bindings for Azure Functions - Preview](#azure-sql-bindings-for-azure-functions---preview)
+  - [Table of Contents](#table-of-contents)
   - [Introduction](#introduction)
+  - [Supported SQL Server Versions](#supported-sql-server-versions)
   - [Known Issues](#known-issues)
   - [Telemetry](#telemetry)
   - [Trademarks](#trademarks)
@@ -16,13 +19,16 @@ This repository contains the Azure SQL bindings for Azure Functions extension co
 - **Output Binding**: takes a list of rows and upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
 - **Trigger Binding**: monitors the user table for changes (i.e., row inserts, updates, and deletes) and invokes the function with updated rows.
 
-See the language-specific guides for further details on support and usage of the Azure SQL bindings for Azure Functions in the supported languages:
+For a more detailed overview of the different types of bindings see the [Bindings Overview](./docs/BindingsOverview.md).
 
-- [.NET (C# in-process)](./docs/BindingsGuide_Dotnet.md)
-- [Java](./docs/BindingsGuide_Java.md)
-- [Javascript](./docs/BindingsGuide_Javascript.md)
-- [Python](./docs/BindingsGuide_Python.md)
-- [PowerShell](./docs/BindingsGuide_PowerShell.md)
+For further details on setup, usage and samples of the bindings see the language-specific guides below:
+
+- [.NET (C# in-process)](./docs/SetupGuide_Dotnet.md)
+- [.NET (C# out-of-proc)](./docs/SetupGuide_DotnetOutOfProc.md)
+- [Java](./docs/SetupGuide_Java.md)
+- [Javascript](./docs/SetupGuide_Javascript.md)
+- [PowerShell](./docs/SetupGuide_PowerShell.md)
+- [Python](./docs/SetupGuide_Python.md)
 
 Further information on the Azure SQL binding for Azure Functions is also available in the [Azure Functions docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
 
