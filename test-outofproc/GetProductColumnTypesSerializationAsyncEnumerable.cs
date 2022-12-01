@@ -2,9 +2,9 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Collections.Generic;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.Functions.Worker.Extension.Sql;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using DotnetIsolatedTests.Common;
 using System.Globalization;
 using System.Threading.Tasks;
@@ -20,7 +20,7 @@ namespace DotnetIsolatedTests
         [Function(nameof(GetProductsColumnTypesSerializationAsyncEnumerable))]
         public static async Task<List<ProductColumnTypes>> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-columntypesserializationasyncenumerable")]
-            HttpRequest req,
+            HttpRequestData req,
             [SqlInput("SELECT * FROM [dbo].[ProductsColumnTypes]",
                 CommandType = System.Data.CommandType.Text,
                 ConnectionStringSetting = "SqlConnectionString")]
@@ -28,7 +28,7 @@ namespace DotnetIsolatedTests
         {
             // Test different cultures to ensure that serialization/deserialization works correctly for all types.
             // We expect the datetime types to be serialized in UTC format.
-            string language = req.Query["culture"];
+            string language = HttpUtility.ParseQueryString(req.Url.Query)["culture"];
             if (!string.IsNullOrEmpty(language))
             {
                 CultureInfo.CurrentCulture = new CultureInfo(language);
