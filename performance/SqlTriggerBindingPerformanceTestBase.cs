@@ -6,7 +6,7 @@ using BenchmarkDotNet.Attributes;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
 {
-    public class SqlTriggerBindingPerformanceTestBase : SqlTriggerBindingIntegrationTests
+    public class SqlTriggerBindingPerformanceTestBase : SqlTriggerBindingIntegrationTestBase
     {
         [IterationCleanup]
         public void IterationCleanup()
