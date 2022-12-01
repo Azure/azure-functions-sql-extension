@@ -42,6 +42,7 @@ Databases on SQL Server, Azure SQL Database, or Azure SQL Managed Instance which
 
 - Output bindings against tables with columns of data types `NTEXT`, `TEXT`, or `IMAGE` are not supported and data upserts will fail. These types [will be removed](https://docs.microsoft.com/sql/t-sql/data-types/ntext-text-and-image-transact-sql) in a future version of SQL Server and are not compatible with the `OPENJSON` function used by this Azure Functions binding.
 - Input bindings against tables with columns of data types 'DATETIME', 'DATETIME2', or 'SMALLDATETIME' will assume that the values are in UTC format.
+- For Java Functions using Output bindings against a table with columns of data types 'DATETIME', 'DATETIME2', or 'SMALLDATETIME', use java.util.Date type to ensure the datetime is formatted correctly.
 - Trigger bindings will exhibit undefined behavior if the SQL table schema gets modified while the user application is running, for example, if a column is added, renamed or deleted or if the primary key is modified or deleted. In such cases, restarting the application should help resolve any errors.
 
 ## Telemetry
