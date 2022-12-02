@@ -163,7 +163,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// - The functionName is different than its route.<br/>
         /// - You can start multiple functions by passing in a space-separated list of function names.<br/>
         /// </remarks>
-        protected void StartFunctionHost(string functionName, SupportedLanguages language, bool useTestFolder = false, DataReceivedEventHandler customOutputHandler = null, IDictionary<string, string> environmentVariables = null)
+        public void StartFunctionHost(string functionName, SupportedLanguages language, bool useTestFolder = false, DataReceivedEventHandler customOutputHandler = null, IDictionary<string, string> environmentVariables = null)
         {
             string workingDirectory = language == SupportedLanguages.CSharp && useTestFolder ? TestUtils.GetPathToBin() : Path.Combine(TestUtils.GetPathToBin(), "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), language));
             if (language == SupportedLanguages.Java)
@@ -354,9 +354,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Executes a command against the current connection.
         /// </summary>
-        protected void ExecuteNonQuery(string commandText)
+        /// <param name="command">Command text to execute</param>
+        /// <param name="message">Optional message to write when this query is executed. Defaults to writing the query commandText</param>
+        protected void ExecuteNonQuery(string commandText, string message = null)
         {
-            TestUtils.ExecuteNonQuery(this.Connection, commandText);
+            TestUtils.ExecuteNonQuery(this.Connection, commandText, message: message);
         }
 
         /// <summary>
@@ -460,7 +462,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 queryBuilder.AppendLine($"INSERT INTO dbo.Products VALUES({p.ProductID}, '{p.Name}', {p.Cost});");
             }
 
-            this.ExecuteNonQuery(queryBuilder.ToString());
+            this.ExecuteNonQuery(queryBuilder.ToString(), $"Inserting {products.Length} products");
         }
 
         protected static Product[] GetProducts(int n, int cost)
