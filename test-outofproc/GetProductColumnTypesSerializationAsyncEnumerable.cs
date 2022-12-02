@@ -8,6 +8,7 @@ using Microsoft.Azure.Functions.Worker.Http;
 using DotnetIsolatedTests.Common;
 using System.Globalization;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace DotnetIsolatedTests
 {
