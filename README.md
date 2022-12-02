@@ -8,6 +8,9 @@
   - [Introduction](#introduction)
   - [Supported SQL Server Versions](#supported-sql-server-versions)
   - [Known Issues](#known-issues)
+    - [Output Bindings](#output-bindings)
+    - [Input Bindings](#input-bindings)
+    - [Trigger Bindings](#trigger-bindings)
   - [Telemetry](#telemetry)
   - [Trademarks](#trademarks)
 
@@ -40,9 +43,20 @@ Databases on SQL Server, Azure SQL Database, or Azure SQL Managed Instance which
 
 ## Known Issues
 
+### Output Bindings
 - Output bindings against tables with columns of data types `NTEXT`, `TEXT`, or `IMAGE` are not supported and data upserts will fail. These types [will be removed](https://docs.microsoft.com/sql/t-sql/data-types/ntext-text-and-image-transact-sql) in a future version of SQL Server and are not compatible with the `OPENJSON` function used by this Azure Functions binding.
+- Output bindings execution order is not deterministic ([azure-webjobs-sdk#1025](https://github.com/Azure/azure-webjobs-sdk/issues/1025)) and so the order that data is upserted is not guaranteed. This can be problematic if, for example, you upsert rows to two separate tables with one having a foreign key reference to another. The upsert will fail if the dependent table does its upsert first.
+
+    Some options for working around this :
+    * Have multiple functions, with dependent functions being triggered by the initial functions (through a trigger binding or other such method)
+    * Use [dynamic (imperative)](https://learn.microsoft.com/azure/azure-functions/functions-bindings-expressions-patterns#binding-at-runtime) bindings (.NET only)
+    * Use [IAsyncCollector](https://learn.microsoft.com/azure/azure-functions/functions-dotnet-class-library?tabs=v2%2Ccmd#writing-multiple-output-values) and call `FlushAsync` in the order desired (.NET only)
+
+### Input Bindings
 - Input bindings against tables with columns of data types 'DATETIME', 'DATETIME2', or 'SMALLDATETIME' will assume that the values are in UTC format.
 - For Java Functions using Output bindings against a table with columns of data types 'DATETIME', 'DATETIME2', or 'SMALLDATETIME', use java.util.Date type to ensure the datetime is formatted correctly.
+
+### Trigger Bindings
 - Trigger bindings will exhibit undefined behavior if the SQL table schema gets modified while the user application is running, for example, if a column is added, renamed or deleted or if the primary key is modified or deleted. In such cases, restarting the application should help resolve any errors.
 
 ## Telemetry
