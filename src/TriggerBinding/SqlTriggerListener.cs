@@ -18,7 +18,6 @@ using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
-using MoreLinq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -175,7 +174,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     TelemetryInstance.TrackEvent(TelemetryEventName.StartListenerEnd, this._telemetryProps, measures);
 
                     this._scaleMonitor = new SqlTriggerScaleMonitor<T>(this._userFunctionId, this._userTable, this._changeMonitor, this._maxChangesPerWorker, this._logger);
-                    this._targetScaler = new 
+                    this._targetScaler = new SqlTriggerTargetScaler<T>(this._userFunctionId, this._logger, this._maxChangesPerWorker, this._changeMonitor);
                 }
             }
             catch (Exception ex)

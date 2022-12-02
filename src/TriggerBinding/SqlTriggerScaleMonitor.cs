@@ -23,12 +23,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public SqlTriggerScaleMonitor(string userFunctionId, SqlObject userTable, SqlTableChangeMonitor<T> changeMonitor, int maxChangesPerWorker, ILogger logger)
         {
+            _ = !string.IsNullOrEmpty(userFunctionId) ? true : throw new ArgumentNullException(userFunctionId);
+            _ = changeMonitor ?? throw new ArgumentNullException(nameof(changeMonitor));
+            this._userTable = userTable ?? throw new ArgumentNullException(nameof(userTable));
             // Do not convert the scale-monitor ID to lower-case string since SQL table names can be case-sensitive
             // depending on the collation of the current database.
-            this.Descriptor = new ScaleMonitorDescriptor($"{userFunctionId}-SqlTrigger-{userTable.Name}", userFunctionId);
+            this.Descriptor = new ScaleMonitorDescriptor($"{userFunctionId}-SqlTrigger-{userTable.FullName}", userFunctionId);
             this._metricsProvider = new SqlTriggerMetricsProvider<T>(changeMonitor);
-            this._userTable = userTable;
-            this._logger = logger;
+            this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this._maxChangesPerWorker = maxChangesPerWorker;
         }
 
