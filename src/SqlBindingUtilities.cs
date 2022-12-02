@@ -203,5 +203,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
             }
         }
+
+        /// <summary>
+        /// Opens a connection and handles some specific errors if they occur.
+        /// </summary>
+        /// <param name="connection">The connection to open</param>
+        /// <param name="cancellationToken">The cancellation token to pass to the OpenAsync call</param>
+        /// <returns>The task that will be completed when the connection is made</returns>
+        /// <exception cref="InvalidOperationException">Thrown if an error occurred that we want to wrap with more information</exception>
+        internal static async Task OpenAsyncWithSqlErrorHandling(this SqlConnection connection, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await connection.OpenAsync(cancellationToken);
+            }
+            catch (Exception e)
+            {
+                SqlException sqlEx = e is AggregateException a ? a.InnerExceptions.OfType<SqlException>().First() :
+                    e is SqlException s ? s :
+                    null;
+                // Error number for:
+                //  A connection was successfully established with the server, but then an error occurred during the login process.
+                //  The certificate chain was issued by an authority that is not trusted.
+                // Add on some more information to help the user figure out how to solve it
+                if (sqlEx?.Number == -2146893019)
+                {
+                    throw new InvalidOperationException("The default values for encryption on connections have been changed, please review your configuration to ensure you have the correct values for your server. See https://aka.ms/afsqlext-connection for more details.", e);
+                }
+                throw;
+            }
+        }
     }
 }
