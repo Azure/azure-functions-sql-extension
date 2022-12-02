@@ -4,9 +4,9 @@
     ".NETStandard,Version=v2.0": {
       "Microsoft.ApplicationInsights": {
         "type": "Direct",
-        "requested": "[2.17.0, )",
-        "resolved": "2.17.0",
-        "contentHash": "moAOrjhwiCWdg8I4fXPEd+bnnyCSRxo6wmYQ0HuNrWJUctzZEiyVTbJ8QTS6+dBOFTxpI6x+OY5wHPHrgWOk1Q==",
+        "requested": "[2.21.0, )",
+        "resolved": "2.21.0",
+        "contentHash": "btZEDWAFNo9CoYliMCriSMTX3ruRGZTtYw4mo2XyyfLlowFicYVM2Xszi5evDG95QRYV7MbbH3D2RqVwfZlJHw==",
         "dependencies": {
           "System.Diagnostics.DiagnosticSource": "5.0.0"
         }
@@ -26,11 +26,11 @@
       },
       "Microsoft.Azure.WebJobs": {
         "type": "Direct",
-        "requested": "[3.0.32, )",
-        "resolved": "3.0.32",
-        "contentHash": "uN8GsFqPFHHcSrwwj/+0tGe6F6cOwugqUiePPw7W3TL9YC594+Hw8GBK5S/fcDWXacqvRRGf9nDX8xP94/Yiyw==",
+        "requested": "[3.0.33, )",
+        "resolved": "3.0.33",
+        "contentHash": "eSv858ll+GsLYxM2+RKBiTC34CvGnEgLtnrzRljzrociIXsosadHDQLxvvqu0eyIQRRf5kc4MHII/wc0HRNvyg==",
         "dependencies": {
-          "Microsoft.Azure.WebJobs.Core": "3.0.32",
+          "Microsoft.Azure.WebJobs.Core": "3.0.33",
           "Microsoft.Extensions.Configuration": "2.1.1",
           "Microsoft.Extensions.Configuration.Abstractions": "2.1.1",
           "Microsoft.Extensions.Configuration.EnvironmentVariables": "2.1.0",
@@ -96,9 +96,9 @@
       },
       "Newtonsoft.Json": {
         "type": "Direct",
-        "requested": "[13.0.1, )",
-        "resolved": "13.0.1",
-        "contentHash": "ppPFpBcvxdsfUonNcvITKqLl3bqxWbDCZIzDWHzjpdAHRFfZe0Dw9HmA0+za13IdyrgJwpkDTDA9fHaxOrt20A=="
+        "requested": "[13.0.2, )",
+        "resolved": "13.0.2",
+        "contentHash": "R2pZ3B0UjeyHShm9vG+Tu0EBb2lC8b0dFzV9gVn50ofHXh9Smjk6kTn7A/FdAsC8B5cKib1OnGYOXxRBz5XQDg=="
       },
       "System.Runtime.Caching": {
         "type": "Direct",
@@ -165,8 +165,8 @@
       },
       "Microsoft.Azure.WebJobs.Core": {
         "type": "Transitive",
-        "resolved": "3.0.32",
-        "contentHash": "pW5lyF0Tno1cC2VkmBLyv7E3o5ObDdbn3pfpUpKdksJo9ysCdQTpgc0Ib99wPHca6BgvoglicGbDYXuatanMfg==",
+        "resolved": "3.0.33",
+        "contentHash": "4Rp5of6KFEGisQL7OJV2/8v3IQGFvTgZ9xSbB3bfkw5VHoNKn3Yllx7Qk/oUUX7Zey7jNu5mQFIR6dW6xNMX5Q==",
         "dependencies": {
           "System.ComponentModel.Annotations": "4.4.0",
           "System.Diagnostics.TraceSource": "4.3.0"

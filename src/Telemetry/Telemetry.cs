@@ -67,7 +67,10 @@ This extension collect usage data in order to help us improve your experience. T
         {
             try
             {
-                var telemetryConfig = new TelemetryConfiguration(InstrumentationKey);
+                var telemetryConfig = new TelemetryConfiguration
+                {
+                    ConnectionString = $"InstrumentationKey={InstrumentationKey};"
+                };
                 telemetryConfig.TelemetryInitializers.Add(new TelemetryInitializer());
                 this._client = new TelemetryClient(telemetryConfig);
                 this._client.Context.Session.Id = CurrentSessionId;
