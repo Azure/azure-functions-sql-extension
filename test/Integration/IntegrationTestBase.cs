@@ -459,7 +459,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             var queryBuilder = new StringBuilder();
             foreach (Product p in products)
             {
-                queryBuilder.AppendLine($"INSERT INTO dbo.Products VALUES({p.ProductID}, '{p.Name}', {p.Cost});");
+                queryBuilder.AppendLine($"INSERT INTO dbo.Products VALUES({p.ProductId}, '{p.Name}', {p.Cost});");
             }
 
             this.ExecuteNonQuery(queryBuilder.ToString(), $"Inserting {products.Length} products");
@@ -472,7 +472,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 result[i - 1] = new Product
                 {
-                    ProductID = i,
+                    ProductId = i,
                     Name = "test",
                     Cost = cost * i
                 };
@@ -487,7 +487,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 result[i] = new Product
                 {
-                    ProductID = i,
+                    ProductId = i,
                     Name = "test",
                     Cost = cost
                 };
@@ -502,7 +502,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 result[i] = new Product
                 {
-                    ProductID = i + offset,
+                    ProductId = i + offset,
                     Name = name,
                     Cost = cost
                 };
