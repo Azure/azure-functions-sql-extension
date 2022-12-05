@@ -36,6 +36,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
             this.TestObject.Dispose();
         }
 
+        /// <summary>
+        /// Runs a test with a high constant change rate. Items are inserted constantly until the test
+        /// detects that the specified number of items has been processed. Note this will NOT be all
+        /// of the items sent - those are being inserted at a much higher rate than the function can deal
+        /// with.
+        /// </summary>
+        /// <param name="count">The number of items to process before ending the test</param>
         [Benchmark]
         [Arguments(1000)]
         public async Task ChangeRate(int count)
@@ -48,7 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
                 () => { this.ChangesLoop(tokenSource.Token); return Task.CompletedTask; },
                 id => $"Product {id}",
                 id => id * 100,
-                30 * 1000); // Wait for up to 30 seconds
+                this.TestObject.GetBatchProcessingTimeout(1, count)); // Wait for up to 30 seconds
             tokenSource.Cancel();
         }
 
