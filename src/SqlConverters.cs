@@ -180,7 +180,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     adapter.SelectCommand = command;
                     this._logger.LogDebugWithThreadId("BEGIN OpenBuildItemFromAttributeAsyncConnection");
-                    await connection.OpenAsync();
+                    await connection.OpenAsyncWithSqlErrorHandling(CancellationToken.None);
                     this._logger.LogDebugWithThreadId("END OpenBuildItemFromAttributeAsyncConnection");
                     Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps();
                     TelemetryInstance.TrackConvert(type, props);
