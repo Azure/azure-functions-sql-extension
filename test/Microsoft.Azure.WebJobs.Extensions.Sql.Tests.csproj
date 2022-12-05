@@ -45,9 +45,13 @@
     <Message Text="Copied PS Samples output to $(OutDir)\SqlExtensionSamples\PowerShell" Importance="high" />
     <ItemGroup>
       <_OOPCopyItems Include="..\samples\samples-outofproc\bin\$(Configuration)\$(TargetFramework)\**\*.*" />
-      <_OOPCopyItems Include="..\test-outofproc\bin\$(Configuration)\$(TargetFramework)\**\*.*" />
     </ItemGroup>
     <Copy SourceFiles="@(_OOPCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\OutOfProc\%(RecursiveDir)" />
     <Message Text="Copied C# out of proc Samples output to $(OutDir)\SqlExtensionSamples\OutOfProc" Importance="high" />
+    <ItemGroup>
+      <_OOPNCopyItems Include="..\test-outofproc\bin\$(Configuration)\$(TargetFramework)\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_OOPNCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\OutOfProc\test\%(RecursiveDir)" />
+    <Message Text="Copied test-outofproc Samples to $(OutDir)\SqlExtensionSamples\OutOfProc\test" Importance="high" />
   </Target>
 </Project>
