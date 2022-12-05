@@ -122,7 +122,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 using (var connection = new SqlConnection(this._connectionString))
                 {
                     this._logger.LogDebugWithThreadId("BEGIN OpenListenerConnection");
-                    await connection.OpenAsync(cancellationToken);
+                    await connection.OpenAsyncWithSqlErrorHandling(cancellationToken);
                     this._logger.LogDebugWithThreadId("END OpenListenerConnection");
                     this._telemetryProps.AddConnectionProps(connection);
 
