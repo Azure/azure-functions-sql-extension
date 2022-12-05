@@ -70,10 +70,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        // ProductID (POCO field) does not match ProductId (table column) and JSON
+        // ProductId (POCO field) does not match ProductId (table column) and JSON
         // serialization is case sensitive in Java
         // TODO: https://github.com/Azure/azure-functions-sql-extension/issues/411
-        [UnsupportedLanguages(SupportedLanguages.Java)]
+        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript, SupportedLanguages.PowerShell, SupportedLanguages.OutOfProc)]
         public void AddProductArrayTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsArray), lang);
@@ -87,13 +87,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 new Product()
                 {
-                    ProductID = 1,
+                    ProductId = 1,
                     Name = "Cup",
                     Cost = 2
                 },
                 new Product
                 {
-                    ProductID = 2,
+                    ProductId = 2,
                     Name = "Glasses",
                     Cost = 12
                 }
@@ -235,7 +235,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public void AddProductWithIdentity(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithIdentityColumn), lang);
-            // Identity column (ProductID) is left out for new items
+            // Identity column (ProductId) is left out for new items
             var query = new Dictionary<string, string>()
             {
                 { "name", "MyProduct" },
@@ -399,7 +399,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             };
 
             // The upsert should fail since the database is case sensitive and the column name "ProductId"
-            // does not match the POCO field "ProductID"
+            // does not match the POCO field "ProductId"
             Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-params", query).Wait());
 
             // Change database collation back to case insensitive
