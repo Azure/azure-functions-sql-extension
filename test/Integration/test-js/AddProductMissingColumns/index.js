@@ -2,8 +2,8 @@
 // to the SQL table.
 module.exports = async function (context) {
     const productMissingColumns = [{
-        "productId": 1,
-        "name": "MissingCost"
+        "ProductId": 1,
+        "Name": "MissingCost"
     }];
 
     context.bindings.products = JSON.stringify(productMissingColumns);
