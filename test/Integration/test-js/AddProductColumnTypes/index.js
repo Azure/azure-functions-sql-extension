@@ -4,9 +4,9 @@
  */
 module.exports = async function (context, req) {
     const product = {
-        "productId": req.query.productId,
-        "datetime": new Date().toISOString(),
-        "datetime2": new Date().toISOString()
+        "ProductId": req.query.productId,
+        "Datetime": new Date().toISOString(),
+        "Datetime2": new Date().toISOString()
     };
 
     context.bindings.product = JSON.stringify(product);

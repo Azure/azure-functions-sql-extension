@@ -31,9 +31,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             var query = new Dictionary<string, object>()
             {
-                { "productId", id },
-                { "name", name },
-                { "cost", cost }
+                { "ProductId", id },
+                { "Name", name },
+                { "Cost", cost }
             };
 
             this.SendOutputPostRequest("addproduct", JsonConvert.SerializeObject(query)).Wait();
@@ -380,8 +380,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.StartFunctionHost(nameof(AddProductWithDefaultPK), lang);
             var product = new Dictionary<string, object>()
             {
-                { "name", "MyProduct" },
-                { "cost", 1 }
+                { "Name", "MyProduct" },
+                { "Cost", 1 }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
             this.SendOutputPostRequest("addproductwithdefaultpk", JsonConvert.SerializeObject(product)).Wait();
