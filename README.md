@@ -3,8 +3,14 @@
 [![Build Status](https://mssqltools.visualstudio.com/CrossPlatBuildScripts/_apis/build/status/SQL%20Bindings/SQL%20Bindings%20-%20Nightly?branchName=main)](https://mssqltools.visualstudio.com/CrossPlatBuildScripts/_build/latest?definitionId=481&branchName=main)
 
 ## Table of Contents
+- [Azure SQL bindings for Azure Functions - Preview](#azure-sql-bindings-for-azure-functions---preview)
+  - [Table of Contents](#table-of-contents)
   - [Introduction](#introduction)
+  - [Supported SQL Server Versions](#supported-sql-server-versions)
   - [Known Issues](#known-issues)
+    - [Output Bindings](#output-bindings)
+    - [Input Bindings](#input-bindings)
+    - [Trigger Bindings](#trigger-bindings)
   - [Telemetry](#telemetry)
   - [Trademarks](#trademarks)
 
@@ -16,13 +22,16 @@ This repository contains the Azure SQL bindings for Azure Functions extension co
 - **Output Binding**: takes a list of rows and upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
 - **Trigger Binding**: monitors the user table for changes (i.e., row inserts, updates, and deletes) and invokes the function with updated rows.
 
-See the language-specific guides for further details on support and usage of the Azure SQL bindings for Azure Functions in the supported languages:
+For a more detailed overview of the different types of bindings see the [Bindings Overview](./docs/BindingsOverview.md).
 
-- [.NET (C# in-process)](./docs/BindingsGuide_Dotnet.md)
-- [Java](./docs/BindingsGuide_Java.md)
-- [Javascript](./docs/BindingsGuide_Javascript.md)
-- [Python](./docs/BindingsGuide_Python.md)
-- [PowerShell](./docs/BindingsGuide_PowerShell.md)
+For further details on setup, usage and samples of the bindings see the language-specific guides below:
+
+- [.NET (C# in-process)](./docs/SetupGuide_Dotnet.md)
+- [.NET (C# out-of-proc)](./docs/SetupGuide_DotnetOutOfProc.md)
+- [Java](./docs/SetupGuide_Java.md)
+- [Javascript](./docs/SetupGuide_Javascript.md)
+- [PowerShell](./docs/SetupGuide_PowerShell.md)
+- [Python](./docs/SetupGuide_Python.md)
 
 Further information on the Azure SQL binding for Azure Functions is also available in the [Azure Functions docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
 
@@ -34,8 +43,20 @@ Databases on SQL Server, Azure SQL Database, or Azure SQL Managed Instance which
 
 ## Known Issues
 
+### Output Bindings
 - Output bindings against tables with columns of data types `NTEXT`, `TEXT`, or `IMAGE` are not supported and data upserts will fail. These types [will be removed](https://docs.microsoft.com/sql/t-sql/data-types/ntext-text-and-image-transact-sql) in a future version of SQL Server and are not compatible with the `OPENJSON` function used by this Azure Functions binding.
+- Output bindings execution order is not deterministic ([azure-webjobs-sdk#1025](https://github.com/Azure/azure-webjobs-sdk/issues/1025)) and so the order that data is upserted is not guaranteed. This can be problematic if, for example, you upsert rows to two separate tables with one having a foreign key reference to another. The upsert will fail if the dependent table does its upsert first.
+
+    Some options for working around this :
+    * Have multiple functions, with dependent functions being triggered by the initial functions (through a trigger binding or other such method)
+    * Use [dynamic (imperative)](https://learn.microsoft.com/azure/azure-functions/functions-bindings-expressions-patterns#binding-at-runtime) bindings (.NET only)
+    * Use [IAsyncCollector](https://learn.microsoft.com/azure/azure-functions/functions-dotnet-class-library?tabs=v2%2Ccmd#writing-multiple-output-values) and call `FlushAsync` in the order desired (.NET only)
+
+### Input Bindings
 - Input bindings against tables with columns of data types 'DATETIME', 'DATETIME2', or 'SMALLDATETIME' will assume that the values are in UTC format.
+- For Java Functions using Output bindings against a table with columns of data types 'DATETIME', 'DATETIME2', or 'SMALLDATETIME', use java.util.Date type to ensure the datetime is formatted correctly.
+
+### Trigger Bindings
 - Trigger bindings will exhibit undefined behavior if the SQL table schema gets modified while the user application is running, for example, if a column is added, renamed or deleted or if the primary key is modified or deleted. In such cases, restarting the application should help resolve any errors.
 
 ## Telemetry

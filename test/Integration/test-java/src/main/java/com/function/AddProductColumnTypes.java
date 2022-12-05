@@ -17,7 +17,7 @@ import com.microsoft.azure.functions.annotation.HttpTrigger;
 import com.microsoft.azure.functions.sql.annotation.SQLOutput;
 import com.function.Common.ProductColumnTypes;
 
-import java.sql.Timestamp;
+import java.sql.Date;
 import java.util.Optional;
 
 public class AddProductColumnTypes {
@@ -35,8 +35,10 @@ public class AddProductColumnTypes {
                 connectionStringSetting = "SqlConnectionString")
                 OutputBinding<ProductColumnTypes> product) {
 
-        ProductColumnTypes p = new ProductColumnTypes(0, new Timestamp(System.currentTimeMillis()),
-            new Timestamp(System.currentTimeMillis()));
+        ProductColumnTypes p = new ProductColumnTypes(
+            Integer.parseInt(request.getQueryParameters().get("productId")),
+            new Date(System.currentTimeMillis()),
+            new Date(System.currentTimeMillis()));
         product.setValue(p);
 
         // Items were inserted successfully so return success, an exception would be thrown if there
