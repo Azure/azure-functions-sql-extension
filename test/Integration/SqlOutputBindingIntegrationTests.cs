@@ -70,10 +70,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        // ProductId (POCO field) does not match ProductId (table column) and JSON
-        // serialization is case sensitive in Java
-        // TODO: https://github.com/Azure/azure-functions-sql-extension/issues/411
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.JavaScript, SupportedLanguages.PowerShell, SupportedLanguages.OutOfProc)]
         public void AddProductArrayTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsArray), lang);
@@ -368,48 +364,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Throws<AggregateException>(() => this.SendOutputGetRequest(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), query).Wait());
             // Nothing should have been inserted
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithMultiplePrimaryColumnsAndIdentity"));
-        }
-
-        /// <summary>
-        /// Tests that when using a case sensitive database, an error is thrown if
-        /// the POCO fields case and column names case do not match.
-        /// </summary>
-        [Theory]
-        [SqlInlineData()]
-        // JSON serialization is case sensitive in Java
-        // TODO: https://github.com/Azure/azure-functions-sql-extension/issues/411
-        [UnsupportedLanguages(SupportedLanguages.Java)]
-        public void AddProductCaseSensitiveTest(SupportedLanguages lang)
-        {
-            // Set table info cache timeout to 0 minutes so that new collation gets picked up
-            var environmentVariables = new Dictionary<string, string>()
-            {
-                { "AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES", "0" }
-            };
-            this.StartFunctionHost(nameof(AddProductParams), lang, false, null, environmentVariables);
-
-            // Change database collation to case sensitive
-            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
-
-            var query = new Dictionary<string, string>()
-            {
-                { "productId", "1" },
-                { "name", "test" },
-                { "cost", "100" }
-            };
-
-            // The upsert should fail since the database is case sensitive and the column name "ProductId"
-            // does not match the POCO field "ProductId"
-            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-params", query).Wait());
-
-            // Change database collation back to case insensitive
-            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
-
-            this.SendOutputGetRequest("addproduct-params", query).Wait();
-
-            // Verify result
-            Assert.Equal("test", this.ExecuteScalar($"select Name from Products where ProductId={1}"));
-            Assert.Equal(100, this.ExecuteScalar($"select cost from Products where ProductId={1}"));
         }
 
         /// <summary>

@@ -535,7 +535,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var tableInfoSw = Stopwatch.StartNew();
 
                 // Get all column names and types
-                var columnDefinitionsFromSQL = new Dictionary<string, string>(StringComparer.Ordinal);
+                var columnDefinitionsFromSQL = new Dictionary<string, string>();
                 var columnDefinitionsSw = Stopwatch.StartNew();
                 try
                 {
@@ -611,7 +611,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 IEnumerable<PropertyInfo> primaryKeyProperties = typeof(T).GetProperties().Where(f => primaryKeys.Any(k => string.Equals(k.Name, f.Name, StringComparison.Ordinal)));
                 IEnumerable<string> primaryKeysFromObject = objectColumnNames.Where(f => primaryKeys.Any(k => string.Equals(k.Name, f, StringComparison.Ordinal)));
                 IEnumerable<PrimaryKey> missingPrimaryKeysFromItem = primaryKeys
-                    .Where(k => !primaryKeysFromObject.Contains(k.Name, StringComparer.Ordinal));
+                    .Where(k => !primaryKeysFromObject.Contains(k.Name));
                 bool hasIdentityColumnPrimaryKeys = primaryKeys.Any(k => k.IsIdentity);
                 bool hasDefaultColumnPrimaryKeys = primaryKeys.Any(k => k.HasDefault);
                 // If none of the primary keys are an identity column or have a default value then we require that all primary keys be present in the POCO so we can
@@ -661,7 +661,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 var properties = base
                     .CreateProperties(type, memberSerialization)
-                    .ToDictionary(p => p.PropertyName, StringComparer.Ordinal);
+                    .ToDictionary(p => p.PropertyName);
 
                 // Make sure the ordering of columns matches that of SQL
                 // Necessary for proper matching of column names to JSON that is generated for each batch of data
