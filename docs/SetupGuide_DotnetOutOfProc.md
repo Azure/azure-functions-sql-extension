@@ -127,7 +127,7 @@ The input binding executes the "select * from Products where Cost = @Cost" query
 
 `Product` is a user-defined POCO that follows the structure of the Products table. It represents a row of the Products table, with field names and types copying those of the Products table schema. For example, if the Products table has three columns of the form
 
-- **ProductID**: int
+- **ProductId**: int
 - **Name**: varchar
 - **Cost**: int
 
@@ -136,7 +136,7 @@ Then the `Product` class would look like
 ```csharp
 public class Product
 {
-    public int ProductID { get; set; }
+    public int ProductId { get; set; }
 
     public string Name { get; set; }
 

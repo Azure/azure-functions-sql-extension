@@ -139,7 +139,7 @@ The input binding executes the "select * from Products where Cost = @Cost" query
 
 `Product` is a user-defined POCO that follows the structure of the Products table. It represents a row of the Products table, with field names and types copying those of the Products table schema. For example, if the Products table has three columns of the form
 
-- **ProductID**: int
+- **ProductId**: int
 - **Name**: varchar
 - **Cost**: int
 
@@ -148,7 +148,7 @@ Then the `Product` class would look like
 ```csharp
 public class Product
 {
-    public int ProductID { get; set; }
+    public int ProductId { get; set; }
 
     public string Name { get; set; }
 
@@ -361,17 +361,17 @@ public static IActionResult Run(
     HttpRequest req,
 [Sql("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] out Product[] output)
 {
-    // Suppose that the ProductID column is the primary key in the Products table, and the
-    // table already contains a row with ProductID = 1. In that case, the row will be updated
+    // Suppose that the ProductId column is the primary key in the Products table, and the
+    // table already contains a row with ProductId = 1. In that case, the row will be updated
     // instead of inserted to have values Name = "Cup" and Cost = 2.
     output = new Product[2];
     var product = new Product();
-    product.ProductID = 1;
+    product.ProductId = 1;
     product.Name = "Cup";
     product.Cost = 2;
     output[0] = product;
     product = new Product();
-    product.ProductID = 2;
+    product.ProductId = 2;
     product.Name = "Glasses";
     product.Cost = 12;
     output[1] = product;
@@ -393,7 +393,7 @@ public static IActionResult Run(
     product = new Product
     {
         Name = req.Query["name"],
-        ProductID = int.Parse(req.Query["id"]),
+        ProductId = int.Parse(req.Query["id"]),
         Cost = int.Parse(req.Query["cost"])
     };
     return new CreatedResult($"/api/addproduct", product);
@@ -432,7 +432,7 @@ public static void Run(
     {
         Product product = change.Item;
         logger.LogInformation($"Change operation: {change.Operation}");
-        logger.LogInformation($"ProductID: {product.ProductID}, Name: {product.Name}, Cost: {product.Cost}");
+        logger.LogInformation($"ProductId: {product.ProductId}, Name: {product.Name}, Cost: {product.Cost}");
     }
 }
 ```
