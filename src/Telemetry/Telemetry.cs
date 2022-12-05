@@ -77,6 +77,7 @@ This extension collect usage data in order to help us improve your experience. T
 
                 this._commonProperties = new TelemetryCommonProperties(productVersion, this._client, config).GetTelemetryCommonProperties();
                 this._commonMeasurements = new Dictionary<string, double>();
+                this._logger.LogTrace($"Telemetry Initialized. Session={CurrentSessionId}");
             }
             catch (Exception e)
             {
