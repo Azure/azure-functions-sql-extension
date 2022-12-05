@@ -83,7 +83,7 @@ This extension collect usage data in order to help us improve your experience. T
                 this._client?.TrackException(e);
                 this._client = null;
                 // we don't want to fail the tool if telemetry fails.
-                this._logger.LogError($"Error initializing telemetry. Message={e.Message}");
+                this._logger.LogError($"Error initializing telemetry. Telemetry will be disabled. Message={e.Message}");
             }
         }
 
