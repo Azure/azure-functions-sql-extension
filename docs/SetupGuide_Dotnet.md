@@ -95,7 +95,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Add 'using System.Collections.Generic;' to the namespaces list at the top of the page.
 - Currently, there is an error for the IEnumerable. We'll fix this by creating an Employee class.
 - Create a new file and call it 'Employee.cs'
-- Paste the below in the file. These are the column names of our SQL table.
+- Paste the below in the file. These are the column names of our SQL table. Note that the casing of the Object field names and the table column names must match.
 
     ```csharp
     namespace Company.Function {
