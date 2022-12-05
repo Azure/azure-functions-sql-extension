@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -81,10 +80,10 @@ This extension collect usage data in order to help us improve your experience. T
             }
             catch (Exception e)
             {
-                this._client.TrackException(e);
+                this._client?.TrackException(e);
                 this._client = null;
                 // we don't want to fail the tool if telemetry fails.
-                Debug.Fail(e.ToString());
+                this._logger.LogError($"Error initializing telemetry. Message={e.Message}");
             }
         }
 
@@ -109,7 +108,7 @@ This extension collect usage data in order to help us improve your experience. T
             catch (Exception ex)
             {
                 // We don't want errors sending telemetry to break the app, so just log and move on
-                Debug.Fail($"Error sending event {eventName} : {ex.Message}");
+                this._logger.LogError($"Error sending event {eventName}. Message={ex.Message}");
             }
         }
 
@@ -134,7 +133,7 @@ This extension collect usage data in order to help us improve your experience. T
             catch (Exception ex)
             {
                 // We don't want errors sending telemetry to break the app, so just log and move on
-                Debug.Fail($"Error sending exception event : {ex.Message}");
+                this._logger.LogError($"Error sending exception event. Message={ex.Message}");
             }
         }
 
@@ -157,7 +156,7 @@ This extension collect usage data in order to help us improve your experience. T
             catch (Exception ex)
             {
                 // We don't want errors sending telemetry to break the app, so just log and move on
-                Debug.Fail($"Error sending event {eventName} : {ex.Message}");
+                this._logger.LogError($"Error sending event {eventName}. Message={ex.Message}");
             }
         }
 
@@ -179,7 +178,7 @@ This extension collect usage data in order to help us improve your experience. T
             catch (Exception ex)
             {
                 // We don't want errors sending telemetry to break the app, so just log and move on
-                Debug.Fail($"Error sending event Create : {ex.Message}");
+                this._logger.LogError($"Error sending event Create. Message={ex.Message}");
             }
         }
 
@@ -201,7 +200,7 @@ This extension collect usage data in order to help us improve your experience. T
             catch (Exception ex)
             {
                 // We don't want errors sending telemetry to break the app, so just log and move on
-                Debug.Fail($"Error sending event Create : {ex.Message}");
+                this._logger.LogError($"Error sending event Convert. Message={ex.Message}");
             }
         }
 
@@ -225,7 +224,7 @@ This extension collect usage data in order to help us improve your experience. T
             }
             catch (Exception e)
             {
-                Debug.Fail(e.ToString());
+                this._logger.LogError($"Error sending event {eventName}. Message={e.Message}");
             }
         }
 
@@ -249,7 +248,7 @@ This extension collect usage data in order to help us improve your experience. T
             }
             catch (Exception e)
             {
-                Debug.Fail(e.ToString());
+                this._logger.LogError($"Error sending exception event. Message={e.Message}");
             }
         }
 
