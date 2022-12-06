@@ -18,4 +18,4 @@ Get started quickly with the samples available in our [repository](https://githu
 
 For further details on setup, usage and samples of the bindings see the guide below:
 
-- [.NET (C# out-of-proc)](./docs/SetupGuide_DotnetOutOfProc.md)
+- [.NET (C# out-of-proc)](https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/SetupGuide_DotnetOutOfProc.md)
