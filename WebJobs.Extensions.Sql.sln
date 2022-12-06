@@ -30,6 +30,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.Functions.W
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc", "samples\samples-outofproc\Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.csproj", "{BD0CE086-1778-4B08-905F-6766399C1D44}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "test-outofproc", "test-outofproc\test-outofproc.csproj", "{4E09227F-3F7C-4FAC-997A-24EB799CEC61}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -60,6 +62,10 @@ Global
 		{BD0CE086-1778-4B08-905F-6766399C1D44}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BD0CE086-1778-4B08-905F-6766399C1D44}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BD0CE086-1778-4B08-905F-6766399C1D44}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4E09227F-3F7C-4FAC-997A-24EB799CEC61}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E09227F-3F7C-4FAC-997A-24EB799CEC61}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E09227F-3F7C-4FAC-997A-24EB799CEC61}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E09227F-3F7C-4FAC-997A-24EB799CEC61}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
