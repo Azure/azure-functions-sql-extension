@@ -1,4 +1,4 @@
-# Azure SQL bindings .NEt Worker
+# Azure SQL bindings .NET Worker
 
 Welcome to the Azure SQL bindings .NET Worker Repository. The .NET Worker provides .NET 5 support in Azure Functions, introducing an **Isolated Model**, running as an out-of-process language worker that is separate from the Azure Functions runtime. This allows you to have full control over your application's dependencies as well as other new features like a middleware pipeline.
 
