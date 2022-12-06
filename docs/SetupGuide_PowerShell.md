@@ -34,7 +34,7 @@ These instructions will guide you through creating your Function App and adding 
     func init --worker-runtime powershell
     ```
 
-3. Enable SQL bindings on the function app. More information can be found [in Microsoft Docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
+3. Enable SQL bindings on the function app. More information can be found [in Microsoft Docs](https://aka.ms/sqlbindings).
 
     Update the `host.json` file to the preview extension bundle.
     ```json
