@@ -33,7 +33,7 @@ For further details on setup, usage and samples of the bindings see the language
 - [PowerShell](./docs/SetupGuide_PowerShell.md)
 - [Python](./docs/SetupGuide_Python.md)
 
-Further information on the Azure SQL binding for Azure Functions is also available in the [Azure Functions docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
+Further information on the Azure SQL binding for Azure Functions is also available in the [docs](https://aka.ms/sqlbindings).
 
 ## Supported SQL Server Versions
 
