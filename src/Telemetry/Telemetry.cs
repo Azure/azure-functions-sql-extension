@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -67,7 +66,10 @@ This extension collect usage data in order to help us improve your experience. T
         {
             try
             {
-                var telemetryConfig = new TelemetryConfiguration(InstrumentationKey);
+                var telemetryConfig = new TelemetryConfiguration
+                {
+                    ConnectionString = $"InstrumentationKey={InstrumentationKey};"
+                };
                 telemetryConfig.TelemetryInitializers.Add(new TelemetryInitializer());
                 this._client = new TelemetryClient(telemetryConfig);
                 this._client.Context.Session.Id = CurrentSessionId;
@@ -75,13 +77,14 @@ This extension collect usage data in order to help us improve your experience. T
 
                 this._commonProperties = new TelemetryCommonProperties(productVersion, this._client, config).GetTelemetryCommonProperties();
                 this._commonMeasurements = new Dictionary<string, double>();
+                this._logger.LogDebug($"Telemetry Initialized. Session={CurrentSessionId}");
             }
             catch (Exception e)
             {
-                this._client.TrackException(e);
+                this._client?.TrackException(e);
                 this._client = null;
                 // we don't want to fail the tool if telemetry fails.
-                Debug.Fail(e.ToString());
+                this._logger.LogError($"Error initializing telemetry. Telemetry will be disabled. Message={e.Message}");
             }
         }
 
@@ -96,7 +99,7 @@ This extension collect usage data in order to help us improve your experience. T
                 {
                     return;
                 }
-                this._logger.LogInformation($"Sending event {eventName}");
+                this._logger.LogTrace($"Sending event {eventName}");
 
                 //continue task in existing parallel thread
                 this._trackEventTask = this._trackEventTask.ContinueWith(
@@ -106,7 +109,7 @@ This extension collect usage data in order to help us improve your experience. T
             catch (Exception ex)
             {
                 // We don't want errors sending telemetry to break the app, so just log and move on
-                Debug.Fail($"Error sending event {eventName} : {ex.Message}");
+                this._logger.LogError($"Error sending event {eventName}. Message={ex.Message}");
             }
         }
 
@@ -119,7 +122,7 @@ This extension collect usage data in order to help us improve your experience. T
                 {
                     return;
                 }
-                this._logger.LogInformation($"Sending exception event: {exception.Message}");
+                this._logger.LogTrace($"Sending exception event: {exception.Message}");
                 properties = properties != null ? new Dictionary<TelemetryPropertyName, string>(properties) : new Dictionary<TelemetryPropertyName, string>();
                 properties[TelemetryPropertyName.ErrorName] = errorName.ToString();
                 properties[TelemetryPropertyName.ErrorCode] = ExtractErrorCode(exception);
@@ -131,7 +134,7 @@ This extension collect usage data in order to help us improve your experience. T
             catch (Exception ex)
             {
                 // We don't want errors sending telemetry to break the app, so just log and move on
-                Debug.Fail($"Error sending exception event : {ex.Message}");
+                this._logger.LogError($"Error sending exception event. Message={ex.Message}");
             }
         }
 
@@ -154,7 +157,7 @@ This extension collect usage data in order to help us improve your experience. T
             catch (Exception ex)
             {
                 // We don't want errors sending telemetry to break the app, so just log and move on
-                Debug.Fail($"Error sending event {eventName} : {ex.Message}");
+                this._logger.LogError($"Error sending event {eventName}. Message={ex.Message}");
             }
         }
 
@@ -176,7 +179,7 @@ This extension collect usage data in order to help us improve your experience. T
             catch (Exception ex)
             {
                 // We don't want errors sending telemetry to break the app, so just log and move on
-                Debug.Fail($"Error sending event Create : {ex.Message}");
+                this._logger.LogError($"Error sending event Create. Message={ex.Message}");
             }
         }
 
@@ -198,7 +201,7 @@ This extension collect usage data in order to help us improve your experience. T
             catch (Exception ex)
             {
                 // We don't want errors sending telemetry to break the app, so just log and move on
-                Debug.Fail($"Error sending event Create : {ex.Message}");
+                this._logger.LogError($"Error sending event Convert. Message={ex.Message}");
             }
         }
 
@@ -222,7 +225,7 @@ This extension collect usage data in order to help us improve your experience. T
             }
             catch (Exception e)
             {
-                Debug.Fail(e.ToString());
+                this._logger.LogError($"Error sending event {eventName}. Message={e.Message}");
             }
         }
 
@@ -246,7 +249,7 @@ This extension collect usage data in order to help us improve your experience. T
             }
             catch (Exception e)
             {
-                Debug.Fail(e.ToString());
+                this._logger.LogError($"Error sending exception event. Message={e.Message}");
             }
         }
 
@@ -332,6 +335,7 @@ This extension collect usage data in order to help us improve your experience. T
         GetChangesStart,
         GetColumnDefinitions,
         GetPrimaryKeys,
+        GetScaleStatus,
         GetTableInfoEnd,
         GetTableInfoStart,
         ReleaseLeasesEnd,
@@ -361,12 +365,16 @@ This extension collect usage data in order to help us improve your experience. T
         ExceptionType,
         HasIdentityColumn,
         HasConfiguredBatchSize,
+        HasConfiguredMaxChangesPerWorker,
         HasConfiguredPollingInterval,
         LeasesTableName,
         QueryType,
+        ScaleRecommendation,
         ServerVersion,
+        TriggerMetrics,
         Type,
         UserFunctionId,
+        WorkerCount,
     }
 
     /// <summary>
@@ -386,12 +394,15 @@ This extension collect usage data in order to help us improve your experience. T
         GetChangesDurationMs,
         GetColumnDefinitionsDurationMs,
         GetPrimaryKeysDurationMs,
+        GetUnprocessedChangesDurationMs,
         InsertGlobalStateTableRowDurationMs,
+        MaxChangesPerWorker,
         PollingIntervalMs,
         ReleaseLeasesDurationMs,
         RetryAttemptNumber,
         SetLastSyncVersionDurationMs,
         TransactionDurationMs,
+        UnprocessedChangeCount,
         UpdateLastSyncVersionDurationMs,
     }
 
@@ -402,6 +413,9 @@ This extension collect usage data in order to help us improve your experience. T
     {
         ConsumeChangesLoop,
         Convert,
+        CreateGlobalStateTable,
+        CreateLeasesTable,
+        CreateSchema,
         FlushAsync,
         GetCaseSensitivity,
         GetChanges,
@@ -409,6 +423,9 @@ This extension collect usage data in order to help us improve your experience. T
         GetColumnDefinitions,
         GetColumnDefinitionsTableDoesNotExist,
         GetPrimaryKeys,
+        GetScaleStatus,
+        GetUnprocessedChangeCount,
+        GetUnprocessedChangeCountRollback,
         MissingPrimaryKeys,
         NoPrimaryKeys,
         ProcessChanges,
@@ -418,7 +435,9 @@ This extension collect usage data in order to help us improve your experience. T
         ReleaseLeasesRollback,
         RenewLeases,
         RenewLeasesLoop,
+        RenewLeasesRollback,
         StartListener,
+        TriggerFunction,
         Upsert,
         UpsertRollback,
     }

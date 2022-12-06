@@ -5,8 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Threading.Tasks;
+using System.Threading;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -169,6 +172,66 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public static string AsSingleQuoteEscapedString(this string s)
         {
             return s.Replace("'", "''");
+        }
+
+        /// <summary>
+        /// Verifies that the database we're connected to is supported
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Throw if an error occurs while querying the compatibility level or if the database is not supported</exception>
+        public static async Task VerifyDatabaseSupported(SqlConnection connection, ILogger logger, CancellationToken cancellationToken)
+        {
+            // Need at least 130 for OPENJSON support
+            const int MIN_SUPPORTED_COMPAT_LEVEL = 130;
+
+            string verifyDatabaseSupportedQuery = $"SELECT compatibility_level FROM sys.databases WHERE Name = DB_NAME()";
+
+            logger.LogDebugWithThreadId($"BEGIN VerifyDatabaseSupported Query={verifyDatabaseSupportedQuery}");
+            using (var verifyDatabaseSupportedCommand = new SqlCommand(verifyDatabaseSupportedQuery, connection))
+            using (SqlDataReader reader = await verifyDatabaseSupportedCommand.ExecuteReaderAsync(cancellationToken))
+            {
+                if (!await reader.ReadAsync(cancellationToken))
+                {
+                    throw new InvalidOperationException($"Received empty response when verifying whether the database is currently supported.");
+                }
+
+                int compatLevel = reader.GetByte(0);
+
+                logger.LogDebugWithThreadId($"END GetUserTableId CompatLevel={compatLevel}");
+                if (compatLevel < MIN_SUPPORTED_COMPAT_LEVEL)
+                {
+                    throw new InvalidOperationException($"SQL bindings require a database compatibility level of 130 or higher to function. Current compatibility level = {compatLevel}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Opens a connection and handles some specific errors if they occur.
+        /// </summary>
+        /// <param name="connection">The connection to open</param>
+        /// <param name="cancellationToken">The cancellation token to pass to the OpenAsync call</param>
+        /// <returns>The task that will be completed when the connection is made</returns>
+        /// <exception cref="InvalidOperationException">Thrown if an error occurred that we want to wrap with more information</exception>
+        internal static async Task OpenAsyncWithSqlErrorHandling(this SqlConnection connection, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await connection.OpenAsync(cancellationToken);
+            }
+            catch (Exception e)
+            {
+                SqlException sqlEx = e is AggregateException a ? a.InnerExceptions.OfType<SqlException>().First() :
+                    e is SqlException s ? s :
+                    null;
+                // Error number for:
+                //  A connection was successfully established with the server, but then an error occurred during the login process.
+                //  The certificate chain was issued by an authority that is not trusted.
+                // Add on some more information to help the user figure out how to solve it
+                if (sqlEx?.Number == -2146893019)
+                {
+                    throw new InvalidOperationException("The default values for encryption on connections have been changed, please review your configuration to ensure you have the correct values for your server. See https://aka.ms/afsqlext-connection for more details.", e);
+                }
+                throw;
+            }
         }
     }
 }
