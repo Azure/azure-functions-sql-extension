@@ -1,0 +1,85 @@
+parameters:
+  - name: configuration
+    default: ''
+  - name: testServer
+    default: ''
+  # The benchmarks we want to run, corresponds to the values in performance\SqlBindingBenchmarks.cs
+  - name: tests
+    type: object
+    default:
+      - input
+      - output
+      - trigger
+      - trigger_batch
+      - trigger_poll
+      - trigger_overrides
+      - trigger_parallel
+
+steps:
+- task: UseDotNet@2
+  displayName: 'Install .NET SDK'
+  inputs:
+    useGlobalJson: true
+
+- script: npm install -g azure-functions-core-tools
+  displayName: 'Install Azure Functions Core Tools'
+
+- script: npm install -g azurite
+  displayName: 'Install Azurite Local Storage Emulator'
+
+# This step is necessary because npm installs to a non-traditional location on Windows hosted agents
+# This sets the path to npm global installations as a variable which then gets passed to the .NET run task
+- bash: echo "##vso[task.setvariable variable=nodeModulesPath]$(npm root -g)"
+  displayName: 'Set npm installation path for Windows'
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
+
+- task: DockerInstaller@0
+  displayName: Docker Installer
+  inputs:
+    dockerVersion: 17.09.0-ce
+    releaseType: stable
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
+
+- script: docker pull mcr.microsoft.com/mssql/server:2019-latest
+  displayName: Pull MSSQL Docker Image
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
+
+- bash: echo "##vso[task.setvariable variable=serverPassword]Test-$(Build.BuildNumber)-$(Get-Date -format yyyyMMdd-Hmmss)"
+  displayName: Generate password for test server
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
+
+- script: 'docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=$(serverPassword)" -e "MSSQL_PID=Express"
+   -p 1433:1433 --name sql1 -h sql1
+   -d mcr.microsoft.com/mssql/server:2019-latest'
+  displayName: Start Server in Docker Container
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
+
+- powershell: $(System.DefaultWorkingDirectory)/builds/scripts/UpdateLogLevel.ps1
+  displayName: Set logging level
+  condition: and(succeeded(), ne(variables['AFSQLEXT_TEST_LOGLEVEL'], ''))
+
+# Run each benchmark test separately so that failures in one don't block all the others from running
+- ${{ each test in parameters.tests }}:
+  - task: DotNetCoreCLI@2
+    displayName: Run ${{ test }} suite
+    env:
+      TEST_SERVER: '$(testServer)'
+      NODE_MODULES_PATH: '$(nodeModulesPath)'
+      SA_PASSWORD: '$(serverPassword)'
+      AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
+    inputs:
+      command: run
+      arguments: '-c ${{ parameters.configuration }} ${{ test }}'
+      workingDirectory: performance
+    continueOnError: true
+
+- script: |
+    docker stop sql1
+    docker rm sql1
+  displayName: 'Stop and Remove SQL Server Image'
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
+
+- publish: $(System.DefaultWorkingDirectory)/performance/BenchmarkDotNet.Artifacts
+  displayName: Publish BenchmarkDotNet.Artifacts
+  artifact: BenchmarkDotNet.Artifacts-$(Agent.OS)
+  condition: succeededOrFailed()

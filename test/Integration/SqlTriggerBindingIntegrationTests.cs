@@ -4,23 +4,26 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.TriggerBindingSamples;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
-using Newtonsoft.Json;
+using Microsoft.Azure.WebJobs.Host.Executors;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
-    [Collection("IntegrationTests")]
-    public class SqlTriggerBindingIntegrationTests : IntegrationTestBase
+    [Collection(IntegrationTestsCollection.Name)]
+    public class SqlTriggerBindingIntegrationTests : SqlTriggerBindingIntegrationTestBase
     {
         public SqlTriggerBindingIntegrationTests(ITestOutputHelper output = null) : base(output)
         {
-            this.EnableChangeTrackingForDatabase();
+
         }
 
         /// <summary>
@@ -29,7 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public async Task SingleOperationTriggerTest()
         {
-            this.EnableChangeTrackingForTable("Products");
+            this.SetChangeTrackingForTable("Products");
             this.StartFunctionHost(nameof(ProductsTrigger), SupportedLanguages.CSharp);
 
             int firstId = 1;
@@ -82,7 +85,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             const int batchSize = SqlTableChangeMonitor<object>.DefaultBatchSize * 4;
             const int firstId = 1;
             const int lastId = batchSize;
-            this.EnableChangeTrackingForTable("Products");
+            this.SetChangeTrackingForTable("Products");
             var taskCompletionSource = new TaskCompletionSource<bool>();
             DataReceivedEventHandler handler = TestUtils.CreateOutputReceievedHandler(
                 taskCompletionSource,
@@ -120,10 +123,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             const int firstId = 1;
             // Use enough items to require 5 batches to be processed - the test will
             // only wait for the expected time and timeout if the default polling
-            // interval isn't actually modified. 
+            // interval isn't actually modified.
             const int lastId = SqlTableChangeMonitor<object>.DefaultBatchSize * 5;
             const int pollingIntervalMs = SqlTableChangeMonitor<object>.DefaultPollingIntervalMs / 2;
-            this.EnableChangeTrackingForTable("Products");
+            this.SetChangeTrackingForTable("Products");
             var taskCompletionSource = new TaskCompletionSource<bool>();
             DataReceivedEventHandler handler = TestUtils.CreateOutputReceievedHandler(
                 taskCompletionSource,
@@ -160,7 +163,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             int firstId = 1;
             int lastId = 5;
-            this.EnableChangeTrackingForTable("Products");
+            this.SetChangeTrackingForTable("Products");
             this.StartFunctionHost(nameof(ProductsTrigger), SupportedLanguages.CSharp);
 
             // 1. Insert + multiple updates to a row are treated as single insert with latest row values.
@@ -241,7 +244,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             const string Trigger1Changes = "Trigger1 Changes: ";
             const string Trigger2Changes = "Trigger2 Changes: ";
 
-            this.EnableChangeTrackingForTable("Products");
+            this.SetChangeTrackingForTable("Products");
 
             string functionList = $"{nameof(MultiFunctionTrigger.MultiFunctionTrigger1)} {nameof(MultiFunctionTrigger.MultiFunctionTrigger2)}";
             this.StartFunctionHost(functionList, SupportedLanguages.CSharp, useTestFolder: true);
@@ -363,7 +366,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Fact]
         public async Task MultiHostTriggerTest()
         {
-            this.EnableChangeTrackingForTable("Products");
+            this.SetChangeTrackingForTable("Products");
 
             // Prepare three function host processes.
             this.StartFunctionHost(nameof(ProductsTrigger), SupportedLanguages.CSharp);
@@ -470,161 +473,39 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 "Could not find change tracking enabled for table: 'dbo.Products'.");
         }
 
-        private void EnableChangeTrackingForDatabase()
+        /// <summary>
+        /// Tests that the GetMetrics call works correctly.
+        /// </summary>
+        /// <remarks>We call this directly since there isn't a way to test scaling locally - with this we at least verify the methods called don't throw unexpectedly.</remarks>
+        [Fact]
+        public async void GetMetricsTest()
         {
-            this.ExecuteNonQuery($@"
-                ALTER DATABASE [{this.DatabaseName}]
-                SET CHANGE_TRACKING = ON
-                (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON);
-            ");
-        }
-
-        protected void EnableChangeTrackingForTable(string tableName)
-        {
-            this.ExecuteNonQuery($@"
-                ALTER TABLE [dbo].[{tableName}]
-                ENABLE CHANGE_TRACKING;
-            ");
-        }
-
-        protected void InsertProducts(int firstId, int lastId)
-        {
-            int count = lastId - firstId + 1;
-            this.ExecuteNonQuery(
-                "INSERT INTO [dbo].[Products] VALUES\n" +
-                string.Join(",\n", Enumerable.Range(firstId, count).Select(id => $"({id}, 'Product {id}', {id * 100})")) + ";");
-        }
-
-        protected void UpdateProducts(int firstId, int lastId)
-        {
-            int count = lastId - firstId + 1;
-            this.ExecuteNonQuery(
-                "UPDATE [dbo].[Products]\n" +
-                "SET Name = 'Updated ' + Name\n" +
-                "WHERE ProductId IN (" + string.Join(", ", Enumerable.Range(firstId, count)) + ");");
-        }
-
-        protected void DeleteProducts(int firstId, int lastId)
-        {
-            int count = lastId - firstId + 1;
-            this.ExecuteNonQuery(
-                "DELETE FROM [dbo].[Products]\n" +
-                "WHERE ProductId IN (" + string.Join(", ", Enumerable.Range(firstId, count)) + ");");
-        }
-
-        protected async Task WaitForProductChanges(
-            int firstId,
-            int lastId,
-            SqlChangeOperation operation,
-            Func<Task> actions,
-            Func<int, string> getName,
-            Func<int, int> getCost,
-            int timeoutMs,
-            string messagePrefix = "SQL Changes: ")
-        {
-            var expectedIds = Enumerable.Range(firstId, lastId - firstId + 1).ToHashSet();
-            int index = 0;
-
-            var taskCompletion = new TaskCompletionSource<bool>();
-
-            void MonitorOutputData(object sender, DataReceivedEventArgs e)
-            {
-                if (e.Data != null && (index = e.Data.IndexOf(messagePrefix, StringComparison.Ordinal)) >= 0)
-                {
-                    string json = e.Data[(index + messagePrefix.Length)..];
-                    IReadOnlyList<SqlChange<Product>> changes = JsonConvert.DeserializeObject<IReadOnlyList<SqlChange<Product>>>(json);
-                    foreach (SqlChange<Product> change in changes)
-                    {
-                        Assert.Equal(operation, change.Operation); // Expected change operation
-                        Product product = change.Item;
-                        Assert.NotNull(product); // Product deserialized correctly
-                        Assert.Contains(product.ProductID, expectedIds); // We haven't seen this product ID yet, and it's one we expected to see
-                        expectedIds.Remove(product.ProductID);
-                        Assert.Equal(getName(product.ProductID), product.Name); // The product has the expected name
-                        Assert.Equal(getCost(product.ProductID), product.Cost); // The product has the expected cost
-                    }
-                    if (expectedIds.Count == 0)
-                    {
-                        taskCompletion.SetResult(true);
-                    }
-                }
-            };
-            // Set up listener for the changes coming in
-            foreach (Process functionHost in this.FunctionHostList)
-            {
-                functionHost.OutputDataReceived += MonitorOutputData;
-            }
-
-            // Now that we've set up our listener trigger the actions to monitor
-            await actions();
-
-            // Now wait until either we timeout or we've gotten all the expected changes, whichever comes first
-            await taskCompletion.Task.TimeoutAfter(TimeSpan.FromMilliseconds(timeoutMs), $"Timed out waiting for {operation} changes.");
-
-            // Unhook handler since we're done monitoring these changes so we aren't checking other changes done later
-            foreach (Process functionHost in this.FunctionHostList)
-            {
-                functionHost.OutputDataReceived -= MonitorOutputData;
-            }
+            this.SetChangeTrackingForTable("Products");
+            IConfiguration configuration = new ConfigurationBuilder().Build();
+            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "func-id", Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<ILogger>(), configuration);
+            await listener.StartAsync(CancellationToken.None);
+            // Cancel immediately so the listener doesn't start processing the changes
+            await listener.StopAsync(CancellationToken.None);
+            SqlTriggerMetrics metrics = await listener.GetMetricsAsync();
+            Assert.True(metrics.UnprocessedChangeCount == 0, "There should initially be 0 unprocessed changes");
+            this.InsertProducts(1, 5);
+            metrics = await listener.GetMetricsAsync();
+            Assert.True(metrics.UnprocessedChangeCount == 5, $"There should be 5 unprocessed changes after insertion. Actual={metrics.UnprocessedChangeCount}");
         }
 
         /// <summary>
-        /// Launches the functions runtime host, waits for it to encounter error while starting the SQL trigger listener,
-        /// and asserts that the logged error message matches with the supplied error message.
+        /// Tests that when using an unsupported database the expected error is thrown
         /// </summary>
-        /// <param name="functionName">Name of the user function that should cause error in trigger listener</param>
-        /// <param name="useTestFolder">Whether the functions host should be launched from test folder</param>
-        /// <param name="expectedErrorMessage">Expected error message string</param>
-        private void StartFunctionHostAndWaitForError(string functionName, bool useTestFolder, string expectedErrorMessage)
+        [Fact]
+        public void UnsupportedDatabaseThrows()
         {
-            string errorMessage = null;
-            var tcs = new TaskCompletionSource<bool>();
+            // Change database compat level to unsupported version
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET COMPATIBILITY_LEVEL = 120");
 
-            void OutputHandler(object sender, DataReceivedEventArgs e)
-            {
-                if (errorMessage == null && e.Data?.Contains("Failed to start SQL trigger listener") == true)
-                {
-                    // SQL trigger listener throws exception of type InvalidOperationException for all error conditions.
-                    string exceptionPrefix = "Exception: System.InvalidOperationException: ";
-                    int index = e.Data.IndexOf(exceptionPrefix, StringComparison.Ordinal);
-                    Assert.NotEqual(-1, index);
-
-                    errorMessage = e.Data[(index + exceptionPrefix.Length)..];
-                    tcs.SetResult(true);
-                }
-            };
-
-            // All trigger integration tests are only using C# functions for testing at the moment.
-            this.StartFunctionHost(functionName, SupportedLanguages.CSharp, useTestFolder, OutputHandler);
-
-            // The functions host generally logs the error message within a second after starting up.
-            const int BufferTimeForErrorInSeconds = 15;
-            bool isCompleted = tcs.Task.Wait(TimeSpan.FromSeconds(BufferTimeForErrorInSeconds));
-
-            this.FunctionHost.OutputDataReceived -= OutputHandler;
-            this.FunctionHost.Kill();
-
-            Assert.True(isCompleted, "Functions host did not log failure to start SQL trigger listener within specified time.");
-            Assert.Equal(expectedErrorMessage, errorMessage);
-        }
-
-        /// <summary>
-        /// Gets a timeout value to use when processing the given number of changes, based on the
-        /// default batch size and polling interval.
-        /// </summary>
-        /// <param name="firstId">The first ID in the batch to process</param>
-        /// <param name="lastId">The last ID in the batch to process</param>
-        /// <param name="batchSize">The batch size if different than the default batch size</param>
-        /// <param name="pollingIntervalMs">The polling interval in ms if different than the default polling interval</param>
-        /// <returns></returns>
-        protected int GetBatchProcessingTimeout(int firstId, int lastId, int batchSize = SqlTableChangeMonitor<object>.DefaultBatchSize, int pollingIntervalMs = SqlTableChangeMonitor<object>.DefaultPollingIntervalMs)
-        {
-            int changesToProcess = lastId - firstId + 1;
-            int calculatedTimeout = (int)(Math.Ceiling((double)changesToProcess / batchSize // The number of batches to process
-                / this.FunctionHostList.Count) // The number of function host processes
-                * pollingIntervalMs // The length to process each batch
-                * 2); // Double to add buffer time for processing results
-            return Math.Max(calculatedTimeout, 2000); // Always have a timeout of at least 2sec to ensure we have time for processing the results
+            this.StartFunctionHostAndWaitForError(
+                nameof(ProductsTrigger),
+                false,
+                "SQL bindings require a database compatibility level of 130 or higher to function. Current compatibility level = 120");
         }
     }
 }

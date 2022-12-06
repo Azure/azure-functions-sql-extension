@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -35,12 +34,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         protected List<Process> FunctionHostList { get; } = new List<Process>();
 
         /// <summary>
-        /// Host process for Azurite local storage emulator. This is required for non-HTTP trigger functions:
-        /// https://docs.microsoft.com/azure/azure-functions/functions-develop-local
-        /// </summary>
-        private Process AzuriteHost;
-
-        /// <summary>
         /// Connection to the database for the current test.
         /// </summary>
         private DbConnection Connection;
@@ -49,6 +42,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// Connection string to the master database on the test server, mainly used for database setup and teardown.
         /// </summary>
         private string MasterConnectionString;
+
+        /// <summary>
+        /// Connection string to the database created for the test
+        /// </summary>
+        protected string DbConnectionString { get; private set; }
 
         /// <summary>
         /// Name of the database used for the current test.
@@ -70,7 +68,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             this.TestOutput = output;
             this.SetupDatabase();
-            this.StartAzurite();
         }
 
         /// <summary>
@@ -104,7 +101,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 {
                     DataSource = testServer,
                     InitialCatalog = "master",
-                    Pooling = false
+                    Pooling = false,
+                    Encrypt = SqlConnectionEncryptOption.Optional
                 };
 
                 // Either use integrated auth or SQL login depending if SA_PASSWORD is set
@@ -134,15 +132,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // Setup connection
             connectionStringBuilder.InitialCatalog = this.DatabaseName;
-            this.Connection = new SqlConnection(connectionStringBuilder.ToString());
+            this.DbConnectionString = connectionStringBuilder.ToString();
+            this.Connection = new SqlConnection(this.DbConnectionString);
             this.Connection.Open();
 
             // Create the database definition
             // Create these in a specific order since things like views require that their underlying objects have been created already
             // Ideally all the sql files would be in a sqlproj and can just be deployed
-            this.ExecuteAllScriptsInFolder(Path.Combine(GetPathToBin(), "Database", "Tables"));
-            this.ExecuteAllScriptsInFolder(Path.Combine(GetPathToBin(), "Database", "Views"));
-            this.ExecuteAllScriptsInFolder(Path.Combine(GetPathToBin(), "Database", "StoredProcedures"));
+            this.ExecuteAllScriptsInFolder(Path.Combine(TestUtils.GetPathToBin(), "Database", "Tables"));
+            this.ExecuteAllScriptsInFolder(Path.Combine(TestUtils.GetPathToBin(), "Database", "Views"));
+            this.ExecuteAllScriptsInFolder(Path.Combine(TestUtils.GetPathToBin(), "Database", "StoredProcedures"));
 
             // Set SqlConnectionString env var for the Function to use
             Environment.SetEnvironmentVariable("SqlConnectionString", connectionStringBuilder.ToString());
@@ -158,33 +157,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
-        /// This starts the Azurite storage emulator.
-        /// </summary>
-        protected void StartAzurite()
-        {
-            this.AzuriteHost = new Process()
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "azurite",
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    UseShellExecute = true
-                }
-            };
-
-            this.AzuriteHost.Start();
-        }
-
-        /// <summary>
         /// This starts the Functions runtime with the specified function(s).
         /// </summary>
         /// <remarks>
         /// - The functionName is different than its route.<br/>
         /// - You can start multiple functions by passing in a space-separated list of function names.<br/>
         /// </remarks>
-        protected void StartFunctionHost(string functionName, SupportedLanguages language, bool useTestFolder = false, DataReceivedEventHandler customOutputHandler = null, IDictionary<string, string> environmentVariables = null)
+        public void StartFunctionHost(string functionName, SupportedLanguages language, bool useTestFolder = false, DataReceivedEventHandler customOutputHandler = null, IDictionary<string, string> environmentVariables = null)
         {
-            string workingDirectory = language == SupportedLanguages.CSharp && useTestFolder ? GetPathToBin() : Path.Combine(GetPathToBin(), "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), language));
+            string workingDirectory = language == SupportedLanguages.CSharp && useTestFolder ? TestUtils.GetPathToBin() : Path.Combine(TestUtils.GetPathToBin(), "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), language));
+            if (language == SupportedLanguages.Java)
+            {
+                workingDirectory = useTestFolder ? Path.Combine(TestUtils.GetPathToBin(), "..", "..", "..", "Integration", "test-java") : workingDirectory;
+                string projectName = useTestFolder ? "test-java-1666041146813" : "samples-java-1665766173929";
+                workingDirectory = Path.Combine(workingDirectory, "target", "azure-functions", projectName);
+            }
+            if (language == SupportedLanguages.OutOfProc && useTestFolder)
+            {
+                workingDirectory = Path.Combine(workingDirectory, "test");
+            }
+
             if (!Directory.Exists(workingDirectory))
             {
                 throw new FileNotFoundException("Working directory not found at " + workingDirectory);
@@ -205,10 +197,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 RedirectStandardError = true,
                 UseShellExecute = false
             };
-            if (environmentVariables != null)
-            {
-                environmentVariables.ToList().ForEach(ev => startInfo.EnvironmentVariables[ev.Key] = ev.Value);
-            }
+            environmentVariables?.ToList().ForEach(ev => startInfo.EnvironmentVariables[ev.Key] = ev.Value);
 
             // Always disable telemetry during test runs
             startInfo.EnvironmentVariables[TelemetryOptoutEnvVar] = "1";
@@ -224,8 +213,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // Register all handlers before starting the functions host process.
             var taskCompletionSource = new TaskCompletionSource<bool>();
+            void SignalStartupHandler(object sender, DataReceivedEventArgs e)
+            {
+                // This string is printed after the function host is started up - use this to ensure that we wait long enough
+                // since sometimes the host can take a little while to fully start up
+                if (e.Data?.Contains(" Host initialized ") == true)
+                {
+                    taskCompletionSource.SetResult(true);
+                }
+            };
             functionHost.OutputDataReceived += SignalStartupHandler;
-            this.FunctionHost.OutputDataReceived += customOutputHandler;
+            functionHost.OutputDataReceived += customOutputHandler;
 
             functionHost.Start();
             functionHost.OutputDataReceived += this.GetTestOutputHandler(functionHost.Id);
@@ -245,18 +243,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Task.Delay(TimeSpan.FromSeconds(BufferTimeInSeconds)).Wait();
 
             this.LogOutput("Azure Function host started!");
-            this.FunctionHost.OutputDataReceived -= SignalStartupHandler;
-
-            void SignalStartupHandler(object sender, DataReceivedEventArgs e)
-            {
-                // This string is printed after the function host is started up - use this to ensure that we wait long enough
-                // since sometimes the host can take a little while to fully start up
-                if (e.Data?.Contains(" Host initialized ") == true)
-                {
-                    taskCompletionSource.SetResult(true);
-                }
-            };
-            taskCompletionSource.Task.Wait(60000);
+            functionHost.OutputDataReceived -= SignalStartupHandler;
         }
 
         private static string GetFunctionsCoreToolsPath()
@@ -286,6 +273,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     }
                     throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath} or {programFilesFuncPath}");
                 }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    // Search Mac to see if brew installed location has azure function core tools
+                    string usrBinFuncPath = Path.Combine("/usr", "local", "bin", "func");
+                    if (File.Exists(usrBinFuncPath))
+                    {
+                        return usrBinFuncPath;
+                    }
+                    throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath} or {usrBinFuncPath}");
+                }
                 throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath}");
             }
 
@@ -306,8 +303,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         private DataReceivedEventHandler GetTestOutputHandler(int processId)
         {
-            return TestOutputHandler;
-
             void TestOutputHandler(object sender, DataReceivedEventArgs e)
             {
                 if (!string.IsNullOrEmpty(e.Data))
@@ -315,6 +310,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     this.LogOutput($"[{processId}] {e.Data}");
                 }
             }
+            return TestOutputHandler;
         }
 
         protected async Task<HttpResponseMessage> SendGetRequest(string requestUri, bool verifySuccess = true)
@@ -362,9 +358,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Executes a command against the current connection.
         /// </summary>
-        protected void ExecuteNonQuery(string commandText)
+        /// <param name="command">Command text to execute</param>
+        /// <param name="message">Optional message to write when this query is executed. Defaults to writing the query commandText</param>
+        protected void ExecuteNonQuery(string commandText, string message = null)
         {
-            TestUtils.ExecuteNonQuery(this.Connection, commandText);
+            TestUtils.ExecuteNonQuery(this.Connection, commandText, message: message);
         }
 
         /// <summary>
@@ -375,10 +373,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             return TestUtils.ExecuteScalar(this.Connection, commandText);
         }
 
-        private static string GetPathToBin()
-        {
-            return Path.GetDirectoryName(Assembly.GetAssembly(typeof(Product)).Location);
-        }
 
         public void Dispose()
         {
@@ -393,28 +387,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 this.LogOutput($"Failed to close connection. Error: {e1.Message}");
             }
 
-            foreach (Process functionHost in this.FunctionHostList)
-            {
-                try
-                {
-                    functionHost.Kill();
-                    functionHost.Dispose();
-                }
-                catch (Exception e2)
-                {
-                    this.LogOutput($"Failed to stop function host, Error: {e2.Message}");
-                }
-            }
-
-            try
-            {
-                this.AzuriteHost?.Kill();
-                this.AzuriteHost?.Dispose();
-            }
-            catch (Exception e3)
-            {
-                this.LogOutput($"Failed to stop Azurite, Error: {e3.Message}");
-            }
+            this.DisposeFunctionHosts();
 
             try
             {
@@ -429,6 +402,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
 
             GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Disposes all the running function hosts
+        /// </summary>
+        protected void DisposeFunctionHosts()
+        {
+            foreach (Process functionHost in this.FunctionHostList)
+            {
+                try
+                {
+                    functionHost.CancelOutputRead();
+                    functionHost.CancelErrorRead();
+                    functionHost.Kill(true);
+                    functionHost.Dispose();
+                    functionHost.WaitForExit();
+                }
+                catch (Exception ex)
+                {
+                    this.LogOutput($"Failed to stop function host, Error: {ex.Message}");
+                }
+            }
+            this.FunctionHostList.Clear();
         }
 
         protected async Task<HttpResponseMessage> SendInputRequest(string functionName, string query = "")
@@ -470,7 +466,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 queryBuilder.AppendLine($"INSERT INTO dbo.Products VALUES({p.ProductID}, '{p.Name}', {p.Cost});");
             }
 
-            this.ExecuteNonQuery(queryBuilder.ToString());
+            this.ExecuteNonQuery(queryBuilder.ToString(), $"Inserting {products.Length} products");
         }
 
         protected static Product[] GetProducts(int n, int cost)

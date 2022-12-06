@@ -14,10 +14,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
     /// </summary>
     public class SqlInlineDataAttribute : DataAttribute
     {
-        private readonly List<object[]> testData = new List<object[]>();
+        private readonly List<object[]> testData = new();
 
         /// <summary>
-        /// Adds a language parameter to the test data which will contain the language 
+        /// Adds a language parameter to the test data which will contain the language
         /// that the test is currently running against from the list of supported languages
         /// </summary>
         /// <param name="args">The test parameters to insert inline for the test</param>
@@ -71,6 +71,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
     public enum SupportedLanguages
     {
         CSharp,
-        JavaScript
+        JavaScript,
+        PowerShell,
+        Java,
+        OutOfProc
     };
 }
