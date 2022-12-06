@@ -12,19 +12,20 @@
     <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)/SQL2003.snk</AssemblyOriginatorKeyFile>
     <IsPackable>false</IsPackable>
     <Company>Microsoft</Company>
-		<Authors>Microsoft</Authors>
+    <Authors>Microsoft</Authors>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-		<DebugSymbols>true</DebugSymbols>
-		<IncludeSymbols>true</IncludeSymbols>
-		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
-		<DebugType>portable</DebugType>
-		<PackageId>Microsoft.Azure.Functions.Worker.Extension.Sql</PackageId>
-		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <IsPackable>true</IsPackable>
+    <DebugSymbols>true</DebugSymbols>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <DebugType>portable</DebugType>
+    <PackageId>Microsoft.Azure.Functions.Worker.Extension.Sql</PackageId>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<PublishRepositoryUrl>true</PublishRepositoryUrl>
-		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>pkgicon.png</PackageIcon>
     <PackageProjectUrl>https://github.com/Azure/azure-functions-sql-extension</PackageProjectUrl>
