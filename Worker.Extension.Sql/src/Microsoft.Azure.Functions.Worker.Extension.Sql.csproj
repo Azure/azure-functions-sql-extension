@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<AssemblyName>Microsoft.Azure.Functions.Worker.Extension.Sql</AssemblyName>
+		<RootNamespace>Microsoft.Azure.Functions.Worker.Extension.Sql</RootNamespace>
+		<Description>Sql extension for .NET isolated Azure Functions</Description>
+
+		<!--Version information-->
+		<VersionPrefix>99.99.99</VersionPrefix>
+
+		<!--Temporarily opting out of documentation. Pending documentation-->
+		<GenerateDocumentationFile>false</GenerateDocumentationFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Abstractions"/>
+		<PackageReference Include="Microsoft.Data.SqlClient" />
+		<PackageReference Include="System.Drawing.Common" />
+	</ItemGroup>
+
+</Project>

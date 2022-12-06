@@ -4,7 +4,6 @@ pr:
   branches:
     include:
     - main
-    - triggerbindings
     - release/*
 
 variables:
@@ -42,6 +41,8 @@ stages:
 
     workspace:
       clean: all
+
+    timeoutInMinutes: '90'
 
     steps:
     - template: 'template-steps-build-test.yml'

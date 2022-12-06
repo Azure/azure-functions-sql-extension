@@ -10,11 +10,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlTriggerConstants;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlBindingUtilities;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Listeners;
+using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
+using MoreLinq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -22,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// Represents the listener to SQL table changes.
     /// </summary>
     /// <typeparam name="T">POCO class representing the row in the user table</typeparam>
-    internal sealed class SqlTriggerListener<T> : IListener
+    internal sealed class SqlTriggerListener<T> : IListener, IScaleMonitor<SqlTriggerMetrics>
     {
         private const int ListenerNotStarted = 0;
         private const int ListenerStarting = 1;
@@ -30,17 +34,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const int ListenerStopping = 3;
         private const int ListenerStopped = 4;
 
+        // NOTE: please ensure the Readme file and other public documentation are also updated if this value ever
+        // needs to be changed.
+        public const int DefaultMaxChangesPerWorker = 1000;
+
         private readonly SqlObject _userTable;
         private readonly string _connectionString;
         private readonly string _userFunctionId;
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly ILogger _logger;
         private readonly IConfiguration _configuration;
+        private readonly ScaleMonitorDescriptor _scaleMonitorDescriptor;
 
         private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps = new Dictionary<TelemetryPropertyName, string>();
+        private readonly int _maxChangesPerWorker;
+        private readonly bool _hasConfiguredMaxChangesPerWorker = false;
 
         private SqlTableChangeMonitor<T> _changeMonitor;
         private int _listenerState = ListenerNotStarted;
+
+        ScaleMonitorDescriptor IScaleMonitor.Descriptor => this._scaleMonitorDescriptor;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlTriggerListener{T}"/> class.
@@ -59,6 +72,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            int? configuredMaxChangesPerWorker;
+            // Do not convert the scale-monitor ID to lower-case string since SQL table names can be case-sensitive
+            // depending on the collation of the current database.
+            this._scaleMonitorDescriptor = new ScaleMonitorDescriptor($"{userFunctionId}-SqlTrigger-{tableName}");
+            configuredMaxChangesPerWorker = configuration.GetValue<int?>(ConfigKey_SqlTrigger_MaxChangesPerWorker);
+            this._maxChangesPerWorker = configuredMaxChangesPerWorker ?? DefaultMaxChangesPerWorker;
+            if (this._maxChangesPerWorker <= 0)
+            {
+                throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_MaxChangesPerWorker}'. Ensure that the value is a positive integer.");
+            }
+            this._hasConfiguredMaxChangesPerWorker = configuredMaxChangesPerWorker != null;
         }
 
         public void Cancel()
@@ -83,22 +107,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             this.InitializeTelemetryProps();
-            TelemetryInstance.TrackEvent(TelemetryEventName.StartListenerStart, this._telemetryProps);
+            TelemetryInstance.TrackEvent(
+                TelemetryEventName.StartListenerStart,
+                new Dictionary<TelemetryPropertyName, string>(this._telemetryProps) {
+                        { TelemetryPropertyName.HasConfiguredMaxChangesPerWorker, this._hasConfiguredMaxChangesPerWorker.ToString() }
+                },
+                new Dictionary<TelemetryMeasureName, double>() {
+                    { TelemetryMeasureName.MaxChangesPerWorker, this._maxChangesPerWorker }
+                }
+            );
 
             try
             {
                 using (var connection = new SqlConnection(this._connectionString))
                 {
                     this._logger.LogDebugWithThreadId("BEGIN OpenListenerConnection");
-                    await connection.OpenAsync(cancellationToken);
+                    await connection.OpenAsyncWithSqlErrorHandling(cancellationToken);
                     this._logger.LogDebugWithThreadId("END OpenListenerConnection");
                     this._telemetryProps.AddConnectionProps(connection);
+
+                    await VerifyDatabaseSupported(connection, this._logger, cancellationToken);
 
                     int userTableId = await this.GetUserTableIdAsync(connection, cancellationToken);
                     IReadOnlyList<(string name, string type)> primaryKeyColumns = await this.GetPrimaryKeyColumnsAsync(connection, userTableId, cancellationToken);
                     IReadOnlyList<string> userTableColumns = await this.GetUserTableColumnsAsync(connection, userTableId, cancellationToken);
 
-                    string leasesTableName = string.Format(CultureInfo.InvariantCulture, SqlTriggerConstants.LeasesTableNameFormat, $"{this._userFunctionId}_{userTableId}");
+                    string leasesTableName = string.Format(CultureInfo.InvariantCulture, LeasesTableNameFormat, $"{this._userFunctionId}_{userTableId}");
                     this._telemetryProps[TelemetryPropertyName.LeasesTableName] = leasesTableName;
 
                     var transactionSw = Stopwatch.StartNew();
@@ -122,7 +156,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         this._userFunctionId,
                         leasesTableName,
                         userTableColumns,
-                        primaryKeyColumns.Select(col => col.name).ToList(),
+                        primaryKeyColumns,
                         this._executor,
                         this._logger,
                         this._configuration,
@@ -212,8 +246,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </exception>
         private async Task<IReadOnlyList<(string name, string type)>> GetPrimaryKeyColumnsAsync(SqlConnection connection, int userTableId, CancellationToken cancellationToken)
         {
+            const int NameIndex = 0, TypeIndex = 1, LengthIndex = 2, PrecisionIndex = 3, ScaleIndex = 4;
             string getPrimaryKeyColumnsQuery = $@"
-                SELECT c.name, t.name, c.max_length, c.precision, c.scale
+                SELECT 
+                    c.name, 
+                    t.name, 
+                    c.max_length, 
+                    c.precision, 
+                    c.scale
                 FROM sys.indexes AS i
                 INNER JOIN sys.index_columns AS ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
                 INNER JOIN sys.columns AS c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
@@ -231,20 +271,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 while (await reader.ReadAsync(cancellationToken))
                 {
-                    string name = reader.GetString(0);
-                    string type = reader.GetString(1);
+                    string name = reader.GetString(NameIndex);
+                    string type = reader.GetString(TypeIndex);
 
                     if (variableLengthTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
                     {
                         // Special "max" case. I'm actually not sure it's valid to have varchar(max) as a primary key because
                         // it exceeds the byte limit of an index field (900 bytes), but just in case
-                        short length = reader.GetInt16(2);
+                        short length = reader.GetInt16(LengthIndex);
                         type += length == -1 ? "(max)" : $"({length})";
                     }
                     else if (variablePrecisionTypes.Contains(type))
                     {
-                        byte precision = reader.GetByte(3);
-                        byte scale = reader.GetByte(4);
+                        byte precision = reader.GetByte(PrecisionIndex);
+                        byte scale = reader.GetByte(ScaleIndex);
                         type += $"({precision},{scale})";
                     }
 
@@ -266,8 +306,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         private async Task<IReadOnlyList<string>> GetUserTableColumnsAsync(SqlConnection connection, int userTableId, CancellationToken cancellationToken)
         {
+            const int NameIndex = 0, TypeIndex = 1, IsAssemblyTypeIndex = 2;
             string getUserTableColumnsQuery = $@"
-                SELECT c.name, t.name, t.is_assembly_type
+                SELECT 
+                    c.name, 
+                    t.name, 
+                    t.is_assembly_type
                 FROM sys.columns AS c
                 INNER JOIN sys.types AS t ON c.user_type_id = t.user_type_id
                 WHERE c.object_id = {userTableId};
@@ -282,9 +326,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 while (await reader.ReadAsync(cancellationToken))
                 {
-                    string columnName = reader.GetString(0);
-                    string columnType = reader.GetString(1);
-                    bool isAssemblyType = reader.GetBoolean(2);
+                    string columnName = reader.GetString(NameIndex);
+                    string columnType = reader.GetString(TypeIndex);
+                    bool isAssemblyType = reader.GetBoolean(IsAssemblyTypeIndex);
 
                     userTableColumns.Add(columnName);
 
@@ -300,7 +344,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new InvalidOperationException($"Found column(s) with unsupported type(s): {columnNamesAndTypes} in table: '{this._userTable.FullName}'.");
                 }
 
-                var conflictingColumnNames = userTableColumns.Intersect(SqlTriggerConstants.ReservedColumnNames).ToList();
+                var conflictingColumnNames = userTableColumns.Intersect(ReservedColumnNames).ToList();
 
                 if (conflictingColumnNames.Count > 0)
                 {
@@ -324,15 +368,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private async Task<long> CreateSchemaAsync(SqlConnection connection, SqlTransaction transaction, CancellationToken cancellationToken)
         {
             string createSchemaQuery = $@"
-                IF SCHEMA_ID(N'{SqlTriggerConstants.SchemaName}') IS NULL
-                    EXEC ('CREATE SCHEMA {SqlTriggerConstants.SchemaName}');
+                {AppLockStatements}
+
+                IF SCHEMA_ID(N'{SchemaName}') IS NULL
+                    EXEC ('CREATE SCHEMA {SchemaName}');
             ";
 
             this._logger.LogDebugWithThreadId($"BEGIN CreateSchema Query={createSchemaQuery}");
             using (var createSchemaCommand = new SqlCommand(createSchemaQuery, connection, transaction))
             {
                 var stopwatch = Stopwatch.StartNew();
-                await createSchemaCommand.ExecuteNonQueryAsync(cancellationToken);
+
+                try
+                {
+                    await createSchemaCommand.ExecuteNonQueryAsync(cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    TelemetryInstance.TrackException(TelemetryErrorName.CreateSchema, ex, this._telemetryProps);
+                    var sqlEx = ex as SqlException;
+                    if (sqlEx?.Number == ObjectAlreadyExistsErrorNumber)
+                    {
+                        // This generally shouldn't happen since we check for its existence in the statement but occasionally
+                        // a race condition can make it so that multiple instances will try and create the schema at once.
+                        // In that case we can just ignore the error since all we care about is that the schema exists at all.
+                        this._logger.LogWarning($"Failed to create schema '{SchemaName}'. Exception message: {ex.Message} This is informational only, function startup will continue as normal.");
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+
                 long durationMs = stopwatch.ElapsedMilliseconds;
                 this._logger.LogDebugWithThreadId($"END CreateSchema Duration={durationMs}ms");
                 return durationMs;
@@ -349,8 +416,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private async Task<long> CreateGlobalStateTableAsync(SqlConnection connection, SqlTransaction transaction, CancellationToken cancellationToken)
         {
             string createGlobalStateTableQuery = $@"
-                IF OBJECT_ID(N'{SqlTriggerConstants.GlobalStateTableName}', 'U') IS NULL
-                    CREATE TABLE {SqlTriggerConstants.GlobalStateTableName} (
+                {AppLockStatements}
+
+                IF OBJECT_ID(N'{GlobalStateTableName}', 'U') IS NULL
+                    CREATE TABLE {GlobalStateTableName} (
                         UserFunctionID char(16) NOT NULL,
                         UserTableID int NOT NULL,
                         LastSyncVersion bigint NOT NULL,
@@ -362,7 +431,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             using (var createGlobalStateTableCommand = new SqlCommand(createGlobalStateTableQuery, connection, transaction))
             {
                 var stopwatch = Stopwatch.StartNew();
-                await createGlobalStateTableCommand.ExecuteNonQueryAsync(cancellationToken);
+                try
+                {
+                    await createGlobalStateTableCommand.ExecuteNonQueryAsync(cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    TelemetryInstance.TrackException(TelemetryErrorName.CreateGlobalStateTable, ex, this._telemetryProps);
+                    var sqlEx = ex as SqlException;
+                    if (sqlEx?.Number == ObjectAlreadyExistsErrorNumber)
+                    {
+                        // This generally shouldn't happen since we check for its existence in the statement but occasionally
+                        // a race condition can make it so that multiple instances will try and create the schema at once.
+                        // In that case we can just ignore the error since all we care about is that the schema exists at all.
+                        this._logger.LogWarning($"Failed to create global state table '{GlobalStateTableName}'. Exception message: {ex.Message} This is informational only, function startup will continue as normal.");
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
                 long durationMs = stopwatch.ElapsedMilliseconds;
                 this._logger.LogDebugWithThreadId($"END CreateGlobalStateTable Duration={durationMs}ms");
                 return durationMs;
@@ -402,11 +490,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._logger.LogDebugWithThreadId($"END GetMinValidVersion MinValidVersion={minValidVersion}");
 
             string insertRowGlobalStateTableQuery = $@"
+                {AppLockStatements}
+
                 IF NOT EXISTS (
-                    SELECT * FROM {SqlTriggerConstants.GlobalStateTableName}
+                    SELECT * FROM {GlobalStateTableName}
                     WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {userTableId}
                 )
-                    INSERT INTO {SqlTriggerConstants.GlobalStateTableName}
+                    INSERT INTO {GlobalStateTableName}
                     VALUES ('{this._userFunctionId}', {userTableId}, {(long)minValidVersion});
             ";
 
@@ -442,12 +532,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string primaryKeys = string.Join(", ", primaryKeyColumns.Select(col => col.name.AsBracketQuotedString()));
 
             string createLeasesTableQuery = $@"
+                {AppLockStatements}
+
                 IF OBJECT_ID(N'{leasesTableName}', 'U') IS NULL
                     CREATE TABLE {leasesTableName} (
                         {primaryKeysWithTypes},
-                        {SqlTriggerConstants.LeasesTableChangeVersionColumnName} bigint NOT NULL,
-                        {SqlTriggerConstants.LeasesTableAttemptCountColumnName} int NOT NULL,
-                        {SqlTriggerConstants.LeasesTableLeaseExpirationTimeColumnName} datetime2,
+                        {LeasesTableChangeVersionColumnName} bigint NOT NULL,
+                        {LeasesTableAttemptCountColumnName} int NOT NULL,
+                        {LeasesTableLeaseExpirationTimeColumnName} datetime2,
                         PRIMARY KEY ({primaryKeys})
                     );
             ";
@@ -456,11 +548,178 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             using (var createLeasesTableCommand = new SqlCommand(createLeasesTableQuery, connection, transaction))
             {
                 var stopwatch = Stopwatch.StartNew();
-                await createLeasesTableCommand.ExecuteNonQueryAsync(cancellationToken);
+                try
+                {
+                    await createLeasesTableCommand.ExecuteNonQueryAsync(cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    TelemetryInstance.TrackException(TelemetryErrorName.CreateLeasesTable, ex, this._telemetryProps);
+                    var sqlEx = ex as SqlException;
+                    if (sqlEx?.Number == ObjectAlreadyExistsErrorNumber)
+                    {
+                        // This generally shouldn't happen since we check for its existence in the statement but occasionally
+                        // a race condition can make it so that multiple instances will try and create the schema at once.
+                        // In that case we can just ignore the error since all we care about is that the schema exists at all.
+                        this._logger.LogWarning($"Failed to create global state table '{leasesTableName}'. Exception message: {ex.Message} This is informational only, function startup will continue as normal.");
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
                 long durationMs = stopwatch.ElapsedMilliseconds;
                 this._logger.LogDebugWithThreadId($"END CreateLeasesTable Duration={durationMs}ms");
                 return durationMs;
             }
+        }
+
+        async Task<ScaleMetrics> IScaleMonitor.GetMetricsAsync()
+        {
+            return await this.GetMetricsAsync();
+        }
+
+        public async Task<SqlTriggerMetrics> GetMetricsAsync()
+        {
+            Debug.Assert(!(this._changeMonitor is null));
+
+            return new SqlTriggerMetrics
+            {
+                UnprocessedChangeCount = await this._changeMonitor.GetUnprocessedChangeCountAsync(),
+                Timestamp = DateTime.UtcNow,
+            };
+        }
+
+        ScaleStatus IScaleMonitor.GetScaleStatus(ScaleStatusContext context)
+        {
+            return this.GetScaleStatusWithTelemetry(context.WorkerCount, context.Metrics?.Cast<SqlTriggerMetrics>().ToArray());
+        }
+
+        public ScaleStatus GetScaleStatus(ScaleStatusContext<SqlTriggerMetrics> context)
+        {
+            return this.GetScaleStatusWithTelemetry(context.WorkerCount, context.Metrics?.ToArray());
+        }
+
+        private ScaleStatus GetScaleStatusWithTelemetry(int workerCount, SqlTriggerMetrics[] metrics)
+        {
+            var status = new ScaleStatus
+            {
+                Vote = ScaleVote.None,
+            };
+
+            var properties = new Dictionary<TelemetryPropertyName, string>(this._telemetryProps)
+            {
+                [TelemetryPropertyName.ScaleRecommendation] = $"{status.Vote}",
+                [TelemetryPropertyName.TriggerMetrics] = metrics is null ? "null" : $"[{string.Join(", ", metrics.Select(metric => metric.UnprocessedChangeCount))}]",
+                [TelemetryPropertyName.WorkerCount] = $"{workerCount}",
+            };
+
+            try
+            {
+                status = this.GetScaleStatusCore(workerCount, metrics);
+
+                properties[TelemetryPropertyName.ScaleRecommendation] = $"{status.Vote}";
+                TelemetryInstance.TrackEvent(TelemetryEventName.GetScaleStatus, properties);
+            }
+            catch (Exception ex)
+            {
+                this._logger.LogError($"Failed to get scale status for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
+                TelemetryInstance.TrackException(TelemetryErrorName.GetScaleStatus, ex, properties);
+            }
+
+            return status;
+        }
+
+        /// <summary>
+        /// Returns scale recommendation i.e. whether to scale in or out the host application. The recommendation is
+        /// made based on both the latest metrics and the trend of increase or decrease in the count of unprocessed
+        /// changes in the user table. In all of the calculations, it is attempted to keep the number of workers minimum
+        /// while also ensuring that the count of unprocessed changes per worker stays under the maximum limit.
+        /// </summary>
+        /// <param name="workerCount">The current worker count for the host application.</param>
+        /// <param name="metrics">The collection of metrics samples to make the scale decision.</param>
+        /// <returns></returns>
+        private ScaleStatus GetScaleStatusCore(int workerCount, SqlTriggerMetrics[] metrics)
+        {
+            // We require minimum 5 samples to estimate the trend of variation in count of unprocessed changes with
+            // certain reliability. These samples roughly cover the timespan of past 40 seconds.
+            const int minSamplesForScaling = 5;
+
+            var status = new ScaleStatus
+            {
+                Vote = ScaleVote.None,
+            };
+
+            // Do not make a scale decision unless we have enough samples.
+            if (metrics is null || (metrics.Length < minSamplesForScaling))
+            {
+                this._logger.LogInformation($"Requesting no-scaling: Insufficient metrics for making scale decision for table: '{this._userTable.FullName}'.");
+                return status;
+            }
+
+            // Consider only the most recent batch of samples in the rest of the method.
+            metrics = metrics.TakeLast(minSamplesForScaling).ToArray();
+
+            string counts = string.Join(", ", metrics.Select(metric => metric.UnprocessedChangeCount));
+            this._logger.LogInformation($"Unprocessed change counts: [{counts}], worker count: {workerCount}, maximum changes per worker: {this._maxChangesPerWorker}.");
+
+            // Add worker if the count of unprocessed changes per worker exceeds the maximum limit.
+            long lastUnprocessedChangeCount = metrics.Last().UnprocessedChangeCount;
+            if (lastUnprocessedChangeCount > workerCount * this._maxChangesPerWorker)
+            {
+                status.Vote = ScaleVote.ScaleOut;
+                this._logger.LogInformation($"Requesting scale-out: Found too many unprocessed changes for table: '{this._userTable.FullName}' relative to the number of workers.");
+                return status;
+            }
+
+            // Check if there is a continuous increase or decrease in count of unprocessed changes.
+            bool isIncreasing = true;
+            bool isDecreasing = true;
+            for (int index = 0; index < metrics.Length - 1; index++)
+            {
+                isIncreasing = isIncreasing && metrics[index].UnprocessedChangeCount < metrics[index + 1].UnprocessedChangeCount;
+                isDecreasing = isDecreasing && (metrics[index + 1].UnprocessedChangeCount == 0 || metrics[index].UnprocessedChangeCount > metrics[index + 1].UnprocessedChangeCount);
+            }
+
+            if (isIncreasing)
+            {
+                // Scale out only if the expected count of unprocessed changes would exceed the combined limit after 30 seconds.
+                DateTime referenceTime = metrics[metrics.Length - 1].Timestamp - TimeSpan.FromSeconds(30);
+                SqlTriggerMetrics referenceMetric = metrics.First(metric => metric.Timestamp > referenceTime);
+                long expectedUnprocessedChangeCount = (2 * metrics[metrics.Length - 1].UnprocessedChangeCount) - referenceMetric.UnprocessedChangeCount;
+
+                if (expectedUnprocessedChangeCount > workerCount * this._maxChangesPerWorker)
+                {
+                    status.Vote = ScaleVote.ScaleOut;
+                    this._logger.LogInformation($"Requesting scale-out: Found the unprocessed changes for table: '{this._userTable.FullName}' to be continuously increasing" +
+                        " and may exceed the maximum limit set for the workers.");
+                    return status;
+                }
+                else
+                {
+                    this._logger.LogDebug($"Avoiding scale-out: Found the unprocessed changes for table: '{this._userTable.FullName}' to be increasing" +
+                        " but they may not exceed the maximum limit set for the workers.");
+                }
+            }
+
+            if (isDecreasing)
+            {
+                // Scale in only if the count of unprocessed changes will not exceed the combined limit post the scale-in operation.
+                if (lastUnprocessedChangeCount <= (workerCount - 1) * this._maxChangesPerWorker)
+                {
+                    status.Vote = ScaleVote.ScaleIn;
+                    this._logger.LogInformation($"Requesting scale-in: Found table: '{this._userTable.FullName}' to be either idle or the unprocessed changes to be continuously decreasing.");
+                    return status;
+                }
+                else
+                {
+                    this._logger.LogDebug($"Avoiding scale-in: Found the unprocessed changes for table: '{this._userTable.FullName}' to be decreasing" +
+                        " but they are high enough to require all existing workers for processing.");
+                }
+            }
+
+            this._logger.LogInformation($"Requesting no-scaling: Found the number of unprocessed changes for table: '{this._userTable.FullName}' to not require scaling.");
+            return status;
         }
 
         /// <summary>
