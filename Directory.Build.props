@@ -13,8 +13,8 @@
     <IsPackable>false</IsPackable>
     <Company>Microsoft</Company>
     <Authors>Microsoft</Authors>
-    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <IsPackable>true</IsPackable>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <IsPackable>false</IsPackable>
     <DebugSymbols>true</DebugSymbols>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
