@@ -35,7 +35,7 @@ These instructions will guide you through creating your Function App and adding 
     func init --worker-runtime node --language javascript
     ```
 
-3. Enable SQL bindings on the function app. More information can be found [in Microsoft Docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
+3. Enable SQL bindings on the function app. More information can be found in the [Azure SQL bindings for Azure Functions docs](https://aka.ms/sqlbindings).
 
     Update the `host.json` file to the preview extension bundle.
     ```json

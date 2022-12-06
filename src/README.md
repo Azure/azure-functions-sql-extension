@@ -7,6 +7,6 @@ Azure SQL bindings for Azure Functions adds input, output and trigger bindings f
 
 Get started quickly with the samples available in our [repository](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples)
 
-Further information on the Azure SQL binding for Azure Functions is also available in the [Azure Functions docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
+Further information on the Azure SQL binding for Azure Functions is also available in the [docs](https://aka.ms/sqlbindings).
 
 Find latest updates on our [Github Releases](https://github.com/Azure/azure-functions-sql-extension/releases/latest) page or the [Microsoft.Azure.Webjobs.Extensions.Sql package on Nuget.org](https://www.nuget.org/packages/Microsoft.Azure.WebJobs.Extensions.Sql)
