@@ -37,24 +37,6 @@
           "Microsoft.Azure.Functions.Worker.Extensions.Abstractions": "1.0.0"
         }
       },
-      "Microsoft.Azure.Functions.Worker.Extensions.Storage.Queues": {
-        "type": "Direct",
-        "requested": "[5.0.0, )",
-        "resolved": "5.0.0",
-        "contentHash": "cF95kiiU6PD9sptrV3GKQKzRv2DYATYNTpOtvUtbAYQ4xPFKgF4ke3fDBcu+cu2O1/C8FQ7MhzkEQv00bx552A==",
-        "dependencies": {
-          "Microsoft.Azure.Functions.Worker.Extensions.Abstractions": "1.1.0"
-        }
-      },
-      "Microsoft.Azure.Functions.Worker.Extensions.Timer": {
-        "type": "Direct",
-        "requested": "[4.1.0, )",
-        "resolved": "4.1.0",
-        "contentHash": "8HvZaChaw40EKBfBew0XG132YhO6bEw0nznvey7gkhm9thUe6wkA2LXTXHXxcYefbx0rlh57WedSiJgKTG7MvQ==",
-        "dependencies": {
-          "Microsoft.Azure.Functions.Worker.Extensions.Abstractions": "1.0.0"
-        }
-      },
       "Microsoft.Azure.Functions.Worker.Sdk": {
         "type": "Direct",
         "requested": "[1.7.0, )",
