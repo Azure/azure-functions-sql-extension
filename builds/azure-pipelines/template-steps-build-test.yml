@@ -12,6 +12,13 @@ steps:
   inputs:
     useGlobalJson: true
 
+# Install .Net Core 3.1.0 as PowerShell tests are unable to find 3.1.0 framework to run tests
+- task: UseDotNet@2
+  displayName: 'Install .NET Core 3.1 sdk'
+  inputs:
+    packageType: sdk
+    version: '3.1.x'
+
 # Run Policheck early to avoid scanning dependency folders
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-policheck.PoliCheck@2
   displayName: 'Run PoliCheck'
@@ -62,6 +69,10 @@ steps:
   inputs:
     command: restore
     projects: '${{ parameters.solution }}'
+
+- powershell: $(System.DefaultWorkingDirectory)/builds/scripts/UpdateLogLevel.ps1
+  displayName: Set logging level
+  condition: and(succeeded(), ne(variables['AFSQLEXT_TEST_LOGLEVEL'], ''))
 
   # Don't generate package so we can sign it before packaging
 - task: DotNetCoreCLI@2
@@ -240,6 +251,24 @@ steps:
     custom: pack
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) --no-build -p:PackageVersion="${{ parameters.nugetVersion }}" -p:GeneratePackageOnBuild=false'
+
+- task: Maven@3
+  displayName: Build Java Samples
+  inputs:
+    mavenPomFile: samples/samples-java/pom.xml
+    # batch-mode and Slf4jMavenTransferListener definition are used to make the build logging verbose
+    # update-snapshot forces a check for updated library dependencies
+    options: --batch-mode --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
+    checkStyleRunAnalysis: true
+
+- task: Maven@3
+  displayName: Build Java Tests
+  inputs:
+    mavenPomFile: test/Integration/test-java/pom.xml
+    # batch-mode and Slf4jMavenTransferListener definition are used to make the build logging verbose
+    # update-snapshot forces a check for updated library dependencies
+    options: --batch-mode --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
+    checkStyleRunAnalysis: true
 
 - task: DotNetCoreCLI@2
   displayName: '.NET Test'

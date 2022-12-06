@@ -13,6 +13,12 @@
             "request": "attach",
             "port": 9229,
             "preLaunchTask": "func: host start"
+        },
+        {
+            "name": "Attach to Function Host",
+            "type": "coreclr",
+            "request": "attach",
+            "processName": "func.exe"
         }
     ]
 }
