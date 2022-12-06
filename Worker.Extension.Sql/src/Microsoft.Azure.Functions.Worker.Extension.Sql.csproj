@@ -4,28 +4,9 @@
 		<AssemblyName>Microsoft.Azure.Functions.Worker.Extension.Sql</AssemblyName>
 		<RootNamespace>Microsoft.Azure.Functions.Worker.Extension.Sql</RootNamespace>
 		<Description>Sql extension for .NET isolated Azure Functions</Description>
-		<Company>Microsoft</Company>
-		<Authors>Microsoft</Authors>
 		<Product>SQL Binding Worker</Product>
-		<Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
 		<!--Version information-->
 		<VersionPrefix>99.99.99</VersionPrefix>
-
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<IsPackable>true</IsPackable>
-		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-		<DebugSymbols>true</DebugSymbols>
-		<IncludeSymbols>true</IncludeSymbols>
-		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
-		<DebugType>portable</DebugType>
-		<PackageId>Microsoft.Azure.Functions.Worker.Extension.Sql</PackageId>
-		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageProjectUrl>https://github.com/Azure/azure-functions-sql-extension</PackageProjectUrl>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageIcon>pkgicon.png</PackageIcon>
-		<PublishRepositoryUrl>true</PublishRepositoryUrl>
-		<EmbedUntrackedSources>true</EmbedUntrackedSources>
 	</PropertyGroup>
 
 	<ItemGroup>
