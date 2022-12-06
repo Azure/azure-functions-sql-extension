@@ -7,6 +7,8 @@
 		<Product>SQL Binding Worker</Product>
 		<!--Version information-->
 		<VersionPrefix>99.99.99</VersionPrefix>
+		<PackageIcon>pkgicon.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
 	<ItemGroup>
