@@ -38,7 +38,7 @@ These instructions will guide you through creating your Function App and adding 
     func init --worker-runtime dotnet
     ```
 
-3. Enable SQL bindings on the function app. More information can be found [in Microsoft Docs](https://aka.ms/sqlbindings).
+3. Enable SQL bindings on the function app. More information can be found in the [Azure SQL bindings for Azure Functions docs](https://aka.ms/sqlbindings).
 
     Install the extension.
 
