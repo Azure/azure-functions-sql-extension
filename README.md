@@ -22,16 +22,16 @@ This repository contains the Azure SQL bindings for Azure Functions extension co
 - **Output Binding**: takes a list of rows and upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
 - **Trigger Binding**: monitors the user table for changes (i.e., row inserts, updates, and deletes) and invokes the function with updated rows.
 
-For a more detailed overview of the different types of bindings see the [Bindings Overview](./docs/BindingsOverview.md).
+For a more detailed overview of the different types of bindings see the [Bindings Overview](https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/BindingsOverview.md).
 
 For further details on setup, usage and samples of the bindings see the language-specific guides below:
 
-- [.NET (C# in-process)](./docs/SetupGuide_Dotnet.md)
-- [.NET (C# out-of-proc)](./docs/SetupGuide_DotnetOutOfProc.md)
-- [Java](./docs/SetupGuide_Java.md)
-- [Javascript](./docs/SetupGuide_Javascript.md)
-- [PowerShell](./docs/SetupGuide_PowerShell.md)
-- [Python](./docs/SetupGuide_Python.md)
+- [.NET (C# in-process)](https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/SetupGuide_Dotnet.md)
+- [.NET (C# out-of-proc)](https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/SetupGuide_DotnetOutOfProc.md)
+- [Java](https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/SetupGuide_Java.md)
+- [Javascript](https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/SetupGuide_Javascript.md)
+- [PowerShell](https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/SetupGuide_PowerShell.md)
+- [Python](https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/SetupGuide_Python.md)
 
 Further information on the Azure SQL binding for Azure Functions is also available in the [docs](https://aka.ms/sqlbindings).
 
