@@ -108,7 +108,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             this.InitializeTelemetryProps();
             TelemetryInstance.TrackEvent(
-                TelemetryEventName.StartListenerStart,
+                TelemetryEventName.StartListener,
                 new Dictionary<TelemetryPropertyName, string>(this._telemetryProps) {
                         { TelemetryPropertyName.HasConfiguredMaxChangesPerWorker, this._hasConfiguredMaxChangesPerWorker.ToString() }
                 },
@@ -189,7 +189,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            TelemetryInstance.TrackEvent(TelemetryEventName.StopListenerStart, this._telemetryProps);
+            TelemetryInstance.TrackEvent(TelemetryEventName.StopListener, this._telemetryProps);
             var stopwatch = Stopwatch.StartNew();
 
             int previousState = Interlocked.CompareExchange(ref this._listenerState, ListenerStopping, ListenerStarted);

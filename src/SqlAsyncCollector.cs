@@ -553,7 +553,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             public static async Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName, ILogger logger, IEnumerable<string> objectColumnNames)
             {
                 Dictionary<TelemetryPropertyName, string> sqlConnProps = sqlConnection.AsConnectionProps();
-                TelemetryInstance.TrackEvent(TelemetryEventName.GetTableInfoStart, sqlConnProps);
                 logger.LogDebugWithThreadId("BEGIN RetrieveTableInformationAsync");
                 var table = new SqlObject(fullName);
 
