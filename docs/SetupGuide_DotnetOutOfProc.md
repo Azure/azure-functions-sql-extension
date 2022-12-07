@@ -189,7 +189,7 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
 
 ```csharp
   [Function("GetProductsStoredProcedure")]
-  public static IActionResult Run(
+  public static IEnumerable<Product> Run(
       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-storedprocedure/{cost}")]
       HttpRequest req,
       [SqlInput("SelectProductsCost",
