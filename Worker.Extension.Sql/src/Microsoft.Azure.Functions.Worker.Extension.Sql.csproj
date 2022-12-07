@@ -8,7 +8,7 @@
 		<!--Version information-->
 		<VersionPrefix>99.99.99</VersionPrefix>
 		<PackageId>Microsoft.Azure.Functions.Worker.Extension.Sql</PackageId>
-		<PackageTags>Microsoft Azure Functions Isolated DotnetIsolated SQL Worker</PackageTags>
+		<PackageTags>Microsoft Azure WebJobs AzureFunctions Isolated DotnetIsolated SQL AzureSQL Worker</PackageTags>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<IsPackable>true</IsPackable>
 	</PropertyGroup>
