@@ -66,7 +66,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
     ```csharp
     [Function("GetEmployees")]
-    public static async IEnumerable<Employee> Run(
+    public static async Task<IEnumerable<Employee>> Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "employees")] HttpRequest req,
         ILogger log,
         [SqlInput("select * from Employees",

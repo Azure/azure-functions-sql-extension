@@ -10,8 +10,6 @@
 		<PackageId>Microsoft.Azure.Functions.Worker.Extension.Sql</PackageId>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<IsPackable>true</IsPackable>
-		<PackageIcon>pkgicon.png</PackageIcon>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
 	<ItemGroup>

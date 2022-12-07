@@ -12,8 +12,6 @@
     <PackageId>Microsoft.Azure.WebJobs.Extensions.Sql</PackageId>
     <PackageTags>Microsoft Azure WebJobs AzureFunctions SQL AzureSQL</PackageTags>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <PackageIcon>pkgicon.png</PackageIcon>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
