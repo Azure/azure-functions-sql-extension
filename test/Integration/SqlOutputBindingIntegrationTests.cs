@@ -162,7 +162,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.OutOfProc)]
         public void TimerTriggerProductsTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(TimerTriggerProducts), lang);
