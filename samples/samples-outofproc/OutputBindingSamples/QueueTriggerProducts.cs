@@ -15,18 +15,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingS
         public static List<Product> Run([QueueTrigger("testqueue")] string queueMessage)
         {
             int totalUpserts = 100;
-            var products = new List<Product>();
             List<Product> newProducts = ProductUtilities.GetNewProducts(totalUpserts);
-            foreach (Product product in newProducts)
-            {
-                products.Add(product);
-            }
-
             return newProducts;
         }
 
     }
-    //private static readonly Action<ILogger, DateTime, string, int, Exception> _queryTriggerRequested = LoggerMessage.Define(
-    //        LogLevel.Information, new EventId(1, nameof(QueueTriggerProducts)), $"[QueueTrigger]: {Now} starting execution {QueueMessage}. Rows to generate={TotalUpserts}.");
 
 }
