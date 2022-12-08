@@ -66,8 +66,8 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
     ```csharp
     [Function("GetEmployees")]
-    public static async IEnumerable<Employee> Run(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "employees")] HttpRequestData req,
+    public static IEnumerable<Employee> Run(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "employees")] HttpRequest req,
         ILogger log,
         [SqlInput("select * from Employees",
         CommandType = System.Data.CommandType.Text,
@@ -189,7 +189,7 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
 
 ```csharp
   [Function("GetProductsStoredProcedure")]
-  public static IActionResult Run(
+  public static IEnumerable<Product> Run(
       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-storedprocedure/{cost}")]
       HttpRequestData req,
       [SqlInput("SelectProductsCost",
