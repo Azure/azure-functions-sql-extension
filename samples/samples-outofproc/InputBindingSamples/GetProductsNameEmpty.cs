@@ -2,7 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Collections.Generic;
-using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.Common;
 using Microsoft.Azure.Functions.Worker.Extension.Sql;
 using Microsoft.Azure.Functions.Worker;
@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.InputBindingSa
         [Function("GetProductsNameEmpty")]
         public static IEnumerable<Product> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-nameempty/{cost}")]
-            HttpRequest req,
+            HttpRequestData req,
             [SqlInput("select * from Products where Cost = @Cost and Name = @Name",
                 CommandType = System.Data.CommandType.Text,
                 Parameters = "@Cost={cost},@Name=",
