@@ -10,7 +10,6 @@
     <DelaySign>True</DelaySign>
     <SignAssembly>True</SignAssembly>
     <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)/SQL2003.snk</AssemblyOriginatorKeyFile>
-    <IsPackable>false</IsPackable>
     <Company>Microsoft</Company>
     <Authors>Microsoft</Authors>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
@@ -26,5 +25,7 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <PackageProjectUrl>https://github.com/Azure/azure-functions-sql-extension</PackageProjectUrl>
+    <PackageIcon>pkgicon.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 </Project>
