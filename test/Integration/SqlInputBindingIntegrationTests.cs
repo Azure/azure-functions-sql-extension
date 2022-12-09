@@ -159,8 +159,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             HttpResponseMessage response = await this.SendInputRequest("getproducts-columntypesserializationasyncenumerable", $"?culture={culture}");
             // We expect the datetime and datetime2 fields to be returned in UTC format
-            ProductColumnTypes[] actualResponse = JsonConvert.DeserializeObject<ProductColumnTypes[]>(actualResponse);
-            Assert.Equal(expectedResponse, actualResponse);
+            string actualResponse = await response.Content.ReadAsStringAsync();
+            ProductColumnTypes[] actualProductResponse = JsonConvert.DeserializeObject<ProductColumnTypes[]>(actualResponse);
+            Assert.Equal(expectedResponse, actualProductResponse);
         }
 
         /// <summary>
