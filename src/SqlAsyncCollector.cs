@@ -242,7 +242,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     foreach (IEnumerable<T> batch in rows.Batch(batchSize))
                     {
                         batchCount++;
-                        GenerateDataQueryForMerge(tableInfo, batch, out string newDataQuery, out string rowData);
+                        GenerateDataQueryForMerge(tableInfo, batch, out string newDataQuery, out string rowData, this._logger);
                         command.CommandText = $"{newDataQuery} {tableInfo.Query};";
                         this._logger.LogDebugWithThreadId($"UpsertRowsTransactionBatch - Query={command.CommandText}");
                         par.Value = rowData;
@@ -310,7 +310,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 var jsonObj = JObject.Parse(row.ToString());
                 Dictionary<string, string> dictObj = jsonObj.ToObject<Dictionary<string, string>>();
-                return dictObj.Keys;
+                // alphabetically order the JSON data columns in order to properly match the order of the table columns
+                var sortedDict = new SortedDictionary<string, string>();
+                foreach (KeyValuePair<string, string> column in dictObj)
+                {
+                    sortedDict.Add(column.Key, column.Value);
+                }
+                return sortedDict.Keys;
             }
             return typeof(T).GetProperties().Select(prop => prop.Name);
         }
@@ -322,7 +328,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="table">Information about the table we will be upserting into</param>
         /// <param name="rows">Rows to be upserted</param>
         /// <returns>T-SQL containing data for merge</returns>
-        private static void GenerateDataQueryForMerge(TableInformation table, IEnumerable<T> rows, out string newDataQuery, out string rowData)
+        private static void GenerateDataQueryForMerge(TableInformation table, IEnumerable<T> rows, out string newDataQuery, out string rowData, ILogger logger)
         {
             IList<T> rowsToUpsert = new List<T>();
 
@@ -379,8 +385,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             rowData = JsonConvert.SerializeObject(rowsToUpsert, table.JsonSerializerSettings);
+            logger.LogDebugWithThreadId($"GenerateDataQueryForMerge - rowData={rowData}");
             IEnumerable<string> columnNamesFromItem = GetColumnNamesFromItem(rows.First());
-            IEnumerable<string> bracketColumnDefinitionsFromItem = table.Columns.Where(c => columnNamesFromItem.Contains(c.Key, table.Comparer))
+            // alphabetically order the table columns in order to properly match incoming JSON from Azure Function for Insert Queriers
+            var sortedTableColumns = new SortedDictionary<string, string>();
+            foreach (KeyValuePair<string, string> column in table.Columns)
+            {
+                sortedTableColumns.Add(column.Key, column.Value);
+            }
+            IEnumerable<string> bracketColumnDefinitionsFromItem = sortedTableColumns.Where(c => columnNamesFromItem.Contains(c.Key, table.Comparer))
                 .Select(c => $"{c.Key.AsBracketQuotedString()} {c.Value}");
             newDataQuery = $"WITH {CteName} AS ( SELECT * FROM OPENJSON({RowDataParameter}) WITH ({string.Join(",", bracketColumnDefinitionsFromItem)}) )";
         }
