@@ -8,6 +8,7 @@ using System.Collections.Specialized;
 using Microsoft.Azure.Functions.Worker.Extension.Sql;
 using DotnetIsolatedTests.Common;
 using System;
+using System.Data.SqlTypes;
 
 namespace DotnetIsolatedTests
 {
@@ -15,7 +16,7 @@ namespace DotnetIsolatedTests
     {
         /// <summary>
         /// This function is used to test compatability with converting various data types to their respective
-        /// SQL server types. 
+        /// SQL server types.
         /// </summary>
         [Function(nameof(AddProductColumnTypes))]
         [SqlOutput("dbo.ProductsColumnTypes", ConnectionStringSetting = "SqlConnectionString")]
@@ -26,12 +27,9 @@ namespace DotnetIsolatedTests
             var product = new ProductColumnTypes()
             {
                 ProductID = int.Parse(queryStrings["productId"], null),
-                Datetime = DateTime.ParseExact(DateTime.UtcNow.ToString(System.Globalization.CultureInfo.InvariantCulture), "yyyy-MM-ddTHH:mm:ss.fffZ", null),
+                Datetime = new SqlDateTime(DateTime.UtcNow).Value,
                 Datetime2 = DateTime.UtcNow
             };
-
-            // Items were inserted successfully so return success, an exception would be thrown if there
-            // was any issues
             return product;
         }
     }
