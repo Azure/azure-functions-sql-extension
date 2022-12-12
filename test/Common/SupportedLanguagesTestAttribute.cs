@@ -74,6 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         JavaScript,
         PowerShell,
         Java,
-        OutOfProc
+        OutOfProc,
+        Python
     };
 }
