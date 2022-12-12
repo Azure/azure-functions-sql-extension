@@ -21,7 +21,7 @@ namespace DotnetIsolatedTests
             var product = new ProductExtraColumns
             {
                 Name = "test",
-                ProductID = 1,
+                ProductId = 1,
                 Cost = 100,
                 ExtraInt = 1,
                 ExtraString = "test"
