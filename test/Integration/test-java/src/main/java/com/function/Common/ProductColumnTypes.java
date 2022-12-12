@@ -6,14 +6,14 @@
 
 package com.function.Common;
 
-import java.sql.Date;
+import java.sql.Timestamp;
 
 public class ProductColumnTypes {
     private int ProductId;
-    private Date Datetime;
-    private Date Datetime2;
+    private Timestamp Datetime;
+    private Timestamp Datetime2;
 
-    public ProductColumnTypes(int productId, Date datetime, Date datetime2) {
+    public ProductColumnTypes(int productId, Timestamp datetime, Timestamp datetime2) {
         ProductId = productId;
         Datetime = datetime;
         Datetime2 = datetime2;
@@ -23,19 +23,23 @@ public class ProductColumnTypes {
         return ProductId;
     }
 
-    public Date getDatetime() {
+    public void setProductId(int productId) {
+        ProductId = productId;
+    }
+
+    public Timestamp getDatetime() {
         return Datetime;
     }
 
-    public void setDatetime(Date datetime) {
+    public void setDatetime(Timestamp datetime) {
         Datetime = datetime;
     }
 
-    public Date getDatetime2() {
+    public Timestamp getDatetime2() {
         return Datetime2;
     }
 
-    public void setDatetime2(Date datetime2) {
+    public void setDatetime2(Timestamp datetime2) {
         Datetime2 = datetime2;
     }
 }

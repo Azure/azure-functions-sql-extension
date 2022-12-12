@@ -8,17 +8,16 @@
 		<!--Version information-->
 		<VersionPrefix>99.99.99</VersionPrefix>
 		<PackageId>Microsoft.Azure.Functions.Worker.Extension.Sql</PackageId>
+		<PackageTags>Microsoft Azure WebJobs AzureFunctions Isolated DotnetIsolated SQL AzureSQL Worker</PackageTags>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<IsPackable>true</IsPackable>
-		<PackageIcon>pkgicon.png</PackageIcon>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Abstractions" />
 		<PackageReference Include="Microsoft.Data.SqlClient" />
 		<PackageReference Include="System.Drawing.Common" />
-		<None Include="pkgicon.png" Pack="true" PackagePath="" />
+		<None Include="..\..\Images\pkgicon.png" Pack="true" PackagePath="" />
 		<None Include=".\README.md" Pack="true" PackagePath="" />
 	</ItemGroup>
 
