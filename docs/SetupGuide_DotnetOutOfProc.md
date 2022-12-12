@@ -66,7 +66,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
     ```csharp
     [Function("GetEmployees")]
-    public static async IEnumerable<Employee> Run(
+    public static IEnumerable<Employee> Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "employees")] HttpRequest req,
         ILogger log,
         [SqlInput("select * from Employees",
@@ -114,7 +114,7 @@ The input binding executes the "select * from Products where Cost = @Cost" query
   [Function("GetProducts")]
   public static IEnumerable<Product> Run(
       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts/{cost}")]
-      HttpRequest req,
+      HttpRequestData req,
       [SqlInput("select * from Products where Cost = @Cost",
           CommandType = System.Data.CommandType.Text,
           Parameters = "@Cost={cost}",
@@ -153,7 +153,7 @@ In this case, the parameter value of the `@Name` parameter is an empty string.
   [Function("GetProductsNameEmpty")]
   public static IEnumerable<Product> Run(
       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-nameempty/{cost}")]
-      HttpRequest req,
+      HttpRequestData req,
       [SqlInput("select * from Products where Cost = @Cost and Name = @Name",
           CommandType = System.Data.CommandType.Text,
           Parameters = "@Cost={cost},@Name=",
@@ -172,7 +172,7 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
   [Function("GetProductsNameNull")]
   public static IEnumerable<Product> Run(
       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-namenull/{name}")]
-      HttpRequest req,
+      HttpRequestData req,
       [SqlInput("if @Name is null select * from Products where Name is null else select * from Products where @Name = name",
           CommandType = System.Data.CommandType.Text,
           Parameters = "@Name={name}",
@@ -189,9 +189,9 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
 
 ```csharp
   [Function("GetProductsStoredProcedure")]
-  public static IActionResult Run(
+  public static IEnumerable<Product> Run(
       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-storedprocedure/{cost}")]
-      HttpRequest req,
+      HttpRequestData req,
       [SqlInput("SelectProductsCost",
           CommandType = System.Data.CommandType.StoredProcedure,
           Parameters = "@Cost={cost}",
@@ -210,7 +210,7 @@ Using the `IAsyncEnumerable` binding generally requires that the `Run` function 
 [Function("GetProductsAsyncEnumerable")]
 public static async Task<List<Product>> Run(
     [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-async/{cost}")]
-     HttpRequest req,
+     HttpRequestData req,
     [SqlInput("select * from Products where cost = @Cost",
          CommandType = System.Data.CommandType.Text,
          Parameters = "@Cost={cost}",

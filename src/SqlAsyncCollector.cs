@@ -93,7 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             using (SqlConnection connection = BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
                 this._logger.LogDebugWithThreadId("BEGIN OpenSqlAsyncCollectorVerifyDatabaseSupportedConnection");
-                connection.Open();
+                connection.OpenAsyncWithSqlErrorHandling(CancellationToken.None).Wait();
                 this._logger.LogDebugWithThreadId("END OpenSqlAsyncCollectorVerifyDatabaseSupportedConnection");
                 VerifyDatabaseSupported(connection, logger, CancellationToken.None).Wait();
             }
