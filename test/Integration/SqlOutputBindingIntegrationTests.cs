@@ -114,8 +114,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <param name="lang">The language to run the test against</param>
         [Theory]
         [SqlInlineData()]
-        // Java issue: https://github.com/Azure/azure-functions-sql-extension/issues/521
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.PowerShell, SupportedLanguages.OutOfProc)]
+        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.PowerShell)]
         public void AddProductColumnTypesTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductColumnTypes), lang, true);
