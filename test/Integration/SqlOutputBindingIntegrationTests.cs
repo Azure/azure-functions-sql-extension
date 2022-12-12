@@ -47,9 +47,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(1, "Test", 5)]
         [SqlInlineData(0, "", 0)]
         [SqlInlineData(-500, "ABCD", 580)]
-        // Currently Java functions return null when the parameter for name is an empty string
+        // Currently Java and Python functions return null when the parameter for name is an empty string
         // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/517
-        [UnsupportedLanguages(SupportedLanguages.PowerShell, SupportedLanguages.Java)]
+        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.Python)]
         public void AddProductParamsTest(int id, string name, int cost, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductParams), lang);
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Theory]
         [SqlInlineData()]
         // Java issue: https://github.com/Azure/azure-functions-sql-extension/issues/521
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.PowerShell, SupportedLanguages.OutOfProc)]
+        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.PowerShell, SupportedLanguages.OutOfProc, SupportedLanguages.Python)]
         public void AddProductColumnTypesTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductColumnTypes), lang, true);
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.PowerShell, SupportedLanguages.Java, SupportedLanguages.OutOfProc)] // Collectors are only available in C#
+        [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.PowerShell, SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.Python)] // Collectors are only available in C#
         public void AddProductsCollectorTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsCollector), lang);
@@ -145,6 +145,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Python)]
         public void QueueTriggerProductsTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(QueueTriggerProducts), lang);
@@ -162,6 +163,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Python)]
         public void TimerTriggerProductsTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(TimerTriggerProducts), lang);
@@ -176,6 +178,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Python)]
         public void AddProductExtraColumnsTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductExtraColumns), lang, true);
@@ -188,6 +191,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Python)]
         public void AddProductMissingColumnsTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductMissingColumns), lang, true);
@@ -200,6 +204,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Python)]
         public void AddProductMissingColumnsNotNullTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductMissingColumnsExceptionFunction), lang, true);
@@ -211,6 +216,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Python)]
         public void AddProductNoPartialUpsertTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsNoPartialUpsert), lang, true);
@@ -250,7 +256,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         // Currently PowerShell gives an error due to the deserialization of the object
         // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
-        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
+        [UnsupportedLanguages(SupportedLanguages.PowerShell, SupportedLanguages.Python)]
         public void AddProductsWithIdentityColumnArray(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsWithIdentityColumnArray), lang);
@@ -374,7 +380,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         // JSON serialization is case sensitive in Java
         // TODO: https://github.com/Azure/azure-functions-sql-extension/issues/411
-        [UnsupportedLanguages(SupportedLanguages.Java)]
+        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.Python)]
         public void AddProductCaseSensitiveTest(SupportedLanguages lang)
         {
             // Set table info cache timeout to 0 minutes so that new collation gets picked up
@@ -416,7 +422,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         // Currently PowerShell gives an unknown error (when testing locally we get a missing primary key error)
         // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
-        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
+        [UnsupportedLanguages(SupportedLanguages.PowerShell, SupportedLanguages.Python)]
         public void AddProductWithDefaultPKTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithDefaultPK), lang);
@@ -436,7 +442,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.OutOfProc)]
+        [UnsupportedLanguages(SupportedLanguages.OutOfProc, SupportedLanguages.Python)]
         public async Task UnsupportedDatabaseThrows(SupportedLanguages lang)
         {
             // Change database compat level to unsupported version
