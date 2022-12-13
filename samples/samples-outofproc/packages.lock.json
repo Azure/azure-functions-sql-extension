@@ -845,7 +845,7 @@
           "System.Drawing.Common": "5.0.0"
         }
       },
-      "microsoft.azure.functions.worker.extension.sql": {
+      "microsoft.azure.functions.worker.extensions.sql": {
         "type": "Project",
         "dependencies": {
           "Microsoft.Azure.Functions.Worker.Extensions.Abstractions": "[1.1.0, )",
