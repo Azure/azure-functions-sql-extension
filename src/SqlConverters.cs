@@ -111,7 +111,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 try
                 {
                     string json = await this.BuildItemFromAttributeAsync(attribute, ConvertType.IEnumerable);
-                    IEnumerable<T> result = JsonConvert.DeserializeObject<IEnumerable<T>>(json);
+                    IEnumerable<T> result = Utils.DeserializeObject<IEnumerable<T>>(json);
                     this._logger.LogDebugWithThreadId($"END ConvertAsync (IEnumerable) Duration={sw.ElapsedMilliseconds}ms");
                     return result;
                 }
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         DateFormatString = ISO_8061_DATETIME_FORMAT
                     };
-                    return JsonConvert.SerializeObject(dataTable, jsonSerializerSettings);
+                    return Utils.SerializeObject(dataTable, jsonSerializerSettings);
                 }
 
             }

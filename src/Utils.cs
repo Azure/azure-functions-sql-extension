@@ -6,12 +6,24 @@ using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MoreLinq;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     public static class Utils
     {
+        private static readonly JsonSerializerSettings _jsonSerializationSettings;
+
+        static Utils()
+        {
+            _jsonSerializationSettings = new JsonSerializerSettings
+            {
+                ContractResolver = new DefaultContractResolver()
+            };
+        }
+
         /// <summary>
         /// Gets the specified environment variable and converts it to a boolean.
         /// </summary>
@@ -103,6 +115,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public static void LogInformationWithThreadId(this ILogger logger, string message, params object[] args)
         {
             logger.LogInformation($"TID:{Environment.CurrentManagedThreadId} {message}", args);
+        }
+
+        public static string SerializeObject(object obj)
+        {
+            return JsonConvert.SerializeObject(obj, _jsonSerializationSettings);
+        }
+
+        public static T DeserializeObject<T>(string json)
+        {
+            return JsonConvert.DeserializeObject<T>(json, _jsonSerializationSettings);
         }
     }
 }

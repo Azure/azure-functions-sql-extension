@@ -36,7 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // Verify result
             string actualResponse = await response.Content.ReadAsStringAsync();
-            Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse);
+            Product[] actualProductResponse = Utils.DeserializeObject<Product[]>(actualResponse);
 
             Assert.Equal(products, actualProductResponse);
         }
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // Verify result
             string actualResponse = await response.Content.ReadAsStringAsync();
-            Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse);
+            Product[] actualProductResponse = Utils.DeserializeObject<Product[]>(actualResponse);
 
             Assert.Equal(products, actualProductResponse);
         }
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // Verify result
             string actualResponse = await response.Content.ReadAsStringAsync();
-            Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse);
+            Product[] actualProductResponse = Utils.DeserializeObject<Product[]>(actualResponse);
 
             Assert.Equal(products, actualProductResponse);
         }
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // Verify result
             string actualResponse = await response.Content.ReadAsStringAsync();
-            Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse);
+            Product[] actualProductResponse = Utils.DeserializeObject<Product[]>(actualResponse);
 
             Assert.Equal(productsWithCost100, actualProductResponse);
         }
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             HttpResponseMessage response = await this.SendInputRequest("getproducts-columntypesserializationasyncenumerable", $"?culture={culture}");
             // We expect the datetime and datetime2 fields to be returned in UTC format
             string actualResponse = await response.Content.ReadAsStringAsync();
-            ProductColumnTypes[] actualProductResponse = JsonConvert.DeserializeObject<ProductColumnTypes[]>(actualResponse);
+            ProductColumnTypes[] actualProductResponse = Utils.DeserializeObject<ProductColumnTypes[]>(actualResponse);
             Assert.Equal(expectedResponse, actualProductResponse);
         }
 
@@ -181,9 +181,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             HttpResponseMessage response = await this.SendInputRequest("getproducts-columntypesserialization");
             // We expect the datetime and datetime2 fields to be returned in UTC format
-            ProductColumnTypes[] expectedResponse = JsonConvert.DeserializeObject<ProductColumnTypes[]>("[{\"ProductId\":999,\"Datetime\":\"2022-10-20T12:39:13.123Z\",\"Datetime2\":\"2022-10-20T12:39:13.123Z\"}]");
+            ProductColumnTypes[] expectedResponse = Utils.DeserializeObject<ProductColumnTypes[]>("[{\"ProductId\":999,\"Datetime\":\"2022-10-20T12:39:13.123Z\",\"Datetime2\":\"2022-10-20T12:39:13.123Z\"}]");
             string actualResponse = await response.Content.ReadAsStringAsync();
-            ProductColumnTypes[] actualProductResponse = JsonConvert.DeserializeObject<ProductColumnTypes[]>(actualResponse);
+            ProductColumnTypes[] actualProductResponse = Utils.DeserializeObject<ProductColumnTypes[]>(actualResponse);
 
             Assert.Equal(expectedResponse, actualProductResponse);
         }

@@ -36,7 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "cost", cost }
             };
 
-            this.SendOutputPostRequest("addproduct", JsonConvert.SerializeObject(query)).Wait();
+            this.SendOutputPostRequest("addproduct", Utils.SerializeObject(query)).Wait();
 
             // Verify result
             Assert.Equal(name, this.ExecuteScalar($"select Name from Products where ProductId={id}"));
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 }
             };
 
-            this.SendOutputPostRequest("addproducts-array", JsonConvert.SerializeObject(prods)).Wait();
+            this.SendOutputPostRequest("addproducts-array", Utils.SerializeObject(prods)).Wait();
 
             // Function call changes first 2 rows to (1, 'Cup', 2) and (2, 'Glasses', 12)
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(1) FROM Products WHERE Cost = 100"));
@@ -425,8 +425,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "cost", 1 }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
-            this.SendOutputPostRequest("addproductwithdefaultpk", JsonConvert.SerializeObject(product)).Wait();
-            this.SendOutputPostRequest("addproductwithdefaultpk", JsonConvert.SerializeObject(product)).Wait();
+            this.SendOutputPostRequest("addproductwithdefaultpk", Utils.SerializeObject(product)).Wait();
+            this.SendOutputPostRequest("addproductwithdefaultpk", Utils.SerializeObject(product)).Wait();
             Assert.Equal(2, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
         }
 

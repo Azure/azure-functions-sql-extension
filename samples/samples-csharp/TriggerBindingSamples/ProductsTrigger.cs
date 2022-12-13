@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.TriggerBindingSamples
 {
@@ -17,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.TriggerBindingSamples
             ILogger logger)
         {
             // The output is used to inspect the trigger binding parameter in test methods.
-            logger.LogInformation("SQL Changes: " + JsonConvert.SerializeObject(changes));
+            logger.LogInformation("SQL Changes: " + Utils.SerializeObject(changes));
         }
     }
 }

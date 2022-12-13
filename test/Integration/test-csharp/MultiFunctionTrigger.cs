@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             IReadOnlyList<SqlChange<Product>> products,
             ILogger logger)
         {
-            logger.LogInformation("Trigger1 Changes: " + JsonConvert.SerializeObject(products));
+            logger.LogInformation("Trigger1 Changes: " + Utils.SerializeObject(products));
         }
 
         [FunctionName(nameof(MultiFunctionTrigger2))]
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             IReadOnlyList<SqlChange<Product>> products,
             ILogger logger)
         {
-            logger.LogInformation("Trigger2 Changes: " + JsonConvert.SerializeObject(products));
+            logger.LogInformation("Trigger2 Changes: " + Utils.SerializeObject(products));
         }
     }
 }

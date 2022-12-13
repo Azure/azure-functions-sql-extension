@@ -723,7 +723,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     ? this._primaryKeyColumns.ToDictionary(col => col.name, col => row[col.name])
                     : this._userTableColumns.ToDictionary(col => col, col => row[col]);
 
-                changes.Add(new SqlChange<T>(operation, JsonConvert.DeserializeObject<T>(JsonConvert.SerializeObject(item))));
+                changes.Add(new SqlChange<T>(operation, Utils.DeserializeObject<T>(Utils.SerializeObject(item))));
             }
             this._logger.LogDebugWithThreadId("END ProcessChanges");
             return changes;
@@ -892,7 +892,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             var command = new SqlCommand(query, connection, transaction);
             SqlParameter par = command.Parameters.Add(rowDataParameter, SqlDbType.NVarChar, -1);
-            string rowData = JsonConvert.SerializeObject(rows);
+            string rowData = Utils.SerializeObject(rows);
             par.Value = rowData;
             return command;
         }
@@ -953,7 +953,7 @@ WHERE l.{LeasesTableChangeVersionColumnName} <= cte.{SysChangeVersionColumnName}
 
             var command = new SqlCommand(releaseLeasesQuery, connection, transaction);
             SqlParameter par = command.Parameters.Add(rowDataParameter, SqlDbType.NVarChar, -1);
-            string rowData = JsonConvert.SerializeObject(this._rows);
+            string rowData = Utils.SerializeObject(this._rows);
             par.Value = rowData;
             return command;
         }
