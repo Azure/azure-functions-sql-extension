@@ -110,7 +110,7 @@ steps:
   displayName: Lint samples-python
 
 - script: |
-    pip3 install requirements.txt
+    pip3 install -r requirements.txt
   workingDirectory: $(Build.SourcesDirectory)/samples/samples-python
   displayName: Install azure-functions-1.11.3b1
 
