@@ -57,6 +57,6 @@
       <_PythonCopyItems Include="..\samples\samples-python\**\*.*" />
     </ItemGroup>
     <Copy SourceFiles="@(_PythonCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\Python\%(RecursiveDir)" />
-    <Message Text="Copied Python Samples output to $(OutDir)\SqlExtensionSamples\JavaScript" Importance="high" />
+    <Message Text="Copied Python Samples output to $(OutDir)\SqlExtensionSamples\Python" Importance="high" />
   </Target>
 </Project>
