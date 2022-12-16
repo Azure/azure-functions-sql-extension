@@ -83,7 +83,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Add 'using System.Collections.Generic;' to the namespaces list at the top of the page.
 - Currently, there is an error for the IEnumerable. We'll fix this by creating an Employee class.
 - Create a new file and call it 'Employee.cs'
-- Paste the below in the file. These are the column names of our SQL table.
+- Paste the below in the file. These are the column names of our SQL table. Note that the casing of the Object field names and the table column names must match.
 
     ```csharp
     namespace Company.Function {
@@ -127,7 +127,7 @@ The input binding executes the "select * from Products where Cost = @Cost" query
 
 `Product` is a user-defined POCO that follows the structure of the Products table. It represents a row of the Products table, with field names and types copying those of the Products table schema. For example, if the Products table has three columns of the form
 
-- **ProductID**: int
+- **ProductId**: int
 - **Name**: varchar
 - **Cost**: int
 
@@ -136,7 +136,7 @@ Then the `Product` class would look like
 ```csharp
 public class Product
 {
-    public int ProductID { get; set; }
+    public int ProductId { get; set; }
 
     public string Name { get; set; }
 

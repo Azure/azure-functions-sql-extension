@@ -3,14 +3,14 @@
 module.exports = async function (context) {
     var products = [];
     for(let i = 0; i < 1000; i++) {
-        products.add({"productId": i,
-        "name": "test",
-        "cost": 100 * i});
+        products.add({"ProductId": i,
+        "Name": "test",
+        "Cost": 100 * i});
     }
     const invalidProduct = {
-        "productid": 1000,
-        "name": null,
-        "cost": 1000
+        "Productid": 1000,
+        "Name": null,
+        "Cost": 1000
     };
 
     products.add(invalidProduct);

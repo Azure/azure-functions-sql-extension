@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             product = new ProductColumnTypes()
             {
-                ProductID = int.Parse(req.Query["productId"]),
+                ProductId = int.Parse(req.Query["productId"]),
                 Datetime = DateTime.UtcNow,
                 Datetime2 = DateTime.UtcNow
             };
