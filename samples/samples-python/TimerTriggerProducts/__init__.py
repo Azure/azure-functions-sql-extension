@@ -9,7 +9,8 @@ from Common.product import Product
 
 def main(myTimer: func.TimerRequest, products: func.Out[func.SqlRowList]):
     totalUpserts = 1000
-    logger.info("%s starting execution. Rows to generate=%s", str(datetime.datetime.now()), str(totalUpserts))
+    logging.info("%s starting execution. Rows to generate=%s", str(datetime.datetime.now()),
+        str(totalUpserts))
 
     start = datetime.datetime.now()
     rows = func.SqlRowList()
@@ -19,4 +20,5 @@ def main(myTimer: func.TimerRequest, products: func.Out[func.SqlRowList]):
     products.set(rows)
     duration = datetime.datetime.now() - start
 
-    logging.info("%s finished execution. Total time to create %s rows=%s", str(datetime.datetime.now()), str(totalUpserts), str(duration))
+    logging.info("%s finished execution. Total time to create %s rows=%s",
+        str(datetime.datetime.now()), str(totalUpserts), str(duration))

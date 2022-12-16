@@ -9,7 +9,8 @@ from Common.product import Product
 
 def main(queueMessage: func.QueueMessage, products: func.Out[func.SqlRowList]):
     totalUpserts = 100
-    logging.info("[QueueTrigger]: %s starting execution %s. Rows to generate=%s", str(datetime.datetime.now()), queueMessage.get_body().decode('utf-8'), str(totalUpserts))
+    logging.info("[QueueTrigger]: %s starting execution %s. Rows to generate=%s",
+        str(datetime.datetime.now()), queueMessage.get_body().decode('utf-8'), str(totalUpserts))
 
     start = datetime.datetime.now()
     rows = func.SqlRowList()
@@ -19,4 +20,6 @@ def main(queueMessage: func.QueueMessage, products: func.Out[func.SqlRowList]):
     products.set(rows)
     duration = datetime.datetime.now() - start
 
-    logging.info("[QueueTrigger]: %s finished execution %s. Total time to create %s rows=%s", str(datetime.datetime.now()), queueMessage.get_body().decode('utf-8'), str(totalUpserts), str(duration))
+    logging.info("[QueueTrigger]: %s finished execution %s. Total time to create %s rows=%s",
+        str(datetime.datetime.now()), queueMessage.get_body().decode('utf-8'), str(totalUpserts),
+        str(duration))
