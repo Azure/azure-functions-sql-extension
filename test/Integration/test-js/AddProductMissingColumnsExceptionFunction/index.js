@@ -1,5 +1,5 @@
 // This output binding should throw an error since the ProductsCostNotNull table does not
-// allows rows without a Cost value.
+// allow rows without a Cost value.
 module.exports = async function (context) {
     const products = [{
         "productId": 1,

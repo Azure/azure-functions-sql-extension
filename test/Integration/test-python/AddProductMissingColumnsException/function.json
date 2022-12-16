@@ -8,7 +8,7 @@
       "methods": [
         "post"
       ],
-      "route": "addproduct-extracolumns"
+      "route": "addproduct-missingcolumnsexception"
     },
     {
       "name": "$return",
@@ -19,7 +19,7 @@
       "name": "product",
       "type": "sql",
       "direction": "out",
-      "commandText": "[dbo].[Products]",
+      "commandText": "[dbo].[ProductsCostNotNull]",
       "connectionStringSetting": "SqlConnectionString"
     }
   ],
