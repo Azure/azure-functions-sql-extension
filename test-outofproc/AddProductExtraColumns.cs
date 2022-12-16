@@ -4,7 +4,7 @@
 using DotnetIsolatedTests.Common;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.Functions.Worker.Extension.Sql;
+using Microsoft.Azure.Functions.Worker.Extensions.Sql;
 
 namespace DotnetIsolatedTests
 {

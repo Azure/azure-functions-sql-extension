@@ -79,7 +79,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
     ```
 
     *In the above, "select * from Employees" is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [SqlInputAttribute for Input Bindings](#sqlinputattribute-for-input-bindings) section*
-- Add 'using Microsoft.Azure.Functions.Worker.Extension.Sql;' for using *SqlInput*, the out of proc sql input binding.
+- Add 'using Microsoft.Azure.Functions.Worker.Extensions.Sql;' for using *SqlInput*, the out of proc sql input binding.
 - Add 'using System.Collections.Generic;' to the namespaces list at the top of the page.
 - Currently, there is an error for the IEnumerable. We'll fix this by creating an Employee class.
 - Create a new file and call it 'Employee.cs'
@@ -289,7 +289,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
     ```
 
     *In the above, "dbo.Employees" is the name of the table our output binding is upserting into. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [SqloutputAttribute for Output Bindings](#sqloutputattribute-for-output-bindings) section*
-
+- Add 'using Microsoft.Azure.Functions.Worker.Extensions.Sql;' for using *SqlOutput*, the out of proc sql output binding.
 - Hit 'F5' to run your code. Click the link to upsert the output array values in your SQL table. Your upserted values should launch in the browser.
 - Congratulations! You have successfully created your first out of process SQL output binding!
 
