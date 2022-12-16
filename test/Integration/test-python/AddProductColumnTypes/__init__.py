@@ -9,8 +9,7 @@ from Common.productcolumntypes import ProductColumnTypes
 # This function is used to test compatibility with converting various data types to their respective
 # SQL server types.
 def main(req: func.HttpRequest, product: func.Out[func.SqlRow]) -> func.HttpResponse:
-    # todo: check isoformat()
-    productColumnTypes = func.SqlRow(ProductColumnTypes(1, datetime.datetime.utcnow().isoformat(), datetime.datetime.utcnow().isoformat()))
+    productColumnTypes = func.SqlRow(ProductColumnTypes(req.params["productId"], datetime.datetime.utcnow().isoformat("T", "milliseconds"), datetime.datetime.utcnow().isoformat("T", "milliseconds")))
     product.set(productColumnTypes)
 
     return func.HttpResponse(

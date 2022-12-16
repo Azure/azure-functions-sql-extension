@@ -114,7 +114,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <param name="lang">The language to run the test against</param>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.PowerShell, SupportedLanguages.Python)]
         public void AddProductColumnTypesTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductColumnTypes), lang, true);
@@ -177,7 +176,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Python)]
         public void AddProductExtraColumnsTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductExtraColumns), lang, true);
@@ -190,7 +188,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Python)]
         public void AddProductMissingColumnsTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductMissingColumns), lang, true);
@@ -203,7 +200,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Python)]
         public void AddProductMissingColumnsNotNullTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductMissingColumnsExceptionFunction), lang, true);
@@ -215,7 +211,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Python)]
         public void AddProductNoPartialUpsertTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsNoPartialUpsert), lang, true);
