@@ -9,7 +9,7 @@ from Common.product import Product
 
 def main(myTimer: func.TimerRequest, products: func.Out[func.SqlRowList]):
     totalUpserts = 1000
-    logginer.info("%s starting execution. Rows to generate=%s", str(datetime.datetime.now()), str(totalUpserts))
+    logger.info("%s starting execution. Rows to generate=%s", str(datetime.datetime.now()), str(totalUpserts))
 
     start = datetime.datetime.now()
     rows = func.SqlRowList()
