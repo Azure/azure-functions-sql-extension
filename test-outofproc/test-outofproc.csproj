@@ -12,7 +12,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Http" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Worker.Extension.Sql\src\Microsoft.Azure.Functions.Worker.Extensions.Sql.csproj" />
+    <ProjectReference Include="..\Worker.Extensions.Sql\src\Microsoft.Azure.Functions.Worker.Extensions.Sql.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">
