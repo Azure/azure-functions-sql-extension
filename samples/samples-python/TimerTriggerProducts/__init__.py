@@ -6,18 +6,16 @@ from Common.product import Product
 import datetime
 import logging
 
-def main(myTimer: func.TimerRequest, products: func.Out[func.SqlRowList]) -> func.HttpResponse:
+def main(myTimer: func.TimerRequest, products: func.Out[func.SqlRowList]):
     totalUpserts = 1000
     logging.info(f"{str(datetime.datetime.now())} starting execution. Rows to generate={totalUpserts}")
 
     start = datetime.datetime.now()
-
     rows = func.SqlRowList()
     for i in range(totalUpserts):
         row = func.SqlRow(Product(i, "test", 100 * i))
         rows.append(row)
-
-    duration = datetime.datetime.now() - start
     products.set(rows)
+    duration = datetime.datetime.now() - start
 
     logging.info(f"{str(datetime.datetime.now())} finished execution. Total time to create {totalUpserts} rows={duration}")
