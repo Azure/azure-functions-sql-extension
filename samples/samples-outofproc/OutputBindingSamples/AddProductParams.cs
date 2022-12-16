@@ -24,7 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingS
                 var product = new Product()
                 {
                     Name = queryStrings["name"],
-                    ProductID = int.Parse(queryStrings["productId"], null),
+                    ProductId = int.Parse(queryStrings["productId"], null),
                     Cost = int.Parse(queryStrings["cost"], null)
                 };
                 return product;

@@ -5,7 +5,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 {
     public class ProductExtraColumns
     {
-        public int ProductID { get; set; }
+        public int ProductId { get; set; }
 
         public string Name { get; set; }
 
@@ -18,7 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 
     public class ProductIncludeIdentity
     {
-        public int ProductID { get; set; }
+        public int ProductId { get; set; }
 
         public string Name { get; set; }
 

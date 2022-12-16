@@ -21,7 +21,7 @@ namespace DotnetIsolatedTests
             var product = new ProductMissingColumns
             {
                 Name = "test",
-                ProductID = 1
+                ProductId = 1
                 // Cost is missing
             };
             return product;

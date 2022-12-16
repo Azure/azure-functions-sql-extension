@@ -31,9 +31,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             var query = new Dictionary<string, object>()
             {
-                { "productId", id },
-                { "name", name },
-                { "cost", cost }
+                { "ProductId", id },
+                { "Name", name },
+                { "Cost", cost }
             };
 
             this.SendOutputPostRequest("addproduct", JsonConvert.SerializeObject(query)).Wait();
@@ -70,10 +70,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        // ProductID (POCO field) does not match ProductId (table column) and JSON
-        // serialization is case sensitive in Java
-        // TODO: https://github.com/Azure/azure-functions-sql-extension/issues/411
-        [UnsupportedLanguages(SupportedLanguages.Java)]
         public void AddProductArrayTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsArray), lang);
@@ -87,13 +83,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 new Product()
                 {
-                    ProductID = 1,
+                    ProductId = 1,
                     Name = "Cup",
                     Cost = 2
                 },
                 new Product
                 {
-                    ProductID = 2,
+                    ProductId = 2,
                     Name = "Glasses",
                     Cost = 12
                 }
@@ -234,7 +230,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public void AddProductWithIdentity(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithIdentityColumn), lang);
-            // Identity column (ProductID) is left out for new items
+            // Identity column (ProductId) is left out for new items
             var query = new Dictionary<string, string>()
             {
                 { "name", "MyProduct" },
@@ -370,48 +366,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
-        /// Tests that when using a case sensitive database, an error is thrown if
-        /// the POCO fields case and column names case do not match.
-        /// </summary>
-        [Theory]
-        [SqlInlineData()]
-        // JSON serialization is case sensitive in Java
-        // TODO: https://github.com/Azure/azure-functions-sql-extension/issues/411
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.Python)]
-        public void AddProductCaseSensitiveTest(SupportedLanguages lang)
-        {
-            // Set table info cache timeout to 0 minutes so that new collation gets picked up
-            var environmentVariables = new Dictionary<string, string>()
-            {
-                { "AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES", "0" }
-            };
-            this.StartFunctionHost(nameof(AddProductParams), lang, false, null, environmentVariables);
-
-            // Change database collation to case sensitive
-            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
-
-            var query = new Dictionary<string, string>()
-            {
-                { "productId", "1" },
-                { "name", "test" },
-                { "cost", "100" }
-            };
-
-            // The upsert should fail since the database is case sensitive and the column name "ProductId"
-            // does not match the POCO field "ProductID"
-            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-params", query).Wait());
-
-            // Change database collation back to case insensitive
-            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
-
-            this.SendOutputGetRequest("addproduct-params", query).Wait();
-
-            // Verify result
-            Assert.Equal("test", this.ExecuteScalar($"select Name from Products where ProductId={1}"));
-            Assert.Equal(100, this.ExecuteScalar($"select cost from Products where ProductId={1}"));
-        }
-
-        /// <summary>
         /// Tests that a row is inserted successfully when the object is missing
         /// the primary key column with a default value.
         /// </summary>
@@ -425,8 +379,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.StartFunctionHost(nameof(AddProductWithDefaultPK), lang);
             var product = new Dictionary<string, object>()
             {
-                { "name", "MyProduct" },
-                { "cost", 1 }
+                { "Name", "MyProduct" },
+                { "Cost", 1 }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
             this.SendOutputPostRequest("addproductwithdefaultpk", JsonConvert.SerializeObject(product)).Wait();

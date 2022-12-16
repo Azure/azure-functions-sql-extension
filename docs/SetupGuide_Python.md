@@ -153,7 +153,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Open your app in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger ->  (Provide a function name) -> anonymous
-- In the file that opens (`__init__.py`), replace the `def main(req: func.HttpRequest) -> func.HttpResponse:` block with the below code.
+- In the file that opens (`__init__.py`), replace the `def main(req: func.HttpRequest) -> func.HttpResponse:` block with the below code. Note that the casing of the Object field names and the table column names must match.
 
     ```python
     def main(req: func.HttpRequest, employee: func.Out[func.SqlRow]) -> func.HttpResponse:

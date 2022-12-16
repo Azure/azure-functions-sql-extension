@@ -26,7 +26,7 @@ namespace DotnetIsolatedTests
             NameValueCollection queryStrings = HttpUtility.ParseQueryString(req.Url.Query);
             var product = new ProductColumnTypes()
             {
-                ProductID = int.Parse(queryStrings["productId"], null),
+                ProductId = int.Parse(queryStrings["productId"], null),
                 Datetime = new SqlDateTime(DateTime.UtcNow).Value,
                 Datetime2 = DateTime.UtcNow
             };

@@ -147,7 +147,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 new ProductColumnTypes()
                 {
-                    ProductID = 999,
+                    ProductId = 999,
                     Datetime = DateTime.Parse(datetime),
                     Datetime2 = DateTime.Parse(datetime)
                 }

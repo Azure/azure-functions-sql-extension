@@ -30,7 +30,7 @@ namespace DotnetIsolatedTests
             var invalidProduct = new Product
             {
                 Name = null,
-                ProductID = UpsertBatchSize,
+                ProductId = UpsertBatchSize,
                 Cost = 100
             };
             newProducts.Add(invalidProduct);

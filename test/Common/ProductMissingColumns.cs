@@ -5,7 +5,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 {
     public class ProductMissingColumns
     {
-        public int ProductID { get; set; }
+        public int ProductId { get; set; }
 
         public string Name { get; set; }
     }
