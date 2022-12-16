@@ -1,0 +1,18 @@
+{
+  "bindings": [
+    {
+      "schedule": "*/5 * * * * *",
+      "name": "myTimer",
+      "type": "timerTrigger",
+      "direction": "in"
+    },
+    {
+      "name": "products",
+      "type": "sql",
+      "direction": "out",
+      "commandText": "[dbo].[Products]",
+      "connectionStringSetting": "SqlConnectionString"
+    }
+  ],
+  "disabled": false
+}
