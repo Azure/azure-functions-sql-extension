@@ -109,6 +109,11 @@ steps:
   workingDirectory: $(Build.SourcesDirectory)/samples/samples-python
   displayName: Lint samples-python
 
+- script: |
+    pip3 install -r requirements.txt
+  workingDirectory: $(Build.SourcesDirectory)/samples/samples-python
+  displayName: Install azure-functions-1.11.3b1
+
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
   inputs:
     InputType: 'CommandLine'

@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Collections.Generic;
@@ -8,21 +8,17 @@ using Microsoft.Azure.Functions.Worker.Extensions.Sql;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingSamples
 {
-    public static class TimerTriggerProducts
+    public static class QueueTriggerProducts
     {
-        /// <summary>
-        /// This timer function runs evyery 5 seconds, each time it upserts 1000 rows of data.
-        /// </summary>
-        [Function("TimerTriggerProducts")]
-        [SqlOutput("Products", ConnectionStringSetting = "SqlConnectionString")]
-        public static List<Product> Run(
-            [TimerTrigger("*/5 * * * * *")] TimerInfo req, FunctionContext context)
+        [Function("QueueTriggerProducts")]
+        [SqlOutput("[dbo].[Products]", ConnectionStringSetting = "SqlConnectionString")]
+        public static List<Product> Run([QueueTrigger("testqueue")] string queueMessage)
         {
-            int totalUpserts = 1000;
-
+            int totalUpserts = 100;
             List<Product> newProducts = ProductUtilities.GetNewProducts(totalUpserts);
-
             return newProducts;
         }
+
     }
+
 }

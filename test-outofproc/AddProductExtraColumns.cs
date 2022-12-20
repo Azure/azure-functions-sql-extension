@@ -4,7 +4,7 @@
 using DotnetIsolatedTests.Common;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.Functions.Worker.Extension.Sql;
+using Microsoft.Azure.Functions.Worker.Extensions.Sql;
 
 namespace DotnetIsolatedTests
 {
@@ -21,7 +21,7 @@ namespace DotnetIsolatedTests
             var product = new ProductExtraColumns
             {
                 Name = "test",
-                ProductID = 1,
+                ProductId = 1,
                 Cost = 100,
                 ExtraInt = 1,
                 ExtraString = "test"

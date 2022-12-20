@@ -147,7 +147,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Open your app in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger ->  (Provide a function name) -> anonymous
-- In the file that opens (`run.ps1`), replace the code within the file the below code.
+- In the file that opens (`run.ps1`), replace the code within the file the below code. Note that the casing of the Object field names and the table column names must match.
 
    ```powershell
     using namespace System.Net

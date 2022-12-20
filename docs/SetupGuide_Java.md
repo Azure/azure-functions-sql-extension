@@ -93,7 +93,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 - Add 'import com.microsoft.azure.functions.sql.annotation.SQLInput;'
 - Create a new file and call it 'Employee.java'
-- Paste the below in the file. These are the column names of our SQL table.
+- Paste the below in the file. These are the column names of our SQL table. Note that the casing of the Object field names and the table column names must match.
 
     ```java
     package com.function.Common;
