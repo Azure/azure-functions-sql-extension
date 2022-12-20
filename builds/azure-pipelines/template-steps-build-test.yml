@@ -174,12 +174,18 @@ steps:
     GdnPublishTsaConfigFile: '$(Build.SourcesDirectory)\builds\TSAConfig.gdntsa'
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'), eq(variables['TSA_UPLOAD'], 'true'))
 
-# 5.0 isn't supported on Mac yet
+# net6+ isn't supported on Mac yet
 - task: UseDotNet@2
-  displayName: 'Install .NET Core 2.1.x SDK for CodeSigning on Mac'
+  displayName: Install .NET Core 2.1.x SDK for Code Signing on Mac
   inputs:
-    version: '2.1.x'
+    version: 2.1.x
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Darwin'))
+
+- task: UseDotNet@2
+  displayName: Install .NET 6.x SDK for Code Signing
+  inputs:
+    version: 6.x
+  condition: and(succeeded(), ne(variables['Agent.OS'], 'Darwin'))
 
 - task: EsrpCodeSigning@1
   displayName: 'ESRP CodeSigning - Binaries'

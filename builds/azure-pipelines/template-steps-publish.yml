@@ -3,9 +3,9 @@ parameters:
 
 steps:
 - task: UseDotNet@2
-  displayName: 'Install .NET Core SDK 5.0.x for CodeSign'
+  displayName: 'Install .NET Core SDK 6.x for CodeSign'
   inputs:
-    version: '5.0.x'
+    version: '6.x'
   condition: succeededOrFailed()
 
 - task: EsrpCodeSigning@1
