@@ -176,16 +176,9 @@ steps:
 
 # net6+ isn't supported on Mac yet
 - task: UseDotNet@2
-  displayName: Install .NET Core 2.1.x SDK for Code Signing on Mac
+  displayName: Install .NET 2.1.x SDK for Code Signing
   inputs:
     version: 2.1.x
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Darwin'))
-
-- task: UseDotNet@2
-  displayName: Install .NET 6.0.x SDK for Code Signing
-  inputs:
-    version: 6.0.x
-  condition: and(succeeded(), ne(variables['Agent.OS'], 'Darwin'))
 
 - task: EsrpCodeSigning@1
   displayName: 'ESRP CodeSigning - Binaries'
