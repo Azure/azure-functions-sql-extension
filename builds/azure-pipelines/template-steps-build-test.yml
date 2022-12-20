@@ -182,9 +182,9 @@ steps:
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Darwin'))
 
 - task: UseDotNet@2
-  displayName: Install .NET 6.x SDK for Code Signing
+  displayName: Install .NET 6.0.x SDK for Code Signing
   inputs:
-    version: 6.x
+    version: 6.0.x
   condition: and(succeeded(), ne(variables['Agent.OS'], 'Darwin'))
 
 - task: EsrpCodeSigning@1
