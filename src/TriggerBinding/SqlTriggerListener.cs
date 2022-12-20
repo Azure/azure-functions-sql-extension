@@ -107,15 +107,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             this.InitializeTelemetryProps();
-            TelemetryInstance.TrackEvent(
-                TelemetryEventName.StartListener,
-                new Dictionary<TelemetryPropertyName, string>(this._telemetryProps) {
-                        { TelemetryPropertyName.HasConfiguredMaxChangesPerWorker, this._hasConfiguredMaxChangesPerWorker.ToString() }
-                },
-                new Dictionary<TelemetryMeasureName, double>() {
-                    { TelemetryMeasureName.MaxChangesPerWorker, this._maxChangesPerWorker }
-                }
-            );
 
             try
             {
@@ -172,9 +163,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         [TelemetryMeasureName.InsertGlobalStateTableRowDurationMs] = insertGlobalStateTableRowDurationMs,
                         [TelemetryMeasureName.CreateLeasesTableDurationMs] = createLeasesTableDurationMs,
                         [TelemetryMeasureName.TransactionDurationMs] = transactionSw.ElapsedMilliseconds,
+                        [TelemetryMeasureName.MaxChangesPerWorker] = this._maxChangesPerWorker
                     };
 
-                    TelemetryInstance.TrackEvent(TelemetryEventName.StartListener, this._telemetryProps, measures);
+                    TelemetryInstance.TrackEvent(
+                        TelemetryEventName.StartListener,
+                        new Dictionary<TelemetryPropertyName, string>(this._telemetryProps) {
+                            { TelemetryPropertyName.HasConfiguredMaxChangesPerWorker, this._hasConfiguredMaxChangesPerWorker.ToString() }
+                        },
+                        measures);
                 }
             }
             catch (Exception ex)
@@ -189,7 +186,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            TelemetryInstance.TrackEvent(TelemetryEventName.StopListener, this._telemetryProps);
             var stopwatch = Stopwatch.StartNew();
 
             int previousState = Interlocked.CompareExchange(ref this._listenerState, ListenerStopping, ListenerStarted);
