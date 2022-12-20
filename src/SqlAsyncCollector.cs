@@ -668,9 +668,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 IList<JsonProperty> propertiesToSerialize = new List<JsonProperty>(properties.Count);
                 foreach (KeyValuePair<string, string> column in this._propertiesToSerialize)
                 {
-                    if (properties.ContainsKey(column.Key))
+                    if (properties.TryGetValue(column.Key, out JsonProperty value))
                     {
-                        JsonProperty sqlColumn = properties[column.Key];
+                        JsonProperty sqlColumn = value;
                         sqlColumn.PropertyName = sqlColumn.PropertyName;
                         propertiesToSerialize.Add(sqlColumn);
                     }
