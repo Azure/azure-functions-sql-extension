@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Configuration;
@@ -14,7 +15,7 @@ using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 {
-    public class SqlTriggerListenerTests
+    public class SqlTriggerScaleMonitorTests
     {
         /// <summary>
         /// Verifies that the scale monitor descriptor ID is set to expected value.
@@ -202,27 +203,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         }
 
         [Theory]
-        [InlineData("1")]
-        [InlineData("100")]
-        [InlineData("10000")]
-        public void ScaleMonitorGetScaleStatus_UserConfiguredMaxChangesPerWorker_RespectsConfiguration(string maxChangesPerWorker)
+        [InlineData(1)]
+        [InlineData(100)]
+        [InlineData(10000)]
+        public void ScaleMonitorGetScaleStatus_UserConfiguredMaxChangesPerWorker_RespectsConfiguration(int maxChangesPerWorker)
         {
             (IScaleMonitor<SqlTriggerMetrics> monitor, _) = GetScaleMonitor(maxChangesPerWorker);
 
             ScaleStatusContext context;
             ScaleStatus scaleStatus;
 
-            int max = int.Parse(maxChangesPerWorker);
-
-            context = GetScaleStatusContext(new int[] { 0, 0, 0, 0, 10 * max }, 10);
+            context = GetScaleStatusContext(new int[] { 0, 0, 0, 0, 10 * maxChangesPerWorker }, 10);
             scaleStatus = monitor.GetScaleStatus(context);
             Assert.Equal(ScaleVote.None, scaleStatus.Vote);
 
-            context = GetScaleStatusContext(new int[] { 0, 0, 0, 0, (10 * max) + 1 }, 10);
+            context = GetScaleStatusContext(new int[] { 0, 0, 0, 0, (10 * maxChangesPerWorker) + 1 }, 10);
             scaleStatus = monitor.GetScaleStatus(context);
             Assert.Equal(ScaleVote.ScaleOut, scaleStatus.Vote);
 
-            context = GetScaleStatusContext(new int[] { (9 * max) + 4, (9 * max) + 3, (9 * max) + 2, (9 * max) + 1, 9 * max }, 10);
+            context = GetScaleStatusContext(new int[] { (9 * maxChangesPerWorker) + 4, (9 * maxChangesPerWorker) + 3, (9 * maxChangesPerWorker) + 2, (9 * maxChangesPerWorker) + 1, 9 * maxChangesPerWorker }, 10);
             scaleStatus = monitor.GetScaleStatus(context);
             Assert.Equal(ScaleVote.ScaleIn, scaleStatus.Vote);
         }
@@ -242,29 +241,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 
         private static IScaleMonitor<SqlTriggerMetrics> GetScaleMonitor(string tableName, string userFunctionId)
         {
-            Mock<IConfiguration> mockConfiguration = CreateMockConfiguration();
+            var userTable = new SqlObject(tableName);
 
-            return new SqlTriggerListener<object>(
-                "testConnectionString",
-                tableName,
+            return new SqlTriggerScaleMonitor<object>(
                 userFunctionId,
-                Mock.Of<ITriggeredFunctionExecutor>(),
-                Mock.Of<ILogger>(),
-                mockConfiguration.Object);
+                userTable,
+                (SqlTableChangeMonitor<object>)FormatterServices.GetUninitializedObject(typeof(SqlTableChangeMonitor<object>)),
+                SqlTriggerListener<object>.DefaultMaxChangesPerWorker,
+                Mock.Of<ILogger>());
         }
 
-        private static (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) GetScaleMonitor(string maxChangesPerWorker = null)
+        private static (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) GetScaleMonitor(int maxChangesPerWorker = SqlTriggerListener<object>.DefaultMaxChangesPerWorker)
         {
             (Mock<ILogger> mockLogger, List<string> logMessages) = CreateMockLogger();
-            Mock<IConfiguration> mockConfiguration = CreateMockConfiguration(maxChangesPerWorker);
 
-            IScaleMonitor<SqlTriggerMetrics> monitor = new SqlTriggerListener<object>(
-                "testConnectionString",
-                "testTableName",
+            IScaleMonitor<SqlTriggerMetrics> monitor = new SqlTriggerScaleMonitor<object>(
                 "testUserFunctionId",
-                Mock.Of<ITriggeredFunctionExecutor>(),
-                mockLogger.Object,
-                mockConfiguration.Object);
+                new SqlObject("testTableName"),
+                (SqlTableChangeMonitor<object>)FormatterServices.GetUninitializedObject(typeof(SqlTableChangeMonitor<object>)),
+                maxChangesPerWorker,
+                mockLogger.Object);
 
             return (monitor, logMessages);
         }

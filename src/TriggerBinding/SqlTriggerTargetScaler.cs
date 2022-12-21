@@ -37,6 +37,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             int concurrency = context.InstanceConcurrency ?? this._maxChangesPerWorker;
 
+            if (concurrency < 1)
+            {
+                throw new ArgumentOutOfRangeException($"Unexpected concurrency='{concurrency}' - the value must be > 0.");
+            }
+
             int targetWorkerCount = (int)Math.Ceiling(unprocessedChangeCount / (decimal)concurrency);
 
             this._logger.LogInformation($"Target worker count for function '{this._userFunctionId}' is '{targetWorkerCount}' UnprocessedChangeCount ='{this._maxChangesPerWorker}', Concurrency='{concurrency}').");
