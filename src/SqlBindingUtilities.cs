@@ -233,5 +233,62 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 throw;
             }
         }
+
+        /// <summary>
+        /// Checks whether an exception is a fatal SqlException. It is deteremined to be fatal
+        /// if the Class value of the Exception is 20 or higher, see
+        /// https://learn.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlexception#remarks
+        /// for details
+        /// </summary>
+        /// <param name="e">The exception to check</param>
+        /// <returns>True if the exception is a fatal SqlClientException, false otherwise</returns>
+        internal static bool IsFatalSqlException(this Exception e)
+        {
+            // Most SqlExceptions wrap the original error from the native driver, so make sure to check both
+            return (e as SqlException)?.Class >= 20 || (e.InnerException as SqlException)?.Class >= 20;
+        }
+
+        /// <summary>
+        /// Attempts to ensure that this connection is open, if it currently is in a broken state
+        /// then it will close the connection and re-open it.
+        /// </summary>
+        /// <param name="conn">The connection</param>
+        /// <param name="forceReconnect">Whether to force the connection to be re-established, regardless of its current state</param>
+        /// <param name="logger">Logger to log events to</param>
+        /// <param name="connectionName">The name of the connection to display in the log messages</param>
+        /// <param name="token">Cancellation token to pass to the Open call</param>
+        /// <returns>True if the connection is open, either because it was able to be re-established or because it was already open. False if the connection could not be re-established.</returns>
+        internal static async Task<bool> TryEnsureConnected(this SqlConnection conn,
+            bool forceReconnect,
+            ILogger logger,
+            string connectionName,
+            CancellationToken token)
+        {
+            if (forceReconnect || conn.State.HasFlag(ConnectionState.Broken | ConnectionState.Closed))
+            {
+                logger.LogWarning($"{connectionName} is broken, attempting to reconnect...");
+                logger.LogDebugWithThreadId($"BEGIN RetryOpen{connectionName}");
+                try
+                {
+                    // Sometimes the connection state is listed as open even if a fatal exception occurred, see
+                    // https://github.com/dotnet/SqlClient/issues/1874 for details. So in that case we want to first
+                    // close the connection so we can retry (otherwise it'll throw saying the connection is still open)
+                    if (conn.State == ConnectionState.Open)
+                    {
+                        conn.Close();
+                    }
+                    await conn.OpenAsync(token);
+                    logger.LogInformation($"Successfully re-established {connectionName}!");
+                    logger.LogDebugWithThreadId("END RetryOpenChangeConsumptionConnection");
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    logger.LogError($"Exception reconnecting {connectionName}. Exception = {e.Message}");
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 }
