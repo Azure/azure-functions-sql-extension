@@ -40,6 +40,16 @@ namespace DotnetIsolatedTests.Common
 
         public int Cost { get; set; }
     }
+
+    public class ProductIncorrectCasing
+    {
+        public int ProductID { get; set; }
+
+        public string Name { get; set; }
+
+        public int Cost { get; set; }
+    }
+
     public class ProductUtilities
     {
         /// <summary>
