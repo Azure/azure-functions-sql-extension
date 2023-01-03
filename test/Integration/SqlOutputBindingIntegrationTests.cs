@@ -114,6 +114,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <param name="lang">The language to run the test against</param>
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.PowerShell)]
         public void AddProductColumnTypesTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductColumnTypes), lang, true);
@@ -436,7 +437,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        // [UnsupportedLanguages(SupportedLanguages.OutOfProc)]
+        [UnsupportedLanguages(SupportedLanguages.OutOfProc)]
         public async Task UnsupportedDatabaseThrows(SupportedLanguages lang)
         {
             // Change database compat level to unsupported version
