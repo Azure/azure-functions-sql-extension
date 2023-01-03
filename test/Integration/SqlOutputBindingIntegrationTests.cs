@@ -421,5 +421,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // Wait 2sec for message to get processed to account for delays reading output
             await foundExpectedMessageSource.Task.TimeoutAfter(TimeSpan.FromMilliseconds(2000), $"Timed out waiting for expected error message");
         }
+
+        /// <summary>
+        /// Tests that upserting to a case sensitive database works correctly.
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        public void AddProductToCaseSensitiveDatabase(SupportedLanguages lang)
+        {
+            this.StartFunctionHost(nameof(AddProduct), lang);
+
+            // Change database collation to case sensitive
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
+
+            var query = new Dictionary<string, object>()
+            {
+                { "ProductId", 0 },
+                { "Name", "test" },
+                { "Cost", 100 }
+            };
+
+            this.SendOutputPostRequest("addproduct", JsonConvert.SerializeObject(query)).Wait();
+
+            // Verify result
+            Assert.Equal("test", this.ExecuteScalar($"select Name from Products where ProductId=0"));
+            Assert.Equal(100, this.ExecuteScalar($"select Cost from Products where ProductId=0"));
+
+            // Change database collation back to case insensitive
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
+        }
+
+        /// <summary>
+        /// Tests that an error is thrown when the object field names and table column names do not match.
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        public void AddProductIncorrectCasing(SupportedLanguages lang)
+        {
+            this.StartFunctionHost(nameof(AddProductIncorrectCasing), lang);
+
+            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-incorrectcasing").Wait());
+            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM Products"));
+        }
     }
 }
