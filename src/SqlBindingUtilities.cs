@@ -279,7 +279,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     }
                     await conn.OpenAsync(token);
                     logger.LogInformation($"Successfully re-established {connectionName}!");
-                    logger.LogDebugWithThreadId("END RetryOpenChangeConsumptionConnection");
+                    logger.LogDebugWithThreadId($"END RetryOpen{connectionName}");
                     return true;
                 }
                 catch (Exception e)
