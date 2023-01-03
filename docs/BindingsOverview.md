@@ -21,7 +21,7 @@
 
 ## Input Binding
 
-Azure SQL Input bindings take a SQL query to run and returns the output of the query in the function.
+Azure SQL Input bindings take a SQL query or stored procedure to run and returns the output to the function.
 
 ## Output Binding
 
