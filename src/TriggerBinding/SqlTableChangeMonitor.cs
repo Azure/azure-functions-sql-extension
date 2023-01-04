@@ -86,6 +86,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private State _state = State.CheckingForChanges;
 
         /// <summary>
+        /// The result from the last time we triggered the user function. This will normally be cleared immediately after executing
+        /// the function but if an error occurs during cleanup we want to keep retrying the cleanup until it succeeds.
+        /// </summary>
+        private FunctionResult _triggeredFunctionResult = null;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="SqlTableChangeMonitor{T}" />> class.
         /// </summary>
         /// <param name="connectionString">SQL connection string used to connect to user database</param>
@@ -269,22 +275,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         {
                             forceReconnect = false;
                         }
-                        this._logger.LogDebugWithThreadId($"BEGIN CheckingForChanges State={this._state}");
-                        if (this._state == State.CheckingForChanges)
+                        this._logger.LogDebugWithThreadId($"BEGIN ProcessingChanges State={this._state}");
+
+                        try
                         {
-                            try
+                            // Only get new changes if we're currently checking for new changes so that we can retry
+                            // processing changes if an exception occurs processing a previous set.
+                            if (this._state == State.CheckingForChanges)
                             {
                                 await this.GetTableChangesAsync(connection, token);
-                                await this.ProcessTableChangesAsync(connection, token);
                             }
-                            catch (Exception e) when (e.IsFatalSqlException())
-                            {
-                                this._logger.LogError($"Fatal SQL Client exception processing changes. Will attempt to reestablish connection in {this._pollingIntervalInMs}ms. Exception = {e.Message}");
-                                forceReconnect = true;
-                            }
-
+                            await this.ProcessTableChangesAsync(connection, token);
                         }
-                        this._logger.LogDebugWithThreadId("END CheckingForChanges");
+                        catch (Exception e) when (e.IsFatalSqlException())
+                        {
+                            this._logger.LogError($"Fatal SQL Client exception processing changes. Will attempt to reestablish connection in {this._pollingIntervalInMs}ms. Exception = {e.Message}");
+                            forceReconnect = true;
+                        }
+                        this._logger.LogDebugWithThreadId("END ProcessingChanges");
                         this._logger.LogDebugWithThreadId($"Delaying for {this._pollingIntervalInMs}ms");
                         await Task.Delay(TimeSpan.FromMilliseconds(this._pollingIntervalInMs), token);
                     }
@@ -446,33 +454,49 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 if (changes != null)
                 {
-                    var input = new TriggeredFunctionData() { TriggerValue = changes };
-
-                    TelemetryInstance.TrackEvent(TelemetryEventName.TriggerFunctionStart, this._telemetryProps);
-                    this._logger.LogDebugWithThreadId("Executing triggered function");
-                    var stopwatch = Stopwatch.StartNew();
-
-                    FunctionResult result = await this._executor.TryExecuteAsync(input, this._cancellationTokenSourceExecutor.Token);
-                    long durationMs = stopwatch.ElapsedMilliseconds;
-                    var measures = new Dictionary<TelemetryMeasureName, double>
+                    // If an error occurs after triggering the function (say when we release the leases) then we don't want to trigger the function
+                    // again for the same set of changes but we still want to keep retrying cleaning up until that succeeds to ensure that we don't
+                    // double process any items.
+                    if (this._triggeredFunctionResult == null)
                     {
-                        [TelemetryMeasureName.DurationMs] = durationMs,
-                        [TelemetryMeasureName.BatchCount] = this._rows.Count,
-                    };
+                        var input = new TriggeredFunctionData() { TriggerValue = changes };
 
-                    if (result.Succeeded)
+                        TelemetryInstance.TrackEvent(TelemetryEventName.TriggerFunctionStart, this._telemetryProps);
+                        this._logger.LogDebugWithThreadId("Executing triggered function");
+                        var stopwatch = Stopwatch.StartNew();
+
+                        this._triggeredFunctionResult = await this._executor.TryExecuteAsync(input, this._cancellationTokenSourceExecutor.Token);
+                        long durationMs = stopwatch.ElapsedMilliseconds;
+                        var measures = new Dictionary<TelemetryMeasureName, double>
+                        {
+                            [TelemetryMeasureName.DurationMs] = durationMs,
+                            [TelemetryMeasureName.BatchCount] = this._rows.Count,
+                        };
+                        if (this._triggeredFunctionResult.Succeeded)
+                        {
+                            this._logger.LogDebugWithThreadId($"Successfully triggered function. Duration={durationMs}ms");
+                            TelemetryInstance.TrackEvent(TelemetryEventName.TriggerFunctionEnd, this._telemetryProps, measures);
+                        }
+                        else
+                        {
+                            // In the future might make sense to retry executing the function, but for now we just let
+                            // another worker try.
+                            this._logger.LogError($"Failed to trigger user function for table: '{this._userTable.FullName} due to exception: {this._triggeredFunctionResult.Exception.GetType()}. Exception message: {this._triggeredFunctionResult.Exception.Message}");
+                            TelemetryInstance.TrackException(TelemetryErrorName.TriggerFunction, this._triggeredFunctionResult.Exception, this._telemetryProps, measures);
+                        }
+                    }
+                    else
                     {
-                        this._logger.LogDebugWithThreadId($"Successfully triggered function. Duration={durationMs}ms");
-                        TelemetryInstance.TrackEvent(TelemetryEventName.TriggerFunctionEnd, this._telemetryProps, measures);
+                        this._logger.LogDebugWithThreadId("Skipping executing triggered function - function already triggered for this set of changes");
+                    }
+
+                    // Cleanup after function execution
+                    if (this._triggeredFunctionResult.Succeeded)
+                    {
                         await this.ReleaseLeasesAsync(connection, token);
                     }
                     else
                     {
-                        // In the future might make sense to retry executing the function, but for now we just let
-                        // another worker try.
-                        this._logger.LogError($"Failed to trigger user function for table: '{this._userTable.FullName} due to exception: {result.Exception.GetType()}. Exception message: {result.Exception.Message}");
-                        TelemetryInstance.TrackException(TelemetryErrorName.TriggerFunction, result.Exception, this._telemetryProps, measures);
-
                         await this.ClearRowsAsync();
                     }
                 }
@@ -633,13 +657,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._leaseRenewalCount = 0;
             this._state = State.CheckingForChanges;
             this._rows = new List<IReadOnlyDictionary<string, object>>();
+            this._triggeredFunctionResult = null;
 
             this._logger.LogDebugWithThreadId("ReleaseRowsLock - ClearRows");
             this._rowsLock.Release();
         }
 
         /// <summary>
-        /// Releases the leases held on "_rows".
+        /// Releases the leases held on "_rows" and updates the state tables with the latest sync version we've processed up to.
         /// </summary>
         /// <returns></returns>
         private async Task ReleaseLeasesAsync(SqlConnection connection, CancellationToken token)
