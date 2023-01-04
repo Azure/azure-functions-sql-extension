@@ -18,7 +18,7 @@
 
 This repository contains the Azure SQL bindings for Azure Functions extension code as well as a quick start tutorial and samples illustrating how to use the binding in different ways. The types of bindings supported are:
 
-- **Input Binding**: takes a SQL query to run and returns the output of the query in the function.
+- **Input Binding**: takes a SQL query or stored procedure to run and returns the output to the function.
 - **Output Binding**: takes a list of rows and upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
 - **Trigger Binding**: monitors the user table for changes (i.e., row inserts, updates, and deletes) and invokes the function with updated rows.
 
