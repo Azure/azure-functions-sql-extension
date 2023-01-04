@@ -188,5 +188,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             Assert.Equal(expectedResponse, actualProductResponse);
         }
+
+        /// <summary>
+        /// Tests that querying from a case sensitive database works correctly.
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        public async void GetProductsFromCaseSensitiveDatabase(SupportedLanguages lang)
+        {
+            this.StartFunctionHost(nameof(GetProducts), lang);
+
+            // Change database collation to case sensitive
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
+
+            // Generate T-SQL to insert 10 rows of data with cost 100
+            Product[] products = GetProductsWithSameCost(10, 100);
+            this.InsertProducts(products);
+
+            // Run the function
+            HttpResponseMessage response = await this.SendInputRequest("getproducts", "100");
+
+            // Verify result
+            string actualResponse = await response.Content.ReadAsStringAsync();
+            Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse);
+
+            Assert.Equal(products, actualProductResponse);
+
+            // Change database collation back to case insensitive
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
+        }
     }
 }
