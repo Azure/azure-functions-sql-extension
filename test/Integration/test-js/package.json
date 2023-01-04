@@ -1,5 +1,5 @@
 {
-  "name": "samples-js",
+  "name": "test-js",
   "version": "1.0.0",
   "description": "Javascript test functions for Azure Functions with SQL Bindings",
   "scripts": {
