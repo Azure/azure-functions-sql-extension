@@ -1,7 +1,7 @@
 {
   "name": "samples-js",
   "version": "1.0.0",
-  "description": "Javascript samples for Azure Functions with SQL Bindings",
+  "description": "Javascript test functions for Azure Functions with SQL Bindings",
   "scripts": {
     "start": "func start",
     "test": "echo \"No tests yet...\"",
