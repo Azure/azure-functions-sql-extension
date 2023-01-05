@@ -1,15 +1,14 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
+using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.Common;
+using Microsoft.Azure.Functions.Worker.Extensions.Sql;
+using Microsoft.Azure.Functions.Worker;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.MultipleBindingsSamples
-
 {
     /// <summary>
     /// This function uses a SQL input binding to get products from the Products table
@@ -17,22 +16,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.MultipleBindin
     /// </summary>
     public static class GetAndAddProducts
     {
-        [FunctionName("GetAndAddProducts")]
-        public static IActionResult Run(
+        [Function("GetAndAddProducts")]
+        [SqlOutput("ProductsWithIdentity", ConnectionStringSetting = "SqlConnectionString")]
+        public static IEnumerable<Product> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getandaddproducts/{cost}")]
-            HttpRequest req,
-            [Sql("SELECT * FROM Products",
+            HttpRequestData req,
+            [SqlInput("SELECT * FROM Products",
                 CommandType = System.Data.CommandType.Text,
                 Parameters = "@Cost={cost}",
                 ConnectionStringSetting = "SqlConnectionString")]
-            IEnumerable<Product> products,
-            [Sql("ProductsWithIdentity",
-                ConnectionStringSetting = "SqlConnectionString")]
-            out Product[] productsWithIdentity)
+            IEnumerable<Product> products)
         {
-            productsWithIdentity = products.ToArray();
-
-            return new OkObjectResult(products);
+            return products.ToArray();
         }
     }
 }
