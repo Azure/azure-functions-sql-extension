@@ -21,7 +21,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.PowerShell, SupportedLanguages.JavaScript, SupportedLanguages.Python, SupportedLanguages.CSharp)]
         public async void GetAndAddProductsTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetAndAddProducts), lang);

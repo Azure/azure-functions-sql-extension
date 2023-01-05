@@ -4,7 +4,7 @@
 import json
 import azure.functions as func
 
-def main(req: func.HttpRequest, products: func.SqlRowList) -> func.HttpResponse:
+def main(req: func.HttpRequest, products: func.SqlRowList, productsWithIdentity: func.Out[func.SqlRowList]) -> func.HttpResponse:
     """This function uses a SQL input binding to get products from the Products table
     and upsert those products to the ProductsWithIdentity table.
     """
