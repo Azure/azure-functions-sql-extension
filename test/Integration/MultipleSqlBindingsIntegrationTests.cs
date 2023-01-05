@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             this.StartFunctionHost(nameof(GetAndAddProducts), lang);
 
-            // Generate T-SQL to insert n rows of data with cost
+            // Insert 10 rows to Products table
             Product[] products = GetProductsWithSameCost(10, 100);
             this.InsertProducts(products);
 
