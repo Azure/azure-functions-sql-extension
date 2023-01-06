@@ -169,7 +169,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Python)]
         public async void GetProductsColumnTypesSerializationTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsColumnTypesSerialization), lang, true);
