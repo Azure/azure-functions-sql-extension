@@ -17,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
-        /// Tests a function with an input and output binding.
+        /// Tests a function with both an input and output binding.
         /// </summary>
         [Theory]
         [SqlInlineData()]
