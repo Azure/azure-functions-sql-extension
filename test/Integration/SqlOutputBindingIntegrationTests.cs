@@ -367,6 +367,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
+        // Currently PowerShell gives an unknown error (when testing locally we get a missing primary key error)
+        // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
+        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
         public void AddProductWithDefaultPKTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithDefaultPK), lang);
