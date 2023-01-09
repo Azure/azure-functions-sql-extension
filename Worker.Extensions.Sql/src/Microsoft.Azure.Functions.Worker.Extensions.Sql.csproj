@@ -11,7 +11,7 @@
 		<PackageTags>Microsoft Azure WebJobs AzureFunctions Isolated DotnetIsolated SQL AzureSQL Worker</PackageTags>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<IsPackable>true</IsPackable>
-        	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -22,4 +22,13 @@
 		<None Include=".\README.md" Pack="true" PackagePath="" />
 	</ItemGroup>
 
+	<Target Name="AddGitMetadaAssemblyAttributes" BeforeTargets="CoreGenerateAssemblyInfo">
+		<ItemGroup>
+			<AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute"
+				Condition="$(nugetVersion) != ''">
+				<_Parameter1>Microsoft.Azure.WebJobs.Extensions.Sql</_Parameter1>
+				<_Parameter2>$(nugetVersion)</_Parameter2>
+			</AssemblyAttribute>
+		</ItemGroup>
+	</Target>
 </Project>
