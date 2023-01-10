@@ -14,9 +14,9 @@ $start = Get-Date
 $products = @()
 for ($i = 0; $i -lt $totalUpserts; $i++) {
     $products += [PSCustomObject]@{
-        productId = $i;
-        name = "test";
-        cost = 100 * $i;
+        ProductId = $i;
+        Name = "test";
+        Cost = 100 * $i;
     }
 }
 # Assign the value we want to pass to the SQL Output binding. 

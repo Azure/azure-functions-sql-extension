@@ -7,7 +7,7 @@ namespace DotnetIsolatedTests.Common
 {
     public class Product
     {
-        public int ProductID { get; set; }
+        public int ProductId { get; set; }
 
         public string Name { get; set; }
 
@@ -16,7 +16,7 @@ namespace DotnetIsolatedTests.Common
 
     public class ProductWithOptionalId
     {
-        public int? ProductID { get; set; }
+        public int? ProductId { get; set; }
 
         public string Name { get; set; }
 
@@ -40,6 +40,16 @@ namespace DotnetIsolatedTests.Common
 
         public int Cost { get; set; }
     }
+
+    public class ProductIncorrectCasing
+    {
+        public int ProductID { get; set; }
+
+        public string Name { get; set; }
+
+        public int Cost { get; set; }
+    }
+
     public class ProductUtilities
     {
         /// <summary>
@@ -52,7 +62,7 @@ namespace DotnetIsolatedTests.Common
             {
                 var product = new Product
                 {
-                    ProductID = i,
+                    ProductId = i,
                     Cost = 100 * i,
                     Name = "test"
                 };
@@ -63,7 +73,7 @@ namespace DotnetIsolatedTests.Common
 
         /// <summary>
         /// Returns a list of <paramref name="num"/> Products with a random cost between 1 and <paramref name="cost"/>.
-        /// Note that ProductID is randomized too so list may not be unique.
+        /// Note that ProductId is randomized too so list may not be unique.
         /// </summary>
         public static List<Product> GetNewProductsRandomized(int num, int cost)
         {
@@ -74,7 +84,7 @@ namespace DotnetIsolatedTests.Common
             {
                 var product = new Product
                 {
-                    ProductID = r.Next(1, num),
+                    ProductId = r.Next(1, num),
                     Cost = (int)Math.Round(r.NextDouble() * cost),
                     Name = "test"
                 };
@@ -85,7 +95,7 @@ namespace DotnetIsolatedTests.Common
     }
     public class ProductColumnTypes
     {
-        public int ProductID { get; set; }
+        public int ProductId { get; set; }
 
         public DateTime Datetime { get; set; }
 
@@ -96,14 +106,14 @@ namespace DotnetIsolatedTests.Common
             if (obj is ProductColumnTypes)
             {
                 var that = obj as ProductColumnTypes;
-                return this.ProductID == that.ProductID && this.Datetime == that.Datetime && this.Datetime2 == that.Datetime2;
+                return this.ProductId == that.ProductId && this.Datetime == that.Datetime && this.Datetime2 == that.Datetime2;
             }
             return false;
         }
     }
     public class ProductExtraColumns
     {
-        public int ProductID { get; set; }
+        public int ProductId { get; set; }
 
         public string Name { get; set; }
 
@@ -116,7 +126,7 @@ namespace DotnetIsolatedTests.Common
 
     public class ProductIncludeIdentity
     {
-        public int ProductID { get; set; }
+        public int ProductId { get; set; }
 
         public string Name { get; set; }
 
@@ -124,7 +134,7 @@ namespace DotnetIsolatedTests.Common
     }
     public class ProductMissingColumns
     {
-        public int ProductID { get; set; }
+        public int ProductId { get; set; }
 
         public string Name { get; set; }
     }
