@@ -9,6 +9,7 @@
     <!-- Default Version for dev -->
     <Version>99.99.99</Version>
     <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Microsoft.Azure.WebJobs.Extensions.Sql</PackageId>
     <PackageTags>Microsoft Azure WebJobs AzureFunctions SQL AzureSQL</PackageTags>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>

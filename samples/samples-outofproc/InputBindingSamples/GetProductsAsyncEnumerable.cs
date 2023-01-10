@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.Common;
-using Microsoft.Azure.Functions.Worker.Extension.Sql;
+using Microsoft.Azure.Functions.Worker.Extensions.Sql;
 using Microsoft.Azure.Functions.Worker;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.InputBindingSamples

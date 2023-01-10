@@ -10,17 +10,17 @@ Write-Host "PowerShell function with SQL Output Binding processed a request."
 # Currently the Powershell worker does not allow empty/null values to be passed through the
 # query parameters. We use TriggerMetadata here as a workaround for that issue. 
 # Issue link: https://github.com/Azure/azure-functions-powershell-worker/issues/895
-$req_query = @{ 
-    "productId"= $TriggerMetadata["productId"];
-    "name"= $TriggerMetadata["name"];
-    "cost"= $TriggerMetadata["cost"];
+$req_query = @{
+    "ProductId"= $TriggerMetadata["productId"];
+    "Name"= $TriggerMetadata["name"];
+    "Cost"= $TriggerMetadata["cost"];
 };
 
-# Assign the value we want to pass to the SQL Output binding. 
+# Assign the value we want to pass to the SQL Output binding.
 # The -Name value corresponds to the name property in the function.json for the binding
 Push-OutputBinding -Name product -Value $req_query
 
-# Assign the value to return as the HTTP response. 
+# Assign the value to return as the HTTP response.
 # The -Name value matches the name property in the function.json for the binding
 Push-OutputBinding -Name response -Value ([HttpResponseContext]@{
     StatusCode = [HttpStatusCode]::OK

@@ -137,7 +137,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Theory]
         [SqlInlineData("en-US")]
         [SqlInlineData("it-IT")]
-        [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.PowerShell, SupportedLanguages.Java)] // IAsyncEnumerable is only available in C#
+        [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.PowerShell, SupportedLanguages.Java, SupportedLanguages.Python)] // IAsyncEnumerable is only available in C#
         public async void GetProductsColumnTypesSerializationAsyncEnumerableTest(string culture, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsColumnTypesSerializationAsyncEnumerable), lang, true);
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 new ProductColumnTypes()
                 {
-                    ProductID = 999,
+                    ProductId = 999,
                     Datetime = DateTime.Parse(datetime),
                     Datetime2 = DateTime.Parse(datetime)
                 }
@@ -169,9 +169,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        // Java worker returns timestamps in local time zone
-        // https://github.com/Azure/azure-functions-sql-extension/issues/515
-        [UnsupportedLanguages(SupportedLanguages.Java)]
         public async void GetProductsColumnTypesSerializationTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsColumnTypesSerialization), lang, true);
@@ -189,6 +186,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             ProductColumnTypes[] actualProductResponse = JsonConvert.DeserializeObject<ProductColumnTypes[]>(actualResponse);
 
             Assert.Equal(expectedResponse, actualProductResponse);
+        }
+
+        /// <summary>
+        /// Tests that querying from a case sensitive database works correctly.
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        public async void GetProductsFromCaseSensitiveDatabase(SupportedLanguages lang)
+        {
+            this.StartFunctionHost(nameof(GetProducts), lang);
+
+            // Change database collation to case sensitive
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
+
+            // Generate T-SQL to insert 10 rows of data with cost 100
+            Product[] products = GetProductsWithSameCost(10, 100);
+            this.InsertProducts(products);
+
+            // Run the function
+            HttpResponseMessage response = await this.SendInputRequest("getproducts", "100");
+
+            // Verify result
+            string actualResponse = await response.Content.ReadAsStringAsync();
+            Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse);
+
+            Assert.Equal(products, actualProductResponse);
+
+            // Change database collation back to case insensitive
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
         }
     }
 }

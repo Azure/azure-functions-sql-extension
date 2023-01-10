@@ -1,0 +1,36 @@
+{
+    "bindings": [
+      {
+        "authLevel": "function",
+        "name": "req",
+        "type": "httpTrigger",
+        "direction": "in",
+        "methods": [
+          "get"
+        ],
+        "route": "getandaddproducts/{cost}"
+      },
+      {
+        "name": "$return",
+        "type": "http",
+        "direction": "out"
+      },
+      {
+        "name": "products",
+        "type": "sql",
+        "direction": "in",
+        "commandText": "select * from Products where Cost = @Cost",
+        "commandType": "Text",
+        "parameters": "@Cost={cost}",
+        "connectionStringSetting": "SqlConnectionString"
+      },
+      {
+        "name": "productsWithIdentity",
+        "type": "sql",
+        "direction": "out",
+        "commandText": "[dbo].[ProductsWithIdentity]",
+        "connectionStringSetting": "SqlConnectionString"
+      }
+    ],
+    "disabled": false
+  }
