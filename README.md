@@ -1,7 +1,5 @@
 # Azure SQL bindings for Azure Functions - Preview
 
-[![Build Status](https://mssqltools.visualstudio.com/CrossPlatBuildScripts/_apis/build/status/SQL%20Bindings/SQL%20Bindings%20-%20Nightly?branchName=main)](https://mssqltools.visualstudio.com/CrossPlatBuildScripts/_build/latest?definitionId=481&branchName=main)
-
 ## Table of Contents
 - [Azure SQL bindings for Azure Functions - Preview](#azure-sql-bindings-for-azure-functions---preview)
   - [Table of Contents](#table-of-contents)
