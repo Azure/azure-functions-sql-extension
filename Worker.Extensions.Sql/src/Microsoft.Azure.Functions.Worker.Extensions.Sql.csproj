@@ -22,12 +22,10 @@
 		<None Include=".\README.md" Pack="true" PackagePath="" />
 	</ItemGroup>
 
-	<Target Name="AddGitMetadaAssemblyAttributes" BeforeTargets="CoreGenerateAssemblyInfo">
-		<ItemGroup>
-			<AssemblyAttribute Include="Microsoft.Azure.Functions.Worker.Extensions.Abstractions.ExtensionInformationAttribute ">
-				<_Parameter1>Microsoft.Azure.WebJobs.Extensions.Sql</_Parameter1>
-				<_Parameter2>0.*-*</_Parameter2>
-			</AssemblyAttribute>
-		</ItemGroup>
-	</Target>
+	<ItemGroup>
+		<AssemblyAttribute Include="Microsoft.Azure.Functions.Worker.Extensions.Abstractions.ExtensionInformationAttribute">
+			<_Parameter1>Microsoft.Azure.WebJobs.Extensions.Sql</_Parameter1>
+			<_Parameter2>0.*-*</_Parameter2>
+		</AssemblyAttribute>
+	</ItemGroup>
 </Project>
