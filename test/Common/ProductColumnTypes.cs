@@ -7,7 +7,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 {
     public class ProductColumnTypes
     {
-        public int ProductID { get; set; }
+        public int ProductId { get; set; }
 
         public DateTime Datetime { get; set; }
 
@@ -18,7 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
             if (obj is ProductColumnTypes)
             {
                 var that = obj as ProductColumnTypes;
-                return this.ProductID == that.ProductID && this.Datetime == that.Datetime && this.Datetime2 == that.Datetime2;
+                return this.ProductId == that.ProductId && this.Datetime == that.Datetime && this.Datetime2 == that.Datetime2;
             }
             return false;
         }

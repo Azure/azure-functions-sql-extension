@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.Common;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Extension.Sql;
+using Microsoft.Azure.Functions.Worker.Extensions.Sql;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingSamples
 {

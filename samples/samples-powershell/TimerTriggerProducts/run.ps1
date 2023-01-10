@@ -11,9 +11,9 @@ Write-Host "[QueueTrigger]: $start starting execution $executionNumber. Rows to 
 $products = @()
 for ($i = 0; $i -lt $totalUpserts; $i++) {
     $products += [PSCustomObject]@{
-        productId = $i;
-        name = "test";
-        cost = 100 * $i;
+        ProductId = $i;
+        Name = "test";
+        Cost = 100 * $i;
     }
 }
 $end = Get-Date

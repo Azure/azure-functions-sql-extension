@@ -254,14 +254,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     await connection.OpenAsync(token);
                     this._logger.LogDebugWithThreadId("END OpenChangeConsumptionConnection");
 
+                    bool forceReconnect = false;
                     // Check for cancellation request only after a cycle of checking and processing of changes completes.
                     while (!token.IsCancellationRequested)
                     {
+                        bool isConnected = await connection.TryEnsureConnected(forceReconnect, this._logger, "ChangeConsumptionConnection", token);
+                        if (!isConnected)
+                        {
+                            // If we couldn't reconnect then wait our delay and try again
+                            await Task.Delay(TimeSpan.FromMilliseconds(this._pollingIntervalInMs), token);
+                            continue;
+                        }
+                        else
+                        {
+                            forceReconnect = false;
+                        }
                         this._logger.LogDebugWithThreadId($"BEGIN CheckingForChanges State={this._state}");
                         if (this._state == State.CheckingForChanges)
                         {
-                            await this.GetTableChangesAsync(connection, token);
-                            await this.ProcessTableChangesAsync(connection, token);
+                            try
+                            {
+                                await this.GetTableChangesAsync(connection, token);
+                                await this.ProcessTableChangesAsync(connection, token);
+                            }
+                            catch (Exception e) when (e.IsFatalSqlException())
+                            {
+                                this._logger.LogError($"Fatal SQL Client exception processing changes. Will attempt to reestablish connection in {this._pollingIntervalInMs}ms. Exception = {e.Message}");
+                                forceReconnect = true;
+                            }
+
                         }
                         this._logger.LogDebugWithThreadId("END CheckingForChanges");
                         this._logger.LogDebugWithThreadId($"Delaying for {this._pollingIntervalInMs}ms");
@@ -278,6 +299,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     this._logger.LogError($"Exiting change consumption loop due to exception: {e.GetType()}. Exception message: {e.Message}");
                     TelemetryInstance.TrackException(TelemetryErrorName.ConsumeChangesLoop, e, this._telemetryProps);
                 }
+                throw;
             }
             finally
             {
@@ -387,6 +409,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 this._rows = new List<IReadOnlyDictionary<string, object>>();
                 this._logger.LogError($"Failed to check for changes in table '{this._userTable.FullName}' due to exception: {e.GetType()}. Exception message: {e.Message}");
                 TelemetryInstance.TrackException(TelemetryErrorName.GetChanges, e, this._telemetryProps);
+                if (e.IsFatalSqlException())
+                {
+                    // If we get a fatal SQL Client exception here let it bubble up so we can try to re-establish the connection
+                    throw;
+                }
             }
             this._logger.LogDebugWithThreadId("END GetTableChanges");
         }
@@ -471,9 +498,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     await connection.OpenAsync(token);
                     this._logger.LogDebugWithThreadId("END OpenLeaseRenewalLoopConnection");
 
+                    bool forceReconnect = false;
                     while (!token.IsCancellationRequested)
                     {
-                        await this.RenewLeasesAsync(connection, token);
+                        bool isConnected = await connection.TryEnsureConnected(forceReconnect, this._logger, "LeaseRenewalLoopConnection", token);
+                        if (!isConnected)
+                        {
+                            // If we couldn't reconnect then wait our delay and try again
+                            await Task.Delay(TimeSpan.FromSeconds(LeaseRenewalIntervalInSeconds), token);
+                            continue;
+                        }
+                        else
+                        {
+                            forceReconnect = false;
+                        }
+                        try
+                        {
+                            await this.RenewLeasesAsync(connection, token);
+                        }
+                        catch (Exception e) when (e.IsFatalSqlException())
+                        {
+                            forceReconnect = true;
+                        }
+
                         await Task.Delay(TimeSpan.FromSeconds(LeaseRenewalIntervalInSeconds), token);
                     }
                 }

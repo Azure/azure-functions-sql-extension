@@ -28,7 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples
                 using SqlDataReader reader = command.ExecuteReader();
                 while (reader.Read())
                 {
-                    result += $"ProductID: {reader["ProductID"]},  Name: {reader["Name"]}, Cost: {reader["Cost"]}\n";
+                    result += $"ProductId: {reader["ProductId"]},  Name: {reader["Name"]}, Cost: {reader["Cost"]}\n";
                 }
             }
             return new OkObjectResult(result);

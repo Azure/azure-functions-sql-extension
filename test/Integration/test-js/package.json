@@ -1,0 +1,15 @@
+{
+  "name": "test-js",
+  "version": "1.0.0",
+  "description": "Javascript test functions for Azure Functions with SQL Bindings",
+  "scripts": {
+    "start": "func start",
+    "test": "echo \"No tests yet...\"",
+    "lint": "eslint **/*.js"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "eslint": "^8.15.0",
+    "eslint-plugin-header": "^3.1.1"
+  }
+}

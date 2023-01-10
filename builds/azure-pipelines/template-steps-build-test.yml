@@ -96,6 +96,12 @@ steps:
   workingDirectory: $(Build.SourcesDirectory)/samples/samples-js
   displayName: Lint samples-js
 
+- script: |
+    npm install
+    npm run lint
+  workingDirectory: $(Build.SourcesDirectory)/test/Integration/test-js
+  displayName: Lint test-js
+
 - task: UsePythonVersion@0
   inputs:
     versionSpec: '3.9'
@@ -108,6 +114,11 @@ steps:
     pylint_runner
   workingDirectory: $(Build.SourcesDirectory)/samples/samples-python
   displayName: Lint samples-python
+
+- script: |
+    pip3 install -r requirements.txt
+  workingDirectory: $(Build.SourcesDirectory)/samples/samples-python
+  displayName: Install azure-functions-1.11.3b1
 
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
   inputs:

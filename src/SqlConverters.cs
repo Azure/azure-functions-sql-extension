@@ -134,9 +134,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </param>
             /// <param name="cancellationToken">The cancellationToken is not used in this method</param>
             /// <returns>
-            /// The JSON string. I.e., if the result has two rows from a table with schema ProductID: int, Name: varchar, Cost: int,
+            /// The JSON string. I.e., if the result has two rows from a table with schema ProductId: int, Name: varchar, Cost: int,
             /// then the returned JSON string could look like
-            /// [{"productID":3,"name":"Bottle","cost":90},{"productID":5,"name":"Cup","cost":100}]
+            /// [{"productId":3,"name":"Bottle","cost":90},{"productId":5,"name":"Cup","cost":100}]
             /// </returns>
             async Task<string> IAsyncConverter<SqlAttribute, string>.ConvertAsync(SqlAttribute attribute, CancellationToken cancellationToken)
             {
