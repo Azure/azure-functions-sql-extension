@@ -9,7 +9,7 @@ param($Request, $TriggerMetadata)
 # Write to the Azure Functions log stream.
 Write-Host "PowerShell function with SQL Output Binding processed a request."
 
-$req_query = @{
+$req_query = [ordered]@{
     ProductId= if($Request.QUERY.productId) { [int]$Request.QUERY.productId } else { $null };
     Name=$Request.QUERY.name;
     Cost=[int]$Request.QUERY.cost;

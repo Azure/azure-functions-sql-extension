@@ -9,10 +9,10 @@ param($Request, $TriggerMetadata)
 # Write to the Azure Functions log stream.
 Write-Host "PowerShell function with SQL Output Binding processed a request."
 
-$req_query = @{
-    externalId=$Request.QUERY.externalId;
-    name=$Request.QUERY.name;
-    cost=$Request.QUERY.cost;
+$req_query = [ordered]@{
+    ExternalId=$Request.QUERY.externalId;
+    Name=$Request.QUERY.name;
+    Cost=$Request.QUERY.cost;
 };
 
 # Assign the value we want to pass to the SQL Output binding. 
