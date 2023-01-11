@@ -156,7 +156,6 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
     Write-Host "PowerShell function with SQL Output Binding processed a request."
 
-    # Update req_body with the body of the request
     $req_body = @(
         @{
             EmployeeId=1,

@@ -96,6 +96,12 @@ steps:
   workingDirectory: $(Build.SourcesDirectory)/samples/samples-js
   displayName: Lint samples-js
 
+- script: |
+    npm install
+    npm run lint
+  workingDirectory: $(Build.SourcesDirectory)/test/Integration/test-js
+  displayName: Lint test-js
+
 - task: UsePythonVersion@0
   inputs:
     versionSpec: '3.9'

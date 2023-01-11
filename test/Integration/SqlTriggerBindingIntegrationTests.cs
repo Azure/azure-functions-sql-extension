@@ -507,5 +507,41 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 false,
                 "SQL bindings require a database compatibility level of 130 or higher to function. Current compatibility level = 120");
         }
+
+        /// <summary>
+        /// Tests that when a user function throws an exception we'll retry executing that function once the lease timeout expires
+        /// </summary>
+        [Fact]
+        public async Task FunctionExceptionsCauseRetry()
+        {
+            this.SetChangeTrackingForTable("Products");
+            this.StartFunctionHost(nameof(TriggerWithException), SupportedLanguages.CSharp, true);
+            TaskCompletionSource taskCompletionSource = new();
+            void TestExceptionMessageSeen(object sender, DataReceivedEventArgs e)
+            {
+                if (e.Data.Contains(TriggerWithException.ExceptionMessage))
+                {
+                    taskCompletionSource.SetResult();
+                }
+            };
+            this.FunctionHost.OutputDataReceived += TestExceptionMessageSeen;
+            int firstId = 1;
+            int lastId = 30;
+            int batchProcessingTimeout = this.GetBatchProcessingTimeout(1, 30);
+            Task changesTask = this.WaitForProductChanges(
+                firstId,
+                lastId,
+                SqlChangeOperation.Insert,
+                () => { this.InsertProducts(firstId, lastId); return Task.CompletedTask; },
+                id => $"Product {id}",
+                id => id * 100,
+                (SqlTableChangeMonitor<object>.LeaseIntervalInSeconds * 1000) + batchProcessingTimeout);
+
+            // First wait for the exception message to show up
+            await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromMilliseconds(this.GetBatchProcessingTimeout(1, 30)), "Timed out waiting for exception message");
+            // Now wait for the retry to occur and successfully pass
+            await changesTask;
+
+        }
     }
 }
