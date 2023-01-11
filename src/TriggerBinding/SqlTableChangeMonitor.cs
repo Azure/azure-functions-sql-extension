@@ -169,69 +169,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._cancellationTokenSourceCheckForChanges.Cancel();
         }
 
-        public async Task<long> GetUnprocessedChangeCountAsync()
-        {
-            long unprocessedChangeCount = 0L;
-
-            try
-            {
-                long getUnprocessedChangesDurationMs = 0L;
-
-                using (var connection = new SqlConnection(this._connectionString))
-                {
-                    this._logger.LogDebugWithThreadId("BEGIN OpenGetUnprocessedChangesConnection");
-                    await connection.OpenAsync();
-                    this._logger.LogDebugWithThreadId("END OpenGetUnprocessedChangesConnection");
-
-                    // Use a transaction to automatically release the app lock when we're done executing the query
-                    using (SqlTransaction transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead))
-                    {
-                        try
-                        {
-                            using (SqlCommand getUnprocessedChangesCommand = this.BuildGetUnprocessedChangesCommand(connection, transaction))
-                            {
-                                this._logger.LogInformation("Getting change count");
-                                this._logger.LogDebugWithThreadId($"BEGIN GetUnprocessedChangeCount Query={getUnprocessedChangesCommand.CommandText}");
-                                var commandSw = Stopwatch.StartNew();
-                                unprocessedChangeCount = (long)await getUnprocessedChangesCommand.ExecuteScalarAsync();
-                                getUnprocessedChangesDurationMs = commandSw.ElapsedMilliseconds;
-                            }
-
-                            this._logger.LogDebugWithThreadId($"END GetUnprocessedChangeCount Duration={getUnprocessedChangesDurationMs}ms Count={unprocessedChangeCount}");
-                            transaction.Commit();
-                        }
-                        catch (Exception)
-                        {
-                            try
-                            {
-                                transaction.Rollback();
-                            }
-                            catch (Exception ex2)
-                            {
-                                this._logger.LogError($"GetUnprocessedChangeCount : Failed to rollback transaction due to exception: {ex2.GetType()}. Exception message: {ex2.Message}");
-                                TelemetryInstance.TrackException(TelemetryErrorName.GetUnprocessedChangeCountRollback, ex2, this._telemetryProps);
-                            }
-                            throw;
-                        }
-                    }
-                }
-
-                var measures = new Dictionary<TelemetryMeasureName, double>
-                {
-                    [TelemetryMeasureName.GetUnprocessedChangesDurationMs] = getUnprocessedChangesDurationMs,
-                    [TelemetryMeasureName.UnprocessedChangeCount] = unprocessedChangeCount,
-                };
-            }
-            catch (Exception ex)
-            {
-                this._logger.LogError($"Failed to query count of unprocessed changes for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
-                TelemetryInstance.TrackException(TelemetryErrorName.GetUnprocessedChangeCount, ex, this._telemetryProps);
-                throw;
-            }
-
-            return unprocessedChangeCount;
-        }
-
         /// <summary>
         /// Executed once every <see cref="_pollingIntervalInMs"/> period. If the state of the change monitor is
         /// <see cref="State.CheckingForChanges"/>, then the method query the change/leases tables for changes on the
@@ -817,38 +754,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 ORDER BY c.{SysChangeVersionColumnName} ASC;";
 
             return new SqlCommand(getChangesQuery, connection, transaction);
-        }
-
-        /// <summary>
-        /// Builds the query to get count of unprocessed changes in the user's table. This one mimics the query that is
-        /// used by workers to get the changes for processing.
-        /// </summary>
-        /// <param name="connection">The connection to add to the returned SqlCommand</param>
-        /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
-        /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
-        private SqlCommand BuildGetUnprocessedChangesCommand(SqlConnection connection, SqlTransaction transaction)
-        {
-            string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
-
-            string getUnprocessedChangesQuery = $@"
-                {AppLockStatements}
-
-                DECLARE @last_sync_version bigint;
-                SELECT @last_sync_version = LastSyncVersion
-                FROM {GlobalStateTableName}
-                WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
-
-                SELECT COUNT_BIG(*)
-                FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @last_sync_version) AS c
-                LEFT OUTER JOIN {this._leasesTableName} AS l ON {leasesTableJoinCondition}
-                WHERE
-                    (l.{LeasesTableLeaseExpirationTimeColumnName} IS NULL AND
-                       (l.{LeasesTableChangeVersionColumnName} IS NULL OR l.{LeasesTableChangeVersionColumnName} < c.{SysChangeVersionColumnName}) OR
-                        l.{LeasesTableLeaseExpirationTimeColumnName} < SYSDATETIME()) AND
-                    (l.{LeasesTableAttemptCountColumnName} IS NULL OR l.{LeasesTableAttemptCountColumnName} < {MaxChangeProcessAttemptCount});
-            ";
-
-            return new SqlCommand(getUnprocessedChangesQuery, connection, transaction);
         }
 
         /// <summary>

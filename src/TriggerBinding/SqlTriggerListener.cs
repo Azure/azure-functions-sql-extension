@@ -12,6 +12,7 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlTriggerConstants;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlBindingUtilities;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlTriggerUtils;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Listeners;
 using Microsoft.Azure.WebJobs.Host.Scale;
@@ -125,8 +126,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                     await VerifyDatabaseSupported(connection, this._logger, cancellationToken);
 
-                    int userTableId = await this.GetUserTableIdAsync(connection, cancellationToken);
-                    IReadOnlyList<(string name, string type)> primaryKeyColumns = await this.GetPrimaryKeyColumnsAsync(connection, userTableId, cancellationToken);
+                    int userTableId = await GetUserTableIdAsync(connection, this._userTable.QuotedFullName, this._logger, cancellationToken);
+                    IReadOnlyList<(string name, string type)> primaryKeyColumns = await GetPrimaryKeyColumnsAsync(connection, userTableId, this._logger, this._userTable.FullName, cancellationToken);
                     IReadOnlyList<string> userTableColumns = await this.GetUserTableColumnsAsync(connection, userTableId, cancellationToken);
 
                     string leasesTableName = string.Format(CultureInfo.InvariantCulture, LeasesTableNameFormat, $"{this._userFunctionId}_{userTableId}");
@@ -173,8 +174,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                     TelemetryInstance.TrackEvent(TelemetryEventName.StartListenerEnd, this._telemetryProps, measures);
 
-                    this._scaleMonitor = new SqlTriggerScaleMonitor<T>(this._userFunctionId, this._userTable, this._changeMonitor, this._maxChangesPerWorker, this._logger);
-                    this._targetScaler = new SqlTriggerTargetScaler<T>(this._userFunctionId, this._logger, this._maxChangesPerWorker, this._changeMonitor);
+                    this._scaleMonitor = new SqlTriggerScaleMonitor(this._userFunctionId, this._userTable.FullName, this._connectionString, this._maxChangesPerWorker, this._logger);
+                    this._targetScaler = new SqlTriggerTargetScaler(this._userFunctionId, this._userTable.FullName, this._connectionString, this._maxChangesPerWorker, this._logger);
                 }
             }
             catch (Exception ex)
@@ -208,97 +209,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             TelemetryInstance.TrackEvent(TelemetryEventName.StopListenerEnd, this._telemetryProps, measures);
             return Task.CompletedTask;
-        }
-
-        /// <summary>
-        /// Returns the object ID of the user table.
-        /// </summary>
-        /// <exception cref="InvalidOperationException">Thrown in case of error when querying the object ID for the user table</exception>
-        private async Task<int> GetUserTableIdAsync(SqlConnection connection, CancellationToken cancellationToken)
-        {
-            string getObjectIdQuery = $"SELECT OBJECT_ID(N{this._userTable.QuotedFullName}, 'U');";
-
-            this._logger.LogDebugWithThreadId($"BEGIN GetUserTableId Query={getObjectIdQuery}");
-            using (var getObjectIdCommand = new SqlCommand(getObjectIdQuery, connection))
-            using (SqlDataReader reader = await getObjectIdCommand.ExecuteReaderAsync(cancellationToken))
-            {
-                if (!await reader.ReadAsync(cancellationToken))
-                {
-                    throw new InvalidOperationException($"Received empty response when querying the object ID for table: '{this._userTable.FullName}'.");
-                }
-
-                object userTableId = reader.GetValue(0);
-
-                if (userTableId is DBNull)
-                {
-                    throw new InvalidOperationException($"Could not find table: '{this._userTable.FullName}'.");
-                }
-                this._logger.LogDebugWithThreadId($"END GetUserTableId TableId={userTableId}");
-                return (int)userTableId;
-            }
-        }
-
-        /// <summary>
-        /// Gets the names and types of primary key columns of the user table.
-        /// </summary>
-        /// <exception cref="InvalidOperationException">
-        /// Thrown if there are no primary key columns present in the user table or if their names conflict with columns in leases table.
-        /// </exception>
-        private async Task<IReadOnlyList<(string name, string type)>> GetPrimaryKeyColumnsAsync(SqlConnection connection, int userTableId, CancellationToken cancellationToken)
-        {
-            const int NameIndex = 0, TypeIndex = 1, LengthIndex = 2, PrecisionIndex = 3, ScaleIndex = 4;
-            string getPrimaryKeyColumnsQuery = $@"
-                SELECT 
-                    c.name, 
-                    t.name, 
-                    c.max_length, 
-                    c.precision, 
-                    c.scale
-                FROM sys.indexes AS i
-                INNER JOIN sys.index_columns AS ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-                INNER JOIN sys.columns AS c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
-                INNER JOIN sys.types AS t ON c.user_type_id = t.user_type_id
-                WHERE i.is_primary_key = 1 AND i.object_id = {userTableId};
-            ";
-            this._logger.LogDebugWithThreadId($"BEGIN GetPrimaryKeyColumns Query={getPrimaryKeyColumnsQuery}");
-            using (var getPrimaryKeyColumnsCommand = new SqlCommand(getPrimaryKeyColumnsQuery, connection))
-            using (SqlDataReader reader = await getPrimaryKeyColumnsCommand.ExecuteReaderAsync(cancellationToken))
-            {
-                string[] variableLengthTypes = new[] { "varchar", "nvarchar", "nchar", "char", "binary", "varbinary" };
-                string[] variablePrecisionTypes = new[] { "numeric", "decimal" };
-
-                var primaryKeyColumns = new List<(string name, string type)>();
-
-                while (await reader.ReadAsync(cancellationToken))
-                {
-                    string name = reader.GetString(NameIndex);
-                    string type = reader.GetString(TypeIndex);
-
-                    if (variableLengthTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
-                    {
-                        // Special "max" case. I'm actually not sure it's valid to have varchar(max) as a primary key because
-                        // it exceeds the byte limit of an index field (900 bytes), but just in case
-                        short length = reader.GetInt16(LengthIndex);
-                        type += length == -1 ? "(max)" : $"({length})";
-                    }
-                    else if (variablePrecisionTypes.Contains(type))
-                    {
-                        byte precision = reader.GetByte(PrecisionIndex);
-                        byte scale = reader.GetByte(ScaleIndex);
-                        type += $"({precision},{scale})";
-                    }
-
-                    primaryKeyColumns.Add((name, type));
-                }
-
-                if (primaryKeyColumns.Count == 0)
-                {
-                    throw new InvalidOperationException($"Could not find primary key created in table: '{this._userTable.FullName}'.");
-                }
-
-                this._logger.LogDebugWithThreadId($"END GetPrimaryKeyColumns ColumnNames(types) = {string.Join(", ", primaryKeyColumns.Select(col => $"'{col.name}({col.type})'"))}.");
-                return primaryKeyColumns;
-            }
         }
 
         /// <summary>

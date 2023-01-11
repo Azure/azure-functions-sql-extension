@@ -7,19 +7,19 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
-    internal sealed class SqlTriggerTargetScaler<T> : ITargetScaler
+    public class SqlTriggerTargetScaler : ITargetScaler
     {
         private readonly string _userFunctionId;
         private readonly ILogger _logger;
-        private readonly SqlTriggerMetricsProvider<T> _metricsProvider;
+        private readonly SqlTriggerMetricsProvider _metricsProvider;
         private readonly int _maxChangesPerWorker;
 
-        internal SqlTriggerTargetScaler(string userFunctionId, ILogger logger, int maxChangesPerWorker, SqlTableChangeMonitor<T> changeMonitor)
+        public SqlTriggerTargetScaler(string userFunctionId, string userTableName, string connectionString, int maxChangesPerWorker, ILogger logger)
         {
+            _ = !string.IsNullOrEmpty(userTableName) ? true : throw new ArgumentNullException(userTableName);
             this._userFunctionId = !string.IsNullOrEmpty(userFunctionId) ? userFunctionId : throw new ArgumentNullException(userFunctionId);
-            _ = changeMonitor ?? throw new ArgumentNullException(nameof(changeMonitor));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            this._metricsProvider = new SqlTriggerMetricsProvider<T>(changeMonitor);
+            this._metricsProvider = new SqlTriggerMetricsProvider(connectionString, logger, new SqlObject(userTableName), userFunctionId);
             this.TargetScalerDescriptor = new TargetScalerDescriptor(userFunctionId);
             this._maxChangesPerWorker = maxChangesPerWorker;
         }

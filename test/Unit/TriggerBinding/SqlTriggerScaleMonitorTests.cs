@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Serialization;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Configuration;
@@ -241,12 +240,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 
         private static IScaleMonitor<SqlTriggerMetrics> GetScaleMonitor(string tableName, string userFunctionId)
         {
-            var userTable = new SqlObject(tableName);
-
-            return new SqlTriggerScaleMonitor<object>(
+            return new SqlTriggerScaleMonitor(
                 userFunctionId,
-                userTable,
-                (SqlTableChangeMonitor<object>)FormatterServices.GetUninitializedObject(typeof(SqlTableChangeMonitor<object>)),
+                tableName,
+                "testConnectionString",
                 SqlTriggerListener<object>.DefaultMaxChangesPerWorker,
                 Mock.Of<ILogger>());
         }
@@ -255,10 +252,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         {
             (Mock<ILogger> mockLogger, List<string> logMessages) = CreateMockLogger();
 
-            IScaleMonitor<SqlTriggerMetrics> monitor = new SqlTriggerScaleMonitor<object>(
+            IScaleMonitor<SqlTriggerMetrics> monitor = new SqlTriggerScaleMonitor(
                 "testUserFunctionId",
-                new SqlObject("testTableName"),
-                (SqlTableChangeMonitor<object>)FormatterServices.GetUninitializedObject(typeof(SqlTableChangeMonitor<object>)),
+                "testTableName",
+                "testConnectionString",
                 maxChangesPerWorker,
                 mockLogger.Object);
 

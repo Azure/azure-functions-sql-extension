@@ -13,23 +13,23 @@ using MoreLinq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
-    internal sealed class SqlTriggerScaleMonitor<T> : IScaleMonitor<SqlTriggerMetrics>
+    public class SqlTriggerScaleMonitor : IScaleMonitor<SqlTriggerMetrics>
     {
         private readonly ILogger _logger;
         private readonly SqlObject _userTable;
-        private readonly SqlTriggerMetricsProvider<T> _metricsProvider;
+        private readonly SqlTriggerMetricsProvider _metricsProvider;
         private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps = new Dictionary<TelemetryPropertyName, string>();
         private readonly int _maxChangesPerWorker;
 
-        public SqlTriggerScaleMonitor(string userFunctionId, SqlObject userTable, SqlTableChangeMonitor<T> changeMonitor, int maxChangesPerWorker, ILogger logger)
+        public SqlTriggerScaleMonitor(string userFunctionId, string userTableName, string connectionString, int maxChangesPerWorker, ILogger logger)
         {
             _ = !string.IsNullOrEmpty(userFunctionId) ? true : throw new ArgumentNullException(userFunctionId);
-            _ = changeMonitor ?? throw new ArgumentNullException(nameof(changeMonitor));
-            this._userTable = userTable ?? throw new ArgumentNullException(nameof(userTable));
+            _ = !string.IsNullOrEmpty(userTableName) ? true : throw new ArgumentNullException(userTableName);
+            this._userTable = new SqlObject(userTableName);
             // Do not convert the scale-monitor ID to lower-case string since SQL table names can be case-sensitive
             // depending on the collation of the current database.
-            this.Descriptor = new ScaleMonitorDescriptor($"{userFunctionId}-SqlTrigger-{userTable.FullName}", userFunctionId);
-            this._metricsProvider = new SqlTriggerMetricsProvider<T>(changeMonitor);
+            this.Descriptor = new ScaleMonitorDescriptor($"{userFunctionId}-SqlTrigger-{this._userTable.FullName}", userFunctionId);
+            this._metricsProvider = new SqlTriggerMetricsProvider(connectionString, logger, this._userTable, userFunctionId);
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this._maxChangesPerWorker = maxChangesPerWorker;
         }
