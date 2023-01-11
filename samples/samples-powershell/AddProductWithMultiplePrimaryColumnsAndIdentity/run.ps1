@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License. See License.txt in the project root for license information.
+
 using namespace System.Net
 
 # Trigger binding data passed in via param block
@@ -6,7 +9,6 @@ param($Request, $TriggerMetadata)
 # Write to the Azure Functions log stream.
 Write-Host "PowerShell function with SQL Output Binding processed a request."
 
-# Update req_query with the body of the request
 $req_query = @{
     externalId=$Request.QUERY.externalId;
     name=$Request.QUERY.name;
