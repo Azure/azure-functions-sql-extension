@@ -9,7 +9,7 @@ param($Request, $TriggerMetadata)
 # Write to the Azure Functions log stream.
 Write-Host "PowerShell function with SQL Output Binding processed a request."
 
-# KOutput bindings require the [ordered] attribute. See https://github.com/Azure/azure-functions-sql-extension#output-bindings for more details.
+# Output bindings require the [ordered] attribute. See https://github.com/Azure/azure-functions-sql-extension#output-bindings for more details.
 $req_query = [ordered]@{
     ProductId= if($Request.QUERY.productId) { [int]$Request.QUERY.productId } else { $null };
     Name=$Request.QUERY.name;
