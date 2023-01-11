@@ -240,12 +240,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Executed once every <see cref="_pollingIntervalInMs"/> period. If the state of the change monitor is
-        /// <see cref="State.CheckingForChanges"/>, then the method query the change/leases tables for changes on the
-        /// user's table. If any are found, the state of the change monitor is transitioned to
-        /// <see cref="State.ProcessingChanges"/> and the user's function is executed with the found changes. If the
-        /// execution is successful, the leases on "_rows" are released and the state transitions to
-        /// <see cref="State.CheckingForChanges"/> once again.
+        /// Executed once every <see cref="_pollingIntervalInMs"/> period. Each iteration will go through a series of state
+        /// changes, if an error occurs in any of them then it will skip the rest of the states and try again in the next
+        /// iteration.
+        /// It starts in the <see cref="State.CheckingForChanges"/> check and queries the change/leases tables for changes on the
+        /// user's table.
+        /// If any are found, the state is transitioned to <see cref="State.ProcessingChanges"/> and the user's
+        /// function is executed with the found changes.
+        /// Finally the state moves to <see cref="State.Cleanup" /> and if the execution was successful,
+        /// the leases on "_rows" are released. Finally the state transitions to <see cref="State.CheckingForChanges"/>
+        /// once again and starts over at the next iteration.
         /// </summary>
         private async Task RunChangeConsumptionLoopAsync()
         {
