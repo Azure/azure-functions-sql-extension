@@ -7,10 +7,10 @@ param($Request, $TriggerMetadata)
 Write-Host "PowerShell function with SQL Output Binding processed a request."
 
 # Update req_query with the body of the request
-$req_query = @{
-    externalId=$Request.QUERY.externalId;
-    name=$Request.QUERY.name;
-    cost=$Request.QUERY.cost;
+$req_query = [ordered]@{
+    ExternalId=$Request.QUERY.externalId;
+    Name=$Request.QUERY.name;
+    Cost=$Request.QUERY.cost;
 };
 
 # Assign the value we want to pass to the SQL Output binding. 

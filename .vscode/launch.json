@@ -18,7 +18,10 @@
             "name": "Attach to Function Host",
             "type": "coreclr",
             "request": "attach",
-            "processName": "func.exe"
+            "Windows": {
+                "processName": "func.exe"
+            },
+            "processName": "func"
         }
     ]
 }
