@@ -9,7 +9,7 @@ param($Request, $TriggerMetadata)
 # Write to the Azure Functions log stream.
 Write-Host "PowerShell function with SQL Output Binding processed a request."
 
-# Known Issue with [ordered] found here: https://github.com/Azure/azure-functions-sql-extension#output-bindings
+# Output bindings require the [ordered] attribute. See https://github.com/Azure/azure-functions-sql-extension#output-bindings for more details.
 $req_query = [ordered]@{
     Name=$Request.QUERY.name;
     Cost=$Request.QUERY.cost;
