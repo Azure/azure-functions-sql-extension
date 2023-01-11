@@ -80,7 +80,7 @@ steps:
   inputs:
     command: build
     projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=false -p:Version=${{ parameters.binariesVersion }}'
+    arguments: '--configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=false -p:Version=${{ parameters.binariesVersion }} -p:SupportedVersion=${{ parameters.supportedVersion }}'
 
 - task: CopyFiles@2
   displayName: 'Copy Sql extension dll to Azure Functions extension bundle'
