@@ -11,6 +11,7 @@ Write-Host "PowerShell function with SQL Output Binding processed a request."
 
 # Note that this expects the body to be a JSON object or array of objects 
 # which have a property matching each of the columns in the table to upsert to.
+# Known Issue with using [ordered] found https://github.com/Azure/azure-functions-sql-extension#output-bindings
 $req_body = @([ordered]@{
     Name="Cup";
     Cost=2;
