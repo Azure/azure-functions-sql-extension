@@ -81,7 +81,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps;
 
-        private IReadOnlyList<IReadOnlyDictionary<string, object>> _rows = new List<IReadOnlyDictionary<string, object>>();
+        /// <summary>
+        /// Rows that are currently being processed
+        /// </summary>
+        private IReadOnlyList<IReadOnlyDictionary<string, object>> _rowsToProcess = new List<IReadOnlyDictionary<string, object>>();
+        /// <summary>
+        /// Rows that have been processed and now need to have their leases released
+        /// </summary>
         private IReadOnlyList<IReadOnlyDictionary<string, object>> _rowsToRelease = new List<IReadOnlyDictionary<string, object>>();
         private int _leaseRenewalCount = 0;
         private State _state = State.CheckingForChanges;
@@ -385,7 +391,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         transaction.Commit();
 
                         // Set the rows for processing, now since the leases are acquired.
-                        this._rows = rows;
+                        this._rowsToProcess = rows;
                         this._state = State.ProcessingChanges;
                         var measures = new Dictionary<TelemetryMeasureName, double>
                         {
@@ -393,7 +399,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             [TelemetryMeasureName.GetChangesDurationMs] = getChangesDurationMs,
                             [TelemetryMeasureName.AcquireLeasesDurationMs] = acquireLeasesDurationMs,
                             [TelemetryMeasureName.TransactionDurationMs] = transactionSw.ElapsedMilliseconds,
-                            [TelemetryMeasureName.BatchCount] = this._rows.Count,
+                            [TelemetryMeasureName.BatchCount] = this._rowsToProcess.Count,
                         };
 
                         TelemetryInstance.TrackEvent(TelemetryEventName.GetChangesEnd, this._telemetryProps, measures);
@@ -417,7 +423,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 // If there's an exception in any part of the process, we want to clear all of our data in memory and
                 // retry checking for changes again.
-                this._rows = new List<IReadOnlyDictionary<string, object>>();
+                this._rowsToProcess = new List<IReadOnlyDictionary<string, object>>();
                 this._logger.LogError($"Failed to check for changes in table '{this._userTable.FullName}' due to exception: {e.GetType()}. Exception message: {e.Message}");
                 TelemetryInstance.TrackException(TelemetryErrorName.GetChanges, e, this._telemetryProps);
                 if (e.IsFatalSqlException())
@@ -432,7 +438,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private async Task ProcessTableChangesAsync()
         {
             this._logger.LogDebugWithThreadId("BEGIN ProcessTableChanges");
-            if (this._rows.Count > 0)
+            if (this._rowsToProcess.Count > 0)
             {
                 IReadOnlyList<SqlChange<T>> changes = null;
 
@@ -467,15 +473,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     var measures = new Dictionary<TelemetryMeasureName, double>
                     {
                         [TelemetryMeasureName.DurationMs] = durationMs,
-                        [TelemetryMeasureName.BatchCount] = this._rows.Count,
+                        [TelemetryMeasureName.BatchCount] = this._rowsToProcess.Count,
                     };
                     if (result.Succeeded)
                     {
                         this._logger.LogDebugWithThreadId($"Successfully triggered function. Duration={durationMs}ms");
                         TelemetryInstance.TrackEvent(TelemetryEventName.TriggerFunctionEnd, this._telemetryProps, measures);
                         // We've successfully fully processed these so set them to be released in the cleanup phase
-                        this._rowsToRelease = this._rows;
-                        this._rows = new List<IReadOnlyDictionary<string, object>>();
+                        this._rowsToRelease = this._rowsToProcess;
+                        this._rowsToProcess = new List<IReadOnlyDictionary<string, object>>();
                     }
                     else
                     {
@@ -563,7 +569,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             await this._rowsLock.WaitAsync(token);
             this._logger.LogDebugWithThreadId("END WaitRowsLock - RenewLeases");
 
-            if (this._state == State.ProcessingChanges && this._rows.Count > 0)
+            if (this._state == State.ProcessingChanges && this._rowsToProcess.Count > 0)
             {
                 // Use a transaction to automatically release the app lock when we're done executing the query
                 using (SqlTransaction transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead))
@@ -648,7 +654,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             this._leaseRenewalCount = 0;
             this._state = State.CheckingForChanges;
-            this._rows = new List<IReadOnlyDictionary<string, object>>();
+            this._rowsToProcess = new List<IReadOnlyDictionary<string, object>>();
 
             this._logger.LogDebugWithThreadId("ReleaseRowsLock - ClearRows");
             this._rowsLock.Release();
@@ -779,7 +785,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             this._logger.LogDebugWithThreadId("BEGIN ProcessChanges");
             var changes = new List<SqlChange<T>>();
-            foreach (IReadOnlyDictionary<string, object> row in this._rows)
+            foreach (IReadOnlyDictionary<string, object> row in this._rowsToProcess)
             {
                 SqlChangeOperation operation = GetChangeOperation(row);
 
@@ -971,7 +977,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
         private SqlCommand BuildRenewLeasesCommand(SqlConnection connection, SqlTransaction transaction)
         {
-            string matchCondition = string.Join(" OR ", this._rowMatchConditions.Take(this._rows.Count));
+            string matchCondition = string.Join(" OR ", this._rowMatchConditions.Take(this._rowsToProcess.Count));
 
             string renewLeasesQuery = $@"
                 {AppLockStatements}
@@ -981,7 +987,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 WHERE {matchCondition};
             ";
 
-            return this.GetSqlCommandWithParameters(renewLeasesQuery, connection, transaction, this._rows);
+            return this.GetSqlCommandWithParameters(renewLeasesQuery, connection, transaction, this._rowsToProcess);
         }
 
         /// <summary>
