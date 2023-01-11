@@ -41,7 +41,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         // renew the lease succeed to prevent it from expiring.
         // </remarks>
         private const int MaxLeaseRenewalCount = 10;
-        private const int LeaseIntervalInSeconds = 60;
+        public const int LeaseIntervalInSeconds = 60;
         private const int LeaseRenewalIntervalInSeconds = 15;
         private const int MaxRetryReleaseLeases = 3;
 
