@@ -87,12 +87,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private State _state = State.CheckingForChanges;
 
         /// <summary>
-        /// The result from the last time we triggered the user function. This will normally be cleared immediately after executing
-        /// the function but if an error occurs during cleanup we want to keep retrying the cleanup until it succeeds.
-        /// </summary>
-        private FunctionResult _triggeredFunctionResult = null;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="SqlTableChangeMonitor{T}" />> class.
         /// </summary>
         /// <param name="connectionString">SQL connection string used to connect to user database</param>
@@ -468,14 +462,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     this._logger.LogDebugWithThreadId("Executing triggered function");
                     var stopwatch = Stopwatch.StartNew();
 
-                    this._triggeredFunctionResult = await this._executor.TryExecuteAsync(input, this._cancellationTokenSourceExecutor.Token);
+                    FunctionResult result = await this._executor.TryExecuteAsync(input, this._cancellationTokenSourceExecutor.Token);
                     long durationMs = stopwatch.ElapsedMilliseconds;
                     var measures = new Dictionary<TelemetryMeasureName, double>
                     {
                         [TelemetryMeasureName.DurationMs] = durationMs,
                         [TelemetryMeasureName.BatchCount] = this._rows.Count,
                     };
-                    if (this._triggeredFunctionResult.Succeeded)
+                    if (result.Succeeded)
                     {
                         this._logger.LogDebugWithThreadId($"Successfully triggered function. Duration={durationMs}ms");
                         TelemetryInstance.TrackEvent(TelemetryEventName.TriggerFunctionEnd, this._telemetryProps, measures);
@@ -487,8 +481,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         // In the future might make sense to retry executing the function, but for now we just let
                         // another worker try.
-                        this._logger.LogError($"Failed to trigger user function for table: '{this._userTable.FullName} due to exception: {this._triggeredFunctionResult.Exception.GetType()}. Exception message: {this._triggeredFunctionResult.Exception.Message}");
-                        TelemetryInstance.TrackException(TelemetryErrorName.TriggerFunction, this._triggeredFunctionResult.Exception, this._telemetryProps, measures);
+                        this._logger.LogError($"Failed to trigger user function for table: '{this._userTable.FullName} due to exception: {result.Exception.GetType()}. Exception message: {result.Exception.Message}");
+                        TelemetryInstance.TrackException(TelemetryErrorName.TriggerFunction, result.Exception, this._telemetryProps, measures);
                     }
                     this._state = State.Cleanup;
                 }
@@ -655,7 +649,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._leaseRenewalCount = 0;
             this._state = State.CheckingForChanges;
             this._rows = new List<IReadOnlyDictionary<string, object>>();
-            this._triggeredFunctionResult = null;
 
             this._logger.LogDebugWithThreadId("ReleaseRowsLock - ClearRows");
             this._rowsLock.Release();
