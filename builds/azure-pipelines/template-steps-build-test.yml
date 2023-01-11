@@ -5,6 +5,7 @@ parameters:
   binariesVersion: ''
   testFilter: ''
   testServer: ''
+  supportedVersion: ''
 
 steps:
 - task: UseDotNet@2
