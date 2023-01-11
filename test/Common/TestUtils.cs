@@ -168,6 +168,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
             return jsonStr.Trim().Replace(" ", "").Replace(Environment.NewLine, "");
         }
 
+        /// <summary>
+        /// Returns a task that will complete when either the original task completes or the specified timeout is reached.
+        /// </summary>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="task">The original task to wait on</param>
+        /// <param name="timeout">The TimeSpan to wait for before a TimeoutException is thrown</param>
+        /// <param name="message">The message to give the TimeoutException if a timeout occurs</param>
+        /// <returns>A Task that will either complete once the original task completes or throw if the timeout period is reached, whichever occurs first</returns>
+        /// <exception cref="TimeoutException">If the timeout is reached and the original Task hasn't completed</exception>
         public static async Task<TResult> TimeoutAfter<TResult>(this Task<TResult> task, TimeSpan timeout, string message = "The operation has timed out.")
         {
 
@@ -178,6 +187,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
             {
                 timeoutCancellationTokenSource.Cancel();
                 return await task;  // Very important in order to propagate exceptions
+            }
+            else
+            {
+                throw new TimeoutException(message);
+            }
+        }
+
+        /// <summary>
+        /// Returns a task that will complete when either the original task completes or the specified timeout is reached.
+        /// </summary>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="task">The original task to wait on</param>
+        /// <param name="timeout">The TimeSpan to wait for before a TimeoutException is thrown</param>
+        /// <param name="message">The message to give the TimeoutException if a timeout occurs</param>
+        /// <returns>A Task that will either complete once the original task completes or throw if the timeout period is reached, whichever occurs first</returns>
+        /// <exception cref="TimeoutException">If the timeout is reached and the original Task hasn't completed</exception>
+        public static async Task TimeoutAfter(this Task task, TimeSpan timeout, string message = "The operation has timed out.")
+        {
+
+            using var timeoutCancellationTokenSource = new CancellationTokenSource();
+
+            Task completedTask = await Task.WhenAny(task, Task.Delay(timeout, timeoutCancellationTokenSource.Token));
+            if (completedTask == task)
+            {
+                timeoutCancellationTokenSource.Cancel();
+                await task;  // Very important in order to propagate exceptions
             }
             else
             {
