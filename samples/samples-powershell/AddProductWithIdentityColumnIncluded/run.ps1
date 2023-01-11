@@ -7,7 +7,7 @@ param($Request, $TriggerMetadata)
 Write-Host "PowerShell function with SQL Output Binding processed a request."
 
 # Update req_query with the body of the request
-$req_query = @{
+$req_query = [ordered]@{
     ProductId= if($Request.QUERY.productId) { [int]$Request.QUERY.productId } else { $null };
     Name=$Request.QUERY.name;
     Cost=[int]$Request.QUERY.cost;
