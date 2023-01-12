@@ -338,7 +338,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         private async Task GetTableChangesAsync(SqlConnection connection, CancellationToken token)
         {
-            TelemetryInstance.TrackEvent(TelemetryEventName.GetChangesStart, this._telemetryProps);
             this._logger.LogDebugWithThreadId("BEGIN GetTableChanges");
             try
             {
@@ -390,6 +389,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                                 acquireLeasesDurationMs = commandSw.ElapsedMilliseconds;
                             }
                             this._logger.LogDebugWithThreadId($"END AcquireLeases Duration={acquireLeasesDurationMs}ms");
+
+                            // Only send event if we got changes to reduce the overall number of events sent since we generally
+                            // only care about the times that we had to actually retrieve and process rows
+                            var measures = new Dictionary<TelemetryMeasureName, double>
+                            {
+                                [TelemetryMeasureName.SetLastSyncVersionDurationMs] = setLastSyncVersionDurationMs,
+                                [TelemetryMeasureName.GetChangesDurationMs] = getChangesDurationMs,
+                                [TelemetryMeasureName.AcquireLeasesDurationMs] = acquireLeasesDurationMs,
+                                [TelemetryMeasureName.TransactionDurationMs] = transactionSw.ElapsedMilliseconds,
+                                [TelemetryMeasureName.BatchCount] = this._rowsToProcess.Count,
+                            };
+                            TelemetryInstance.TrackEvent(TelemetryEventName.GetChanges, this._telemetryProps, measures);
                         }
 
                         transaction.Commit();
@@ -397,16 +408,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         // Set the rows for processing, now since the leases are acquired.
                         this._rowsToProcess = rows;
                         this._state = State.ProcessingChanges;
-                        var measures = new Dictionary<TelemetryMeasureName, double>
-                        {
-                            [TelemetryMeasureName.SetLastSyncVersionDurationMs] = setLastSyncVersionDurationMs,
-                            [TelemetryMeasureName.GetChangesDurationMs] = getChangesDurationMs,
-                            [TelemetryMeasureName.AcquireLeasesDurationMs] = acquireLeasesDurationMs,
-                            [TelemetryMeasureName.TransactionDurationMs] = transactionSw.ElapsedMilliseconds,
-                            [TelemetryMeasureName.BatchCount] = this._rowsToProcess.Count,
-                        };
-
-                        TelemetryInstance.TrackEvent(TelemetryEventName.GetChangesEnd, this._telemetryProps, measures);
                     }
                     catch (Exception)
                     {
@@ -468,7 +469,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     var input = new TriggeredFunctionData() { TriggerValue = changes };
 
-                    TelemetryInstance.TrackEvent(TelemetryEventName.TriggerFunctionStart, this._telemetryProps);
                     this._logger.LogDebugWithThreadId("Executing triggered function");
                     var stopwatch = Stopwatch.StartNew();
 
@@ -482,7 +482,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     if (result.Succeeded)
                     {
                         this._logger.LogDebugWithThreadId($"Successfully triggered function. Duration={durationMs}ms");
-                        TelemetryInstance.TrackEvent(TelemetryEventName.TriggerFunctionEnd, this._telemetryProps, measures);
+                        TelemetryInstance.TrackEvent(TelemetryEventName.TriggerFunction, this._telemetryProps, measures);
                         // We've successfully fully processed these so set them to be released in the cleanup phase
                         this._rowsToRelease = this._rowsToProcess;
                         this._rowsToProcess = new List<IReadOnlyDictionary<string, object>>();
@@ -582,20 +582,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         using (SqlCommand renewLeasesCommand = this.BuildRenewLeasesCommand(connection, transaction))
                         {
-                            TelemetryInstance.TrackEvent(TelemetryEventName.RenewLeasesStart, this._telemetryProps);
                             this._logger.LogDebugWithThreadId($"BEGIN RenewLeases Query={renewLeasesCommand.CommandText}");
                             var stopwatch = Stopwatch.StartNew();
 
-                            await renewLeasesCommand.ExecuteNonQueryAsync(token);
+                            int rowsAffected = await renewLeasesCommand.ExecuteNonQueryAsync(token);
 
                             long durationMs = stopwatch.ElapsedMilliseconds;
-                            this._logger.LogDebugWithThreadId($"END RenewLeases Duration={durationMs}ms");
-                            var measures = new Dictionary<TelemetryMeasureName, double>
-                            {
-                                [TelemetryMeasureName.DurationMs] = durationMs,
-                            };
+                            this._logger.LogDebugWithThreadId($"END RenewLeases Duration={durationMs}ms RowsAffected={rowsAffected}");
 
-                            TelemetryInstance.TrackEvent(TelemetryEventName.RenewLeasesEnd, this._telemetryProps, measures);
+                            if (rowsAffected > 0)
+                            {
+                                // Only send an event if we actually updated rows to reduce the overall number of events we send
+                                var measures = new Dictionary<TelemetryMeasureName, double>
+                                {
+                                    [TelemetryMeasureName.DurationMs] = durationMs,
+                                };
+
+                                TelemetryInstance.TrackEvent(TelemetryEventName.RenewLeases, this._telemetryProps, measures);
+                            }
+
 
                             transaction.Commit();
                         }
@@ -672,7 +677,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             if (this._rowsToRelease.Count > 0)
             {
-                TelemetryInstance.TrackEvent(TelemetryEventName.ReleaseLeasesStart, this._telemetryProps);
                 long newLastSyncVersion = this.RecomputeLastSyncVersion();
                 bool retrySucceeded = false;
 
@@ -705,7 +709,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                                 updateLastSyncVersionDurationMs = commandSw.ElapsedMilliseconds;
                                 this._logger.LogDebugWithThreadId($"END UpdateTablesPostInvocation Duration={updateLastSyncVersionDurationMs}ms");
                             }
-
                             transaction.Commit();
 
                             var measures = new Dictionary<TelemetryMeasureName, double>
@@ -715,7 +718,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                                 [TelemetryMeasureName.TransactionDurationMs] = transactionSw.ElapsedMilliseconds,
                             };
 
-                            TelemetryInstance.TrackEvent(TelemetryEventName.ReleaseLeasesEnd, this._telemetryProps, measures);
+                            TelemetryInstance.TrackEvent(TelemetryEventName.ReleaseLeases, this._telemetryProps, measures);
                             retrySucceeded = true;
                             this._rowsToRelease = new List<IReadOnlyDictionary<string, object>>();
                         }
