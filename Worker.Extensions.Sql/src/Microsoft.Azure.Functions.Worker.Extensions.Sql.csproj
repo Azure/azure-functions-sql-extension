@@ -5,8 +5,9 @@
 		<RootNamespace>Microsoft.Azure.Functions.Worker.Extensions.Sql</RootNamespace>
 		<Description>Sql extension for .NET isolated Azure Functions</Description>
 		<Product>SQL Binding Worker</Product>
-		<!--Version information-->
-		<VersionPrefix>99.99.99</VersionPrefix>
+		<!-- Default Version for dev -->
+		<Version>99.99.99</Version>
+		<SupportedVersion>99.99.99</SupportedVersion>
 		<PackageId>Microsoft.Azure.Functions.Worker.Extensions.Sql</PackageId>
 		<PackageTags>Microsoft Azure WebJobs AzureFunctions Isolated DotnetIsolated SQL AzureSQL Worker</PackageTags>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>

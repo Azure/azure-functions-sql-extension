@@ -39,5 +39,12 @@
     <None Include="..\lib\Microsoft.SqlServer.TransactSql.ScriptDom.dll" Pack="true" PackagePath="lib/$(TargetFramework)" />
     <None Include="..\README.md" Pack="true" PackagePath="" />
   </ItemGroup>
-
+  <Target Name="CopyNupkg" AfterTargets="Build">
+    <ItemGroup>
+      <_Packages Include=".\bin\$(Configuration)\*.*" />
+      <_Packages Include=".\obj\$(Configuration)\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_Packages)" DestinationFolder="../local-packages" />
+    <Message Text="Copied sql .nupkg to local-packages" Importance="high" />
+  </Target>
 </Project>
