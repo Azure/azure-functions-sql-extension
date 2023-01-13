@@ -41,10 +41,10 @@ Databases on SQL Server, Azure SQL Database, or Azure SQL Managed Instance which
 
 ## Known Issues
 - The table used by a SQL binding or SQL trigger cannot contain two columns that only differ by casing (Ex. 'Name' and 'name'). 
-- For C# in process functions using input or output bindings, any columns of the types 'DATE', 'DATETIME', 'DATETIME2', 'DATETIMEOFFSET', or 'SMALLDATETIME' will get converted to ISO8061 format ("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fffZ"). This does not happen for functions written in C# out-of-proc or other languages.
 
 ### Output Bindings
 - Output bindings against tables with columns of data types `NTEXT`, `TEXT`, or `IMAGE` are not supported and data upserts will fail. These types [will be removed](https://docs.microsoft.com/sql/t-sql/data-types/ntext-text-and-image-transact-sql) in a future version of SQL Server and are not compatible with the `OPENJSON` function used by this Azure Functions binding.
+- Output bindings against tables with columns of data types `DATE`, `DATETIME`, `DATETIME2`, `DATETIMEOFFSET`, or `SMALLDATETIME` will convert those values to ISO8061 format ("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fffZ"). This does not happen for functions written in C# out-of-proc or other languages.
 - Output bindings execution order is not deterministic ([azure-webjobs-sdk#1025](https://github.com/Azure/azure-webjobs-sdk/issues/1025)) and so the order that data is upserted is not guaranteed. This can be problematic if, for example, you upsert rows to two separate tables with one having a foreign key reference to another. The upsert will fail if the dependent table does its upsert first.
 
     Some options for working around this :
