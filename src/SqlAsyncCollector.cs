@@ -234,7 +234,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     .Where(prop => !tableInfo.PrimaryKeys.Any(k => k.IsIdentity && string.Equals(k.Name, prop, StringComparison.Ordinal))) // Skip any identity columns, those should never be updated
                     .Select(prop => prop.AsBracketQuotedString());
                 var table = new SqlObject(fullTableName);
-                string tableInfoQuery = tableInfo.QueryType == QueryType.Insert ? TableInformation.GetInsertQuery(table, bracketedColumnNamesFromItem) :
+                string mergeOrInsertQuery = tableInfo.QueryType == QueryType.Insert ? TableInformation.GetInsertQuery(table, bracketedColumnNamesFromItem) :
                     TableInformation.GetMergeQuery(tableInfo.PrimaryKeys, table, bracketedColumnNamesFromItem);
 
                 TelemetryInstance.TrackEvent(TelemetryEventName.UpsertStart, props);
@@ -254,7 +254,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         batchCount++;
                         GenerateDataQueryForMerge(tableInfo, batch, out string newDataQuery, out string rowData);
-                        command.CommandText = $"{newDataQuery} {tableInfoQuery};";
+                        command.CommandText = $"{newDataQuery} {mergeOrInsertQuery};";
                         this._logger.LogDebugWithThreadId($"UpsertRowsTransactionBatch - Query={command.CommandText}");
                         par.Value = rowData;
                         await command.ExecuteNonQueryAsync();
