@@ -12,7 +12,7 @@
 		<PackageTags>Microsoft Azure WebJobs AzureFunctions Isolated DotnetIsolated SQL AzureSQL Worker</PackageTags>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<IsPackable>true</IsPackable>
-        	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -23,4 +23,10 @@
 		<None Include=".\README.md" Pack="true" PackagePath="" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<AssemblyAttribute Include="Microsoft.Azure.Functions.Worker.Extensions.Abstractions.ExtensionInformationAttribute">
+			<_Parameter1>Microsoft.Azure.WebJobs.Extensions.Sql</_Parameter1>
+			<_Parameter2>$(SupportedVersion)</_Parameter2>
+		</AssemblyAttribute>
+	</ItemGroup>
 </Project>
