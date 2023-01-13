@@ -153,6 +153,7 @@ namespace DotnetIsolatedTests.Common
             }
             return false;
         }
+    }
 
     public class ProductExtraColumns
     {
