@@ -7,11 +7,12 @@
 		<Product>SQL Binding Worker</Product>
 		<!--Version information-->
 		<VersionPrefix>99.99.99</VersionPrefix>
+		<SupportedVersion>1.*-*</SupportedVersion>
 		<PackageId>Microsoft.Azure.Functions.Worker.Extensions.Sql</PackageId>
 		<PackageTags>Microsoft Azure WebJobs AzureFunctions Isolated DotnetIsolated SQL AzureSQL Worker</PackageTags>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 		<IsPackable>true</IsPackable>
-        	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -22,4 +23,10 @@
 		<None Include=".\README.md" Pack="true" PackagePath="" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<AssemblyAttribute Include="Microsoft.Azure.Functions.Worker.Extensions.Abstractions.ExtensionInformationAttribute">
+			<_Parameter1>Microsoft.Azure.WebJobs.Extensions.Sql</_Parameter1>
+			<_Parameter2>$(SupportedVersion)</_Parameter2>
+		</AssemblyAttribute>
+	</ItemGroup>
 </Project>
