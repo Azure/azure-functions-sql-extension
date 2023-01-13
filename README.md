@@ -41,6 +41,7 @@ Databases on SQL Server, Azure SQL Database, or Azure SQL Managed Instance which
 
 ## Known Issues
 - The table used by a SQL binding or SQL trigger cannot contain two columns that only differ by casing (Ex. 'Name' and 'name'). 
+- For C# in process functions using input or output bindings, any columns of the types 'DATE', 'DATETIME', 'DATETIME2', 'DATETIMEOFFSET', or 'SMALLDATETIME' will get converted to ISO8061 format ("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fffZ"). This does not happen for functions written in C# out-of-proc or other languages.
 
 ### Output Bindings
 - Output bindings against tables with columns of data types `NTEXT`, `TEXT`, or `IMAGE` are not supported and data upserts will fail. These types [will be removed](https://docs.microsoft.com/sql/t-sql/data-types/ntext-text-and-image-transact-sql) in a future version of SQL Server and are not compatible with the `OPENJSON` function used by this Azure Functions binding.
@@ -54,7 +55,6 @@ Databases on SQL Server, Azure SQL Database, or Azure SQL Managed Instance which
 - PowerShell Functions using Output bindings cannot pass in null or empty values via the query string. The workaround is to use the `$TriggerMetadata[$keyName]` to retrieve the query property, an example can be found [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-powershell/AddProductParams/run.ps1). Issue is tracked [here](https://github.com/Azure/azure-functions-powershell-worker/issues/895).
 
 ### Input Bindings
-- Input bindings against tables with columns of data types 'DATETIME', 'DATETIME2', or 'SMALLDATETIME' will assume that the values are in UTC format.
 - For Java Functions using Output bindings against a table with columns of data types 'DATETIME', 'DATETIME2', or 'SMALLDATETIME', use java.util.Date type to ensure the datetime is formatted correctly.
 
 ### Trigger Bindings
