@@ -202,8 +202,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             ProductColumnTypes[] expectedResponse = JsonConvert.DeserializeObject<ProductColumnTypes[]>("[{\"ProductId\":999,\"BigInt\":999,\"Bit\":true,\"DecimalType\":1.2345,\"Money\":1.2345,\"Numeric\":1.2345,\"SmallInt\":1,\"SmallMoney\":1.2345,\"TinyInt\":1,\"FloatType\":0.1,\"Real\":0.1,\"Date\":\"2022-10-20T00:00:00.000Z\",\"Datetime\":\"2022-10-20T12:39:13.123Z\",\"Datetime2\":\"2022-10-20T12:39:13.123Z\",\"DatetimeOffset\":\"2022-10-20T12:39:13.123Z\",\"SmallDatetime\":\"2022-10-20T12:39:00.000Z\",\"Time\":\"12:39:13.1230000\",\"CharType\":\"test\",\"Varchar\":\"test\",\"Nchar\":\"test\",\"Nvarchar\":\"test\"}]");
             string actualResponse = await response.Content.ReadAsStringAsync();
             ProductColumnTypes[] actualProductResponse = JsonConvert.DeserializeObject<ProductColumnTypes[]>(actualResponse);
-            Console.WriteLine(expectedResponse[0].ToString());
-            Console.WriteLine(actualProductResponse[0].ToString());
 
             Assert.Equal(expectedResponse, actualProductResponse);
         }

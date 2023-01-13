@@ -26,7 +26,7 @@ public class ProductColumnTypes {
     private Timestamp Datetime2;
     private Timestamp DatetimeOffset;
     private Timestamp SmallDatetime;
-    private Timestamp Time;
+    private String Time;
     private String CharType;
     private String Varchar;
     private String Nchar;
@@ -36,7 +36,7 @@ public class ProductColumnTypes {
 
     public ProductColumnTypes(int productId, long bigInt, boolean bit, BigDecimal decimalType, BigDecimal money,
     BigDecimal numeric, short smallInt, BigDecimal smallMoney, short tinyInt, double floatType, double real, Timestamp date,
-    Timestamp datetime, Timestamp datetime2, Timestamp datetimeOffset, Timestamp smallDatetime, Timestamp time, String charType,
+    Timestamp datetime, Timestamp datetime2, Timestamp datetimeOffset, Timestamp smallDatetime, String time, String charType,
     String varchar, String nchar, String nvarchar) {
         ProductId = productId;
         BigInt = bigInt;
@@ -186,11 +186,11 @@ public class ProductColumnTypes {
         SmallDatetime = smallDatetime;
     }
 
-    public Timestamp getTime() {
+    public String getTime() {
         return Time;
     }
 
-    public void setTime(Timestamp time) {
+    public void setTime(String time) {
         Time = time;
     }
 
