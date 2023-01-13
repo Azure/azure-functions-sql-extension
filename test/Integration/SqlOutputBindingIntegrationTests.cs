@@ -444,5 +444,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-incorrectcasing").Wait());
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM Products"));
         }
+
+        /// <summary>
+        /// Tests that subsequent upserts work correctly when the object properties are different from the first upsert.
+        ///
+        [Theory]
+        [SqlInlineData()]
+        public void AddProductWithDifferentPropertiesTest(SupportedLanguages lang)
+        {
+            this.StartFunctionHost(nameof(AddProduct), lang);
+
+            var query1 = new Dictionary<string, object>()
+            {
+                { "ProductId", 0 },
+                { "Name", "test" },
+                { "Cost", 100 }
+            };
+
+            var query2 = new Dictionary<string, object>()
+            {
+                { "ProductId", 0 },
+                { "Name", "test2" }
+            };
+
+            this.SendOutputPostRequest("addproduct", JsonConvert.SerializeObject(query1)).Wait();
+            this.SendOutputPostRequest("addproduct", JsonConvert.SerializeObject(query2)).Wait();
+
+            // Verify result
+            Assert.Equal("test2", this.ExecuteScalar($"select Name from Products where ProductId=0"));
+        }
     }
 }
