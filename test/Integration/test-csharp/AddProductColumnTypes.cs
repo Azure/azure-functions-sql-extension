@@ -43,8 +43,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 Varchar = "test",
                 Nchar = "test",
                 Nvarchar = "test",
-                // Binary = new byte[] { 1, 2, 3 },
-                // Varbinary = new byte[] { 1, 2, 3 }
             };
 
             // Items were inserted successfully so return success, an exception would be thrown if there

@@ -21,16 +21,16 @@ $req_query = @{
     TinyInt=1;
     FloatType=0.1;
     Real=0.1;
-    Date=Get-Date -AsUTC;
-    Datetime=Get-Date -AsUTC;
-    Datetime2=Get-Date -AsUTC;
-    DatetimeOffSet=Get-Date -AsUTC;
-    SmallDatetime=Get-Date -AsUTC;
-    Time=Get-Date -AsUTC;
+    Date=Get-Date -AsUTC -Format "yyyy-MM-dd";
+    Datetime=Get-Date -AsUTC -Format "yyyy-MM-ddTHH:mm:ss";
+    Datetime2=Get-Date -AsUTC -Format "yyyy-MM-ddTHH:mm:ss";
+    DatetimeOffset=Get-Date -AsUTC -Format "yyyy-MM-ddTHH:mm:sszzz";
+    SmallDatetime=Get-Date -AsUTC -Format "yyyy-MM-ddTHH:mm:ss";
+    Time=Get-Date -AsUTC -Format "HH:mm:ss";
     CharType="test";
     Varchar="test";
     Nchar="test";
-    Nvarchar="test;
+    Nvarchar="test";
 };
 
 # Assign the value we want to pass to the SQL Output binding.

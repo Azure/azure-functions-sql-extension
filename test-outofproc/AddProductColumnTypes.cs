@@ -27,8 +27,26 @@ namespace DotnetIsolatedTests
             var product = new ProductColumnTypes()
             {
                 ProductId = int.Parse(queryStrings["productId"], null),
+                BigInt = int.MaxValue,
+                Bit = true,
+                DecimalType = 1.2345M,
+                Money = 1.23M,
+                Numeric = 1.2345M,
+                SmallInt = 0,
+                SmallMoney = 1.23M,
+                TinyInt = 1,
+                FloatType = 1.2,
+                Real = 1.2f,
+                Date = DateTime.UtcNow,
                 Datetime = new SqlDateTime(DateTime.UtcNow).Value,
-                Datetime2 = DateTime.UtcNow
+                Datetime2 = DateTime.UtcNow,
+                DatetimeOffset = DateTime.UtcNow,
+                SmallDatetime = new SqlDateTime(DateTime.UtcNow).Value,
+                Time = DateTime.UtcNow.TimeOfDay,
+                CharType = "test",
+                Varchar = "test",
+                Nchar = "test",
+                Nvarchar = "test",
             };
             return product;
         }
