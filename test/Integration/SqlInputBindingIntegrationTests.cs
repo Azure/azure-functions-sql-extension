@@ -143,19 +143,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.StartFunctionHost(nameof(GetProductsColumnTypesSerializationAsyncEnumerable), lang, true);
 
             string datetime = "2022-10-20 12:39:13.123";
-            ProductColumnTypes[] expectedResponse = new[]
-            {
-                new ProductColumnTypes()
-                {
-                    ProductId = 999,
-                    Datetime = DateTime.Parse(datetime),
-                    Datetime2 = DateTime.Parse(datetime)
-                }
-            };
+            ProductColumnTypes[] expectedResponse = JsonConvert.DeserializeObject<ProductColumnTypes[]>("[{\"ProductId\":999,\"BigInt\":999,\"Bit\":false,\"DecimalType\":1.2345,\"Money\":1.2345,\"Numeric\":1.2345,\"SmallInt\":1,\"SmallMoney\":1.2345,\"TinyInt\":1,\"FloatType\":0.1,\"Real\":0.1,\"Date\":\"2022-10-20T00:00:00.000Z\",\"Datetime\":\"2022-10-20T12:39:13.123Z\",\"Datetime2\":\"2022-10-20T12:39:13.123Z\",\"DatetimeOffset\":\"2022-10-20T12:39:13.123Z\",\"SmallDatetime\":\"2022-10-20T12:39:00.000Z\",\"Time\":\"12:39:13.1230000\",\"CharType\":\"test\",\"Varchar\":\"test\",\"Nchar\":\"test\",\"Nvarchar\":\"test\"}]");
+
             this.ExecuteNonQuery("INSERT INTO [dbo].[ProductsColumnTypes] VALUES (" +
-                "999, " + // ProductId
-                $"CONVERT(DATETIME, '{datetime}'), " + // Datetime field
-                $"CONVERT(DATETIME2, '{datetime}'))"); // Datetime2 field
+                "999, " + // ProductId,
+                "999, " + // BigInt
+                "0, " + // Bit
+                "1.2345, " + // DecimalType
+                "1.2345, " + // Money
+                "1.2345, " + // Numeric
+                "1, " + // SmallInt
+                "1.2345, " + // SmallMoney
+                "1, " + // TinyInt
+                ".1, " + // FloatType
+                ".1, " + // Real
+                $"CONVERT(DATE, '{datetime}'), " + // Date
+                $"CONVERT(DATETIME, '{datetime}'), " + // Datetime
+                $"CONVERT(DATETIME2, '{datetime}'), " + // Datetime2
+                $"CONVERT(DATETIMEOFFSET, '{datetime}'), " + // DatetimeOffSet
+                $"CONVERT(SMALLDATETIME, '{datetime}'), " + // SmallDatetime
+                $"CONVERT(TIME, '{datetime}'), " + // Time
+                "'test', " + // CharType
+                "'test', " + // Varchar
+                "'test', " + // Nchar
+                "'test')"); // Nvarchar
 
             HttpResponseMessage response = await this.SendInputRequest("getproducts-columntypesserializationasyncenumerable", $"?culture={culture}");
             // We expect the datetime and datetime2 fields to be returned in UTC format

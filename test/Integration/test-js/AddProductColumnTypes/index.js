@@ -21,7 +21,7 @@ module.exports = async function (context, req) {
         "Date": new Date().toISOString(),
         "Datetime": new Date().toISOString(),
         "Datetime2": new Date().toISOString(),
-        "DatetimeOffSet": new Date().toISOString(),
+        "DatetimeOffset": new Date().toISOString(),
         "SmallDatetime": new Date().toISOString(),
         "Time": new Date().toISOString(),
         "CharType": "test",
