@@ -59,7 +59,6 @@ public class ProductColumnTypes {
         Varchar = varchar;
         Nchar = nchar;
         Nvarchar = nvarchar;
-        // UniqueIdentifier = uniqueIdentifier;
     }
 
     public int getProductId() {
@@ -225,12 +224,4 @@ public class ProductColumnTypes {
     public void setNvarchar(String nvarchar) {
         Nvarchar = nvarchar;
     }
-
-    // public String getUniqueIdentifier() {
-    //     return UniqueIdentifier;
-    // }
-
-    // public void setUniqueIdentifier(String uniqueIdentifier) {
-    //     UniqueIdentifier = uniqueIdentifier;
-    // }
 }

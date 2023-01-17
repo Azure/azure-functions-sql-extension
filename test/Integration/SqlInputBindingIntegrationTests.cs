@@ -160,7 +160,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 $"CONVERT(DATE, '{datetime}'), " + // Date
                 $"CONVERT(DATETIME, '{datetime}'), " + // Datetime
                 $"CONVERT(DATETIME2, '{datetime}'), " + // Datetime2
-                $"CONVERT(DATETIMEOFFSET, '{datetime}'), " + // DatetimeOffSet
+                $"CONVERT(DATETIMEOFFSET, '{datetime}'), " + // DatetimeOffset
                 $"CONVERT(SMALLDATETIME, '{datetime}'), " + // SmallDatetime
                 $"CONVERT(TIME, '{datetime}'), " + // Time
                 "'test', " + // CharType
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 $"CONVERT(DATE, '{datetime}'), " + // Date
                 $"CONVERT(DATETIME, '{datetime}'), " + // Datetime
                 $"CONVERT(DATETIME2, '{datetime}'), " + // Datetime2
-                $"CONVERT(DATETIMEOFFSET, '{datetime}'), " + // DatetimeOffSet
+                $"CONVERT(DATETIMEOFFSET, '{datetime}'), " + // DatetimeOffset
                 $"CONVERT(SMALLDATETIME, '{datetime}'), " + // SmallDatetime
                 $"CONVERT(TIME, '{datetime}'), " + // Time
                 "'test', " + // CharType
