@@ -31,7 +31,6 @@ public class ProductColumnTypes {
     private String Varchar;
     private String Nchar;
     private String Nvarchar;
-    // private String UniqueIdentifier;
 
 
     public ProductColumnTypes(int productId, long bigInt, boolean bit, BigDecimal decimalType, BigDecimal money,
