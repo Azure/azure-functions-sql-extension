@@ -16,6 +16,9 @@ using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlTriggerUtils;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
+    /// <summary>
+    /// Provider class for unprocessed changes metrics for SQL trigger scaling.
+    /// </summary>
     internal class SqlTriggerMetricsProvider
     {
         private readonly string _connectionString;

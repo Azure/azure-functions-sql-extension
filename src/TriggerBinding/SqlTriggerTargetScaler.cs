@@ -7,6 +7,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
+    /// <summary>
+    /// Represents the target based scaler returning a target worker count.
+    /// </summary>
     public class SqlTriggerTargetScaler : ITargetScaler
     {
         private readonly string _userFunctionId;
@@ -35,6 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         internal TargetScalerResult GetScaleResultInternal(TargetScalerContext context, long unprocessedChangeCount)
         {
+            // Instance concurrency value is set by the functions host when dynamic concurrency is enabled.
             int concurrency = context.InstanceConcurrency ?? this._maxChangesPerWorker;
 
             if (concurrency < 1)
