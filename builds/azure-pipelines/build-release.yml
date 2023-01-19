@@ -19,6 +19,7 @@ variables:
   versionPatch: $[counter(variables['versionMajorMinor'], 0)] # This will reset when we bump minor version
   binariesVersion: '$(versionMajor).$(versionMinor).$(versionPatch)'
   nugetVersion: '$(binariesVersion)-preview'
+  supportedVersion: '$(versionMajor).*-*'
   LGTM.UploadSnapshot: true
   Semmle.SkipAnalysis: true
 
@@ -60,6 +61,7 @@ stages:
           nugetVersion: '$(nugetVersion)'
           binariesVersion: '$(binariesVersion)'
           testFilter: '$(testFilter)'
+          supportedVersion: '$(supportedVersion)'
 
   - job: BuildTestPublishLinux
     displayName: 'Build, Test and Publish on linux'
@@ -79,6 +81,7 @@ stages:
           configuration: '$(configuration)'
           nugetVersion: '$(nugetVersion)'
           binariesVersion: '$(binariesVersion)'
+          supportedVersion: '$(supportedVersion)'
           testFilter: ''
           testServer: ''
 

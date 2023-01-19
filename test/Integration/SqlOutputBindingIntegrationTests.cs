@@ -47,9 +47,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(1, "Test", 5)]
         [SqlInlineData(0, "", 0)]
         [SqlInlineData(-500, "ABCD", 580)]
-        // Currently Java and Python functions return null when the parameter for name is an empty string
+        // Currently Java functions return null when the parameter for name is an empty string
         // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/517
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.Python)]
+        [UnsupportedLanguages(SupportedLanguages.Java)]
         public void AddProductParamsTest(int id, string name, int cost, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductParams), lang);
@@ -221,9 +221,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        // Currently PowerShell gives an error due to the deserialization of the object
-        // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
-        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
         public void AddProductWithIdentity(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithIdentityColumn), lang);
@@ -244,9 +241,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        // Currently PowerShell gives an error due to the deserialization of the object
-        // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
-        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
         public void AddProductsWithIdentityColumnArray(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsWithIdentityColumnArray), lang);
@@ -262,9 +256,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        // Currently PowerShell gives an error due to the deserialization of the object
-        // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
-        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
         public void AddProductWithIdentity_MultiplePrimaryColumns(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), lang);
@@ -344,9 +335,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        // Currently PowerShell gives an error due to the deserialization of the object
-        // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
-        [UnsupportedLanguages(SupportedLanguages.PowerShell)]
         public void AddProductWithIdentity_MissingPrimaryColumn(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), lang);
@@ -368,9 +356,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        // Currently PowerShell gives an unknown error (when testing locally we get a missing primary key error)
-        // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/448
-        [UnsupportedLanguages(SupportedLanguages.PowerShell, SupportedLanguages.Python)]
         public void AddProductWithDefaultPKTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductWithDefaultPK), lang);
@@ -459,6 +444,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-incorrectcasing").Wait());
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM Products"));
+        }
+
+        /// <summary>
+        /// Tests that subsequent upserts work correctly when the object properties are different from the first upsert.
+        ///
+        [Theory]
+        [SqlInlineData()]
+        public void AddProductWithDifferentPropertiesTest(SupportedLanguages lang)
+        {
+            this.StartFunctionHost(nameof(AddProduct), lang);
+
+            var query1 = new Dictionary<string, object>()
+            {
+                { "ProductId", 0 },
+                { "Name", "test" },
+                { "Cost", 100 }
+            };
+
+            var query2 = new Dictionary<string, object>()
+            {
+                { "ProductId", 0 },
+                { "Name", "test2" }
+            };
+
+            this.SendOutputPostRequest("addproduct", JsonConvert.SerializeObject(query1)).Wait();
+            this.SendOutputPostRequest("addproduct", JsonConvert.SerializeObject(query2)).Wait();
+
+            // Verify result
+            Assert.Equal("test2", this.ExecuteScalar($"select Name from Products where ProductId=0"));
         }
     }
 }

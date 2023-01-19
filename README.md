@@ -1,7 +1,5 @@
 # Azure SQL bindings for Azure Functions - Preview
 
-[![Build Status](https://mssqltools.visualstudio.com/CrossPlatBuildScripts/_apis/build/status/SQL%20Bindings/SQL%20Bindings%20-%20Nightly?branchName=main)](https://mssqltools.visualstudio.com/CrossPlatBuildScripts/_build/latest?definitionId=481&branchName=main)
-
 ## Table of Contents
 - [Azure SQL bindings for Azure Functions - Preview](#azure-sql-bindings-for-azure-functions---preview)
   - [Table of Contents](#table-of-contents)
@@ -42,6 +40,7 @@ This extension uses the [OPENJSON](https://learn.microsoft.com/sql/t-sql/functio
 Databases on SQL Server, Azure SQL Database, or Azure SQL Managed Instance which meet the compatibility level requirement above are supported.
 
 ## Known Issues
+- The table used by a SQL binding or SQL trigger cannot contain two columns that only differ by casing (Ex. 'Name' and 'name'). 
 
 ### Output Bindings
 - Output bindings against tables with columns of data types `NTEXT`, `TEXT`, or `IMAGE` are not supported and data upserts will fail. These types [will be removed](https://docs.microsoft.com/sql/t-sql/data-types/ntext-text-and-image-transact-sql) in a future version of SQL Server and are not compatible with the `OPENJSON` function used by this Azure Functions binding.
@@ -51,6 +50,11 @@ Databases on SQL Server, Azure SQL Database, or Azure SQL Managed Instance which
     * Have multiple functions, with dependent functions being triggered by the initial functions (through a trigger binding or other such method)
     * Use [dynamic (imperative)](https://learn.microsoft.com/azure/azure-functions/functions-bindings-expressions-patterns#binding-at-runtime) bindings (.NET only)
     * Use [IAsyncCollector](https://learn.microsoft.com/azure/azure-functions/functions-dotnet-class-library?tabs=v2%2Ccmd#writing-multiple-output-values) and call `FlushAsync` in the order desired (.NET only)
+- For PowerShell Functions that use hashtables must use the `[ordered]@` for the request query or request body assertion in order to upsert the data to the SQL table properly. An example can be found [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-powershell/AddProductsWithIdentityColumnArray/run.ps1).
+- Java, PowerShell, and Python Functions using Output bindings cannot pass in null or empty values via the query string. 
+  - Java: Issue is tracked [here](https://github.com/Azure/azure-functions-java-worker/issues/683).
+  - PowerShell: The workaround is to use the `$TriggerMetadata[$keyName]` to retrieve the query property - an example can be found [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-powershell/AddProductParams/run.ps1). Issue is tracked [here](https://github.com/Azure/azure-functions-powershell-worker/issues/895).
+  - Python: The workaround is to use `parse_qs` - an example can be found [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-python/AddProductParams/__init__.py). Issue is tracked [here](https://github.com/Azure/azure-functions-python-worker/issues/894).
 
 ### Input Bindings
 - Input bindings against tables with columns of data types 'DATETIME', 'DATETIME2', or 'SMALLDATETIME' will assume that the values are in UTC format.
