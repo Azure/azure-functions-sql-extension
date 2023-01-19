@@ -26,8 +26,8 @@ module.exports = async function (context, req) {
         "Time": new Date().toISOString(),
         "CharType": "test",
         "Varchar": "test",
-        "Nchar": "test",
-        "Nvarchar": "test"
+        "Nchar": "\u2649",
+        "Nvarchar": "\u2649"
     };
 
     context.bindings.product = JSON.stringify(product);

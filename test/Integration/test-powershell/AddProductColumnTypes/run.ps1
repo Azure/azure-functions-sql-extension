@@ -29,8 +29,8 @@ $req_query = @{
     Time=Get-Date -AsUTC -Format "HH:mm:ss";
     CharType="test";
     Varchar="test";
-    Nchar="test";
-    Nvarchar="test";
+    Nchar="\u2649";
+    Nvarchar="\u2649";
 };
 
 # Assign the value we want to pass to the SQL Output binding.

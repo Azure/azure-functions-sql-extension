@@ -41,8 +41,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 Time = DateTime.Now.TimeOfDay,
                 CharType = "test",
                 Varchar = "test",
-                Nchar = "test",
-                Nvarchar = "test",
+                Nchar = "\u2649",
+                Nvarchar = "\u2649",
             };
 
             // Items were inserted successfully so return success, an exception would be thrown if there

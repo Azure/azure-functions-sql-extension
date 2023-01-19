@@ -45,8 +45,8 @@ namespace DotnetIsolatedTests
                 Time = DateTime.UtcNow.TimeOfDay,
                 CharType = "test",
                 Varchar = "test",
-                Nchar = "test",
-                Nvarchar = "test",
+                Nchar = "\u2649",
+                Nvarchar = "\u2649",
             };
             return product;
         }
