@@ -47,7 +47,7 @@ These instructions will guide you through creating your Function App and adding 
     <dependency>
         <groupId>com.microsoft.azure.functions</groupId>
         <artifactId>azure-functions-java-library-sql</artifactId>
-        <version>0.1.1</version>
+        <version>[0.1.1,)</version>
     </dependency>
     ```
 
