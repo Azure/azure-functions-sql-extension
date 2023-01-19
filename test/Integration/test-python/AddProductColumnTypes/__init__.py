@@ -28,8 +28,8 @@ def main(req: func.HttpRequest, product: func.Out[func.SqlRow]) -> func.HttpResp
         datetime.datetime.utcnow().isoformat("T", "milliseconds"),
         "test",
         "test",
-        "test",
-        "test")
+        "\u2649",
+        "\u2649")
     )
     product.set(productColumnTypes)
 

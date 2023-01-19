@@ -57,8 +57,8 @@ public class AddProductColumnTypes {
             new Time(System.currentTimeMillis()).toString(),
             "test",
             "test",
-            "test",
-            "test");
+            "\u2649",
+            "\u2649");
         product.setValue(p);
 
         // Items were inserted successfully so return success, an exception would be thrown if there
