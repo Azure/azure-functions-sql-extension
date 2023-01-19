@@ -42,6 +42,14 @@ These instructions will guide you through creating your Function App and adding 
         "version": "[4.*, 5.0.0)"
     }
     ```
+    Add the Java library for SQL bindings to the pom.xml file.
+    ```xml
+    <dependency>
+        <groupId>com.microsoft.azure.functions</groupId>
+        <artifactId>azure-functions-java-library-sql</artifactId>
+        <version>0.1.1</version>
+    </dependency>
+    ```
 
 ## Input Binding
 
