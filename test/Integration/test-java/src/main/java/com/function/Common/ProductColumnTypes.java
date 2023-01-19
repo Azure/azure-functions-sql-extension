@@ -4,7 +4,7 @@
  * license information.
  */
 
- package com.function.Common;
+package com.function.Common;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
