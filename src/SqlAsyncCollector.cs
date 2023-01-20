@@ -118,7 +118,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             if (item != null)
             {
                 await this._rowLock.WaitAsync(cancellationToken);
-                TelemetryInstance.TrackEvent(TelemetryEventName.AddAsync);
                 try
                 {
                     this._rows.Add(item);
@@ -170,7 +169,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="rows"> The rows to be upserted </param>
         /// <param name="attribute"> Contains the name of the table to be modified and SQL connection information </param>
         /// <param name="configuration"> Used to build up the connection </param>
-        private async Task UpsertRowsAsync(IEnumerable<T> rows, SqlAttribute attribute, IConfiguration configuration)
+        private async Task UpsertRowsAsync(IList<T> rows, SqlAttribute attribute, IConfiguration configuration)
         {
             this._logger.LogDebugWithThreadId("BEGIN UpsertRowsAsync");
             var upsertRowsAsyncSw = Stopwatch.StartNew();
@@ -237,7 +236,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 string mergeOrInsertQuery = tableInfo.QueryType == QueryType.Insert ? TableInformation.GetInsertQuery(table, bracketedColumnNamesFromItem) :
                     TableInformation.GetMergeQuery(tableInfo.PrimaryKeys, table, bracketedColumnNamesFromItem);
 
-                TelemetryInstance.TrackEvent(TelemetryEventName.UpsertStart, props);
                 this._logger.LogDebugWithThreadId("BEGIN UpsertRowsTransaction");
                 var transactionSw = Stopwatch.StartNew();
                 int batchSize = 1000;
@@ -266,10 +264,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     { TelemetryMeasureName.BatchCount, batchCount },
                     { TelemetryMeasureName.TransactionDurationMs, transactionSw.ElapsedMilliseconds },
-                    { TelemetryMeasureName.CommandDurationMs, commandSw.ElapsedMilliseconds }
+                    { TelemetryMeasureName.CommandDurationMs, commandSw.ElapsedMilliseconds },
+                    { TelemetryMeasureName.BatchSize, batchSize },
+                    { TelemetryMeasureName.NumRows, rows.Count }
                 };
-                    TelemetryInstance.TrackEvent(TelemetryEventName.UpsertEnd, props, measures);
-                    this._logger.LogDebugWithThreadId($"END UpsertRowsTransaction Duration={transactionSw.ElapsedMilliseconds}ms Upserted {rows.Count()} row(s) into database: {connection.Database} and table: {fullTableName}.");
+                    TelemetryInstance.TrackEvent(TelemetryEventName.Upsert, props, measures);
+                    this._logger.LogDebugWithThreadId($"END UpsertRowsTransaction Duration={transactionSw.ElapsedMilliseconds}ms Upserted {rows.Count} row(s) into database: {connection.Database} and table: {fullTableName}.");
                     this._logger.LogDebugWithThreadId($"END UpsertRowsAsync Duration={upsertRowsAsyncSw.ElapsedMilliseconds}ms");
                 }
                 catch (Exception ex)
