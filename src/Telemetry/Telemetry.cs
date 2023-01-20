@@ -323,7 +323,6 @@ This extension collect usage data in order to help us improve your experience. T
     /// </summary>
     public enum TelemetryEventName
     {
-        AddAsync,
         Convert,
         Create,
         FlushAsync,
@@ -340,8 +339,7 @@ This extension collect usage data in order to help us improve your experience. T
         TableInfoCacheMiss,
         TriggerFunction,
         TriggerMonitorStart,
-        UpsertEnd,
-        UpsertStart,
+        Upsert
     }
 
     /// <summary>
@@ -384,6 +382,7 @@ This extension collect usage data in order to help us improve your experience. T
         GetUnprocessedChangesDurationMs,
         InsertGlobalStateTableRowDurationMs,
         MaxChangesPerWorker,
+        NumRows,
         PollingIntervalMs,
         ReleaseLeasesDurationMs,
         RetryAttemptNumber,
