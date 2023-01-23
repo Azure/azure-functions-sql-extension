@@ -38,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         internal TargetScalerResult GetScaleResultInternal(TargetScalerContext context, long unprocessedChangeCount)
         {
-            // Instance concurrency value is set by the functions host when dynamic concurrency is enabled.
+            // Instance concurrency value is set by the functions host when dynamic concurrency is enabled. See https://learn.microsoft.com/en-us/azure/azure-functions/functions-concurrency for more details.
             int concurrency = context.InstanceConcurrency ?? this._maxChangesPerWorker;
 
             if (concurrency < 1)
