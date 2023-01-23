@@ -20,4 +20,6 @@
     [Varchar] [varchar](100),
     [Nchar] [nchar](4),
     [Nvarchar] [nvarchar](100),
+    [Binary] [binary](4),
+    [Varbinary] [varbinary](100)
 )
