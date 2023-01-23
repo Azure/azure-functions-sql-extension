@@ -12,12 +12,10 @@
       - [Empty Parameter Value](#empty-parameter-value)
       - [Null Parameter Value](#null-parameter-value)
       - [Stored Procedure](#stored-procedure)
-      - [IAsyncEnumerable](#iasyncenumerable)
   - [Output Binding](#output-binding)
     - [SQLOutput Attribute](#sqloutput-attribute)
     - [Setup for Output Bindings](#setup-for-output-bindings)
     - [Samples for Output Bindings](#samples-for-output-bindings)
-      - [ICollector\<T\>/IAsyncCollector\<T\>](#icollectortiasynccollectort)
       - [Array](#array)
       - [Single Row](#single-row)
   - [Trigger Binding](#trigger-binding)
@@ -44,6 +42,14 @@ These instructions will guide you through creating your Function App and adding 
         "version": "[4.*, 5.0.0)"
     }
     ```
+    Add the Java library for SQL bindings to the pom.xml file.
+    ```xml
+    <dependency>
+        <groupId>com.microsoft.azure.functions</groupId>
+        <artifactId>azure-functions-java-library-sql</artifactId>
+        <version>[0.1.1,)</version>
+    </dependency>
+    ```
 
 ## Input Binding
 
@@ -67,7 +73,7 @@ When you're developing locally, add your application settings in the local.setti
 
 Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server).
 
-- Open your app that you created in [Create a Function App](./GeneralSetup.md#create-a-function-app) in VS Code
+- Open your app that you created in [Setup Function App](#setup-function-app) in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a package name) -> (Provide a function name) -> anonymous
 - In the file that opens, replace the `public HttpResponseMessage run` block with the below code.
@@ -91,8 +97,8 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
     *In the above, "select * from Employees" is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [SQLInput Attribute](#sqlinput-attribute) section*
 
-- Add 'import com.microsoft.azure.functions.sql.annotation.SQLInput;'
-- Create a new file and call it 'Employee.java'
+- Add `import com.microsoft.azure.functions.sql.annotation.SQLInput;`
+- Create a new file and call it `Employee.java`
 - Paste the below in the file. These are the column names of our SQL table. Note that the casing of the Object field names and the table column names must match.
 
     ```java
@@ -156,23 +162,155 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 #### Query String
 
-_TODO_
+The input binding executes the `SELECT * FROM Products WHERE Cost = @Cost` query, returning the result as Product[], where Product is a user-defined object. The Parameters argument passes the {cost} specified in the URL that triggers the function, getproducts/{cost}, as the value of the @Cost parameter in the query. CommandType is set to `Text`, since the constructor argument of the binding is a raw query.
+
+```java
+@FunctionName("GetProducts")
+public HttpResponseMessage run(
+        @HttpTrigger(
+            name = "req",
+            methods = {HttpMethod.GET},
+            authLevel = AuthorizationLevel.ANONYMOUS,
+            route = "getproducts/{cost}")
+            HttpRequestMessage<Optional<String>> request,
+        @SQLInput(
+            name = "products",
+            commandText = "SELECT * FROM Products WHERE Cost = @Cost",
+            commandType = "Text",
+            parameters = "@Cost={cost}",
+            connectionStringSetting = "SqlConnectionString")
+            Product[] products) {
+
+    return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(products).build();
+}
+```
+
+`Product` is a user-defined object that follows the structure of the Products table. It represents a row of the Products table, with field names and types copying those of the Products table schema. For example, if the Products table has three columns of the form
+
+- **ProductId**: int
+- **Name**: varchar
+- **Cost**: int
+
+Then the `Product` class would look like
+
+```java
+public class Product {
+    @JsonProperty("ProductId")
+    private int ProductId;
+    @JsonProperty("Name")
+    private String Name;
+    @JsonProperty("Cost")
+    private int Cost;
+
+    public Product() {
+    }
+
+    public Product(int productId, String name, int cost) {
+        ProductId = productId;
+        Name = name;
+        Cost = cost;
+    }
+
+    public int getProductId() {
+        return ProductId;
+    }
+
+    public void setProductId(int productId) {
+        this.ProductId = productId;
+    }
+
+    public String getName() {
+        return Name;
+    }
+
+    public void setName(String name) {
+        this.Name = name;
+    }
+
+    public int getCost() {
+        return Cost;
+    }
+
+    public void setCost(int cost) {
+        this.Cost = cost;
+    }
+}
+```
 
 #### Empty Parameter Value
 
-_TODO_
+In this case, the parameter value of the @Name parameter is an empty string.
+
+```java
+@FunctionName("GetProductsNameEmpty")
+    public HttpResponseMessage run(
+            @HttpTrigger(
+                name = "req",
+                methods = {HttpMethod.GET},
+                authLevel = AuthorizationLevel.ANONYMOUS,
+                route = "getproducts-nameempty/{cost}")
+                HttpRequestMessage<Optional<String>> request,
+            @SQLInput(
+                name = "products",
+                commandText = "SELECT * FROM Products WHERE Cost = @Cost and Name = @Name",
+                commandType = "Text",
+                parameters = "@Cost={cost},@Name=",
+                connectionStringSetting = "SqlConnectionString")
+                Product[] products) {
+
+        return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(products).build();
+    }
+```
 
 #### Null Parameter Value
 
-_TODO_
+If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", the query returns all rows for which the Name column is `NULL`. Otherwise, it returns all rows for which the value of the Name column matches the string passed in `{name}`
+
+```java
+@FunctionName("GetProductsNameNull")
+    public HttpResponseMessage run(
+            @HttpTrigger(
+                name = "req",
+                methods = {HttpMethod.GET},
+                authLevel = AuthorizationLevel.ANONYMOUS,
+                route = "getproducts-namenull/{name}")
+                HttpRequestMessage<Optional<String>> request,
+            @SQLInput(
+                name = "products",
+                commandText = "IF @Name IS NULL SELECT * FROM Products WHERE Name IS NULL ELSE SELECT * FROM Products WHERE Name = @Name",
+                commandType = "Text",
+                parameters = "@Name={name}",
+                connectionStringSetting = "SqlConnectionString")
+                Product[] products) {
+
+        return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(products).build();
+    }
+```
 
 #### Stored Procedure
 
-_TODO_
+`SelectProductsCost` is the name of a procedure stored in the user's database. In this case, *CommandType* is `StoredProcedure`. The parameter value of the `@Cost` parameter in the procedure is once again the `{cost}` specified in the `getproducts-storedprocedure/{cost}` URL.
 
-#### IAsyncEnumerable
+```java
+@FunctionName("GetProductsStoredProcedure")
+    public HttpResponseMessage run(
+            @HttpTrigger(
+                name = "req",
+                methods = {HttpMethod.GET},
+                authLevel = AuthorizationLevel.ANONYMOUS,
+                route = "getproducts-storedprocedure/{cost}")
+                HttpRequestMessage<Optional<String>> request,
+            @SQLInput(
+                name = "products",
+                commandText = "SelectProductsCost",
+                commandType = "StoredProcedure",
+                parameters = "@Cost={cost}",
+                connectionStringSetting = "SqlConnectionString")
+                Product[] products) {
 
-_TODO_
+        return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(products).build();
+    }
+```
 
 ## Output Binding
 
@@ -208,6 +346,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
                 route = "addemployees-array")
                 HttpRequestMessage<Optional<String>> request,
             @SQLOutput(
+                name = "output",
                 commandText = "dbo.Employees",
                 connectionStringSetting = "SqlConnectionString")
                 OutputBinding<Employee[]> output) {
@@ -227,17 +366,57 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 ### Samples for Output Bindings
 
-#### ICollector&lt;T&gt;/IAsyncCollector&lt;T&gt;
-
-_TODO_
-
 #### Array
 
-_TODO_
+``` java
+@FunctionName("AddProductsArray")
+    public HttpResponseMessage run(
+            @HttpTrigger(
+                name = "req",
+                methods = {HttpMethod.POST},
+                authLevel = AuthorizationLevel.ANONYMOUS,
+                route = "addproducts-array")
+                HttpRequestMessage<Optional<String>> request,
+            @SQLOutput(
+                name = "products",
+                commandText = "Products",
+                connectionStringSetting = "SqlConnectionString")
+                OutputBinding<Product[]> products) throws JsonParseException, JsonMappingException, IOException {
+
+        String json = request.getBody().get();
+        ObjectMapper mapper = new ObjectMapper();
+        Product[] p = mapper.readValue(json, Product[].class);
+        products.setValue(p);
+
+        return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(products).build();
+    }
+```
 
 #### Single Row
 
-_TODO_
+```java
+    @FunctionName("AddProduct")
+    public HttpResponseMessage run(
+            @HttpTrigger(
+                name = "req",
+                methods = {HttpMethod.POST},
+                authLevel = AuthorizationLevel.ANONYMOUS,
+                route = "addproduct")
+                HttpRequestMessage<Optional<String>> request,
+            @SQLOutput(
+                name = "product",
+                commandText = "Products",
+                connectionStringSetting = "SqlConnectionString")
+                OutputBinding<Product> product) throws JsonParseException, JsonMappingException, IOException {
+
+        String json = request.getBody().get();
+        ObjectMapper mapper = new ObjectMapper();
+        Product p = mapper.readValue(json, Product.class);
+        product.setValue(p);
+
+        return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(product).build();
+    }
+```
 
 ## Trigger Binding
 
