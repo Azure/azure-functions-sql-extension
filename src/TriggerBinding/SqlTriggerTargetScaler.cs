@@ -48,7 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             int targetWorkerCount = (int)Math.Ceiling(unprocessedChangeCount / (decimal)concurrency);
 
-            this._logger.LogInformation($"Target worker count for function '{this._userFunctionId}' is '{targetWorkerCount}' UnprocessedChangeCount ='{this._maxChangesPerWorker}', Concurrency='{concurrency}').");
+            this._logger.LogInformation($"Target worker count for function '{this._userFunctionId}' is '{targetWorkerCount}' UnprocessedChangeCount ='{unprocessedChangeCount}', Concurrency='{concurrency}').");
 
             return new TargetScalerResult
             {
