@@ -8,8 +8,26 @@
 module.exports = async function (context, req) {
     const product = {
         "ProductId": req.query.productId,
+        "BigInt": 999,
+        "Bit": true,
+        "DecimalType": 1.2345,
+        "Money": 1.2345,
+        "Numeric": 1.2345,
+        "SmallInt": 1,
+        "SmallMoney": 1.2345,
+        "TinyInt": 1,
+        "FloatType": 0.1,
+        "Real": 0.1,
+        "Date": new Date().toISOString(),
         "Datetime": new Date().toISOString(),
-        "Datetime2": new Date().toISOString()
+        "Datetime2": new Date().toISOString(),
+        "DatetimeOffset": new Date().toISOString(),
+        "SmallDatetime": new Date().toISOString(),
+        "Time": new Date().toISOString(),
+        "CharType": "test",
+        "Varchar": "test",
+        "Nchar": "\u2649",
+        "Nvarchar": "\u2649"
     };
 
     context.bindings.product = JSON.stringify(product);
