@@ -107,15 +107,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             this.InitializeTelemetryProps();
-            TelemetryInstance.TrackEvent(
-                TelemetryEventName.StartListenerStart,
-                new Dictionary<TelemetryPropertyName, string>(this._telemetryProps) {
-                        { TelemetryPropertyName.HasConfiguredMaxChangesPerWorker, this._hasConfiguredMaxChangesPerWorker.ToString() }
-                },
-                new Dictionary<TelemetryMeasureName, double>() {
-                    { TelemetryMeasureName.MaxChangesPerWorker, this._maxChangesPerWorker }
-                }
-            );
 
             try
             {
@@ -172,9 +163,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         [TelemetryMeasureName.InsertGlobalStateTableRowDurationMs] = insertGlobalStateTableRowDurationMs,
                         [TelemetryMeasureName.CreateLeasesTableDurationMs] = createLeasesTableDurationMs,
                         [TelemetryMeasureName.TransactionDurationMs] = transactionSw.ElapsedMilliseconds,
+                        [TelemetryMeasureName.MaxChangesPerWorker] = this._maxChangesPerWorker
                     };
 
-                    TelemetryInstance.TrackEvent(TelemetryEventName.StartListenerEnd, this._telemetryProps, measures);
+                    TelemetryInstance.TrackEvent(
+                        TelemetryEventName.StartListener,
+                        new Dictionary<TelemetryPropertyName, string>(this._telemetryProps) {
+                            { TelemetryPropertyName.HasConfiguredMaxChangesPerWorker, this._hasConfiguredMaxChangesPerWorker.ToString() }
+                        },
+                        measures);
                 }
             }
             catch (Exception ex)
@@ -189,7 +186,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            TelemetryInstance.TrackEvent(TelemetryEventName.StopListenerStart, this._telemetryProps);
             var stopwatch = Stopwatch.StartNew();
 
             int previousState = Interlocked.CompareExchange(ref this._listenerState, ListenerStopping, ListenerStarted);
@@ -206,7 +202,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 [TelemetryMeasureName.DurationMs] = stopwatch.ElapsedMilliseconds,
             };
 
-            TelemetryInstance.TrackEvent(TelemetryEventName.StopListenerEnd, this._telemetryProps, measures);
+            TelemetryInstance.TrackEvent(TelemetryEventName.StopListener, this._telemetryProps, measures);
             return Task.CompletedTask;
         }
 
@@ -248,11 +244,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             const int NameIndex = 0, TypeIndex = 1, LengthIndex = 2, PrecisionIndex = 3, ScaleIndex = 4;
             string getPrimaryKeyColumnsQuery = $@"
-                SELECT 
-                    c.name, 
-                    t.name, 
-                    c.max_length, 
-                    c.precision, 
+                SELECT
+                    c.name,
+                    t.name,
+                    c.max_length,
+                    c.precision,
                     c.scale
                 FROM sys.indexes AS i
                 INNER JOIN sys.index_columns AS ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
@@ -308,9 +304,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             const int NameIndex = 0, TypeIndex = 1, IsAssemblyTypeIndex = 2;
             string getUserTableColumnsQuery = $@"
-                SELECT 
-                    c.name, 
-                    t.name, 
+                SELECT
+                    c.name,
+                    t.name,
                     t.is_assembly_type
                 FROM sys.columns AS c
                 INNER JOIN sys.types AS t ON c.user_type_id = t.user_type_id

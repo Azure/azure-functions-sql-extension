@@ -3,7 +3,7 @@
 
 using Microsoft.Azure.Functions.Worker.Extensions.Abstractions;
 
-namespace Microsoft.Azure.Functions.Worker.Extension.Sql
+namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
 {
     public sealed class SqlInputAttribute : InputBindingAttribute
     {
