@@ -5,7 +5,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common
 {
     public class Product
     {
-        public int ProductID { get; set; }
+        public int ProductId { get; set; }
 
         public string Name { get; set; }
 
@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common
             if (obj is Product)
             {
                 var that = obj as Product;
-                return this.ProductID == that.ProductID && this.Name == that.Name && this.Cost == that.Cost;
+                return this.ProductId == that.ProductId && this.Name == that.Name && this.Cost == that.Cost;
             }
             return false;
         }
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common
 
     public class ProductWithOptionalId
     {
-        public int? ProductID { get; set; }
+        public int? ProductId { get; set; }
 
         public string Name { get; set; }
 

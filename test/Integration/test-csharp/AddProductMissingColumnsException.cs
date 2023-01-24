@@ -21,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             product = new ProductMissingColumns
             {
                 Name = "test",
-                ProductID = 1
+                ProductId = 1
                 // Cost is missing
             };
             return new CreatedResult($"/api/addproduct-missingcolumnsexception", product);
