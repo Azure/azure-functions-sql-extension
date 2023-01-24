@@ -10,9 +10,9 @@ module.exports = async function (context, queueMessage) {
     let products = [];
     for (let i = 0; i < totalUpserts; i++) {
         products.push({
-            productId: i,
-            name: "test",
-            cost: 100 * i
+            ProductId: i,
+            Name: "test",
+            Cost: 100 * i
         });
     }
     context.bindings.products = products;

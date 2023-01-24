@@ -7,11 +7,11 @@
 /// ID will be generated upon insert.
 module.exports = async function (context, req) {
     let products = [{
-        name: "Cup",
-        cost: "2"
+        Name: "Cup",
+        Cost: "2"
     }, {
-        name: "Glasses",
-        cost: "12"
+        Name: "Glasses",
+        Cost: "12"
     }]
     context.bindings.products = products;
 

@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-using Microsoft.Azure.Functions.Worker.Extension.Sql;
+using Microsoft.Azure.Functions.Worker.Extensions.Sql;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.AspNetCore.Http;
 using System.Collections.Generic;
@@ -30,7 +30,7 @@ namespace DotnetIsolatedTests
             var invalidProduct = new Product
             {
                 Name = null,
-                ProductID = UpsertBatchSize,
+                ProductId = UpsertBatchSize,
                 Cost = 100
             };
             newProducts.Add(invalidProduct);

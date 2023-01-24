@@ -5,9 +5,10 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using System.Web;
 using System.Collections.Specialized;
-using Microsoft.Azure.Functions.Worker.Extension.Sql;
+using Microsoft.Azure.Functions.Worker.Extensions.Sql;
 using DotnetIsolatedTests.Common;
 using System;
+using System.Data.SqlTypes;
 
 namespace DotnetIsolatedTests
 {
@@ -15,7 +16,7 @@ namespace DotnetIsolatedTests
     {
         /// <summary>
         /// This function is used to test compatability with converting various data types to their respective
-        /// SQL server types. 
+        /// SQL server types.
         /// </summary>
         [Function(nameof(AddProductColumnTypes))]
         [SqlOutput("dbo.ProductsColumnTypes", ConnectionStringSetting = "SqlConnectionString")]
@@ -25,13 +26,28 @@ namespace DotnetIsolatedTests
             NameValueCollection queryStrings = HttpUtility.ParseQueryString(req.Url.Query);
             var product = new ProductColumnTypes()
             {
-                ProductID = int.Parse(queryStrings["productId"], null),
-                Datetime = DateTime.UtcNow.Date,
-                Datetime2 = DateTime.UtcNow
+                ProductId = int.Parse(queryStrings["productId"], null),
+                BigInt = int.MaxValue,
+                Bit = true,
+                DecimalType = 1.2345M,
+                Money = 1.23M,
+                Numeric = 1.2345M,
+                SmallInt = 0,
+                SmallMoney = 1.23M,
+                TinyInt = 1,
+                FloatType = 1.2,
+                Real = 1.2f,
+                Date = DateTime.UtcNow,
+                Datetime = new SqlDateTime(DateTime.UtcNow).Value,
+                Datetime2 = DateTime.UtcNow,
+                DatetimeOffset = DateTime.UtcNow,
+                SmallDatetime = new SqlDateTime(DateTime.UtcNow).Value,
+                Time = DateTime.UtcNow.TimeOfDay,
+                CharType = "test",
+                Varchar = "test",
+                Nchar = "\u2649",
+                Nvarchar = "\u2649",
             };
-
-            // Items were inserted successfully so return success, an exception would be thrown if there
-            // was any issues
             return product;
         }
     }

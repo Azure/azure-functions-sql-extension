@@ -38,7 +38,7 @@ See [Input Binding Overview](./BindingsOverview.md#input-binding) for general in
 
 ### SqlInputAttribute for Input Bindings
 
-The [SqlInputAttribute](https://github.com/Azure/azure-functions-sql-extension/blob/main/Worker.Extension.Sql/src/SqlInputAttribute.cs) takes four arguments:
+The [SqlInputAttribute](https://github.com/Azure/azure-functions-sql-extension/blob/main/Worker.Extensions.Sql/src/SqlInputAttribute.cs) takes four arguments:
 
 - **CommandText**: Passed as a constructor argument to the binding. Represents either a query string or the name of a stored procedure.
 - **CommandType**: Specifies whether CommandText is a query (`System.Data.CommandType.Text`) or a stored procedure (`System.Data.CommandType.StoredProcedure`)
@@ -49,7 +49,7 @@ The following are valid binding types for the result of the query/stored procedu
 
 - **IEnumerable&lt;T&gt;**: Each element is a row of the result represented by `T`, where `T` is a user-defined POCO, or Plain Old C# Object. `T` should follow the structure of a row in the queried table. See the [Query String](#query-string) section for an example of what `T` should look like.
 - **IAsyncEnumerable&lt;T&gt;**: Each element is again a row of the result represented by `T`, but the rows are retrieved "lazily". A row of the result is only retrieved when `MoveNextAsync` is called on the enumerator. This is useful in the case that the query can return a very large amount of rows.
-- **String**: A JSON string representation of the rows of the result (an example is provided [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-outpofproc/InputBindingSamples/GetProductsString.cs)).
+- **String**: A JSON string representation of the rows of the result (an example is provided [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-outpofproc/InputBindingSamples/GetProductsString.cs)).
 
 **Note**: There's also no direct support for types inherited from underlying service SDKs, such as SqlCommand. Instead, bindings rely on strings, arrays, and serializable types, such as plain old class objects (POCOs).
 
@@ -57,16 +57,16 @@ The repo contains examples of each of these binding types [here](https://github.
 
 ### Setup for Input Bindings
 
-Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./QuickStart.md#create-a-sql-server).
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server).
 
-- Open your app that you created in [Create a Function App](./QuickStart.md#create-a-function-app) in VS Code
+- Open your app that you created in [Create a Function App](./GeneralSetup.md#create-a-function-app) in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a function name) -> Company.namespace -> anonymous
 - In the file that opens, replace the `public static async Task<IActionResult> Run` block with the below code.
 
     ```csharp
     [Function("GetEmployees")]
-    public static async IEnumerable<Employee> Run(
+    public static IEnumerable<Employee> Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "employees")] HttpRequest req,
         ILogger log,
         [SqlInput("select * from Employees",
@@ -79,11 +79,11 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
     ```
 
     *In the above, "select * from Employees" is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [SqlInputAttribute for Input Bindings](#sqlinputattribute-for-input-bindings) section*
-- Add 'using Microsoft.Azure.Functions.Worker.Extension.Sql;' for using *SqlInput*, the out of proc sql input binding.
+- Add 'using Microsoft.Azure.Functions.Worker.Extensions.Sql;' for using *SqlInput*, the out of proc sql input binding.
 - Add 'using System.Collections.Generic;' to the namespaces list at the top of the page.
 - Currently, there is an error for the IEnumerable. We'll fix this by creating an Employee class.
 - Create a new file and call it 'Employee.cs'
-- Paste the below in the file. These are the column names of our SQL table.
+- Paste the below in the file. These are the column names of our SQL table. Note that the casing of the Object field names and the table column names must match.
 
     ```csharp
     namespace Company.Function {
@@ -114,7 +114,7 @@ The input binding executes the "select * from Products where Cost = @Cost" query
   [Function("GetProducts")]
   public static IEnumerable<Product> Run(
       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts/{cost}")]
-      HttpRequest req,
+      HttpRequestData req,
       [SqlInput("select * from Products where Cost = @Cost",
           CommandType = System.Data.CommandType.Text,
           Parameters = "@Cost={cost}",
@@ -127,7 +127,7 @@ The input binding executes the "select * from Products where Cost = @Cost" query
 
 `Product` is a user-defined POCO that follows the structure of the Products table. It represents a row of the Products table, with field names and types copying those of the Products table schema. For example, if the Products table has three columns of the form
 
-- **ProductID**: int
+- **ProductId**: int
 - **Name**: varchar
 - **Cost**: int
 
@@ -136,7 +136,7 @@ Then the `Product` class would look like
 ```csharp
 public class Product
 {
-    public int ProductID { get; set; }
+    public int ProductId { get; set; }
 
     public string Name { get; set; }
 
@@ -153,7 +153,7 @@ In this case, the parameter value of the `@Name` parameter is an empty string.
   [Function("GetProductsNameEmpty")]
   public static IEnumerable<Product> Run(
       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-nameempty/{cost}")]
-      HttpRequest req,
+      HttpRequestData req,
       [SqlInput("select * from Products where Cost = @Cost and Name = @Name",
           CommandType = System.Data.CommandType.Text,
           Parameters = "@Cost={cost},@Name=",
@@ -172,7 +172,7 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
   [Function("GetProductsNameNull")]
   public static IEnumerable<Product> Run(
       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-namenull/{name}")]
-      HttpRequest req,
+      HttpRequestData req,
       [SqlInput("if @Name is null select * from Products where Name is null else select * from Products where @Name = name",
           CommandType = System.Data.CommandType.Text,
           Parameters = "@Name={name}",
@@ -189,9 +189,9 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
 
 ```csharp
   [Function("GetProductsStoredProcedure")]
-  public static IActionResult Run(
+  public static IEnumerable<Product> Run(
       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-storedprocedure/{cost}")]
-      HttpRequest req,
+      HttpRequestData req,
       [SqlInput("SelectProductsCost",
           CommandType = System.Data.CommandType.StoredProcedure,
           Parameters = "@Cost={cost}",
@@ -210,7 +210,7 @@ Using the `IAsyncEnumerable` binding generally requires that the `Run` function 
 [Function("GetProductsAsyncEnumerable")]
 public static async Task<List<Product>> Run(
     [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-async/{cost}")]
-     HttpRequest req,
+     HttpRequestData req,
     [SqlInput("select * from Products where cost = @Cost",
          CommandType = System.Data.CommandType.Text,
          Parameters = "@Cost={cost}",
@@ -234,7 +234,7 @@ See [Output Binding Overview](./BindingsOverview.md#output-binding) for general 
 
 ### SqlOutputAttribute for Output Bindings
 
-The [SqlOutputAttribute](https://github.com/Azure/azure-functions-sql-extension/blob/main/Worker.Extension.Sql/src/SqlOutputAttribute.cs) takes two arguments:
+The [SqlOutputAttribute](https://github.com/Azure/azure-functions-sql-extension/blob/main/Worker.Extensions.Sql/src/SqlOutputAttribute.cs) takes two arguments:
 
 - **CommandText**: Passed as a constructor argument to the binding. Represents the name of the table into which rows will be upserted.
 - **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
@@ -250,7 +250,7 @@ The repo contains examples of each of these binding types [here](https://github.
 
 ### Setup for Output Bindings
 
-Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./QuickStart.md#create-a-sql-server), and that you have the 'Employee.cs' class from the [Setup for Input Bindings](#setup-for-input-bindings) section.
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server), and that you have the 'Employee.cs' class from the [Setup for Input Bindings](#setup-for-input-bindings) section.
 
 - Open your app in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
@@ -289,7 +289,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
     ```
 
     *In the above, "dbo.Employees" is the name of the table our output binding is upserting into. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [SqloutputAttribute for Output Bindings](#sqloutputattribute-for-output-bindings) section*
-
+- Add 'using Microsoft.Azure.Functions.Worker.Extensions.Sql;' for using *SqlOutput*, the out of proc sql output binding.
 - Hit 'F5' to run your code. Click the link to upsert the output array values in your SQL table. Your upserted values should launch in the browser.
 - Congratulations! You have successfully created your first out of process SQL output binding!
 

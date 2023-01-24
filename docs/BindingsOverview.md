@@ -4,10 +4,12 @@
 - [Azure SQL bindings for Azure Functions - Overview](#azure-sql-bindings-for-azure-functions---overview)
   - [Table of Contents](#table-of-contents)
   - [Input Binding](#input-binding)
+    - [Retry support for Input Bindings](#retry-support-for-input-bindings)
   - [Output Binding](#output-binding)
     - [Primary Key Special Cases](#primary-key-special-cases)
       - [Identity Columns](#identity-columns)
       - [Columns with Default Values](#columns-with-default-values)
+    - [Retry support for Output Bindings](#retry-support-for-output-bindings)
   - [Trigger Binding](#trigger-binding)
     - [Change Tracking](#change-tracking)
     - [Internal State Tables](#internal-state-tables)
@@ -18,10 +20,18 @@
       - [Sql\_Trigger\_PollingIntervalMs](#sql_trigger_pollingintervalms)
       - [Sql\_Trigger\_MaxChangesPerWorker](#sql_trigger_maxchangesperworker)
     - [Scaling for Trigger Bindings](#scaling-for-trigger-bindings)
+    - [Retry support for Trigger Bindings](#retry-support-for-trigger-bindings)
+      - [Startup retries](#startup-retries)
+      - [Broken connection retries](#broken-connection-retries)
+      - [Function exception retries](#function-exception-retries)
 
 ## Input Binding
 
-Azure SQL Input bindings take a SQL query to run and returns the output of the query in the function.
+Azure SQL Input bindings take a SQL query or stored procedure to run and returns the output to the function.
+
+### Retry support for Input Bindings
+
+There currently is no retry support for errors that occur for input bindings. If an exception occurs when an input binding is executed then the function code will not be executed. This may result in an error code being returned, for example an HTTP trigger will return a response with a status of 500 to indicate an error occurred.
 
 ## Output Binding
 
@@ -48,6 +58,14 @@ In the case where one of the primary key columns is an identity column, there ar
 In the case where one of the primary key columns has a default value, there are also two options based on how the function defines the output object:
 1. If the column with a default value is not included in the output object, then a straight insert is always performed with the other values. See [AddProductWithDefaultPK](../samples/samples-csharp/OutputBindingSamples/AddProductWithDefaultPK.cs) for an example.
 2. If the column with a default value is included then a merge is performed similar to what happens when no default column is present. If there is a nullable column with a default value, then the provided column value in the output object will be upserted even if it is null.
+
+### Retry support for Output Bindings
+
+There currently is no built-in support for errors that occur while executing output bindings. If an exception occurs when an output binding is executed then the function execution will stop. This may result in an error code being returned, for example an HTTP trigger will return a response with a status of 500 to indicate an error occurred.
+
+If using a .NET Function then `IAsyncCollector` can be used, and the function code can handle exceptions thrown by the call to `FlushAsync()`.
+
+See https://github.com/Azure/Azure-Functions/issues/891 for further information.
 
 ## Trigger Binding
 
@@ -127,3 +145,21 @@ This controls the upper limit on the number of pending changes in the user table
 If your application containing functions with SQL trigger bindings is running as an Azure function app, it will be scaled automatically based on the amount of changes that are pending to be processed in the user table. As of today, we only support scaling of function apps running in Elastic Premium plan. To enable scaling, you will need to go the function app resource's page on Azure Portal, then to Configuration > 'Function runtime settings' and turn on 'Runtime Scale Monitoring'. For more information, check documentation on [Runtime Scaling](https://learn.microsoft.com/azure/azure-functions/event-driven-scaling#runtime-scaling). You can configure scaling parameters by going to 'Scale out (App Service plan)' setting on the function app's page. To understand various scale settings, please check the respective sections in [Azure Functions Premium plan](https://learn.microsoft.com/azure/azure-functions/functions-premium-plan?tabs=portal#eliminate-cold-starts)'s documentation.
 
 There are a couple of checks made to decide on whether the host application needs to be scaled in or out. The rationale behind these checks is to ensure that the count of pending changes per application-worker stays below a certain maximum limit, which is defaulted to 1000, while also ensuring that the number of workers running stays minimal. The scaling decision is made based on the latest count of the pending changes and whether the last 5 times we checked the count, we found it to be continuously increasing or decreasing.
+
+### Retry support for Trigger Bindings
+
+#### Startup retries
+
+If an exception occurs during startup then the host runtime will automatically attempt to restart the trigger listener with an exponential backoff strategy. These retries will continue until either the listener is successfully started or the startup is cancelled.
+
+#### Broken connection retries
+
+If the function successfully starts but then an error causes the connection to break (such as the server going offline) then the function will continue to try and reopen the connection until the function is either stopped or the connection succeeds. If the connection is successfully re-established then it will pick up processing changes where it left off.
+
+Note that these retries are outside the built in idle connection retry logic that SqlClient has which can be configured with the [ConnectRetryCount](https://learn.microsoft.com/dotnet/api/system.data.sqlclient.sqlconnectionstringbuilder.connectretrycount) and [ConnectRetryInterval](https://learn.microsoft.com/dotnet/api/system.data.sqlclient.sqlconnectionstringbuilder.connectretryinterval) connection string options. The built-in idle connection retries will be attempted first and if those fail to reconnect then the trigger binding will attempt to re-establish the connection itself.
+
+#### Function exception retries
+
+If an exception occurs in the user function when processing changes then those rows will be retried again in 60 seconds. Other changes will be processed as normal during this time, but the rows that caused the exception will be ignored until the timeout period has elapsed.
+
+If the function execution fails 5 times in a row for a given row then that row is completely ignored for all future changes.

@@ -35,7 +35,7 @@ These instructions will guide you through creating your Function App and adding 
     func init --worker-runtime node --language javascript
     ```
 
-3. Enable SQL bindings on the function app. More information can be found [in Microsoft Docs](https://docs.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
+3. Enable SQL bindings on the function app. More information can be found in the [Azure SQL bindings for Azure Functions docs](https://aka.ms/sqlbindings).
 
     Update the `host.json` file to the preview extension bundle.
     ```json
@@ -148,7 +148,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Open your app in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger ->  (Provide a function name) -> anonymous
-- In the file that opens (`index.js`), replace the `module.exports = async function (context, req)` block with the below code.
+- In the file that opens (`index.js`), replace the `module.exports = async function (context, req)` block with the below code. Note that the casing of the Object field names and the table column names must match.
 
     ```javascript
     module.exports = async function (context, req) {

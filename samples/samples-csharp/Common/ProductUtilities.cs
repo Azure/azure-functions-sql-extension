@@ -18,7 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common
             {
                 var product = new Product
                 {
-                    ProductID = i,
+                    ProductId = i,
                     Cost = 100 * i,
                     Name = "test"
                 };
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common
 
         /// <summary>
         /// Returns a list of <paramref name="num"/> Products with a random cost between 1 and <paramref name="cost"/>.
-        /// Note that ProductID is randomized too so list may not be unique.
+        /// Note that ProductId is randomized too so list may not be unique.
         /// </summary>
         public static List<Product> GetNewProductsRandomized(int num, int cost)
         {
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common
             {
                 var product = new Product
                 {
-                    ProductID = r.Next(1, num),
+                    ProductId = r.Next(1, num),
                     Cost = (int)Math.Round(r.NextDouble() * cost),
                     Name = "test"
                 };

@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License. See License.txt in the project root for license information.
+
 using namespace System.Net
 
 # Trigger binding data passed in via param block
@@ -6,12 +9,11 @@ param($Request, $TriggerMetadata)
 # Write to the Azure Functions log stream.
 Write-Host "PowerShell function with SQL Output Binding processed a request."
 
-# Update req_body with the body of the request
 # Note that this expects the body to be a JSON object or array of objects 
 # which have a property matching each of the columns in the table to upsert to.
-$req_body = @{ 
-    productId=1;
-    name="MissingCost";
+$req_body = @{
+    ProductId=1;
+    Name="MissingCost";
     # Cost is missing
 };
 
