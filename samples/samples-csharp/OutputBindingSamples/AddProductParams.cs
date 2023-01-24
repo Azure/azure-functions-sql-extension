@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples
             product = new Product
             {
                 Name = req.Query["name"],
-                ProductID = int.Parse(req.Query["productId"]),
+                ProductId = int.Parse(req.Query["productId"]),
                 Cost = int.Parse(req.Query["cost"])
             };
             return new CreatedResult($"/api/addproduct", product);

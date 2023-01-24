@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.Functions.Worker.Extension.Sql;
+using Microsoft.Azure.Functions.Worker.Extensions.Sql;
 using Microsoft.Azure.Functions.Worker;
 using DotnetIsolatedTests.Common;
 

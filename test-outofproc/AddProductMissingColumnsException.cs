@@ -2,7 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using DotnetIsolatedTests.Common;
-using Microsoft.Azure.Functions.Worker.Extension.Sql;
+using Microsoft.Azure.Functions.Worker.Extensions.Sql;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.AspNetCore.Http;
 
@@ -21,7 +21,7 @@ namespace DotnetIsolatedTests
             var product = new ProductMissingColumns
             {
                 Name = "test",
-                ProductID = 1
+                ProductId = 1
                 // Cost is missing
             };
             return product;

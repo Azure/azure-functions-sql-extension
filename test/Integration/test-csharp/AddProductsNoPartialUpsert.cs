@@ -30,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             var invalidProduct = new Product
             {
                 Name = null,
-                ProductID = UpsertBatchSize,
+                ProductId = UpsertBatchSize,
                 Cost = 100
             };
             products.Add(invalidProduct);
