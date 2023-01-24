@@ -101,8 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 {
                     DataSource = testServer,
                     InitialCatalog = "master",
-                    Pooling = false,
-                    Encrypt = SqlConnectionEncryptOption.Optional
+                    Pooling = false
                 };
 
                 // Either use integrated auth or SQL login depending if SA_PASSWORD is set
