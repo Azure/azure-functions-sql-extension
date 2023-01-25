@@ -171,10 +171,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 string projectName = useTestFolder ? "test-java-1666041146813" : "samples-java-1665766173929";
                 workingDirectory = Path.Combine(workingDirectory, "target", "azure-functions", projectName);
             }
-            if (language == SupportedLanguages.OutOfProc && useTestFolder)
-            {
-                workingDirectory = Path.Combine(workingDirectory, "test");
-            }
+            // Not currently supported in LA preview branch
+            // if (language == SupportedLanguages.OutOfProc && useTestFolder)
+            // {
+            //     workingDirectory = Path.Combine(workingDirectory, "test");
+            // }
 
             if (!Directory.Exists(workingDirectory))
             {

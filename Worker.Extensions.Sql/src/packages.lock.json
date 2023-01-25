@@ -261,7 +261,7 @@
       },
       "System.Runtime.Caching": {
         "type": "CentralTransitive",
-        "requested": "[5.0.0, )",
+        "requested": "[4.7.0, )",
         "resolved": "4.7.0",
         "contentHash": "NdvNRjTPxYvIEhXQszT9L9vJhdQoX6AQ0AlhjTU+5NqFQVuacJTfhPVAvtGWNA2OJCqRiR/okBcZgMwI6MqcZg==",
         "dependencies": {

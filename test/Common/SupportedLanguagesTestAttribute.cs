@@ -74,7 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         JavaScript,
         PowerShell,
         Java,
-        OutOfProc,
+        // OutOfProc, Not currently supported in LA preview branch
         Python
     };
 }
