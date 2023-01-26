@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 {
@@ -49,6 +50,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 
         public string Nvarchar { get; set; }
 
+        public byte[] Binary { get; set; }
+
+        public byte[] Varbinary { get; set; }
+
         public override bool Equals(object obj)
         {
             if (obj is ProductColumnTypes)
@@ -60,14 +65,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
                     this.FloatType == that.FloatType && this.Real == that.Real && this.Date == that.Date &&
                     this.Datetime == that.Datetime && this.Datetime2 == that.Datetime2 && this.DatetimeOffset == that.DatetimeOffset &&
                     this.SmallDatetime == that.SmallDatetime && this.Time == that.Time && this.CharType == that.CharType &&
-                    this.Varchar == that.Varchar && this.Nchar == that.Nchar && this.Nvarchar == that.Nvarchar;
+                    this.Varchar == that.Varchar && this.Nchar == that.Nchar && this.Nvarchar == that.Nvarchar &&
+                    this.Binary.SequenceEqual(that.Binary) && this.Varbinary.SequenceEqual(that.Varbinary);
             }
             return false;
         }
 
         public override string ToString()
         {
-            return $"[{this.ProductId}, {this.BigInt}, {this.Bit}, {this.DecimalType}, {this.Money}, {this.Numeric}, {this.SmallInt}, {this.SmallMoney}, {this.TinyInt}, {this.FloatType}, {this.Real}, {this.Date}, {this.Datetime}, {this.Datetime2}, {this.DatetimeOffset}, {this.SmallDatetime}, {this.Time}, {this.CharType}, {this.Varchar}, {this.Nchar}, {this.Nvarchar}]";
+            return $"[{this.ProductId}, {this.BigInt}, {this.Bit}, {this.DecimalType}, {this.Money}, {this.Numeric}, {this.SmallInt}, {this.SmallMoney}, {this.TinyInt}, {this.FloatType}, {this.Real}, {this.Date}, {this.Datetime}, {this.Datetime2}, {this.DatetimeOffset}, {this.SmallDatetime}, {this.Time}, {this.CharType}, {this.Varchar}, {this.Nchar}, {this.Nvarchar}, {this.Binary}, {this.Varbinary}]";
         }
     }
 }

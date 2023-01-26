@@ -30,12 +30,14 @@ public class ProductColumnTypes {
     private String Varchar;
     private String Nchar;
     private String Nvarchar;
+    private String Binary;
+    private String Varbinary;
 
 
     public ProductColumnTypes(int productId, long bigInt, boolean bit, BigDecimal decimalType, BigDecimal money,
     BigDecimal numeric, short smallInt, BigDecimal smallMoney, short tinyInt, double floatType, double real, String date,
     String datetime, String datetime2, String datetimeOffset, String smallDatetime, String time, String charType,
-    String varchar, String nchar, String nvarchar) {
+    String varchar, String nchar, String nvarchar, String binary, String varbinary) {
         ProductId = productId;
         BigInt = bigInt;
         Bit = bit;
@@ -57,6 +59,8 @@ public class ProductColumnTypes {
         Varchar = varchar;
         Nchar = nchar;
         Nvarchar = nvarchar;
+        Binary = binary;
+        Varbinary = varbinary;
     }
 
     public int getProductId() {
@@ -221,5 +225,21 @@ public class ProductColumnTypes {
 
     public void setNvarchar(String nvarchar) {
         Nvarchar = nvarchar;
+    }
+
+    public String getBinary() {
+        return Binary;
+    }
+
+    public void setBinary(String binary) {
+        Binary = binary;
+    }
+
+    public String getVarbinary() {
+        return Varbinary;
+    }
+
+    public void setVarbinary(String varbinary) {
+        Varbinary = varbinary;
     }
 }

@@ -6,7 +6,7 @@ import collections
 class ProductColumnTypes(collections.UserDict):
     def __init__(self, productId, bigInt, bit, decimalType, money, numeric, smallInt,
         smallMoney, tinyInt, floatType, real, date, datetime, datetime2, datetimeOffset,
-        smallDatetime, time, charType, varchar, nchar, nvarchar):
+        smallDatetime, time, charType, varchar, nchar, nvarchar, binary, varBinary):
         super().__init__()
         self['ProductId'] = productId
         self['BigInt'] = bigInt
@@ -29,4 +29,6 @@ class ProductColumnTypes(collections.UserDict):
         self['Varchar'] = varchar
         self['Nchar'] = nchar
         self['Nvarchar'] = nvarchar
+        self['Binary'] = binary
+        self['Varbinary'] = varBinary
 
