@@ -29,7 +29,9 @@ def main(req: func.HttpRequest, product: func.Out[func.SqlRow]) -> func.HttpResp
         "test",
         "test",
         "\u2649",
-        "\u2649")
+        "\u2649",
+        "dGVzdA==",
+        "dGVzdA==")
     )
     product.set(productColumnTypes)
 
