@@ -19,6 +19,7 @@
       - [Array](#array)
       - [Single Row](#single-row)
   - [Trigger Binding](#trigger-binding)
+  - [Known Issues](#known-issues)
 
 ## Setup Function App
 
@@ -421,3 +422,9 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 ## Trigger Binding
 
 > Trigger binding support is only available for in-proc C# functions at present.
+
+## Known Issues
+The [Azure Functions Java worker](https://github.com/Azure/azure-functions-java-worker) uses the [GSON library](https://github.com/google/gson) to serialize and deserialize data. Since we are unable to customize the GSON serializer in the Java worker, there are limitations with the default GSON serializer settings.
+- GSON is unable to parse `DATE` and `TIME` values from the SQL table as `java.sql.Date` and `java.sql.Time` types. The current workaround is to use String. Tracking issue: https://github.com/Azure/azure-functions-sql-extension/issues/422.
+- On Linux, `java.sql.Timestamp` type gets serialized with an extra comma, causing the upsertion to fail. The current workaround is to use String. Tracking issue: https://github.com/Azure/azure-functions-sql-extension/issues/521.
+
