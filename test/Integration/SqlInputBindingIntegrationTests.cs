@@ -143,12 +143,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.StartFunctionHost(nameof(GetProductsColumnTypesSerializationAsyncEnumerable), lang, true);
 
             string datetime = "2022-10-20 12:39:13.123";
-            ProductColumnTypes[] expectedResponse = JsonConvert.DeserializeObject<ProductColumnTypes[]>("[{\"ProductId\":999,\"BigInt\":999,\"Bit\":false,\"DecimalType\":1.2345,\"Money\":1.2345,\"Numeric\":1.2345,\"SmallInt\":1,\"SmallMoney\":1.2345,\"TinyInt\":1,\"FloatType\":0.1,\"Real\":0.1,\"Date\":\"2022-10-20T00:00:00.000Z\",\"Datetime\":\"2022-10-20T12:39:13.123Z\",\"Datetime2\":\"2022-10-20T12:39:13.123Z\",\"DatetimeOffset\":\"2022-10-20T12:39:13.123Z\",\"SmallDatetime\":\"2022-10-20T12:39:00.000Z\",\"Time\":\"12:39:13.1230000\",\"CharType\":\"test\",\"Varchar\":\"test\",\"Nchar\":\"\uFFFD\u0020\u0020\u0020\",\"Nvarchar\":\"\uFFFD\"}]");
+            ProductColumnTypes[] expectedResponse = JsonConvert.DeserializeObject<ProductColumnTypes[]>("[{\"ProductId\":999,\"BigInt\":999,\"Bit\":true,\"DecimalType\":1.2345,\"Money\":1.2345,\"Numeric\":1.2345,\"SmallInt\":1,\"SmallMoney\":1.2345,\"TinyInt\":1,\"FloatType\":0.1,\"Real\":0.1,\"Date\":\"2022-10-20T00:00:00.000Z\",\"Datetime\":\"2022-10-20T12:39:13.123Z\",\"Datetime2\":\"2022-10-20T12:39:13.123Z\",\"DatetimeOffset\":\"2022-10-20T12:39:13.123Z\",\"SmallDatetime\":\"2022-10-20T12:39:00.000Z\",\"Time\":\"12:39:13.1230000\",\"CharType\":\"test\",\"Varchar\":\"test\",\"Nchar\":\"\uFFFD\u0020\u0020\u0020\",\"Nvarchar\":\"\uFFFD\"}]");
 
             this.ExecuteNonQuery("INSERT INTO [dbo].[ProductsColumnTypes] VALUES (" +
                 "999, " + // ProductId,
                 "999, " + // BigInt
-                "0, " + // Bit
+                "1, " + // Bit
                 "1.2345, " + // DecimalType
                 "1.2345, " + // Money
                 "1.2345, " + // Numeric
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.ExecuteNonQuery("INSERT INTO [dbo].[ProductsColumnTypes] VALUES (" +
                 "999, " + // ProductId,
                 "999, " + // BigInt
-                "0, " + // Bit
+                "1, " + // Bit
                 "1.2345, " + // DecimalType
                 "1.2345, " + // Money
                 "1.2345, " + // Numeric
@@ -210,7 +210,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             HttpResponseMessage response = await this.SendInputRequest("getproducts-columntypesserialization");
             // We expect the date fields to be returned in UTC format
-            ProductColumnTypes[] expectedResponse = JsonConvert.DeserializeObject<ProductColumnTypes[]>("[{\"ProductId\":999,\"BigInt\":999,\"Bit\":false,\"DecimalType\":1.2345,\"Money\":1.2345,\"Numeric\":1.2345,\"SmallInt\":1,\"SmallMoney\":1.2345,\"TinyInt\":1,\"FloatType\":0.1,\"Real\":0.1,\"Date\":\"2022-10-20T00:00:00.000Z\",\"Datetime\":\"2022-10-20T12:39:13.123Z\",\"Datetime2\":\"2022-10-20T12:39:13.123Z\",\"DatetimeOffset\":\"2022-10-20T12:39:13.123Z\",\"SmallDatetime\":\"2022-10-20T12:39:00.000Z\",\"Time\":\"12:39:13.1230000\",\"CharType\":\"test\",\"Varchar\":\"test\",\"Nchar\":\"\uFFFD\u0020\u0020\u0020\",\"Nvarchar\":\"\uFFFD\"}]");
+            ProductColumnTypes[] expectedResponse = JsonConvert.DeserializeObject<ProductColumnTypes[]>("[{\"ProductId\":999,\"BigInt\":999,\"Bit\":true,\"DecimalType\":1.2345,\"Money\":1.2345,\"Numeric\":1.2345,\"SmallInt\":1,\"SmallMoney\":1.2345,\"TinyInt\":1,\"FloatType\":0.1,\"Real\":0.1,\"Date\":\"2022-10-20T00:00:00.000Z\",\"Datetime\":\"2022-10-20T12:39:13.123Z\",\"Datetime2\":\"2022-10-20T12:39:13.123Z\",\"DatetimeOffset\":\"2022-10-20T12:39:13.123Z\",\"SmallDatetime\":\"2022-10-20T12:39:00.000Z\",\"Time\":\"12:39:13.1230000\",\"CharType\":\"test\",\"Varchar\":\"test\",\"Nchar\":\"\uFFFD\u0020\u0020\u0020\",\"Nvarchar\":\"\uFFFD\"}]");
             string actualResponse = await response.Content.ReadAsStringAsync();
             ProductColumnTypes[] actualProductResponse = JsonConvert.DeserializeObject<ProductColumnTypes[]>(actualResponse);
 
