@@ -75,7 +75,7 @@ public class ProductColumnTypes {
         BigInt = bigInt;
     }
 
-    public boolean setBit() {
+    public boolean getBit() {
         return Bit;
     }
 
