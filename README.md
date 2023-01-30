@@ -42,6 +42,7 @@ Databases on SQL Server, Azure SQL Database, or Azure SQL Managed Instance which
 ## Known Issues
 - The table used by a SQL binding or SQL trigger cannot contain two columns that only differ by casing (Ex. 'Name' and 'name'). 
 - Non-CSharp functions using SQL bindings against tables with columns of data types `BINARY` or `VARBINARY` need to map those columns to a string type. Input bindings will return the binary value as a base64 encoded string. Output bindings require the value upserted to binary columns to be a base64 encoded string.
+- SQL Bindings against tables with columns of data types `GEOMETRY` and `GEOGRAPHY` are not supported.
 
 ### Output Bindings
 - Output bindings against tables with columns of data types `NTEXT`, `TEXT`, or `IMAGE` are not supported and data upserts will fail. These types [will be removed](https://docs.microsoft.com/sql/t-sql/data-types/ntext-text-and-image-transact-sql) in a future version of SQL Server and are not compatible with the `OPENJSON` function used by this Azure Functions binding.
