@@ -297,7 +297,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <exception cref="InvalidOperationException">Throw if an error occurs while querying the engine edition</exception>
         public static async Task<string> GetSqlServerEdition(SqlConnection connection, ILogger logger, CancellationToken cancellationToken)
         {
-            string selectServerEdition = $"SELECT ServerProperty('EngineEdition')";
+            string selectServerEdition = $"SELECT SERVERPROPERTY('EngineEdition')";
 
             logger.LogDebugWithThreadId($"BEGIN GetSqlServerEdition Query={selectServerEdition}");
             using (var selectServerEditionCommand = new SqlCommand(selectServerEdition, connection))
