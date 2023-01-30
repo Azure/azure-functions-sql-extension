@@ -203,7 +203,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 try
                 {
                     var asyncEnumerable = new SqlAsyncEnumerable<T>(SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, this._configuration), attribute);
-                    Dictionary<TelemetryPropertyName, string> props = asyncEnumerable.Connection.AsConnectionProps();
+                    Dictionary<TelemetryPropertyName, string> props = asyncEnumerable.Connection.AsConnectionProps(EngineEdition.NotQueried.ToString());
                     TelemetryInstance.TrackConvert(ConvertType.IAsyncEnumerable, props);
                     return asyncEnumerable;
                 }
