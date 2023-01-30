@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System;
 using Microsoft.Azure.Functions.Worker.Extensions.Abstractions;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
@@ -8,13 +9,12 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
     public class SqlOutputAttribute : OutputBindingAttribute
     {
         /// <summary>
-        /// Creates an instance of the <see cref="SqlAttribute"/>, specifying the Sql attributes
-        /// the function supports.
+        /// Creates an instance of the <see cref="SqlOutputAttribute"/>, which takes a list of rows and upserts them into the target table.
         /// </summary>
-        /// <param name="commandText">The text of the command.</param>
+        /// <param name="commandText">The table name to upsert the values to.</param>
         public SqlOutputAttribute(string commandText)
         {
-            this.CommandText = commandText;
+            this.CommandText = commandText ?? throw new ArgumentNullException(nameof(commandText));
         }
 
         /// <summary>

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System;
 using Microsoft.Azure.Functions.Worker.Extensions.Abstractions;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
@@ -8,13 +9,12 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
     public sealed class SqlInputAttribute : InputBindingAttribute
     {
         /// <summary>
-        /// Creates an instance of the <see cref="SqlAttribute"/>, specifying the Sql attributes
-        /// the function supports.
+        /// Creates an instance of the <see cref="SqlInputAttribute"/>, which takes a SQL query or stored procedure to run and returns the output to the function.
         /// </summary>
-        /// <param name="commandText">The text of the command.</param>
+        /// <param name="commandText">Either a SQL query or stored procedure that will be run in the target database.</param>
         public SqlInputAttribute(string commandText)
         {
-            this.CommandText = commandText;
+            this.CommandText = commandText ?? throw new ArgumentNullException(nameof(commandText));
         }
 
         /// <summary>
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
         public string ConnectionStringSetting { get; set; }
 
         /// <summary>
-        /// Either a SQL query or stored procedure that will be run in the database referred to in the ConnectionString.
+        /// Either a SQL query or stored procedure that will be run in the target database.
         /// </summary>
         public string CommandText { get; set; }
 
