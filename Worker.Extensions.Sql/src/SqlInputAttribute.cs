@@ -9,8 +9,7 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
     public sealed class SqlInputAttribute : InputBindingAttribute
     {
         /// <summary>
-        /// Creates an instance of the <see cref="SqlAttribute"/>, specifying the Sql attributes
-        /// the function supports.
+        /// Creates an instance of the <see cref="SqlInputAttribute"/>, which takes a SQL query or stored procedure to run and returns the output to the function.
         /// </summary>
         /// <param name="commandText">Either a SQL query or stored procedure that will be run in the target database.</param>
         public SqlInputAttribute(string commandText)
