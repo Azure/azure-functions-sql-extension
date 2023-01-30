@@ -361,6 +361,7 @@ This extension collect usage data in order to help us improve your experience. T
         Type,
         UserFunctionId,
         WorkerCount,
+        EngineEdition,
     }
 
     /// <summary>

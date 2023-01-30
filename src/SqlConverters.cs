@@ -182,7 +182,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     this._logger.LogDebugWithThreadId("BEGIN OpenBuildItemFromAttributeAsyncConnection");
                     await connection.OpenAsyncWithSqlErrorHandling(CancellationToken.None);
                     this._logger.LogDebugWithThreadId("END OpenBuildItemFromAttributeAsyncConnection");
-                    Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps();
+                    string engineEdition = await SqlBindingUtilities.GetSqlServerEdition(connection, this._logger, CancellationToken.None);
+                    Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps(engineEdition);
                     TelemetryInstance.TrackConvert(type, props);
                     var dataTable = new DataTable();
                     adapter.Fill(dataTable);

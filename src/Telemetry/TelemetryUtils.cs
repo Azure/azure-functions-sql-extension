@@ -13,9 +13,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
         /// </summary>
         /// <param name="props">The property bag to add our connection properties to</param>
         /// <param name="conn">The connection to add properties of</param>
-        public static void AddConnectionProps(this IDictionary<TelemetryPropertyName, string> props, SqlConnection conn)
+        public static void AddConnectionProps(this IDictionary<TelemetryPropertyName, string> props, SqlConnection conn, string engineEdition)
         {
             props.Add(TelemetryPropertyName.ServerVersion, conn.ServerVersion);
+            props.Add(TelemetryPropertyName.EngineEdition, string.IsNullOrEmpty(engineEdition) ? "Unknown" : engineEdition);
         }
 
         /// <summary>
@@ -23,10 +24,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
         /// </summary>
         /// <param name="conn">The connection to get properties of</param>
         /// <returns>The property dictionary</returns>
-        public static Dictionary<TelemetryPropertyName, string> AsConnectionProps(this SqlConnection conn)
+        public static Dictionary<TelemetryPropertyName, string> AsConnectionProps(this SqlConnection conn, string engineEdition = null)
         {
             var props = new Dictionary<TelemetryPropertyName, string>();
-            props.AddConnectionProps(conn);
+            props.AddConnectionProps(conn, engineEdition);
             return props;
         }
     }

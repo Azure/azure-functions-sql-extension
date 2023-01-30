@@ -290,5 +290,51 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             return true;
         }
+
+        /// <summary>
+        /// Query the ServerProperty('EngineEdition') for logging the Server Type for Telemetry
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Throw if an error occurs while querying the engine edition</exception>
+        public static async Task<string> GetSqlServerEdition(SqlConnection connection, ILogger logger, CancellationToken cancellationToken)
+        {
+            string selectServerEdition = $"SELECT ServerProperty('EngineEdition')";
+
+            logger.LogDebugWithThreadId($"BEGIN GetSqlServerEdition Query={selectServerEdition}");
+            using (var selectServerEditionCommand = new SqlCommand(selectServerEdition, connection))
+            using (SqlDataReader reader = await selectServerEditionCommand.ExecuteReaderAsync(cancellationToken))
+            {
+                if (!await reader.ReadAsync(cancellationToken))
+                {
+                    throw new InvalidOperationException($"Received empty response when querying the engine edition.");
+                }
+
+                int engineEdition = reader.GetByte(0);
+                // Mapping information from
+                // https://learn.microsoft.com/en-us/sql/t-sql/functions/serverproperty-transact-sql?view=sql-server-ver16
+                switch (engineEdition)
+                {
+                    case 1:
+                        return SqlBindingConstants.EngineEdition.DesktopEngine.ToString();
+                    case 2:
+                        return SqlBindingConstants.EngineEdition.Standard.ToString();
+                    case 3:
+                        return SqlBindingConstants.EngineEdition.Enterprise.ToString();
+                    case 4:
+                        return SqlBindingConstants.EngineEdition.Express.ToString();
+                    case 5:
+                        return SqlBindingConstants.EngineEdition.SQLDatabase.ToString();
+                    case 6:
+                        return SqlBindingConstants.EngineEdition.AzureSynapseAnalytics.ToString();
+                    case 8:
+                        return SqlBindingConstants.EngineEdition.AzureSQLManagedInstance.ToString();
+                    case 9:
+                        return SqlBindingConstants.EngineEdition.AzureSQLEdge.ToString();
+                    case 11:
+                        return SqlBindingConstants.EngineEdition.AzureSynapseserverlessSQLpool.ToString();
+                    default: return "Unknown";
+                }
+            }
+        }
+
     }
 }

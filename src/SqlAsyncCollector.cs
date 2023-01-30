@@ -178,7 +178,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 this._logger.LogDebugWithThreadId("BEGIN OpenUpsertRowsAsyncConnection");
                 await connection.OpenAsync();
                 this._logger.LogDebugWithThreadId("END OpenUpsertRowsAsyncConnection");
-                Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps();
+                string engineEdition = await GetSqlServerEdition(connection, this._logger, CancellationToken.None);
+                Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps(engineEdition);
 
                 string fullTableName = attribute.CommandText;
 
