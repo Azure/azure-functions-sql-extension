@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlTriggerAttribute"/> class.
         /// </summary>
-        /// <param name="tableName">Name of the user table</param>
+        /// <param name="tableName">Name of the table to watch for changes.</param>
         public SqlTriggerAttribute(string tableName)
         {
             this.TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.WebJobs
         public string ConnectionStringSetting { get; set; }
 
         /// <summary>
-        /// Name of the user table.
+        /// Name of the table to watch for changes.
         /// </summary>
         public string TableName { get; }
     }
