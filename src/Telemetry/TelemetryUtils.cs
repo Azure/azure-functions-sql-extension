@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
             props.Add(TelemetryPropertyName.ServerVersion, conn.ServerVersion);
             if (!string.IsNullOrEmpty(serverProperties?.EngineEdition))
             {
-                props.Add(TelemetryPropertyName.EngineEdition, serverProperties.Edition);
+                props.Add(TelemetryPropertyName.EngineEdition, serverProperties.EngineEdition);
             }
             if (!string.IsNullOrEmpty(serverProperties?.Edition))
             {
