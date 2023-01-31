@@ -303,7 +303,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 string serverPropertiesQuery = $"SELECT SERVERPROPERTY('EngineEdition'), SERVERPROPERTY('EngineEdition')";
 
-                logger.LogDebugWithThreadId($"BEGIN GetSqlServerEdition Query={serverPropertiesQuery}");
+                logger.LogDebugWithThreadId($"BEGIN GetServerTelemetryProperties Query={serverPropertiesQuery}");
                 using (var selectServerEditionCommand = new SqlCommand(serverPropertiesQuery, connection))
                 using (SqlDataReader reader = await selectServerEditionCommand.ExecuteReaderAsync(cancellationToken))
                 {
@@ -352,7 +352,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError($"Exception getting server properties. Exception = {ex.Message}");
+                        logger.LogError($"Exception in GetServerTelemetryProperties. Exception = {ex.Message}");
                         return null;
                     }
                 }
