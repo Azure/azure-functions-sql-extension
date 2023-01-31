@@ -301,13 +301,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             if (TelemetryInstance.Enabled)
             {
-                string serverPropertiesQuery = $"SELECT SERVERPROPERTY('EngineEdition'), SERVERPROPERTY('EngineEdition')";
-
-                logger.LogDebugWithThreadId($"BEGIN GetServerTelemetryProperties Query={serverPropertiesQuery}");
-                using (var selectServerEditionCommand = new SqlCommand(serverPropertiesQuery, connection))
-                using (SqlDataReader reader = await selectServerEditionCommand.ExecuteReaderAsync(cancellationToken))
+                try
                 {
-                    try
+                    string serverPropertiesQuery = $"SELECT SERVERPROPERTY('EngineEdition'), SERVERPROPERTY('EngineEdition')";
+
+                    logger.LogDebugWithThreadId($"BEGIN GetServerTelemetryProperties Query={serverPropertiesQuery}");
+                    using (var selectServerEditionCommand = new SqlCommand(serverPropertiesQuery, connection))
+                    using (SqlDataReader reader = await selectServerEditionCommand.ExecuteReaderAsync(cancellationToken))
                     {
                         if (await reader.ReadAsync(cancellationToken))
                         {
@@ -350,15 +350,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             }
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        logger.LogError($"Exception in GetServerTelemetryProperties. Exception = {ex.Message}");
-                        return null;
-                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError($"Exception in GetServerTelemetryProperties. Exception = {ex.Message}");
+                    TelemetryInstance.TrackException(TelemetryErrorName.GetServerTelemetryProperties, ex);
+                    return null;
                 }
             }
             return null;
         }
-
     }
 }

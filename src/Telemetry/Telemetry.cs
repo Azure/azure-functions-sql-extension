@@ -427,6 +427,7 @@ This extension collect usage data in order to help us improve your experience. T
         TriggerFunction,
         Upsert,
         UpsertRollback,
+        GetServerTelemetryProperties,
     }
 
     internal class ServerProperties
