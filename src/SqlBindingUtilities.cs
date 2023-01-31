@@ -11,6 +11,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {

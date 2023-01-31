@@ -24,10 +24,4 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             AzureSynapseserverlessSQLpool,
         }
     }
-
-    public class ServerProperties
-    {
-        internal string EngineEdition;
-        internal string Edition;
-    }
 }

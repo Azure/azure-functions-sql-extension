@@ -428,5 +428,11 @@ This extension collect usage data in order to help us improve your experience. T
         Upsert,
         UpsertRollback,
     }
+
+    public class ServerProperties
+    {
+        internal string EngineEdition;
+        internal string Edition;
+    }
 }
 
