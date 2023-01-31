@@ -73,7 +73,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         private readonly List<T> _rows = new List<T>();
         private readonly SemaphoreSlim _rowLock = new SemaphoreSlim(1, 1);
-        private static string _engineEdition = string.Empty;
+        private static ServerProperties _engineEdition;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlAsyncCollector<typeparamref name="T"/>"/> class.
@@ -103,7 +103,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 connection.OpenAsyncWithSqlErrorHandling(CancellationToken.None).Wait();
                 this._logger.LogDebugWithThreadId("END OpenSqlAsyncCollectorVerifyDatabaseSupportedConnection");
                 VerifyDatabaseSupported(connection, logger, CancellationToken.None).Wait();
-
             }
         }
 
@@ -180,7 +179,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 this._logger.LogDebugWithThreadId("BEGIN OpenUpsertRowsAsyncConnection");
                 await connection.OpenAsync();
                 this._logger.LogDebugWithThreadId("END OpenUpsertRowsAsyncConnection");
-                _engineEdition = await GetSqlServerEdition(connection, this._logger, CancellationToken.None);
+                _engineEdition = await GetSqlServerEditions(connection, this._logger, CancellationToken.None);
                 Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps(_engineEdition);
 
                 string fullTableName = attribute.CommandText;

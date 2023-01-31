@@ -115,7 +115,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     this._logger.LogDebugWithThreadId("BEGIN OpenListenerConnection");
                     await connection.OpenAsyncWithSqlErrorHandling(cancellationToken);
                     this._logger.LogDebugWithThreadId("END OpenListenerConnection");
-                    string engineEdition = await GetSqlServerEdition(connection, this._logger, cancellationToken);
+                    ServerProperties engineEdition = await GetSqlServerEditions(connection, this._logger, cancellationToken);
                     this._telemetryProps.AddConnectionProps(connection, engineEdition);
 
                     await VerifyDatabaseSupported(connection, this._logger, cancellationToken);

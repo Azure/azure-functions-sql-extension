@@ -80,7 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             private readonly IConfiguration _configuration;
 
             private readonly ILogger _logger;
-            private string _engineEdition = string.Empty;
+            private ServerProperties _engineEdition;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="SqlGenericsConverter<typeparamref name="T"/>"/> class.
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     this._logger.LogDebugWithThreadId("BEGIN OpenBuildItemFromAttributeAsyncConnection");
                     await connection.OpenAsyncWithSqlErrorHandling(CancellationToken.None);
                     this._logger.LogDebugWithThreadId("END OpenBuildItemFromAttributeAsyncConnection");
-                    this._engineEdition = await SqlBindingUtilities.GetSqlServerEdition(connection, this._logger, CancellationToken.None);
+                    this._engineEdition = await SqlBindingUtilities.GetSqlServerEditions(connection, this._logger, CancellationToken.None);
                     Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps(this._engineEdition);
                     TelemetryInstance.TrackConvert(type, props);
                     var dataTable = new DataTable();

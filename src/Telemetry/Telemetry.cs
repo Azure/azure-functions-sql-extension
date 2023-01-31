@@ -362,6 +362,7 @@ This extension collect usage data in order to help us improve your experience. T
         UserFunctionId,
         WorkerCount,
         EngineEdition,
+        Edition,
     }
 
     /// <summary>

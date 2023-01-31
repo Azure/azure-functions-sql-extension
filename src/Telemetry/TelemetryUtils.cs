@@ -14,10 +14,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
         /// <param name="props">The property bag to add our connection properties to</param>
         /// <param name="conn">The connection to add properties of</param>
         /// <param name="engineEdition">The Engine Edition of the target Sql Server</param>
-        public static void AddConnectionProps(this IDictionary<TelemetryPropertyName, string> props, SqlConnection conn, string engineEdition)
+        public static void AddConnectionProps(this IDictionary<TelemetryPropertyName, string> props, SqlConnection conn, ServerProperties engineEditions)
         {
             props.Add(TelemetryPropertyName.ServerVersion, conn.ServerVersion);
-            props.Add(TelemetryPropertyName.EngineEdition, string.IsNullOrEmpty(engineEdition) ? "Unknown" : engineEdition);
+            props.Add(TelemetryPropertyName.EngineEdition, engineEditions?.EngineEdition ?? "Unknown");
+            props.Add(TelemetryPropertyName.Edition, engineEditions?.Edition ?? "Unknown");
         }
 
         /// <summary>
@@ -26,10 +27,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
         /// <param name="conn">The connection to get properties of</param>
         /// <param name="engineEdition">The Engine Edition of the target Sql Server</param>
         /// <returns>The property dictionary</returns>
-        public static Dictionary<TelemetryPropertyName, string> AsConnectionProps(this SqlConnection conn, string engineEdition)
+        public static Dictionary<TelemetryPropertyName, string> AsConnectionProps(this SqlConnection conn, ServerProperties engineEditions)
         {
             var props = new Dictionary<TelemetryPropertyName, string>();
-            props.AddConnectionProps(conn, engineEdition);
+            props.AddConnectionProps(conn, engineEditions);
             return props;
         }
     }
