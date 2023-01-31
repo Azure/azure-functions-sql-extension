@@ -429,7 +429,7 @@ This extension collect usage data in order to help us improve your experience. T
         UpsertRollback,
     }
 
-    public class ServerProperties
+    internal class ServerProperties
     {
         internal string EngineEdition;
         internal string Edition;
