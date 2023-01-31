@@ -80,6 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             private readonly IConfiguration _configuration;
 
             private readonly ILogger _logger;
+            private string _engineEdition = string.Empty;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="SqlGenericsConverter<typeparamref name="T"/>"/> class.
@@ -182,8 +183,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     this._logger.LogDebugWithThreadId("BEGIN OpenBuildItemFromAttributeAsyncConnection");
                     await connection.OpenAsyncWithSqlErrorHandling(CancellationToken.None);
                     this._logger.LogDebugWithThreadId("END OpenBuildItemFromAttributeAsyncConnection");
-                    string engineEdition = await SqlBindingUtilities.GetSqlServerEdition(connection, this._logger, CancellationToken.None);
-                    Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps(engineEdition);
+                    this._engineEdition = await SqlBindingUtilities.GetSqlServerEdition(connection, this._logger, CancellationToken.None);
+                    Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps(this._engineEdition);
                     TelemetryInstance.TrackConvert(type, props);
                     var dataTable = new DataTable();
                     adapter.Fill(dataTable);
@@ -203,7 +204,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 try
                 {
                     var asyncEnumerable = new SqlAsyncEnumerable<T>(SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, this._configuration), attribute);
-                    Dictionary<TelemetryPropertyName, string> props = asyncEnumerable.Connection.AsConnectionProps(EngineEdition.NotQueried.ToString());
+                    Dictionary<TelemetryPropertyName, string> props = asyncEnumerable.Connection.AsConnectionProps(this._engineEdition);
                     TelemetryInstance.TrackConvert(ConvertType.IAsyncEnumerable, props);
                     return asyncEnumerable;
                 }

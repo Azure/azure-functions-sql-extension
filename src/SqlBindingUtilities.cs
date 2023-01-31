@@ -338,7 +338,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     }
                 }
             }
-            return SqlBindingConstants.EngineEdition.NotQueried.ToString();
+            return string.Empty;
         }
 
     }

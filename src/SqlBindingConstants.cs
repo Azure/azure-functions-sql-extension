@@ -22,7 +22,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             AzureSQLManagedInstance,
             AzureSQLEdge,
             AzureSynapseserverlessSQLpool,
-            NotQueried
         }
     }
 }
