@@ -208,7 +208,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     TelemetryInstance.TrackEvent(TelemetryEventName.TableInfoCacheMiss, props);
                     // set the columnNames for supporting T as JObject since it doesn't have columns in the member info.
-                    tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullTableName, this._logger, GetColumnNamesFromItem(rows.First()));
+                    tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullTableName, this._logger, GetColumnNamesFromItem(rows.First()), this._serverProperties);
                     var policy = new CacheItemPolicy
                     {
                         // Re-look up the primary key(s) after timeout (default timeout is 10 minutes)
@@ -542,10 +542,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <param name="logger">ILogger used to log any errors or warnings.</param>
             /// <param name="objectColumnNames">Column names from the object</param>
             /// <returns>TableInformation object containing primary keys, column types, etc.</returns>
-            public static async Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName, ILogger logger, IEnumerable<string> objectColumnNames)
+            public static async Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName, ILogger logger, IEnumerable<string> objectColumnNames, ServerProperties serverProperties)
             {
                 // pass null for ServerProperties since it's already logged before this call.
-                Dictionary<TelemetryPropertyName, string> sqlConnProps = sqlConnection.AsConnectionProps(null);
+                Dictionary<TelemetryPropertyName, string> sqlConnProps = sqlConnection.AsConnectionProps(serverProperties);
                 logger.LogDebugWithThreadId("BEGIN RetrieveTableInformationAsync");
                 var table = new SqlObject(fullName);
 
