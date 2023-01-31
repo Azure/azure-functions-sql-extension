@@ -293,9 +293,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Query the ServerProperty('EngineEdition') for logging the Server Type for Telemetry
+        /// Get the Server Properties for the given connection.
         /// </summary>
-        /// <exception cref="InvalidOperationException">Throw if an error occurs while querying the engine edition</exception>
+        /// <returns>ServerProperties (EngineEdition and Edition) of the target Sql Server.</returns>
         public static async Task<ServerProperties> GetSqlServerEditions(SqlConnection connection, ILogger logger, CancellationToken cancellationToken)
         {
             if (TelemetryInstance.Enabled)
@@ -306,47 +306,45 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 using (var selectServerEditionCommand = new SqlCommand(selectServerEdition, connection))
                 using (SqlDataReader reader = await selectServerEditionCommand.ExecuteReaderAsync(cancellationToken))
                 {
-                    if (!await reader.ReadAsync(cancellationToken))
+                    if (await reader.ReadAsync(cancellationToken))
                     {
-                        throw new InvalidOperationException($"Received empty response when querying the engine edition.");
-                    }
-
-                    int engineEdition = reader.GetByte(0);
-                    var serverProperties = new ServerProperties() { Edition = reader.GetString(1) };
-                    // Mapping information from
-                    // https://learn.microsoft.com/en-us/sql/t-sql/functions/serverproperty-transact-sql?view=sql-server-ver16
-                    switch (engineEdition)
-                    {
-                        case 1:
-                            serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.DesktopEngine.ToString();
-                            return serverProperties;
-                        case 2:
-                            serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.Standard.ToString();
-                            return serverProperties;
-                        case 3:
-                            serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.Enterprise.ToString();
-                            return serverProperties;
-                        case 4:
-                            serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.Express.ToString();
-                            return serverProperties;
-                        case 5:
-                            serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.SQLDatabase.ToString();
-                            return serverProperties;
-                        case 6:
-                            serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.AzureSynapseAnalytics.ToString();
-                            return serverProperties;
-                        case 8:
-                            serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.AzureSQLManagedInstance.ToString();
-                            return serverProperties;
-                        case 9:
-                            serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.AzureSQLEdge.ToString();
-                            return serverProperties;
-                        case 11:
-                            serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.AzureSynapseserverlessSQLpool.ToString();
-                            return serverProperties;
-                        default:
-                            serverProperties.EngineEdition = engineEdition.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                            return serverProperties;
+                        int engineEdition = reader.GetByte(0);
+                        var serverProperties = new ServerProperties() { Edition = reader.GetString(1) };
+                        // Mapping information from
+                        // https://learn.microsoft.com/en-us/sql/t-sql/functions/serverproperty-transact-sql?view=sql-server-ver16
+                        switch (engineEdition)
+                        {
+                            case 1:
+                                serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.DesktopEngine.ToString();
+                                return serverProperties;
+                            case 2:
+                                serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.Standard.ToString();
+                                return serverProperties;
+                            case 3:
+                                serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.Enterprise.ToString();
+                                return serverProperties;
+                            case 4:
+                                serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.Express.ToString();
+                                return serverProperties;
+                            case 5:
+                                serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.SQLDatabase.ToString();
+                                return serverProperties;
+                            case 6:
+                                serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.AzureSynapseAnalytics.ToString();
+                                return serverProperties;
+                            case 8:
+                                serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.AzureSQLManagedInstance.ToString();
+                                return serverProperties;
+                            case 9:
+                                serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.AzureSQLEdge.ToString();
+                                return serverProperties;
+                            case 11:
+                                serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.AzureSynapseserverlessSQLpool.ToString();
+                                return serverProperties;
+                            default:
+                                serverProperties.EngineEdition = engineEdition.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                                return serverProperties;
+                        }
                     }
                 }
             }

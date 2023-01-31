@@ -73,7 +73,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         private readonly List<T> _rows = new List<T>();
         private readonly SemaphoreSlim _rowLock = new SemaphoreSlim(1, 1);
-        private static ServerProperties _engineEdition;
+        private static ServerProperties _serverProperties;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlAsyncCollector<typeparamref name="T"/>"/> class.
@@ -179,8 +179,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 this._logger.LogDebugWithThreadId("BEGIN OpenUpsertRowsAsyncConnection");
                 await connection.OpenAsync();
                 this._logger.LogDebugWithThreadId("END OpenUpsertRowsAsyncConnection");
-                _engineEdition = await GetSqlServerEditions(connection, this._logger, CancellationToken.None);
-                Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps(_engineEdition);
+                _serverProperties = await GetSqlServerEditions(connection, this._logger, CancellationToken.None);
+                Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps(_serverProperties);
 
                 string fullTableName = attribute.CommandText;
 
@@ -544,7 +544,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns>TableInformation object containing primary keys, column types, etc.</returns>
             public static async Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName, ILogger logger, IEnumerable<string> objectColumnNames)
             {
-                Dictionary<TelemetryPropertyName, string> sqlConnProps = sqlConnection.AsConnectionProps(_engineEdition);
+                Dictionary<TelemetryPropertyName, string> sqlConnProps = sqlConnection.AsConnectionProps(_serverProperties);
                 logger.LogDebugWithThreadId("BEGIN RetrieveTableInformationAsync");
                 var table = new SqlObject(fullName);
 

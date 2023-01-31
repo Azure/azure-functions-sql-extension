@@ -13,24 +13,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
         /// </summary>
         /// <param name="props">The property bag to add our connection properties to</param>
         /// <param name="conn">The connection to add properties of</param>
-        /// <param name="engineEdition">The Engine Edition of the target Sql Server</param>
-        public static void AddConnectionProps(this IDictionary<TelemetryPropertyName, string> props, SqlConnection conn, ServerProperties engineEditions)
+        /// <param name="serverProperties">Server Properties (EngineEdition, Edition) of the target Sql Server queried for a given connection.</param>
+        public static void AddConnectionProps(this IDictionary<TelemetryPropertyName, string> props, SqlConnection conn, ServerProperties serverProperties)
         {
             props.Add(TelemetryPropertyName.ServerVersion, conn.ServerVersion);
-            props.Add(TelemetryPropertyName.EngineEdition, engineEditions?.EngineEdition ?? "Unknown");
-            props.Add(TelemetryPropertyName.Edition, engineEditions?.Edition ?? "Unknown");
+            if (!string.IsNullOrEmpty(serverProperties?.EngineEdition))
+            {
+                props.Add(TelemetryPropertyName.EngineEdition, serverProperties.Edition);
+            }
+            if (!string.IsNullOrEmpty(serverProperties?.Edition))
+            {
+                props.Add(TelemetryPropertyName.Edition, serverProperties.Edition);
+            }
         }
 
         /// <summary>
         /// Returns a dictionary with common connection properties for the specified connection.
         /// </summary>
         /// <param name="conn">The connection to get properties of</param>
-        /// <param name="engineEdition">The Engine Edition of the target Sql Server</param>
+        /// <param name="serverProperties">The EngineEdition and Edition of the target Sql Server</param>
         /// <returns>The property dictionary</returns>
-        public static Dictionary<TelemetryPropertyName, string> AsConnectionProps(this SqlConnection conn, ServerProperties engineEditions)
+        public static Dictionary<TelemetryPropertyName, string> AsConnectionProps(this SqlConnection conn, ServerProperties serverProperties)
         {
             var props = new Dictionary<TelemetryPropertyName, string>();
-            props.AddConnectionProps(conn, engineEditions);
+            props.AddConnectionProps(conn, serverProperties);
             return props;
         }
     }
