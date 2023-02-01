@@ -361,6 +361,8 @@ This extension collect usage data in order to help us improve your experience. T
         Type,
         UserFunctionId,
         WorkerCount,
+        EngineEdition,
+        Edition,
     }
 
     /// <summary>
@@ -425,6 +427,13 @@ This extension collect usage data in order to help us improve your experience. T
         TriggerFunction,
         Upsert,
         UpsertRollback,
+        GetServerTelemetryProperties,
+    }
+
+    internal class ServerProperties
+    {
+        internal string EngineEdition;
+        internal string Edition;
     }
 }
 
