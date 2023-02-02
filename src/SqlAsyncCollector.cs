@@ -232,6 +232,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 IEnumerable<string> bracketedColumnNamesFromItem = GetColumnNamesFromItem(rows.First())
                     .Where(prop => !tableInfo.PrimaryKeys.Any(k => k.IsIdentity && string.Equals(k.Name, prop, StringComparison.Ordinal))) // Skip any identity columns, those should never be updated
                     .Select(prop => prop.AsBracketQuotedString());
+                if (!bracketedColumnNamesFromItem.Any())
+                {
+                    string message = $"No property values found in item to upsert. If using query parameters, ensure that the casing of the parameter names and the property names match.";
+                    var ex = new InvalidOperationException(message);
+                    throw ex;
+                }
+
                 var table = new SqlObject(fullTableName);
                 string mergeOrInsertQuery = tableInfo.QueryType == QueryType.Insert ? TableInformation.GetInsertQuery(table, bracketedColumnNamesFromItem) :
                     TableInformation.GetMergeQuery(tableInfo.PrimaryKeys, table, bracketedColumnNamesFromItem);
