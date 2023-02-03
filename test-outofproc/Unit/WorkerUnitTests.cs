@@ -22,7 +22,7 @@ namespace WorkerUnitTests
         public void TestNullBuilder()
         {
             HostBuilder builder = null;
-            Assert.Throws<ArgumentNullException>(() => builder.ConfigureFunctionsWorkerDefaults());
+            Assert.Throws<NullReferenceException>(() => builder.ConfigureFunctionsWorkerDefaults());
         }
 
     }
