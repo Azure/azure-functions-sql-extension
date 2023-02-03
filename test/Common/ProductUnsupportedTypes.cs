@@ -8,5 +8,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         public int ProductId { get; set; }
 
         public string Text { get; set; }
+
+        public string Ntext { get; set; }
+
+        public byte[] Image { get; set; }
     }
 }

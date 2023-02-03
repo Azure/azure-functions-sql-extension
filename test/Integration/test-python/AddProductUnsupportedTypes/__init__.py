@@ -5,8 +5,7 @@ import json
 import azure.functions as func
 
 def main(req: func.HttpRequest, product: func.Out[func.SqlRow]) -> func.HttpResponse:
-    """This output binding should throw an exception because the target table has a column of type
-    TEXT, which is not supported.
+    """This output binding should throw an exception because the target table has unsupported column types.
     """
 
     body = json.loads(req.get_body())

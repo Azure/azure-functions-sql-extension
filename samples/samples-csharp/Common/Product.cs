@@ -52,11 +52,4 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common
 
         public int Cost { get; set; }
     }
-
-    public class ProductUnsupportedTypes
-    {
-        public int ProductId { get; set; }
-
-        public string Text { get; set; }
-    }
 }

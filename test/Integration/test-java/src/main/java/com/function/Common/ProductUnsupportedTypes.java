@@ -13,13 +13,19 @@ public class ProductUnsupportedTypes {
     private int ProductId;
     @JsonProperty("Text")
     private String Text;
+    @JsonProperty("Ntext")
+    private String Ntext;
+    @JsonProperty("Image")
+    private String Image;
 
     public ProductUnsupportedTypes() {
     }
 
-    public ProductUnsupportedTypes(int productId, String text) {
+    public ProductUnsupportedTypes(int productId, String text, String ntext, String image) {
         ProductId = productId;
         Text = text;
+        Ntext = ntext;
+        Image = image;
     }
 
     public int getProductId() {
@@ -36,5 +42,21 @@ public class ProductUnsupportedTypes {
 
     public void setText(String text) {
         Text = text;
+    }
+
+    public String getNtext() {
+        return Ntext;
+    }
+
+    public void setNtext(String ntext) {
+        Ntext = ntext;
+    }
+
+    public String getImage() {
+        return Image;
+    }
+
+    public void setImage(String image) {
+        Image = image;
     }
 }

@@ -12,11 +12,10 @@ namespace DotnetIsolatedTests
     public static class AddProductUnsupportedTypes
     {
         /// <summary>
-        /// This output binding should fail since the target table has a column of type
-        /// TEXT which is not supported.
+        /// This output binding should fail since the target table has unsupported column types.
         /// </summary>
         [Function("AddProductUnsupportedTypes")]
-        [SqlOutput("dbo.ProductUnsupportedTypes", ConnectionStringSetting = "SqlConnectionString")]
+        [SqlOutput("dbo.ProductsUnsupportedTypes", ConnectionStringSetting = "SqlConnectionString")]
         public static async Task<ProductUnsupportedTypes> RunAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "addproduct-unsupportedtypes")]
             HttpRequestData req)

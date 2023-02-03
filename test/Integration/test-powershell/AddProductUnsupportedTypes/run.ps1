@@ -3,8 +3,7 @@
 
 using namespace System.Net
 
-# This output binding should throw an exception because the target table has a column of type
-# TEXT, which is not supported.
+# This output binding should throw an exception because the target table has unsupported column types.
 param($Request, $TriggerMetadata)
 
 $req_body = $Request.Body

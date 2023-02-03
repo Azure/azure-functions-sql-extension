@@ -24,8 +24,7 @@ import java.util.Optional;
 
 
 public class AddProductUnsupportedTypes {
-    // This output binding should throw an exception because the target table has a column of type
-    // TEXT, which is not supported.
+    // This output binding should throw an exception because the target table has unsupported column types.
     @FunctionName("AddProductUnsupportedTypes")
     public HttpResponseMessage run(
             @HttpTrigger(

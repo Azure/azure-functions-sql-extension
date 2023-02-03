@@ -478,20 +478,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        public void AddProductWithUnsupportedTypes(SupportedLanguages lang)
+        public async Task AddProductUnsupportedTypesTest(SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProductWithUnsupportedTypes), lang);
+            var foundExpectedMessageSource = new TaskCompletionSource<bool>();
+            this.StartFunctionHost(nameof(AddProductUnsupportedTypes), lang, true, (object sender, DataReceivedEventArgs e) =>
+            {
+                if (e.Data.Contains("The type(s) of the following column(s) are not supported: Text, Ntext, Image."))
+                {
+                    foundExpectedMessageSource.SetResult(true);
+                }
+            });
 
             var query = new Dictionary<string, object>()
             {
                 { "ProductId", 0 },
-                { "Text", "test" }
+                { "Text", "test" },
+                { "Ntext", "test" },
+                { "Image", new byte[] { 1, 2, 3 } }
             };
 
-            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsUnsupportedTypes"));
-            Assert.Throws<AggregateException>(() => this.SendOutputPostRequest(nameof(AddProductWithUnsupportedTypes), JsonConvert.SerializeObject(query)).Wait());
-            // Nothing should have been inserted
-            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsUnsupportedTypes"));
+            Assert.Throws<AggregateException>(() => this.SendOutputPostRequest("addproduct-unsupportedtypes", JsonConvert.SerializeObject(query)).Wait());
+            await foundExpectedMessageSource.Task.TimeoutAfter(TimeSpan.FromMilliseconds(2000), $"Timed out waiting for expected error message");
         }
     }
 }

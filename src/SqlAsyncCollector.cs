@@ -237,8 +237,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 if (unsupportedColumns.Any())
                 {
                     string message = $"The type(s) of the following column(s) are not supported: {string.Join(", ", unsupportedColumns.ToArray())}.";
-                    var ex = new InvalidOperationException(message);
-                    throw ex;
+                    throw new InvalidOperationException(message);
                 }
 
                 IEnumerable<string> bracketedColumnNamesFromItem = columnNamesFromItem
