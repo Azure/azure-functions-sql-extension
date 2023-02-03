@@ -474,7 +474,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
-        /// Tests that upserting an item with no properties, an error is thrown.
+        /// Tests that when upserting an item with no properties, an error is thrown.
         /// </summary>
         [Theory]
         [SqlInlineData()]
