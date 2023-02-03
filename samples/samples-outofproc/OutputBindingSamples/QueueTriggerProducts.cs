@@ -11,7 +11,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingS
     public static class QueueTriggerProducts
     {
         [Function("QueueTriggerProducts")]
-        [SqlOutput("[dbo].[Products]", ConnectionStringSetting = "SqlConnectionString")]
+        [SqlOutput("[dbo].[Products]", "SqlConnectionString")]
         public static List<Product> Run([QueueTrigger("testqueue")] string queueMessage)
         {
             int totalUpserts = 100;

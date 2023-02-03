@@ -16,7 +16,7 @@ namespace DotnetIsolatedTests
         // This output binding should throw an error since the ProductsNameNotNull table does not 
         // allows rows without a Name value. No rows should be upserted to the Sql table.
         [Function("AddProductsNoPartialUpsert")]
-        [SqlOutput("dbo.ProductsNameNotNull", ConnectionStringSetting = "SqlConnectionString")]
+        [SqlOutput("dbo.ProductsNameNotNull", "SqlConnectionString")]
         public static List<Product> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "addproducts-nopartialupsert")]
             HttpRequest req)

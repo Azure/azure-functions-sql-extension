@@ -96,8 +96,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 
         private static void UserFunctionWithoutAttribute<T>(T _) { }
 
-        private static void UserFunctionWithoutConnectionString<T>([SqlTrigger("testTableName")] T _) { }
+        private static void UserFunctionWithoutConnectionString<T>([SqlTrigger("testTableName", null)] T _) { }
 
-        private static void UserFunctionWithAttribute<T>([SqlTrigger("testTableName", ConnectionStringSetting = "testConnectionStringSetting")] T _) { }
+        private static void UserFunctionWithAttribute<T>([SqlTrigger("testTableName", "testConnectionStringSetting")] T _) { }
     }
 }

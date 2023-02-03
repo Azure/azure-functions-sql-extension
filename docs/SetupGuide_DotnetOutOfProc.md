@@ -70,8 +70,8 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "employees")] HttpRequest req,
         ILogger log,
         [SqlInput("select * from Employees",
-        CommandType = System.Data.CommandType.Text,
-        ConnectionStringSetting = "SqlConnectionString")]
+        "SqlConnectionString",
+        CommandType = System.Data.CommandType.Text)]
         IEnumerable<Employee> employees)
     {
         return employees;
@@ -116,9 +116,9 @@ The input binding executes the "select * from Products where Cost = @Cost" query
       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts/{cost}")]
       HttpRequestData req,
       [SqlInput("select * from Products where Cost = @Cost",
+          "SqlConnectionString",
           CommandType = System.Data.CommandType.Text,
-          Parameters = "@Cost={cost}",
-          ConnectionStringSetting = "SqlConnectionString")]
+          Parameters = "@Cost={cost}")]
       IEnumerable<Product> products)
   {
       return products;
@@ -155,9 +155,9 @@ In this case, the parameter value of the `@Name` parameter is an empty string.
       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-nameempty/{cost}")]
       HttpRequestData req,
       [SqlInput("select * from Products where Cost = @Cost and Name = @Name",
+          "SqlConnectionString",
           CommandType = System.Data.CommandType.Text,
-          Parameters = "@Cost={cost},@Name=",
-          ConnectionStringSetting = "SqlConnectionString")]
+          Parameters = "@Cost={cost},@Name=")]
       IEnumerable<Product> products)
   {
       return products;
@@ -174,9 +174,9 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-namenull/{name}")]
       HttpRequestData req,
       [SqlInput("if @Name is null select * from Products where Name is null else select * from Products where @Name = name",
+          "SqlConnectionString",
           CommandType = System.Data.CommandType.Text,
-          Parameters = "@Name={name}",
-          ConnectionStringSetting = "SqlConnectionString")]
+          Parameters = "@Name={name}")]
       IEnumerable<Product> products)
   {
       return products;
@@ -193,9 +193,9 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-storedprocedure/{cost}")]
       HttpRequestData req,
       [SqlInput("SelectProductsCost",
+          "SqlConnectionString",
           CommandType = System.Data.CommandType.StoredProcedure,
-          Parameters = "@Cost={cost}",
-          ConnectionStringSetting = "SqlConnectionString")]
+          Parameters = "@Cost={cost}")]
       IEnumerable<Product> products)
   {
       return products;
@@ -212,9 +212,9 @@ public static async Task<List<Product>> Run(
     [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-async/{cost}")]
      HttpRequestData req,
     [SqlInput("select * from Products where cost = @Cost",
+         "SqlConnectionString",
          CommandType = System.Data.CommandType.Text,
-         Parameters = "@Cost={cost}",
-         ConnectionStringSetting = "SqlConnectionString")]
+         Parameters = "@Cost={cost}")]
      IAsyncEnumerable<Product> products)
 {
     var enumerator = products.GetAsyncEnumerator();
@@ -259,7 +259,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
     ```csharp
     [Function("AddEmployees")]
-    [SqlOutput("dbo.Employees", ConnectionStringSetting = "SqlConnectionString")]
+    [SqlOutput("dbo.Employees", "SqlConnectionString")]
     public static Employee[] Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addemployees-array")]
         HttpRequestData req)
@@ -301,7 +301,7 @@ This output binding type requires the product array to be passed in the request 
 
 ``` csharp
 [Function("AddProductsArray")]
-[SqlOutput("dbo.Products", ConnectionStringSetting = "SqlConnectionString")]
+[SqlOutput("dbo.Products", "SqlConnectionString")]
 public static async Task<Product[]> Run(
 [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproducts-array")]
     HttpRequestData req)
@@ -317,7 +317,7 @@ public static async Task<Product[]> Run(
 
 ```csharp
 [Function("AddProduct")]
-[SqlOutput("dbo.Products", ConnectionStringSetting = "SqlConnectionString")]
+[SqlOutput("dbo.Products", "SqlConnectionString")]
 public static Task<Product> Run(
 [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct")]
     HttpRequestData req)
