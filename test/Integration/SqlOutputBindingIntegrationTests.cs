@@ -472,5 +472,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // Verify result
             Assert.Equal("test2", this.ExecuteScalar($"select Name from Products where ProductId=0"));
         }
+
+        /// <summary>
+        /// Tests that an error is thrown when the upserted item contains a unsupported column type.
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        public void AddProductWithUnsupportedTypes(SupportedLanguages lang)
+        {
+            this.StartFunctionHost(nameof(AddProductWithUnsupportedTypes), lang);
+
+            var query = new Dictionary<string, object>()
+            {
+                { "ProductId", 0 },
+                { "Text", "test" }
+            };
+
+            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsUnsupportedTypes"));
+            Assert.Throws<AggregateException>(() => this.SendOutputPostRequest(nameof(AddProductWithUnsupportedTypes), JsonConvert.SerializeObject(query)).Wait());
+            // Nothing should have been inserted
+            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsUnsupportedTypes"));
+        }
     }
 }

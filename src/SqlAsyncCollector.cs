@@ -57,6 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
     internal class SqlAsyncCollector<T> : IAsyncCollector<T>, IDisposable
     {
+        private static readonly string[] UnsupportedTypes = { "NTEXT", "TEXT", "IMAGE" };
         private const string RowDataParameter = "@rowData";
         private const string ColumnName = "COLUMN_NAME";
         private const string ColumnDefinition = "COLUMN_DEFINITION";
@@ -231,7 +232,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw ex;
                 }
 
-                IEnumerable<string> bracketedColumnNamesFromItem = GetColumnNamesFromItem(rows.First())
+                IEnumerable<string> columnNamesFromItem = GetColumnNamesFromItem(rows.First());
+                IEnumerable<string> unsupportedColumns = columnNamesFromItem.Where(prop => IsUnsupportedType(prop, tableInfo.Columns));
+                if (unsupportedColumns.Any())
+                {
+                    string message = $"The type(s) of the following column(s) are not supported: {string.Join(", ", unsupportedColumns.ToArray())}.";
+                    var ex = new InvalidOperationException(message);
+                    throw ex;
+                }
+
+                IEnumerable<string> bracketedColumnNamesFromItem = columnNamesFromItem
                     .Where(prop => !tableInfo.PrimaryKeys.Any(k => k.IsIdentity && string.Equals(k.Name, prop, StringComparison.Ordinal))) // Skip any identity columns, those should never be updated
                     .Select(prop => prop.AsBracketQuotedString());
                 var table = new SqlObject(fullTableName);
@@ -290,6 +300,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new InvalidOperationException($"Unexpected error upserting rows", ex);
                 }
             }
+        }
+
+        private static bool IsUnsupportedType(string property, IDictionary<string, string> columns)
+        {
+            foreach (string unsupportedType in UnsupportedTypes)
+            {
+                if (columns[property].StartsWith(unsupportedType, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>
