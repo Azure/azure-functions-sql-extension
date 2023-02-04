@@ -14,9 +14,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-string/{cost}")]
             HttpRequest req,
             [Sql("select * from Products where cost = @Cost",
+                "SqlConnectionString",
                 CommandType = System.Data.CommandType.Text,
-                Parameters = "@Cost={cost}",
-                ConnectionStringSetting = "SqlConnectionString")]
+                Parameters = "@Cost={cost}")]
             string products)
         {
             // Products is a JSON representation of the returned rows. For example, if there are two returned rows,

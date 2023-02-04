@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "addproduct-missingcolumns")]
             HttpRequest req,
-            [Sql("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] out ProductMissingColumns product)
+            [Sql("dbo.Products", "SqlConnectionString")] out ProductMissingColumns product)
         {
             product = new ProductMissingColumns
             {

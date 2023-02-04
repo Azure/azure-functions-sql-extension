@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "addproducts-nopartialupsert")]
             HttpRequest req,
-            [Sql("dbo.ProductsNameNotNull", ConnectionStringSetting = "SqlConnectionString")] ICollector<Product> products)
+            [Sql("dbo.ProductsNameNotNull", "SqlConnectionString")] ICollector<Product> products)
         {
             List<Product> newProducts = ProductUtilities.GetNewProducts(UpsertBatchSize);
             foreach (Product product in newProducts)
