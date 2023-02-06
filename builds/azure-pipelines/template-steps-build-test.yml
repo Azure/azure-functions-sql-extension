@@ -75,6 +75,12 @@ steps:
   displayName: Set logging level
   condition: and(succeeded(), ne(variables['AFSQLEXT_TEST_LOGLEVEL'], ''))
 
+- task: DotNetCoreCLI@2
+  displayName: Set up local-packages Nuget source
+  inputs:
+    command: custom
+    custom: nuget add source -n afsqlext.local $(Build.SourcesDirectory)/local-packages
+
   # Do an initial build for use during testing, this will have the OOP "supported version" set to the exact binaries version
   # so it ensures we use the local version of the package
 - task: DotNetCoreCLI@2
