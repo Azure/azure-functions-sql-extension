@@ -23,6 +23,10 @@
 		<None Include=".\README.md" Pack="true" PackagePath="" />
 	</ItemGroup>
 
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\Microsoft.Azure.WebJobs.Extensions.Sql.csproj" />
+    </ItemGroup>
+
 	<ItemGroup>
 		<AssemblyAttribute Include="Microsoft.Azure.Functions.Worker.Extensions.Abstractions.ExtensionInformationAttribute">
 			<_Parameter1>Microsoft.Azure.WebJobs.Extensions.Sql</_Parameter1>
