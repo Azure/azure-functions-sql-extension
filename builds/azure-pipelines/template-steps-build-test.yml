@@ -75,12 +75,16 @@ steps:
   displayName: Set logging level
   condition: and(succeeded(), ne(variables['AFSQLEXT_TEST_LOGLEVEL'], ''))
 
+  # The build process for the OOP samples involve generating a temporary csproj in the %TEMP% directory, so it doesn't pick
+  # up the custom nuget.config we have. Set up the local-packages source here so that it can build correctly. Running from
+  # WorkFolder so it applies globally.
 - task: DotNetCoreCLI@2
   displayName: Set up local-packages Nuget source
   inputs:
     command: custom
     custom: nuget
     arguments: add source -n afsqlext.local $(Build.SourcesDirectory)/local-packages
+    workingDirectory: $(Agent.WorkFolder)
 
   # Do an initial build for use during testing, this will have the OOP "supported version" set to the exact binaries version
   # so it ensures we use the local version of the package
@@ -88,8 +92,8 @@ steps:
   displayName: .NET Build for Test
   inputs:
     command: build
-    projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} -p:Version=${{ parameters.binariesVersion }} -p:SupportedVersion=${{ parameters.binariesVersion }}'
+    projects: ${{ parameters.solution }}
+    arguments: --configuration ${{ parameters.configuration }} -p:Version=${{ parameters.binariesVersion }} -p:SupportedVersion=${{ parameters.binariesVersion }}
 
 - task: CopyFiles@2
   displayName: 'Copy Sql extension dll to Azure Functions extension bundle'
