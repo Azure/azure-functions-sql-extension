@@ -7,7 +7,7 @@
       "direction": "in",
       "type": "httpTrigger",
       "methods": [
-        "post"
+        "get"
       ],
       "route": "addproduct-unsupportedtypes"
     },

@@ -4,9 +4,14 @@
 using namespace System.Net
 
 # This output binding should throw an exception because the target table has unsupported column types.
-param($Request, $TriggerMetadata)
+param($Request)
 
-$req_body = $Request.Body
+$req_body = [ordered]@{
+    ProductId=0;
+    Text="test";
+    Ntext="test";
+    Image="dGVzdA==";
+}
 
 Push-OutputBinding -Name product -Value $req_body
 

@@ -2,10 +2,9 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.Functions.Worker.Extensions.Sql;
 using DotnetIsolatedTests.Common;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 
 namespace DotnetIsolatedTests
 {
@@ -16,11 +15,17 @@ namespace DotnetIsolatedTests
         /// </summary>
         [Function("AddProductUnsupportedTypes")]
         [SqlOutput("dbo.ProductsUnsupportedTypes", ConnectionStringSetting = "SqlConnectionString")]
-        public static async Task<ProductUnsupportedTypes> RunAsync(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "addproduct-unsupportedtypes")]
-            HttpRequestData req)
+        public static ProductUnsupportedTypes Run(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct-unsupportedtypes")]
+            HttpRequest req)
         {
-            ProductUnsupportedTypes product = await req.ReadFromJsonAsync<ProductUnsupportedTypes>();
+            var product = new ProductUnsupportedTypes
+            {
+                ProductId = 1,
+                Text = "test",
+                Ntext = "test",
+                Image = new byte[] { 1, 2, 3 }
+            };
             return product;
         }
     }

@@ -3,7 +3,12 @@
 
 // This output binding should throw an exception because the target table has unsupported column types.
 module.exports = async function (context, req) {
-    context.bindings.product = req.body;
+    context.bindings.product = {
+        ProductId: 0,
+        Text: "test",
+        Ntext: "test",
+        Image: "dGVzdA=="
+    }
 
     return {
         status: 201,

@@ -29,7 +29,7 @@ public class AddProductUnsupportedTypes {
     public HttpResponseMessage run(
             @HttpTrigger(
                 name = "req",
-                methods = {HttpMethod.POST},
+                methods = {HttpMethod.GET},
                 authLevel = AuthorizationLevel.ANONYMOUS,
                 route = "addproduct-unsupportedtypes")
                 HttpRequestMessage<Optional<String>> request,
@@ -39,9 +39,12 @@ public class AddProductUnsupportedTypes {
                 connectionStringSetting = "SqlConnectionString")
                 OutputBinding<ProductUnsupportedTypes> product) throws JsonMappingException, JsonProcessingException {
 
-        String json = request.getBody().get();
-        ObjectMapper mapper = new ObjectMapper();
-        ProductUnsupportedTypes p = mapper.readValue(json, ProductUnsupportedTypes.class);
+        ProductUnsupportedTypes p = new ProductUnsupportedTypes(
+            0,
+            "test",
+            "test",
+            "dGVzdA=="
+        );
         product.setValue(p);
         return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(product).build();
     }

@@ -3,13 +3,18 @@
 
 import json
 import azure.functions as func
+from Common.productunsupportedtypes import ProductUnsupportedTypes
 
 def main(req: func.HttpRequest, product: func.Out[func.SqlRow]) -> func.HttpResponse:
     """This output binding should throw an exception because the target table has unsupported column types.
     """
 
-    body = json.loads(req.get_body())
-    row = func.SqlRow.from_dict(body)
+    row = func.SqlRow(ProductUnsupportedTypes(
+        0,
+        "test",
+        "test",
+        "dGVzdA=="
+    ))
     product.set(row)
 
     return func.HttpResponse(

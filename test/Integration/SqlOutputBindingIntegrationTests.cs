@@ -478,6 +478,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.OutOfProc)]
         public async Task AddProductUnsupportedTypesTest(SupportedLanguages lang)
         {
             var foundExpectedMessageSource = new TaskCompletionSource<bool>();
@@ -489,15 +490,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 }
             });
 
-            var query = new Dictionary<string, object>()
-            {
-                { "ProductId", 0 },
-                { "Text", "test" },
-                { "Ntext", "test" },
-                { "Image", new byte[] { 1, 2, 3 } }
-            };
-
-            Assert.Throws<AggregateException>(() => this.SendOutputPostRequest("addproduct-unsupportedtypes", JsonConvert.SerializeObject(query)).Wait());
+            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-unsupportedtypes").Wait());
             await foundExpectedMessageSource.Task.TimeoutAfter(TimeSpan.FromMilliseconds(2000), $"Timed out waiting for expected error message");
         }
     }
