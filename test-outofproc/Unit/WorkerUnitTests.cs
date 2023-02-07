@@ -13,8 +13,16 @@ namespace WorkerUnitTests
         [Fact]
         public void TestNullCommandText()
         {
-            Assert.Throws<ArgumentNullException>(() => new SqlInputAttribute(null));
-            Assert.Throws<ArgumentNullException>(() => new SqlOutputAttribute(null));
+            Assert.Throws<ArgumentNullException>(() => new SqlInputAttribute(null, "SqlConnectionString"));
+            Assert.Throws<ArgumentNullException>(() => new SqlOutputAttribute(null, "SqlConnectionString"));
+
+        }
+
+        [Fact]
+        public void TestNullConnectionStringSetting()
+        {
+            Assert.Throws<ArgumentNullException>(() => new SqlInputAttribute("SELECT * FROM dbo.Products", null));
+            Assert.Throws<ArgumentNullException>(() => new SqlOutputAttribute("dbo.Products", null));
 
         }
 
