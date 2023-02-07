@@ -13,7 +13,7 @@ namespace DotnetIsolatedTests
         // This output binding should throw an error since the ProductsCostNotNull table does not
         // allows rows without a Cost value.
         [Function("AddProductMissingColumnsExceptionFunction")]
-        [SqlOutput("dbo.ProductsCostNotNull", ConnectionStringSetting = "SqlConnectionString")]
+        [SqlOutput("dbo.ProductsCostNotNull", "SqlConnectionString")]
         public static ProductMissingColumns Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "addproduct-missingcolumnsexception")]
             HttpRequest req)

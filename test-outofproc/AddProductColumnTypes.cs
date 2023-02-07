@@ -19,7 +19,7 @@ namespace DotnetIsolatedTests
         /// SQL server types.
         /// </summary>
         [Function(nameof(AddProductColumnTypes))]
-        [SqlOutput("dbo.ProductsColumnTypes", ConnectionStringSetting = "SqlConnectionString")]
+        [SqlOutput("dbo.ProductsColumnTypes", "SqlConnectionString")]
         public static ProductColumnTypes Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct-columntypes")] HttpRequestData req)
         {

@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingS
     public static class AddProductParams
     {
         [Function("AddProductParams")]
-        [SqlOutput("dbo.Products", ConnectionStringSetting = "SqlConnectionString")]
+        [SqlOutput("dbo.Products", "SqlConnectionString")]
         public static Product Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct-params")]
             HttpRequestData req)

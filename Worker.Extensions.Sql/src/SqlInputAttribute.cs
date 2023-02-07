@@ -12,9 +12,11 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
         /// Creates an instance of the <see cref="SqlInputAttribute"/>, which takes a SQL query or stored procedure to run and returns the output to the function.
         /// </summary>
         /// <param name="commandText">Either a SQL query or stored procedure that will be run in the target database.</param>
-        public SqlInputAttribute(string commandText)
+        /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored</param>
+        public SqlInputAttribute(string commandText, string connectionStringSetting)
         {
             this.CommandText = commandText ?? throw new ArgumentNullException(nameof(commandText));
+            this.ConnectionStringSetting = connectionStringSetting ?? throw new ArgumentNullException(nameof(connectionStringSetting));
         }
 
         /// <summary>

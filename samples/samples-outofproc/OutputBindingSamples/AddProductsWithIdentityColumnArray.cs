@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingS
         /// <param name="req">The original request that triggered the function</param>
         /// <returns>The new product objects that will be upserted</returns>
         [Function(nameof(AddProductsWithIdentityColumnArray))]
-        [SqlOutput("dbo.ProductsWithIdentity", ConnectionStringSetting = "SqlConnectionString")]
+        [SqlOutput("dbo.ProductsWithIdentity", "SqlConnectionString")]
         public static ProductWithoutId[] Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")]
             HttpRequestData req)

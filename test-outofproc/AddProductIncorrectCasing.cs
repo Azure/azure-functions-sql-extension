@@ -13,7 +13,7 @@ namespace DotnetIsolatedTests
         // This output binding should throw an error since the casing of the POCO field 'ProductID' and
         // table column name 'ProductId' do not match.
         [Function(nameof(AddProductIncorrectCasing))]
-        [SqlOutput("dbo.Products", ConnectionStringSetting = "SqlConnectionString")]
+        [SqlOutput("dbo.Products", "SqlConnectionString")]
         public static ProductIncorrectCasing Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct-incorrectcasing")] HttpRequestData req)
         {
