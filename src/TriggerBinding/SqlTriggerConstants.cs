@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     LeasesTableLeaseExpirationTimeColumnName
         };
 
-        public const string ConfigKey_SqlTrigger_BatchSize = "Sql_Trigger_BatchSize";
+        public const string ConfigKey_SqlTrigger_MaxBatchSize = "Sql_Trigger_MaxBatchSize";
         public const string ConfigKey_SqlTrigger_PollingInterval = "Sql_Trigger_PollingIntervalMs";
         public const string ConfigKey_SqlTrigger_MaxChangesPerWorker = "Sql_Trigger_MaxChangesPerWorker";
 

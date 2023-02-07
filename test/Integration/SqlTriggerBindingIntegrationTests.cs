@@ -82,24 +82,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // set the batch size to the same value so they can all be processed in one
             // batch. The test will only wait for ~1 batch worth of time so will timeout
             // if the batch size isn't actually changed
-            const int batchSize = SqlTableChangeMonitor<object>.DefaultBatchSize * 4;
+            const int maxBatchSize = SqlTableChangeMonitor<object>.DefaultMaxBatchSize * 4;
             const int firstId = 1;
-            const int lastId = batchSize;
+            const int lastId = maxBatchSize;
             this.SetChangeTrackingForTable("Products");
             var taskCompletionSource = new TaskCompletionSource<bool>();
             DataReceivedEventHandler handler = TestUtils.CreateOutputReceievedHandler(
                 taskCompletionSource,
                 @"Starting change consumption loop. BatchSize: (\d*) PollingIntervalMs: \d*",
                 "BatchSize",
-                batchSize.ToString());
+                maxBatchSize.ToString());
             this.StartFunctionHost(
                 nameof(ProductsTriggerWithValidation),
                 SupportedLanguages.CSharp,
                 useTestFolder: true,
                 customOutputHandler: handler,
                 environmentVariables: new Dictionary<string, string>() {
-                    { "TEST_EXPECTED_BATCH_SIZE", batchSize.ToString() },
-                    { "Sql_Trigger_BatchSize", batchSize.ToString() }
+                    { "TEST_EXPECTED_BATCH_SIZE", maxBatchSize.ToString() },
+                    { "Sql_Trigger_MaxBatchSize", maxBatchSize.ToString() }
                 }
             );
 
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 () => { this.InsertProducts(firstId, lastId); return Task.CompletedTask; },
                 id => $"Product {id}",
                 id => id * 100,
-                this.GetBatchProcessingTimeout(firstId, lastId, batchSize: batchSize));
+                this.GetBatchProcessingTimeout(firstId, lastId, maxBatchSize: maxBatchSize));
             await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromSeconds(5000), "Timed out waiting for BatchSize configuration message");
         }
 
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // Use enough items to require 5 batches to be processed - the test will
             // only wait for the expected time and timeout if the default polling
             // interval isn't actually modified.
-            const int lastId = SqlTableChangeMonitor<object>.DefaultBatchSize * 5;
+            const int lastId = SqlTableChangeMonitor<object>.DefaultMaxBatchSize * 5;
             const int pollingIntervalMs = SqlTableChangeMonitor<object>.DefaultPollingIntervalMs / 2;
             this.SetChangeTrackingForTable("Products");
             var taskCompletionSource = new TaskCompletionSource<bool>();

@@ -17,7 +17,7 @@
       - [az\_func.GlobalState](#az_funcglobalstate)
       - [az\_func.Leases\_\*](#az_funcleases_)
     - [Configuration for Trigger Bindings](#configuration-for-trigger-bindings)
-      - [Sql\_Trigger\_BatchSize](#sql_trigger_batchsize)
+      - [Sql\_Trigger\_MaxBatchSize](#sql_trigger_maxbatchsize)
       - [Sql\_Trigger\_PollingIntervalMs](#sql_trigger_pollingintervalms)
       - [Sql\_Trigger\_MaxChangesPerWorker](#sql_trigger_maxchangesperworker)
     - [Scaling for Trigger Bindings](#scaling-for-trigger-bindings)
@@ -132,9 +132,9 @@ A row is created for every row in the target table that is modified. These are t
 
 This section goes over some of the configuration values you can use to customize SQL trigger bindings. See [How to Use Azure Function App Settings](https://learn.microsoft.com/azure/azure-functions/functions-how-to-use-azure-function-app-settings) to learn more.
 
-#### Sql_Trigger_BatchSize
+#### Sql_Trigger_MaxBatchSize
 
-This controls the number of changes processed at once before being sent to the triggered function.
+This controls the maximum number of changes sent to the function during each iteration of the change processing loop.
 
 #### Sql_Trigger_PollingIntervalMs
 

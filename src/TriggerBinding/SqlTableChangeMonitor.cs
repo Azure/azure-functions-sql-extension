@@ -45,7 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const int LeaseRenewalIntervalInSeconds = 15;
         private const int MaxRetryReleaseLeases = 3;
 
-        public const int DefaultBatchSize = 100;
+        public const int DefaultMaxBatchSize = 100;
         public const int DefaultPollingIntervalMs = 1000;
         #endregion Constants
 
@@ -60,9 +60,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly ILogger _logger;
         /// <summary>
-        /// Number of changes to process in each iteration of the loop
+        /// Maximum number of changes to process in each iteration of the loop
         /// </summary>
-        private readonly int _batchSize = DefaultBatchSize;
+        private readonly int _maxBatchSize = DefaultMaxBatchSize;
         /// <summary>
         /// Delay in ms between processing each batch of changes
         /// </summary>
@@ -132,12 +132,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._telemetryProps = telemetryProps ?? new Dictionary<TelemetryPropertyName, string>();
 
             // Check if there's config settings to override the default batch size/polling interval values
-            int? configuredBatchSize = configuration.GetValue<int?>(ConfigKey_SqlTrigger_BatchSize);
+            int? configuredBatchSize = configuration.GetValue<int?>(ConfigKey_SqlTrigger_MaxBatchSize);
             int? configuredPollingInterval = configuration.GetValue<int?>(ConfigKey_SqlTrigger_PollingInterval);
-            this._batchSize = configuredBatchSize ?? this._batchSize;
-            if (this._batchSize <= 0)
+            this._maxBatchSize = configuredBatchSize ?? this._maxBatchSize;
+            if (this._maxBatchSize <= 0)
             {
-                throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_BatchSize}'. Ensure that the value is a positive integer.");
+                throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_MaxBatchSize}'. Ensure that the value is a positive integer.");
             }
             this._pollingIntervalInMs = configuredPollingInterval ?? this._pollingIntervalInMs;
             if (this._pollingIntervalInMs <= 0)
@@ -147,17 +147,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             TelemetryInstance.TrackEvent(
                 TelemetryEventName.TriggerMonitorStart,
                 new Dictionary<TelemetryPropertyName, string>(telemetryProps) {
-                        { TelemetryPropertyName.HasConfiguredBatchSize, (configuredBatchSize != null).ToString() },
+                        { TelemetryPropertyName.HasConfiguredMaxBatchSize, (configuredBatchSize != null).ToString() },
                         { TelemetryPropertyName.HasConfiguredPollingInterval, (configuredPollingInterval != null).ToString() },
                 },
                 new Dictionary<TelemetryMeasureName, double>() {
-                    { TelemetryMeasureName.BatchSize, this._batchSize },
+                    { TelemetryMeasureName.BatchSize, this._maxBatchSize },
                     { TelemetryMeasureName.PollingIntervalMs, this._pollingIntervalInMs }
                 }
             );
 
             // Prep search-conditions that will be used besides WHERE clause to match table rows.
-            this._rowMatchConditions = Enumerable.Range(0, this._batchSize)
+            this._rowMatchConditions = Enumerable.Range(0, this._maxBatchSize)
                 .Select(rowIndex => string.Join(" AND ", this._primaryKeyColumns.Select((col, colIndex) => $"{col.name.AsBracketQuotedString()} = @{rowIndex}_{colIndex}")))
                 .ToList();
 
@@ -253,7 +253,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         private async Task RunChangeConsumptionLoopAsync()
         {
-            this._logger.LogInformationWithThreadId($"Starting change consumption loop. BatchSize: {this._batchSize} PollingIntervalMs: {this._pollingIntervalInMs}");
+            this._logger.LogInformationWithThreadId($"Starting change consumption loop. BatchSize: {this._maxBatchSize} PollingIntervalMs: {this._pollingIntervalInMs}");
 
             try
             {
@@ -875,7 +875,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 FROM {GlobalStateTableName}
                 WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
 
-                SELECT TOP {this._batchSize}
+                SELECT TOP {this._maxBatchSize}
                     {selectList},
                     c.{SysChangeVersionColumnName},
                     c.SYS_CHANGE_OPERATION,
