@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingS
         /// This timer function runs evyery 5 seconds, each time it upserts 1000 rows of data.
         /// </summary>
         [Function("TimerTriggerProducts")]
-        [SqlOutput("Products", ConnectionStringSetting = "SqlConnectionString")]
+        [SqlOutput("Products", "SqlConnectionString")]
         public static List<Product> Run(
             [TimerTrigger("*/5 * * * * *")] TimerInfo req, FunctionContext context)
         {

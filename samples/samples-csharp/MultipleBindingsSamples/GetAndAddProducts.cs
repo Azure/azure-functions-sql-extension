@@ -21,12 +21,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.MultipleBindingsSamples
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getandaddproducts/{cost}")]
             HttpRequest req,
             [Sql("SELECT * FROM Products",
+                "SqlConnectionString",
                 CommandType = System.Data.CommandType.Text,
-                Parameters = "@Cost={cost}",
-                ConnectionStringSetting = "SqlConnectionString")]
+                Parameters = "@Cost={cost}")]
             IEnumerable<Product> products,
             [Sql("ProductsWithIdentity",
-                ConnectionStringSetting = "SqlConnectionString")]
+                "SqlConnectionString")]
             out Product[] productsWithIdentity)
         {
             productsWithIdentity = products.ToArray();

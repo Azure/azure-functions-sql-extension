@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "addproductwithdefaultpk")]
             [FromBody] ProductWithDefaultPK product,
-            [Sql("dbo.ProductsWithDefaultPK", ConnectionStringSetting = "SqlConnectionString")] out ProductWithDefaultPK output)
+            [Sql("dbo.ProductsWithDefaultPK", "SqlConnectionString")] out ProductWithDefaultPK output)
         {
             output = product;
             return new CreatedResult($"/api/addproductwithdefaultpk", output);

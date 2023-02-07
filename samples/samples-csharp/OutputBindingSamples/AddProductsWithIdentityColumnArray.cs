@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")]
             HttpRequest req,
-            [Sql("dbo.ProductsWithIdentity", ConnectionStringSetting = "SqlConnectionString")] out ProductWithoutId[] products)
+            [Sql("dbo.ProductsWithIdentity", "SqlConnectionString")] out ProductWithoutId[] products)
         {
             products = new[]
             {

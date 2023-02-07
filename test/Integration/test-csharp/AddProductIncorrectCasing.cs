@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct-incorrectcasing")]
             HttpRequest req,
-            [Sql("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] out ProductIncorrectCasing product)
+            [Sql("dbo.Products", "SqlConnectionString")] out ProductIncorrectCasing product)
         {
             product = new ProductIncorrectCasing
             {

@@ -32,7 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproductwithmultipleprimarycolumnsandidentity")]
             HttpRequest req,
-            [Sql("dbo.ProductsWithMultiplePrimaryColumnsAndIdentity", ConnectionStringSetting = "SqlConnectionString")] out MultiplePrimaryKeyProductWithoutId product)
+            [Sql("dbo.ProductsWithMultiplePrimaryColumnsAndIdentity", "SqlConnectionString")] out MultiplePrimaryKeyProductWithoutId product)
         {
             product = new MultiplePrimaryKeyProductWithoutId
             {
