@@ -180,11 +180,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         /// <summary>
         /// Gets a timeout value to use when processing the given number of changes, based on the
-        /// default batch size and polling interval.
+        /// default max batch size and polling interval.
         /// </summary>
         /// <param name="firstId">The first ID in the batch to process</param>
         /// <param name="lastId">The last ID in the batch to process</param>
-        /// <param name="maxBatchSize">The max batch size if different than the default batch size</param>
+        /// <param name="maxBatchSize">The max batch size if different than the default max batch size</param>
         /// <param name="pollingIntervalMs">The polling interval in ms if different than the default polling interval</param>
         /// <returns></returns>
         public int GetBatchProcessingTimeout(int firstId, int lastId, int maxBatchSize = SqlTableChangeMonitor<object>.DefaultMaxBatchSize, int pollingIntervalMs = SqlTableChangeMonitor<object>.DefaultPollingIntervalMs)

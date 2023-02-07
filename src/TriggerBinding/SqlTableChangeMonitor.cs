@@ -131,10 +131,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._userTableId = userTableId;
             this._telemetryProps = telemetryProps ?? new Dictionary<TelemetryPropertyName, string>();
 
-            // Check if there's config settings to override the default batch size/polling interval values
-            int? configuredBatchSize = configuration.GetValue<int?>(ConfigKey_SqlTrigger_MaxBatchSize);
+            // Check if there's config settings to override the default max batch size/polling interval values
+            int? configuredMaxBatchSize = configuration.GetValue<int?>(ConfigKey_SqlTrigger_MaxBatchSize);
+            // Fall back to original value for backwards compat if the new value isn't specified
+            if (configuredMaxBatchSize == null)
+            {
+                configuredMaxBatchSize = configuration.GetValue<int?>(ConfigKey_SqlTrigger_BatchSize);
+            }
             int? configuredPollingInterval = configuration.GetValue<int?>(ConfigKey_SqlTrigger_PollingInterval);
-            this._maxBatchSize = configuredBatchSize ?? this._maxBatchSize;
+            this._maxBatchSize = configuredMaxBatchSize ?? this._maxBatchSize;
             if (this._maxBatchSize <= 0)
             {
                 throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_MaxBatchSize}'. Ensure that the value is a positive integer.");
@@ -147,7 +152,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             TelemetryInstance.TrackEvent(
                 TelemetryEventName.TriggerMonitorStart,
                 new Dictionary<TelemetryPropertyName, string>(telemetryProps) {
-                        { TelemetryPropertyName.HasConfiguredMaxBatchSize, (configuredBatchSize != null).ToString() },
+                        { TelemetryPropertyName.HasConfiguredMaxBatchSize, (configuredMaxBatchSize != null).ToString() },
                         { TelemetryPropertyName.HasConfiguredPollingInterval, (configuredPollingInterval != null).ToString() },
                 },
                 new Dictionary<TelemetryMeasureName, double>() {
@@ -253,7 +258,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         private async Task RunChangeConsumptionLoopAsync()
         {
-            this._logger.LogInformationWithThreadId($"Starting change consumption loop. BatchSize: {this._maxBatchSize} PollingIntervalMs: {this._pollingIntervalInMs}");
+            this._logger.LogInformationWithThreadId($"Starting change consumption loop. MaxBatchSize: {this._maxBatchSize} PollingIntervalMs: {this._pollingIntervalInMs}");
 
             try
             {
