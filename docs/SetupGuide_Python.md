@@ -1,6 +1,7 @@
 # Azure SQL bindings for Azure Functions - Python
 
 ## Table of Contents
+
 - [Azure SQL bindings for Azure Functions - Python](#azure-sql-bindings-for-azure-functions---python)
   - [Table of Contents](#table-of-contents)
   - [Setup Function App](#setup-function-app)
@@ -30,6 +31,7 @@ These instructions will guide you through creating your Function App and adding 
 
 2. Create a function app for Python:
     *See [#250](https://github.com/Azure/azure-functions-sql-extension/issues/250) before starting.*
+
     ```bash
     mkdir MyApp
     cd MyApp
@@ -39,6 +41,7 @@ These instructions will guide you through creating your Function App and adding 
 3. Enable SQL bindings on the function app. More information can be found in the [Azure SQL bindings for Azure Functions docs](https://aka.ms/sqlbindings).
 
     Update the `host.json` file to the preview extension bundle.
+
     ```json
     "extensionBundle": {
         "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
@@ -187,6 +190,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
       "connectionStringSetting": "SqlConnectionString"
     }
     ```
+
     *In the above, "dbo.Employees" is the name of the table our output binding is upserting into. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [function.json Properties for Output Bindings](#functionjson-properties-for-output-bindings) section*
 
 - Hit 'F5' to run your code. Click the link to upsert the output array values in your SQL table. Your upserted values should launch in the browser.

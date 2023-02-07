@@ -1,6 +1,7 @@
 # Azure SQL bindings for Azure Functions - .NET
 
 ## Table of Contents
+
 - [Azure SQL bindings for Azure Functions - .NET](#azure-sql-bindings-for-azure-functions---net)
   - [Table of Contents](#table-of-contents)
   - [Setup Function App](#setup-function-app)
@@ -24,7 +25,6 @@
     - [SqlTriggerAttribute](#sqltriggerattribute)
     - [Setup for Trigger Bindings](#setup-for-trigger-bindings)
 
-
 ## Setup Function App
 
 These instructions will guide you through creating your Function App and adding the SQL binding extension. This only needs to be done once for every function app you create. If you have one created already you can skip this step.
@@ -32,6 +32,7 @@ These instructions will guide you through creating your Function App and adding 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
 2. Create a function app for .NET:
+
     ```bash
     mkdir MyApp
     cd MyApp
@@ -90,7 +91,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
     }
     ```
 
-    *In the above, "select * from Employees" is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. The next parameter specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [SqlAttribute for Input Bindings](#sqlattribute-for-input-bindings) section*
+    *In the above, `select * from Employees` is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. The next parameter specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [SqlAttribute for Input Bindings](#sqlattribute-for-input-bindings) section*
 
 - Add 'using System.Collections.Generic;' to the namespaces list at the top of the page.
 - Currently, there is an error for the IEnumerable. We'll fix this by creating an Employee class.
@@ -120,7 +121,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 #### Query String
 
-The input binding executes the "select * from Products where Cost = @Cost" query, returning the result as an `IEnumerable<Product>`, where Product is a user-defined POCO. The *Parameters* argument passes the `{cost}` specified in the URL that triggers the function, `getproducts/{cost}`, as the value of the `@Cost` parameter in the query. *CommandType* is set to `System.Data.CommandType.Text`, since the constructor argument of the binding is a raw query.
+The input binding executes the `select * from Products where Cost = @Cost` query, returning the result as an `IEnumerable<Product>`, where Product is a user-defined POCO. The *Parameters* argument passes the `{cost}` specified in the URL that triggers the function, `getproducts/{cost}`, as the value of the `@Cost` parameter in the query. *CommandType* is set to `System.Data.CommandType.Text`, since the constructor argument of the binding is a raw query.
 
 ```csharp
 [FunctionName("GetProducts")]
@@ -468,8 +469,8 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
     ```
 
 - *Skip these steps if you have not completed the output binding tutorial.*
-    - Open your output binding file and modify some of the values. For example, change the value of Team column from 'Functions' to 'Azure SQL'.
-    - Hit 'F5' to run your code. Click the link of the HTTP trigger from the output binding tutorial.
+  - Open your output binding file and modify some of the values. For example, change the value of Team column from 'Functions' to 'Azure SQL'.
+  - Hit 'F5' to run your code. Click the link of the HTTP trigger from the output binding tutorial.
 - Update, insert, or delete rows in your SQL table while the function app is running and observe the function logs.
 - You should see the new log messages in the Visual Studio Code terminal containing the values of row-columns after the update operation.
 - Congratulations! You have successfully created your first SQL trigger binding!
