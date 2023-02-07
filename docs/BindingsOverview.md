@@ -1,6 +1,7 @@
 # Azure SQL bindings for Azure Functions - Overview
 
 ## Table of Contents
+
 - [Azure SQL bindings for Azure Functions - Overview](#azure-sql-bindings-for-azure-functions---overview)
   - [Table of Contents](#table-of-contents)
   - [Input Binding](#input-binding)
@@ -49,13 +50,16 @@ Typically Output Bindings require two things :
 Normally either of these are false then an error will be thrown. Below are the situations in which this is not the case :
 
 #### Identity Columns
+
 In the case where one of the primary key columns is an identity column, there are two options based on how the function defines the output object:
 
 1. If the identity column isn't included in the output object then a straight insert is always performed with the other column values. See [AddProductWithIdentityColumn](../samples/samples-csharp/OutputBindingSamples/AddProductWithIdentityColumn.cs) for an example.
 2. If the identity column is included (even if it's an optional nullable value) then a merge is performed similar to what happens when no identity column is present. This merge will either insert a new row or update an existing row based on the existence of a row that matches the primary keys (including the identity column). See [AddProductWithIdentityColumnIncluded](../samples/samples-csharp/OutputBindingSamples/AddProductWithIdentityColumnIncluded.cs) for an example.
 
 #### Columns with Default Values
+
 In the case where one of the primary key columns has a default value, there are also two options based on how the function defines the output object:
+
 1. If the column with a default value is not included in the output object, then a straight insert is always performed with the other values. See [AddProductWithDefaultPK](../samples/samples-csharp/OutputBindingSamples/AddProductWithDefaultPK.cs) for an example.
 2. If the column with a default value is included then a merge is performed similar to what happens when no default column is present. If there is a nullable column with a default value, then the provided column value in the output object will be upserted even if it is null.
 
@@ -65,7 +69,7 @@ There currently is no built-in support for errors that occur while executing out
 
 If using a .NET Function then `IAsyncCollector` can be used, and the function code can handle exceptions thrown by the call to `FlushAsync()`.
 
-See https://github.com/Azure/Azure-Functions/issues/891 for further information.
+See <https://github.com/Azure/Azure-Functions/issues/891> for further information.
 
 ## Trigger Binding
 
@@ -116,11 +120,11 @@ A `Leases_*` table is created for every unique instance of a function and table.
 
 This table is used to ensure that all changes are processed and that no change is processed more than once. This table consists of two groups of columns:
 
-   * A column for each column in the primary key of the target table - used to identify the row that it maps to in the target table
-   * A couple columns for tracking the state of each row. These are:
-     * `_az_func_ChangeVersion` for the change version of the row currently being processed
-     * `_az_func_AttemptCount` for tracking the number of times that a change has attempted to be processed to avoid getting stuck trying to process a change it's unable to handle
-     * `_az_func_LeaseExpirationTime` for tracking when the lease on this row for a particular instance is set to expire. This ensures that if an instance exits unexpectedly another instance will be able to pick up and process any changes it had leases for after the expiration time has passed.
+- A column for each column in the primary key of the target table - used to identify the row that it maps to in the target table
+- A couple columns for tracking the state of each row. These are:
+  - `_az_func_ChangeVersion` for the change version of the row currently being processed
+  - `_az_func_AttemptCount` for tracking the number of times that a change has attempted to be processed to avoid getting stuck trying to process a change it's unable to handle
+  - `_az_func_LeaseExpirationTime` for tracking when the lease on this row for a particular instance is set to expire. This ensures that if an instance exits unexpectedly another instance will be able to pick up and process any changes it had leases for after the expiration time has passed.
 
 A row is created for every row in the target table that is modified. These are then cleaned up after the changes are processed for a set of changes corresponding to a change tracking sync version.
 
