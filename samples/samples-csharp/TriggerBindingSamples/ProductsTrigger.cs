@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.TriggerBindingSamples
     {
         [FunctionName(nameof(ProductsTrigger))]
         public static void Run(
-            [SqlTrigger("[dbo].[Products]", ConnectionStringSetting = "SqlConnectionString")]
+            [SqlTrigger("[dbo].[Products]", "SqlConnectionString")]
             IReadOnlyList<SqlChange<Product>> changes,
             ILogger logger)
         {

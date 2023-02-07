@@ -17,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [FunctionName(nameof(ProductsTriggerWithValidation))]
         public static void Run(
-            [SqlTrigger("[dbo].[Products]", ConnectionStringSetting = "SqlConnectionString")]
+            [SqlTrigger("[dbo].[Products]", "SqlConnectionString")]
             IReadOnlyList<SqlChange<Product>> changes,
             ILogger logger)
         {

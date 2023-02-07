@@ -16,9 +16,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.InputBindingSa
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproductstopn/{count}")]
             HttpRequestData req,
             [SqlInput("SELECT TOP(CAST(@Count AS INT)) * FROM Products",
+                "SqlConnectionString",
                 CommandType = System.Data.CommandType.Text,
-                Parameters = "@Count={count}",
-                ConnectionStringSetting = "SqlConnectionString")]
+                Parameters = "@Count={count}")]
             IEnumerable<Product> products)
         {
             return products;

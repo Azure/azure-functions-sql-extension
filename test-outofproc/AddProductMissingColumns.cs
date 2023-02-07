@@ -13,7 +13,7 @@ namespace DotnetIsolatedTests
         // This output binding should successfully add the ProductMissingColumns object
         // to the SQL table.
         [Function("AddProductMissingColumns")]
-        [SqlOutput("dbo.Products", ConnectionStringSetting = "SqlConnectionString")]
+        [SqlOutput("dbo.Products", "SqlConnectionString")]
         public static ProductMissingColumns Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "addproduct-missingcolumns")]
             HttpRequest req)

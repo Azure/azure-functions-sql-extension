@@ -17,9 +17,11 @@ namespace Microsoft.Azure.WebJobs
         /// Initializes a new instance of the <see cref="SqlTriggerAttribute"/> class, which triggers the function when any changes on the specified table are detected.
         /// </summary>
         /// <param name="tableName">Name of the table to watch for changes.</param>
-        public SqlTriggerAttribute(string tableName)
+        /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored</param>
+        public SqlTriggerAttribute(string tableName, string connectionStringSetting)
         {
             this.TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
+            this.ConnectionStringSetting = connectionStringSetting ?? throw new ArgumentNullException(nameof(connectionStringSetting));
         }
 
         /// <summary>

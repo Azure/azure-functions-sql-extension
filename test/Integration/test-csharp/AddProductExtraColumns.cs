@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "addproduct-extracolumns")]
             HttpRequest req,
-            [Sql("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] out ProductExtraColumns product)
+            [Sql("dbo.Products", "SqlConnectionString")] out ProductExtraColumns product)
         {
             product = new ProductExtraColumns
             {

@@ -18,9 +18,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.InputBindingSa
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts/{cost}")]
             HttpRequestData req,
             [SqlInput("select * from Products where Cost = @Cost",
+                "SqlConnectionString",
                 CommandType = System.Data.CommandType.Text,
-                Parameters = "@Cost={cost}",
-                ConnectionStringSetting = "SqlConnectionString")]
+                Parameters = "@Cost={cost}")]
             IEnumerable<Product> products)
         {
             return products;

@@ -13,7 +13,7 @@ namespace DotnetIsolatedTests
         // This output binding should throw an Exception because the ProductExtraColumns object has 
         // two properties that do not exist as columns in the SQL table (ExtraInt and ExtraString).
         [Function("AddProductExtraColumns")]
-        [SqlOutput("dbo.Products", ConnectionStringSetting = "SqlConnectionString")]
+        [SqlOutput("dbo.Products", "SqlConnectionString")]
         public static ProductExtraColumns Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "addproduct-extracolumns")]
             HttpRequest req)

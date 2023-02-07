@@ -19,7 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples
         [FunctionName("TimerTriggerProducts")]
         public static void Run(
             [TimerTrigger("*/5 * * * * *")] TimerInfo req, ILogger log,
-            [Sql("Products", ConnectionStringSetting = "SqlConnectionString")] ICollector<Product> products)
+            [Sql("Products", "SqlConnectionString")] ICollector<Product> products)
         {
             int totalUpserts = 1000;
             log.LogInformation($"{DateTime.Now} starting execution #{_executionNumber}. Rows to generate={totalUpserts}.");
