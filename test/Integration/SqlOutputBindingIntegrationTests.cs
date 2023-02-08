@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
     [Collection(IntegrationTestsCollection.Name)]
+    [LogTestName]
     public class SqlOutputBindingIntegrationTests : IntegrationTestBase
     {
         public SqlOutputBindingIntegrationTests(ITestOutputHelper output) : base(output)
