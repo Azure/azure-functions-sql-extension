@@ -31,7 +31,7 @@ code .
 4. Configure the Function App located in the [samples](./samples) folder by following the instructions [here](./docs/GeneralSetup.md#configure-function-app)
 
 5. Configure a local nuget source to run the out-of-proc functions with locally built extension.
-    Add local nuget source from your home directory.
+    Add local nuget source from your **home directory** (or a directory above the project repo).
 
     ```powershell
     dotnet nuget add source <PATH_TO_REPO_AZURE-FUNCTIONS-SQL-EXTENSION/local-packages>
