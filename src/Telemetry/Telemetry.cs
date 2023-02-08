@@ -383,6 +383,7 @@ This extension collect usage data in order to help us improve your experience. T
         GetPrimaryKeysDurationMs,
         GetUnprocessedChangesDurationMs,
         InsertGlobalStateTableRowDurationMs,
+        MaxBatchSize,
         MaxChangesPerWorker,
         NumRows,
         PollingIntervalMs,

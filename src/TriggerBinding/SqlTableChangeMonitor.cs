@@ -156,7 +156,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         { TelemetryPropertyName.HasConfiguredPollingInterval, (configuredPollingInterval != null).ToString() },
                 },
                 new Dictionary<TelemetryMeasureName, double>() {
-                    { TelemetryMeasureName.BatchSize, this._maxBatchSize },
+                    { TelemetryMeasureName.MaxBatchSize, this._maxBatchSize },
                     { TelemetryMeasureName.PollingIntervalMs, this._pollingIntervalInMs }
                 }
             );

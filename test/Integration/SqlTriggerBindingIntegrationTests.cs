@@ -91,7 +91,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             DataReceivedEventHandler handler = TestUtils.CreateOutputReceievedHandler(
                 taskCompletionSource,
                 @"Starting change consumption loop. MaxBatchSize: (\d*) PollingIntervalMs: \d*",
-                "BatchSize",
+                "MaxBatchSize",
                 maxBatchSize.ToString());
             this.StartFunctionHost(
                 nameof(ProductsTriggerWithValidation),
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             DataReceivedEventHandler handler = TestUtils.CreateOutputReceievedHandler(
                 taskCompletionSource,
                 @"Starting change consumption loop. MaxBatchSize: (\d*) PollingIntervalMs: \d*",
-                "BatchSize",
+                "MaxBatchSize",
                 maxBatchSize.ToString());
             this.StartFunctionHost(
                 nameof(ProductsTriggerWithValidation),
