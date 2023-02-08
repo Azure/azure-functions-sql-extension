@@ -18,7 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [FunctionName(nameof(AddProductColumnTypes))]
         public static IActionResult Run(
                 [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct-columntypes")] HttpRequest req,
-                [Sql("dbo.ProductsColumnTypes", ConnectionStringSetting = "SqlConnectionString")] out ProductColumnTypes product)
+                [Sql("dbo.ProductsColumnTypes", "SqlConnectionString")] out ProductColumnTypes product)
         {
             product = new ProductColumnTypes()
             {

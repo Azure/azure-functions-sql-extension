@@ -14,7 +14,6 @@ SQL Server on Docker makes it easy to set up and connect to a locally hosted ins
 
 Azure SQL Database is a fully managed platform as a service (PaaS) database engine that runs the latest stable version of the Microsoft SQL Server database engine. Instructions for getting started can be found [here](https://docs.microsoft.com/azure/azure-sql/database/single-database-create-quickstart).
 
-
 ## SQL Setup
 
 Next you'll configure your SQL Server database for use with Azure SQL binding for Azure Functions.
@@ -35,14 +34,13 @@ CREATE TABLE Employees (
 );
 ```
 
-2. Next a primary key must be set in your SQL table before using the bindings. To do this, run the queries below, replacing the placeholder values for your table and column.
+1. Next a primary key must be set in your SQL table before using the bindings. To do this, run the queries below, replacing the placeholder values for your table and column.
 
 ```sql
 ALTER TABLE ['{table_name}'] ALTER COLUMN ['{primary_key_column_name}'] int NOT NULL
 
 ALTER TABLE ['{table_name}'] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED (['{primary_key_column_name}']);
 ```
-
 
 ## Create a Function App
 
@@ -55,6 +53,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
 2. Create a function app for .NET, JavaScript, TypeScript, Python or Java.
 
     **.NET**
+
     ```bash
     mkdir MyApp
     cd MyApp
@@ -62,6 +61,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     ```
 
     **JavaScript (NodeJS)**
+
     ```bash
     mkdir MyApp
     cd MyApp
@@ -69,6 +69,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     ```
 
     **TypeScript (NodeJS)**
+
     ```bash
     mkdir MyApp
     cd MyApp
@@ -78,6 +79,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     **Python**
 
     *See [#250](https://github.com/Azure/azure-functions-sql-extension/issues/250) before starting.*
+
     ```bash
     mkdir MyApp
     cd MyApp
@@ -85,6 +87,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     ```
 
     **Java**
+
     ```bash
     mkdir MyApp
     cd MyApp
@@ -92,6 +95,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     ```
 
     **PowerShell**
+
     ```bash
     mkdir MyApp
     cd MyApp
@@ -107,6 +111,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     ```
 
     **JavaScript and TypeScript:** Update the `host.json` file to the preview extension bundle.
+
     ```json
     "extensionBundle": {
         "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
@@ -117,6 +122,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     **Python:**
 
     Update the `host.json` file to the preview extension bundle.
+
     ```json
     "extensionBundle": {
         "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
@@ -125,17 +131,20 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     ```
 
     Add a preview version of the Python functions library to `requirements.txt`.
+
     ```txt
     azure-functions==1.11.3b1
     ```
 
     Add a setting in `local.settings.json` to isolate the worker dependencies.
+
     ```json
     "PYTHON_ISOLATE_WORKER_DEPENDENCIES": "1"
     ```
 
     **Java:**
     Update the `host.json` file to the preview extension bundle.
+
     ```json
     "extensionBundle": {
         "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
@@ -144,6 +153,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     ```
 
     Add the `azure-functions-java-library-sql` dependency to the pom.xml file.
+
     ```xml
     <dependency>
         <groupId>com.microsoft.azure.functions</groupId>
@@ -154,6 +164,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
 
      **PowerShell:**
     Update the `host.json` file to the preview extension bundle.
+
     ```json
     "extensionBundle": {
         "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",

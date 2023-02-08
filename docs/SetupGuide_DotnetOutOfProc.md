@@ -1,6 +1,7 @@
 # Azure SQL bindings for Azure Functions - .NET (Isolated Process)
 
 ## Table of Contents
+
 - [Azure SQL bindings for Azure Functions - .NET (Isolated Process)](#azure-sql-bindings-for-azure-functions---net-isolated-process)
   - [Table of Contents](#table-of-contents)
   - [Binding Model](#binding-model)
@@ -27,8 +28,10 @@
 .NET Isolated introduces a new binding model, slightly different from the binding model exposed in .NET Core 3 Azure Functions. More information can be [found here](https://github.com/Azure/azure-functions-dotnet-worker/wiki/.NET-Worker-bindings). Please review our samples for usage information.
 
 ## Key differences with .NET (Isolated Process)
+
 Please refer to the functions documentation [here](https://learn.microsoft.com/azure/azure-functions/dotnet-isolated-in-process-differences)
-- Because .NET isolated projects run in a separate worker process, bindings can't take advantage of rich binding classes, such as ICollector<T>, IAsyncCollector<T>, and CloudBlockBlob.
+
+- Because .NET isolated projects run in a separate worker process, bindings can't take advantage of rich binding classes, such as ICollector&lt;T&gt;, IAsyncCollector&lt;T&gt;, and CloudBlockBlob.
 - There's also no direct support for types inherited from underlying service SDKs, such as SqlCommand. Instead, bindings rely on strings, arrays, and serializable types, such as plain old class objects (POCOs).
 - For HTTP triggers, you must use HttpRequestData and HttpResponseData to access the request and response data. This is because you don't have access to the original HTTP request and response objects when running out-of-process.
 
@@ -70,15 +73,15 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "employees")] HttpRequest req,
         ILogger log,
         [SqlInput("select * from Employees",
-        CommandType = System.Data.CommandType.Text,
-        ConnectionStringSetting = "SqlConnectionString")]
+        "SqlConnectionString",
+        CommandType = System.Data.CommandType.Text)]
         IEnumerable<Employee> employees)
     {
         return employees;
     }
     ```
 
-    *In the above, "select * from Employees" is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [SqlInputAttribute for Input Bindings](#sqlinputattribute-for-input-bindings) section*
+    *In the above, `select * from Employees` is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [SqlInputAttribute for Input Bindings](#sqlinputattribute-for-input-bindings) section*
 - Add 'using Microsoft.Azure.Functions.Worker.Extensions.Sql;' for using *SqlInput*, the out of proc sql input binding.
 - Add 'using System.Collections.Generic;' to the namespaces list at the top of the page.
 - Currently, there is an error for the IEnumerable. We'll fix this by creating an Employee class.
@@ -108,7 +111,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 #### Query String
 
-The input binding executes the "select * from Products where Cost = @Cost" query, returning the result as an `IEnumerable<Product>`, where Product is a user-defined POCO. The *Parameters* argument passes the `{cost}` specified in the URL that triggers the function, `getproducts/{cost}`, as the value of the `@Cost` parameter in the query. *CommandType* is set to `System.Data.CommandType.Text`, since the constructor argument of the binding is a raw query.
+The input binding executes the `select * from Products where Cost = @Cost` query, returning the result as an `IEnumerable<Product>`, where Product is a user-defined POCO. The *Parameters* argument passes the `{cost}` specified in the URL that triggers the function, `getproducts/{cost}`, as the value of the `@Cost` parameter in the query. *CommandType* is set to `System.Data.CommandType.Text`, since the constructor argument of the binding is a raw query.
 
 ```csharp
   [Function("GetProducts")]
@@ -116,9 +119,9 @@ The input binding executes the "select * from Products where Cost = @Cost" query
       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts/{cost}")]
       HttpRequestData req,
       [SqlInput("select * from Products where Cost = @Cost",
+          "SqlConnectionString",
           CommandType = System.Data.CommandType.Text,
-          Parameters = "@Cost={cost}",
-          ConnectionStringSetting = "SqlConnectionString")]
+          Parameters = "@Cost={cost}")]
       IEnumerable<Product> products)
   {
       return products;
@@ -155,9 +158,9 @@ In this case, the parameter value of the `@Name` parameter is an empty string.
       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-nameempty/{cost}")]
       HttpRequestData req,
       [SqlInput("select * from Products where Cost = @Cost and Name = @Name",
+          "SqlConnectionString",
           CommandType = System.Data.CommandType.Text,
-          Parameters = "@Cost={cost},@Name=",
-          ConnectionStringSetting = "SqlConnectionString")]
+          Parameters = "@Cost={cost},@Name=")]
       IEnumerable<Product> products)
   {
       return products;
@@ -174,9 +177,9 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-namenull/{name}")]
       HttpRequestData req,
       [SqlInput("if @Name is null select * from Products where Name is null else select * from Products where @Name = name",
+          "SqlConnectionString",
           CommandType = System.Data.CommandType.Text,
-          Parameters = "@Name={name}",
-          ConnectionStringSetting = "SqlConnectionString")]
+          Parameters = "@Name={name}")]
       IEnumerable<Product> products)
   {
       return products;
@@ -193,9 +196,9 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
       [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-storedprocedure/{cost}")]
       HttpRequestData req,
       [SqlInput("SelectProductsCost",
+          "SqlConnectionString",
           CommandType = System.Data.CommandType.StoredProcedure,
-          Parameters = "@Cost={cost}",
-          ConnectionStringSetting = "SqlConnectionString")]
+          Parameters = "@Cost={cost}")]
       IEnumerable<Product> products)
   {
       return products;
@@ -212,9 +215,9 @@ public static async Task<List<Product>> Run(
     [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-async/{cost}")]
      HttpRequestData req,
     [SqlInput("select * from Products where cost = @Cost",
+         "SqlConnectionString",
          CommandType = System.Data.CommandType.Text,
-         Parameters = "@Cost={cost}",
-         ConnectionStringSetting = "SqlConnectionString")]
+         Parameters = "@Cost={cost}")]
      IAsyncEnumerable<Product> products)
 {
     var enumerator = products.GetAsyncEnumerator();
@@ -242,10 +245,11 @@ The [SqlOutputAttribute](https://github.com/Azure/azure-functions-sql-extension/
 The following are valid binding types for the rows to be upserted into the table:
 
 Each element is a row represented by `T`, where `T` is a user-defined POCO, or Plain Old C# Object. `T` should follow the structure of a row in the queried table. See the [Query String](#query-string) for an example of what `T` should look like.
+
 - **T**: Used when just one row is to be upserted into the table.
 - **T[]**: Each element is again a row of the result represented by `T`. This output binding type requires manual instantiation of the array in the function.
 **Note**: As stated in the functions [documentation](https://learn.microsoft.com/azure/azure-functions/dotnet-isolated-process-guide#output-bindings)
-- Because .NET isolated projects run in a separate worker process, bindings can't take advantage of rich binding classes, such as ICollector<T>, IAsyncCollector<T>, and CloudBlockBlob.
+- Because .NET isolated projects run in a separate worker process, bindings can't take advantage of rich binding classes, such as ICollector&lt;T&gt;, IAsyncCollector&lt;T&gt;, and CloudBlockBlob.
 The repo contains examples of each of these binding types [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-outofproc/OutputBindingSamples). A few examples are also included [below](#samples-for-output-bindings).
 
 ### Setup for Output Bindings
@@ -259,7 +263,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
     ```csharp
     [Function("AddEmployees")]
-    [SqlOutput("dbo.Employees", ConnectionStringSetting = "SqlConnectionString")]
+    [SqlOutput("dbo.Employees", "SqlConnectionString")]
     public static Employee[] Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addemployees-array")]
         HttpRequestData req)
@@ -301,7 +305,7 @@ This output binding type requires the product array to be passed in the request 
 
 ``` csharp
 [Function("AddProductsArray")]
-[SqlOutput("dbo.Products", ConnectionStringSetting = "SqlConnectionString")]
+[SqlOutput("dbo.Products", "SqlConnectionString")]
 public static async Task<Product[]> Run(
 [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproducts-array")]
     HttpRequestData req)
@@ -317,7 +321,7 @@ public static async Task<Product[]> Run(
 
 ```csharp
 [Function("AddProduct")]
-[SqlOutput("dbo.Products", ConnectionStringSetting = "SqlConnectionString")]
+[SqlOutput("dbo.Products", "SqlConnectionString")]
 public static Task<Product> Run(
 [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct")]
     HttpRequestData req)

@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [FunctionName(nameof(PrimaryKeyNotPresentTrigger))]
         public static void Run(
-            [SqlTrigger("[dbo].[ProductsWithoutPrimaryKey]", ConnectionStringSetting = "SqlConnectionString")]
+            [SqlTrigger("[dbo].[ProductsWithoutPrimaryKey]", "SqlConnectionString")]
             IReadOnlyList<SqlChange<Product>> products)
         {
             throw new NotImplementedException("Associated test case should fail before the function is invoked.");

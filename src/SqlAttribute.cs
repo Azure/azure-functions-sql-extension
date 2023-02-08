@@ -19,10 +19,12 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlAttribute/>"/> class.
         /// </summary>
-        /// <param name="commandText">The text of the command</param>
-        public SqlAttribute(string commandText)
+        /// <param name="commandText">For an input binding, either a SQL query or stored procedure that will be run in the target database. For an output binding, the table name to upsert the values to.</param>
+        /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored</param>
+        public SqlAttribute(string commandText, string connectionStringSetting)
         {
             this.CommandText = commandText ?? throw new ArgumentNullException(nameof(commandText));
+            this.ConnectionStringSetting = connectionStringSetting ?? throw new ArgumentNullException(nameof(connectionStringSetting));
         }
 
         /// <summary>
@@ -37,8 +39,8 @@ namespace Microsoft.Azure.WebJobs
         public string ConnectionStringSetting { get; set; }
 
         /// <summary>
-        /// For an input binding, either a SQL query or stored procedure that will be run in the database referred to in the ConnectionString.
-        /// For an output binding, the table name.
+        /// For an input binding, either a SQL query or stored procedure that will be run in the target database.
+        /// For an output binding, the table name to upsert the values to.
         /// </summary>
         [AutoResolve]
         public string CommandText { get; }
