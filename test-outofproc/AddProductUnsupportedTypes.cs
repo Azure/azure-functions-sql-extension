@@ -14,7 +14,7 @@ namespace DotnetIsolatedTests
         /// This output binding should fail since the target table has unsupported column types.
         /// </summary>
         [Function("AddProductUnsupportedTypes")]
-        [SqlOutput("dbo.ProductsUnsupportedTypes", ConnectionStringSetting = "SqlConnectionString")]
+        [SqlOutput("dbo.ProductsUnsupportedTypes", "SqlConnectionString")]
         public static ProductUnsupportedTypes Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct-unsupportedtypes")]
             HttpRequest req)

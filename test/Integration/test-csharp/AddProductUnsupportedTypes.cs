@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct-unsupportedtypes")]
             HttpRequest req,
-            [Sql("dbo.ProductsUnsupportedTypes", ConnectionStringSetting = "SqlConnectionString")] out ProductUnsupportedTypes product)
+            [Sql("dbo.ProductsUnsupportedTypes", "SqlConnectionString")] out ProductUnsupportedTypes product)
         {
             product = new ProductUnsupportedTypes()
             {

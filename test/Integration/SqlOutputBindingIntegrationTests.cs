@@ -513,7 +513,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             var foundExpectedMessageSource = new TaskCompletionSource<bool>();
             this.StartFunctionHost(nameof(AddProductUnsupportedTypes), lang, true, (object sender, DataReceivedEventArgs e) =>
             {
-                if (e.Data.Contains("The type(s) of the following column(s) are not supported: Text, Ntext, Image. See https://github.com/Azure/azure-functions-sql-extension#output-bindings for more details."))
+                if (e.Data.Contains("The type(s) of the following column(s) are not supported: TextCol, NtextCol, ImageCol. See https://github.com/Azure/azure-functions-sql-extension#output-bindings for more details."))
                 {
                     foundExpectedMessageSource.SetResult(true);
                 }
