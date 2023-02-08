@@ -19,9 +19,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             product = new ProductUnsupportedTypes()
             {
                 ProductId = 1,
-                Text = "test",
-                Ntext = "test",
-                Image = new byte[] { 1, 2, 3 }
+                TextCol = "test",
+                NtextCol = "test",
+                ImageCol = new byte[] { 1, 2, 3 }
             };
             return new CreatedResult($"/api/addproduct-unsupportedtypes", product);
         }

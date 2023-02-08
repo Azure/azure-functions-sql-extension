@@ -15,9 +15,6 @@ import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
 import com.microsoft.azure.functions.sql.annotation.SQLOutput;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.function.Common.ProductUnsupportedTypes;
 
 import java.util.Optional;
@@ -37,7 +34,7 @@ public class AddProductUnsupportedTypes {
                 name = "product",
                 commandText = "dbo.ProductsUnsupportedTypes",
                 connectionStringSetting = "SqlConnectionString")
-                OutputBinding<ProductUnsupportedTypes> product) throws JsonMappingException, JsonProcessingException {
+                OutputBinding<ProductUnsupportedTypes> product) {
 
         ProductUnsupportedTypes p = new ProductUnsupportedTypes(
             0,

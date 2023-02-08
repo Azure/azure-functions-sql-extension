@@ -22,9 +22,9 @@ namespace DotnetIsolatedTests
             var product = new ProductUnsupportedTypes
             {
                 ProductId = 1,
-                Text = "test",
-                Ntext = "test",
-                Image = new byte[] { 1, 2, 3 }
+                TextCol = "test",
+                NtextCol = "test",
+                ImageCol = new byte[] { 1, 2, 3 }
             };
             return product;
         }

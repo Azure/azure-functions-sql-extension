@@ -5,9 +5,9 @@
 module.exports = async function (context, req) {
     context.bindings.product = {
         ProductId: 0,
-        Text: "test",
-        Ntext: "test",
-        Image: "dGVzdA=="
+        TextCol: "test",
+        NtextCol: "test",
+        ImageCol: "dGVzdA=="
     }
 
     return {

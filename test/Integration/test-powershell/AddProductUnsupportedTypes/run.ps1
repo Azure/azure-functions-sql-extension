@@ -8,9 +8,9 @@ param($Request)
 
 $req_body = [ordered]@{
     ProductId=0;
-    Text="test";
-    Ntext="test";
-    Image="dGVzdA==";
+    TextCol="test";
+    NtextCol="test";
+    ImageCol="dGVzdA==";
 }
 
 Push-OutputBinding -Name product -Value $req_body

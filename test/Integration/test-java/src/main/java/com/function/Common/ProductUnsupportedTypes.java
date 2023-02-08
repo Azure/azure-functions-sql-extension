@@ -11,21 +11,21 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class ProductUnsupportedTypes {
     @JsonProperty("ProductId")
     private int ProductId;
-    @JsonProperty("Text")
-    private String Text;
-    @JsonProperty("Ntext")
-    private String Ntext;
-    @JsonProperty("Image")
-    private String Image;
+    @JsonProperty("TextCol")
+    private String TextCol;
+    @JsonProperty("NtextCol")
+    private String NtextCol;
+    @JsonProperty("ImageCol")
+    private String ImageCol;
 
     public ProductUnsupportedTypes() {
     }
 
-    public ProductUnsupportedTypes(int productId, String text, String ntext, String image) {
+    public ProductUnsupportedTypes(int productId, String textCol, String ntextCol, String imageCol) {
         ProductId = productId;
-        Text = text;
-        Ntext = ntext;
-        Image = image;
+        TextCol = textCol;
+        NtextCol = ntextCol;
+        ImageCol = imageCol;
     }
 
     public int getProductId() {
@@ -36,27 +36,27 @@ public class ProductUnsupportedTypes {
         ProductId = productId;
     }
 
-    public String getText() {
-        return Text;
+    public String getTextCol() {
+        return TextCol;
     }
 
-    public void setText(String text) {
-        Text = text;
+    public void setTextCol(String textCol) {
+        TextCol = textCol;
     }
 
-    public String getNtext() {
-        return Ntext;
+    public String getNtextCol() {
+        return NtextCol;
     }
 
-    public void setNtext(String ntext) {
-        Ntext = ntext;
+    public void setNtextCol(String ntextCol) {
+        NtextCol = ntextCol;
     }
 
-    public String getImage() {
-        return Image;
+    public String getImageCol() {
+        return ImageCol;
     }
 
-    public void setImage(String image) {
-        Image = image;
+    public void setImageCol(String imageCol) {
+        ImageCol = imageCol;
     }
 }

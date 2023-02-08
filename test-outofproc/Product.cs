@@ -193,10 +193,10 @@ namespace DotnetIsolatedTests.Common
     {
         public int ProductId { get; set; }
 
-        public string Text { get; set; }
+        public string TextCol { get; set; }
 
-        public string Ntext { get; set; }
+        public string NtextCol { get; set; }
 
-        public byte[] Image { get; set; }
+        public byte[] ImageCol { get; set; }
     }
 }
