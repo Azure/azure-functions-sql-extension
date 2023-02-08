@@ -171,7 +171,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         /// <summary>
         /// Returns a task that will complete when either the original task completes or the specified timeout is reached.
         /// </summary>
-        /// <typeparam name="TResult"></typeparam>
         /// <param name="task">The original task to wait on</param>
         /// <param name="timeout">The TimeSpan to wait for before a TimeoutException is thrown</param>
         /// <param name="message">The message to give the TimeoutException if a timeout occurs</param>
@@ -197,7 +196,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         /// <summary>
         /// Returns a task that will complete when either the original task completes or the specified timeout is reached.
         /// </summary>
-        /// <typeparam name="TResult"></typeparam>
         /// <param name="task">The original task to wait on</param>
         /// <param name="timeout">The TimeSpan to wait for before a TimeoutException is thrown</param>
         /// <param name="message">The message to give the TimeoutException if a timeout occurs</param>
