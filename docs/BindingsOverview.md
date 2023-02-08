@@ -13,6 +13,7 @@
     - [Retry support for Output Bindings](#retry-support-for-output-bindings)
   - [Trigger Binding](#trigger-binding)
     - [Change Tracking](#change-tracking)
+    - [Functionality Overview](#functionality-overview)
     - [Internal State Tables](#internal-state-tables)
       - [az\_func.GlobalState](#az_funcglobalstate)
       - [az\_func.Leases\_\*](#az_funcleases_)
@@ -99,6 +100,26 @@ Azure SQL Trigger bindings utilize SQL [change tracking](https://docs.microsoft.
     For more information, please refer to the documentation [here](https://docs.microsoft.com/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server#enable-change-tracking-for-a-table). The trigger needs to have read access on the table being monitored for changes as well as to the change tracking system tables. It also needs write access to an `az_func` schema within the database, where it will create additional leases tables to store the trigger states and leases. Each function trigger will thus have an associated change tracking table and leases table.
 
     > **NOTE:** The leases table contains all columns corresponding to the primary key from the user table and three additional columns named `_az_func_ChangeVersion`, `_az_func_AttemptCount` and `_az_func_LeaseExpirationTime`. If any of the primary key columns happen to have the same name, that will result in an error message listing any conflicts. In this case, the listed primary key columns must be renamed for the trigger to work.
+
+### Functionality Overview
+
+The Azure SQL Trigger binding uses a polling loop to check for changes, triggering the user function when changes are detected. At a high level the loop looks like this :
+
+```
+while (true) {
+    1. Get list of changes on table - up to a maximum number controlled by the Sql_Trigger_MaxBatchSize setting
+    2. Trigger function with list of changes
+    3. Wait for delay controlled by Sql_Trigger_PollingIntervalMs setting
+}
+```
+
+Changes will always be processed in the order that their changes were made, with the oldest changes being processed first. A couple notes about this :
+
+1. If changes to multiple rows are made at once the exact order that they'll be sent to the function is based on the order returned by the CHANGETABLE function
+2. Changes are "batched" together for a row - if multiple changes are made to a row between each iteration of the loop than only a single change entry will exist for that row that shows the difference between the last processed state and the current state
+3. If changes are made to a set of rows, and then another set of changes are made to half of those same rows then the half that wasn't changed a second time will be processed first. This is due to the above note with the changes being batched - the trigger will only see the "last" change made and use that for the order it processes them in
+
+See [Work with change tracking](https://learn.microsoft.com/sql/relational-databases/track-changes/work-with-change-tracking-sql-server) for more information on change tracking and how it is used by applications such as Azure SQL triggers.
 
 ### Internal State Tables
 

@@ -15,6 +15,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
+    [LogTestName]
     public class SqlTriggerBindingIntegrationTestBase : IntegrationTestBase
     {
         public SqlTriggerBindingIntegrationTestBase(ITestOutputHelper output = null) : base(output)
@@ -128,7 +129,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             await actions();
 
             // Now wait until either we timeout or we've gotten all the expected changes, whichever comes first
-            Console.WriteLine($"[{DateTime.UtcNow:u}] Waiting for {operation} changes ({timeoutMs}ms)");
+            this.LogOutput($"[{DateTime.UtcNow:u}] Waiting for {operation} changes ({timeoutMs}ms)");
             await taskCompletion.Task.TimeoutAfter(TimeSpan.FromMilliseconds(timeoutMs), $"Timed out waiting for {operation} changes.");
 
             // Unhook handler since we're done monitoring these changes so we aren't checking other changes done later

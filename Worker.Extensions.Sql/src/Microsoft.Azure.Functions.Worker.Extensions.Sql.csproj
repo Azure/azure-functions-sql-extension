@@ -24,6 +24,14 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<!-- We want to build the extension project first since the Out of Proc sample project references the package produced
+			 by building that. But we don't want it as an actual runtime depdendency -->
+		<ProjectReference Include="..\..\src\Microsoft.Azure.WebJobs.Extensions.Sql.csproj">
+			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+		</ProjectReference>
+	</ItemGroup>
+
+	<ItemGroup>
 		<AssemblyAttribute Include="Microsoft.Azure.Functions.Worker.Extensions.Abstractions.ExtensionInformationAttribute">
 			<_Parameter1>Microsoft.Azure.WebJobs.Extensions.Sql</_Parameter1>
 			<_Parameter2>$(SupportedVersion)</_Parameter2>
