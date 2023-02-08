@@ -57,7 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
     internal class SqlAsyncCollector<T> : IAsyncCollector<T>, IDisposable
     {
-        private static readonly string[] UnsupportedTypes = { "NTEXT", "TEXT", "IMAGE" };
+        private static readonly string[] UnsupportedTypes = { "NTEXT(*)", "TEXT(*)", "IMAGE(*)" };
         private const string RowDataParameter = "@rowData";
         private const string ColumnName = "COLUMN_NAME";
         private const string ColumnDefinition = "COLUMN_DEFINITION";
@@ -233,7 +233,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
 
                 IEnumerable<string> columnNamesFromItem = GetColumnNamesFromItem(rows.First());
-                IEnumerable<string> unsupportedColumns = columnNamesFromItem.Where(prop => IsUnsupportedType(prop, tableInfo.Columns));
+                IEnumerable<string> unsupportedColumns = columnNamesFromItem.Where(prop => UnsupportedTypes.Contains(tableInfo.Columns[prop], StringComparer.OrdinalIgnoreCase));
                 if (unsupportedColumns.Any())
                 {
                     string message = $"The type(s) of the following column(s) are not supported: {string.Join(", ", unsupportedColumns.ToArray())}. See https://github.com/Azure/azure-functions-sql-extension#output-bindings for more details.";
@@ -306,18 +306,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new InvalidOperationException($"Unexpected error upserting rows", ex);
                 }
             }
-        }
-
-        private static bool IsUnsupportedType(string property, IDictionary<string, string> columns)
-        {
-            foreach (string unsupportedType in UnsupportedTypes)
-            {
-                if (columns[property].StartsWith(unsupportedType, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-            return false;
         }
 
         /// <summary>
