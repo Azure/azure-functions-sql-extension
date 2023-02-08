@@ -236,7 +236,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 IEnumerable<string> unsupportedColumns = columnNamesFromItem.Where(prop => IsUnsupportedType(prop, tableInfo.Columns));
                 if (unsupportedColumns.Any())
                 {
-                    string message = $"The type(s) of the following column(s) are not supported: {string.Join(", ", unsupportedColumns.ToArray())}.";
+                    string message = $"The type(s) of the following column(s) are not supported: {string.Join(", ", unsupportedColumns.ToArray())}. See https://github.com/Azure/azure-functions-sql-extension#output-bindings for more details.";
                     throw new InvalidOperationException(message);
                 }
 
