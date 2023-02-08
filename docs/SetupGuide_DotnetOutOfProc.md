@@ -58,12 +58,6 @@ These instructions will guide you through creating your Function App and adding 
     dotnet add package Microsoft.Azure.Functions.Worker.Extensions.Sql --prerelease
     ```
 
-**Note**: For running [out of proc samples](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-outofproc), add a local nuget source to test the out of process functions with locally built extension.
-    Add local nuget source.
-
-    ```powershell
-    dotnet nuget add source <PATH_TO_REPO_AZURE-FUNCTIONS-SQL-EXTENSION/local-packages>
-    ```
 ## Input Binding
 
 See [Input Binding Overview](./BindingsOverview.md#input-binding) for general information about the Azure SQL Input binding.
