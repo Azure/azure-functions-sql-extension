@@ -6,7 +6,6 @@
   - [Table of Contents](#table-of-contents)
   - [Binding Model](#binding-model)
   - [Key differences with .NET (Isolated Process)](#key-differences-with-net-isolated-process)
-  - [Setup Function App](#setup-function-app)
   - [Input Binding](#input-binding)
     - [SqlInputAttribute for Input Bindings](#sqlinputattribute-for-input-bindings)
     - [Setup for Input Bindings](#setup-for-input-bindings)
