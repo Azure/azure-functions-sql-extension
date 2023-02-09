@@ -57,6 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
     internal class SqlAsyncCollector<T> : IAsyncCollector<T>, IDisposable
     {
+        private static readonly string[] UnsupportedTypes = { "NTEXT(*)", "TEXT(*)", "IMAGE(*)" };
         private const string RowDataParameter = "@rowData";
         private const string ColumnName = "COLUMN_NAME";
         private const string ColumnDefinition = "COLUMN_DEFINITION";
@@ -231,7 +232,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw ex;
                 }
 
-                IEnumerable<string> bracketedColumnNamesFromItem = GetColumnNamesFromItem(rows.First())
+                IEnumerable<string> columnNamesFromItem = GetColumnNamesFromItem(rows.First());
+                IEnumerable<string> unsupportedColumns = columnNamesFromItem.Where(prop => UnsupportedTypes.Contains(tableInfo.Columns[prop], StringComparer.OrdinalIgnoreCase));
+                if (unsupportedColumns.Any())
+                {
+                    string message = $"The type(s) of the following column(s) are not supported: {string.Join(", ", unsupportedColumns.ToArray())}. See https://github.com/Azure/azure-functions-sql-extension#output-bindings for more details.";
+                    throw new InvalidOperationException(message);
+                }
+
+                IEnumerable<string> bracketedColumnNamesFromItem = columnNamesFromItem
                     .Where(prop => !tableInfo.PrimaryKeys.Any(k => k.IsIdentity && string.Equals(k.Name, prop, StringComparison.Ordinal))) // Skip any identity columns, those should never be updated
                     .Select(prop => prop.AsBracketQuotedString());
                 if (!bracketedColumnNamesFromItem.Any())
