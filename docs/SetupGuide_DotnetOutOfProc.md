@@ -50,7 +50,7 @@ These instructions will guide you through creating your Function Project and add
     func init --worker-runtime dotnet-isolated
     ```
 
-3. Enable SQL bindings isolated worker on the function app. More information can be found in the [Guide for running C# Azure Functions in an isolated worker process](https://learn.microsoft.com/azure/azure-functions/dotnet-isolated-process-guide).
+3. Enable SQL bindings isolated worker on the function project. More information can be found in the [Guide for running C# Azure Functions in an isolated worker process](https://learn.microsoft.com/azure/azure-functions/dotnet-isolated-process-guide).
 
     Add the SQL binding worker extension package to the project.
 
@@ -85,7 +85,7 @@ The repo contains examples of each of these binding types [here](https://github.
 
 Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server).
 
-- Open your app that you created in [Create a Function App](./GeneralSetup.md#create-a-function-app) in VS Code
+- Open your project that you created in [Create a Function App](./GeneralSetup.md#create-a-function-app) in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a function name) -> Company.namespace -> anonymous
 - In the file that opens, replace the `public static async Task<IActionResult> Run` block with the below code.
