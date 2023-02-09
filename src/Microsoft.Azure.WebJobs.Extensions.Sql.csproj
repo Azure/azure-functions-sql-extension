@@ -47,7 +47,7 @@
     <Message Text="Copied sql .nupkg to local-packages" Importance="high" />
   </Target>
   <Target Name="RemoveLocalPackages" BeforeTargets="Build" Condition="'$(Configuration)' == 'Debug'">
-    <RemoveDir Directories="../local-packages"></RemoveDir>
-    <Message Text="Deleted local-packages" Importance="high" />
+    <RemoveDir Directories="$(NugetPackageRoot)/$(PackageId.ToLower())/99.99.99"></RemoveDir>
+    <Message Text="Deleted nuget cache for $(PackageId.ToLower())/99.99.99" Importance="high" />
   </Target>
 </Project>

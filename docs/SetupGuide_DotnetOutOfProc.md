@@ -36,28 +36,6 @@ Please refer to the functions documentation [here](https://learn.microsoft.com/a
 - There's also no direct support for types inherited from underlying service SDKs, such as SqlCommand. Instead, bindings rely on strings, arrays, and serializable types, such as plain old class objects (POCOs).
 - For HTTP triggers, you must use HttpRequestData and HttpResponseData to access the request and response data. This is because you don't have access to the original HTTP request and response objects when running out-of-process.
 
-## Setup Function App
-
-These instructions will guide you through creating your Function App and adding the SQL binding worker. This only needs to be done once for every function app you create. If you have one created already you can skip this step.
-
-1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
-
-2. Create a function app for .NET:
-
-    ```bash
-    mkdir MyApp
-    cd MyApp
-    func init --worker-runtime dotnet-isolated
-    ```
-
-3. Enable SQL bindings isolated worker on the function app. More information can be found in the [Guide for running C# Azure Functions in an isolated worker process](https://learn.microsoft.com/en-us/azure/azure-functions/dotnet-isolated-process-guide).
-
-    Install the extension.
-
-    ```powershell
-    dotnet add package Microsoft.Azure.Functions.Worker.Extensions.Sql --prerelease
-    ```
-
 ## Input Binding
 
 See [Input Binding Overview](./BindingsOverview.md#input-binding) for general information about the Azure SQL Input binding.
