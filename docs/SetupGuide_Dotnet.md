@@ -27,11 +27,11 @@
 
 ## Setup Function Project
 
-These instructions will guide you through creating your Function Project and adding the SQL binding extension. This only needs to be done once for every function app you create. If you have one created already you can skip this step.
+These instructions will guide you through creating your Function Project and adding the SQL binding extension. This only needs to be done once for every function project you create. If you have one created already you can skip this step.
 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
-2. Create a function app for .NET:
+2. Create a function project for .NET:
 
     ```bash
     mkdir MyApp

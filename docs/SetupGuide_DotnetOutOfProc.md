@@ -38,11 +38,11 @@ Please refer to the functions documentation [here](https://learn.microsoft.com/a
 
 ## Setup Function Project
 
-These instructions will guide you through creating your Function Project and adding the SQL binding worker extension. This only needs to be done once for every function app you create. If you have one created already you can skip this step.
+These instructions will guide you through creating your Function Project and adding the SQL binding worker extension. This only needs to be done once for every function project you create. If you have one created already you can skip this step.
 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
-2. Create a function app for .NET:
+2. Create a function project for .NET Isolated:
 
     ```bash
     mkdir MyApp
@@ -52,7 +52,7 @@ These instructions will guide you through creating your Function Project and add
 
 3. Enable SQL bindings isolated worker on the function app. More information can be found in the [Guide for running C# Azure Functions in an isolated worker process](https://learn.microsoft.com/azure/azure-functions/dotnet-isolated-process-guide).
 
-    Add the SQL binding woker extension package to the project.
+    Add the SQL binding worker extension package to the project.
 
     ```powershell
     dotnet add package Microsoft.Azure.Functions.Worker.Extensions.Sql --prerelease
