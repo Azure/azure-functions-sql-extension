@@ -110,23 +110,27 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 #### Query String
 
-_TODO_
+The input binding executes the `select * from Products where Cost = @Cost` query, returning the result as json object in the body. The *parameters* attribute passes the `{cost}` specified in the URL that triggers the function, `getproducts/{cost}`, as the value of the `@Cost` parameter in the query. *commandType* is set to `Text`, since the constructor argument of the binding is a raw query.
+
+The function can be referred [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-js/GetProducts)
 
 #### Empty Parameter Value
 
-_TODO_
+In this case, the parameter value of the `@Name` parameter is an empty string.
+
+The function can be referred [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js/GetProductsNameEmpty)
 
 #### Null Parameter Value
 
-_TODO_
+If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", the query returns all rows for which the Name column is `NULL`. Otherwise, it returns all rows for which the value of the Name column matches the string passed in `{name}`
+
+The function can be referred [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js/GetProductsNameNull)
 
 #### Stored Procedure
 
-_TODO_
+`SelectsProductCost` is the name of a procedure stored in the user's database. In this case, *CommandType* is `System.Data.CommandType.StoredProcedure`. The parameter value of the `@Cost` parameter in the procedure is once again the `{cost}` specified in the `getproducts-storedprocedure/{cost}` URL.
 
-#### IAsyncEnumerable
-
-_TODO_
+The function can be referred [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js/GetProductsStoredProcedure)
 
 ## Output Binding
 
@@ -200,17 +204,15 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 ### Samples for Output Bindings
 
-#### ICollector&lt;T&gt;/IAsyncCollector&lt;T&gt;
-
-_TODO_
-
 #### Array
 
-_TODO_
+This output binding type requires the product array to be passed in the request body as JSON. Note also that the `Product[]` array being upserted must be returned by output binding function.
+
+The function can be referred [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js/AddProductsArray)
 
 #### Single Row
 
-_TODO_
+The function can be referred [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js/AddProduct)
 
 ## Trigger Binding
 
