@@ -502,5 +502,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // Wait 2sec for message to get processed to account for delays reading output
             await foundExpectedMessageSource.Task.TimeoutAfter(TimeSpan.FromMilliseconds(2000), $"Timed out waiting for expected error message");
         }
+
+        /// <summary>
+        /// Tests that an error is thrown when the upserted item contains a unsupported column type.
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.OutOfProc)]
+        public async Task AddProductUnsupportedTypesTest(SupportedLanguages lang)
+        {
+            var foundExpectedMessageSource = new TaskCompletionSource<bool>();
+            this.StartFunctionHost(nameof(AddProductUnsupportedTypes), lang, true, (object sender, DataReceivedEventArgs e) =>
+            {
+                if (e.Data.Contains("The type(s) of the following column(s) are not supported: TextCol, NtextCol, ImageCol. See https://github.com/Azure/azure-functions-sql-extension#output-bindings for more details."))
+                {
+                    foundExpectedMessageSource.SetResult(true);
+                }
+            });
+
+            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-unsupportedtypes").Wait());
+            await foundExpectedMessageSource.Task.TimeoutAfter(TimeSpan.FromMilliseconds(2000), $"Timed out waiting for expected error message");
+        }
     }
 }

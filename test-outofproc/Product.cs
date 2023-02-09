@@ -188,4 +188,15 @@ namespace DotnetIsolatedTests.Common
 
         public string Name { get; set; }
     }
+
+    public class ProductUnsupportedTypes
+    {
+        public int ProductId { get; set; }
+
+        public string TextCol { get; set; }
+
+        public string NtextCol { get; set; }
+
+        public byte[] ImageCol { get; set; }
+    }
 }
