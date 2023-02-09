@@ -50,7 +50,7 @@ These instructions will guide you through creating your Function App and adding 
     func init --worker-runtime dotnet-isolated
     ```
 
-3. Enable SQL bindings isolated worker on the function app. More information can be found in the [Guide for running C# Azure Functions in an isolated worker process](https://learn.microsoft.com/en-us/azure/azure-functions/dotnet-isolated-process-guide).
+3. Enable SQL bindings isolated worker on the function app. More information can be found in the [Guide for running C# Azure Functions in an isolated worker process](https://learn.microsoft.com/azure/azure-functions/dotnet-isolated-process-guide).
 
     Install the extension.
 
