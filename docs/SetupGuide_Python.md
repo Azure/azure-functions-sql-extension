@@ -13,12 +13,10 @@
       - [Empty Parameter Value](#empty-parameter-value)
       - [Null Parameter Value](#null-parameter-value)
       - [Stored Procedure](#stored-procedure)
-      - [IAsyncEnumerable](#iasyncenumerable)
   - [Output Binding](#output-binding)
     - [function.json Properties for Output Bindings](#functionjson-properties-for-output-bindings)
     - [Setup for Output Bindings](#setup-for-output-bindings)
     - [Samples for Output Bindings](#samples-for-output-bindings)
-      - [ICollector\<T\>/IAsyncCollector\<T\>](#icollectortiasynccollectort)
       - [Array](#array)
       - [Single Row](#single-row)
   - [Trigger Binding](#trigger-binding)
@@ -115,23 +113,27 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 #### Query String
 
-_TODO_
+The input binding executes the `SELECT * FROM Products WHERE Cost = @Cost` query. The Parameters argument passes the `{cost}` specified in the URL that triggers the function, `getproducts/{cost}`, as the value of the `@Cost` parameter in the query. CommandType is set to `Text`, since the constructor argument of the binding is a raw query.
+
+https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-python/GetProducts
 
 #### Empty Parameter Value
 
-_TODO_
+In this case, the parameter value of the `@Name` parameter is an empty string.
+
+https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-python/GetProductsNameEmpty
 
 #### Null Parameter Value
+
+If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", the query returns all rows for which the Name column is `NULL`. Otherwise, it returns all rows for which the value of the Name column matches the string passed in `{name}`
 
 _TODO_
 
 #### Stored Procedure
 
-_TODO_
+`SelectProductsCost` is the name of a procedure stored in the user's database. In this case, CommandType is `StoredProcedure`. The parameter value of the `@Cost` parameter in the procedure is once again the `{cost}` specified in the `getproducts-storedprocedure/{cost}` URL.
 
-#### IAsyncEnumerable
-
-_TODO_
+https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-python/GetProductsStoredProcedure
 
 ## Output Binding
 
@@ -198,17 +200,13 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 ### Samples for Output Bindings
 
-#### ICollector&lt;T&gt;/IAsyncCollector&lt;T&gt;
-
-_TODO_
-
 #### Array
 
-_TODO_
+https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-python/AddProductsArray
 
 #### Single Row
 
-_TODO_
+https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-python/AddProduct
 
 ## Trigger Binding
 
