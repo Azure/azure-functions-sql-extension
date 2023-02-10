@@ -27,7 +27,7 @@ These instructions will guide you through creating your Function App and adding 
 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
-2. Create a function app for Java:
+2. Create a Function Project for Java:
 
     ```bash
     mkdir MyApp

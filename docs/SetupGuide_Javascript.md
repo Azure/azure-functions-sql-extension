@@ -29,7 +29,7 @@ These instructions will guide you through creating your Function App and adding 
 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
-2. Create a function app for Javascript:
+2. Create a Function Project for Javascript:
 
     ```bash
     mkdir MyApp
@@ -70,7 +70,7 @@ The following table explains the binding configuration properties that you set i
 
 Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server).
 
-- Open your app that you created in [Create a Function App](./GeneralSetup.md#create-a-function-app) in VS Code
+- Open your project that you created in [Create a Function Project](./GeneralSetup.md#create-a-function-project) in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a function name) -> anonymous
 - In the file that opens (`index.js`), replace the `module.exports = async function (context, req)` block with the below code.

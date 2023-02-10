@@ -29,7 +29,7 @@ These instructions will guide you through creating your Function App and adding 
 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
-2. Create a function app for Python:
+2. Create a Function Project for Python:
     *See [#250](https://github.com/Azure/azure-functions-sql-extension/issues/250) before starting.*
 
     ```bash
@@ -69,7 +69,7 @@ See [Input Binding Overview](./BindingsOverview.md#input-binding) for general in
 
 Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server).
 
-- Open your app that you created in [Create a Function App](./GeneralSetup.md#create-a-function-app) in VS Code
+- Open your project that you created in [Create a Function Project](./GeneralSetup.md#create-a-function-project) in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a function name) -> anonymous
 - In the file that opens (`__init__.py`), replace the generated function with the following

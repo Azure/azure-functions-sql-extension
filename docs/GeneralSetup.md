@@ -42,15 +42,15 @@ ALTER TABLE ['{table_name}'] ALTER COLUMN ['{primary_key_column_name}'] int NOT 
 ALTER TABLE ['{table_name}'] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED (['{primary_key_column_name}']);
 ```
 
-## Create a Function App
+## Create a Function Project
 
-Now you will need a Function App to add the binding to. If you have one created already you can skip this step.
+Now you will need a Function Project to add the binding to. If you have one created already you can skip this step.
 
 These steps can be done in the Terminal/CLI or with PowerShell.
 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
-2. Create a function app for .NET, JavaScript, TypeScript, Python or Java.
+2. Create a function project for .NET, JavaScript, TypeScript, Python or Java.
 
     **.NET**
 
@@ -102,7 +102,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     func init --worker-runtime powershell
     ```
 
-3. Enable SQL bindings on the function app. More information can be found in the [Azure SQL bindings for Azure Functions docs](https://aka.ms/sqlbindings).
+3. Enable SQL bindings on the function project. More information can be found in the [Azure SQL bindings for Azure Functions docs](https://aka.ms/sqlbindings).
 
     **.NET:** Install the extension.
 
@@ -174,7 +174,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
 
 ## Configure Function App
 
-Once you have your Function App you need to configure it for use with Azure SQL bindings for Azure Functions.
+Once you have your Function Project you need to configure it for use with Azure SQL bindings for Azure Functions.
 
 1. Ensure you have Azure Storage Emulator running. This is specific to the sample functions in this repository with a non-HTTP trigger. For information on the Azure Storage Emulator, refer to the docs on its use in [functions local development](https://docs.microsoft.com/azure/azure-functions/functions-app-settings#azurewebjobsstorage) and [installation](https://docs.microsoft.com/azure/storage/common/storage-use-emulator#get-the-storage-emulator).
 
