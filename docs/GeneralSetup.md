@@ -172,7 +172,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     }
     ```
 
-## Configure Function App
+## Configure Function Project
 
 Once you have your Function Project you need to configure it for use with Azure SQL bindings for Azure Functions.
 
