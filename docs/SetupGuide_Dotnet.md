@@ -55,9 +55,9 @@ See [Input Binding Overview](./BindingsOverview.md#input-binding) for general in
 
 The [SqlAttribute](https://github.com/Azure/azure-functions-sql-extension/blob/main/src/SqlAttribute.cs) for Input bindings takes four arguments:
 
-- **CommandText**: Passed as a constructor argument to the binding. Represents either a query string or the name of a stored procedure.
-- **ConnectionStringSetting**: Passed as a constructor argument to the binding. Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
-- **CommandType**: Specifies whether CommandText is a query (`System.Data.CommandType.Text`) or a stored procedure (`System.Data.CommandType.StoredProcedure`)
+- **CommandTextOrTarget**: Passed as a constructor argument to the binding attribute. Represents either a query string or the name of a stored procedure based on the value of the CommandType.
+- **ConnectionStringSetting**: Passed as a constructor argument to the binding attribute. Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
+- **CommandType**: Specifies whether CommandTextOrTarget is a query (`System.Data.CommandType.Text`) or a stored procedure (`System.Data.CommandType.StoredProcedure`). Defaults to `CommandType.Text`.
 - **Parameters**: The parameters to the query/stored procedure. This string must follow the format "@param1=param1,@param2=param2" where @param1 is the name of the parameter and param1 is the parameter value. Each pair of parameter name, parameter value is separated by a comma. Within each pair, the parameter name and value is separated by an equals sign. This means that neither the parameter name nor value can contain "," or "=". To specify a `NULL` parameter value, do "@param1=null,@param2=param2". To specify an empty string as a value, do "@param1=,@param2=param2", i.e. do not put any text after the equals sign of the corresponding parameter name. This argument is auto-resolvable (see Query String examples).
 
 The following are valid binding types for the result of the query/stored procedure execution:
@@ -248,8 +248,8 @@ See [Output Binding Overview](./BindingsOverview.md#output-binding) for general 
 
 The [SqlAttribute](https://github.com/Azure/azure-functions-sql-extension/blob/main/src/SqlAttribute.cs) for Output bindings takes two arguments:
 
-- **CommandText**: Passed as a constructor argument to the binding. Represents the name of the table into which rows will be upserted.
-- **ConnectionStringSetting**: Passed as a constructor argument to the binding. Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
+- **CommandTextOrTarget**: Passed as a constructor argument to the binding attribute. Represents the name of the table into which rows will be upserted.
+- **ConnectionStringSetting**: Passed as a constructor argument to the binding attribute. Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
 
 The following are valid binding types for the rows to be upserted into the table:
 
@@ -408,8 +408,8 @@ See [Trigger Binding Overview](./BindingsOverview.md#trigger-binding) for genera
 
 The SqlAttribute for Trigger bindings takes two [arguments](https://github.com/Azure/azure-functions-sql-extension/blob/main/src/TriggerBinding/SqlTriggerAttribute.cs)
 
-- **TableName**: Passed as a constructor argument to the binding. Represents the name of the table to be monitored for changes.
-- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
+- **TableName**: Passed as a constructor argument to the binding attribute. Represents the name of the table to be monitored for changes.
+- **ConnectionStringSetting**: Passed as a constructor argument to the binding attribute. Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
 
 The trigger binding can bind to type `IReadOnlyList<SqlChange<T>>`:
 

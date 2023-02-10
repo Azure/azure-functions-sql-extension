@@ -11,11 +11,11 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
         /// <summary>
         /// Creates an instance of the <see cref="SqlOutputAttribute"/>, which takes a list of rows and upserts them into the target table.
         /// </summary>
-        /// <param name="commandText">The table name to upsert the values to.</param>
+        /// <param name="tableName">The table name to upsert the values to.</param>
         /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored</param>
-        public SqlOutputAttribute(string commandText, string connectionStringSetting)
+        public SqlOutputAttribute(string tableName, string connectionStringSetting)
         {
-            this.CommandText = commandText ?? throw new ArgumentNullException(nameof(commandText));
+            this.TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
             this.ConnectionStringSetting = connectionStringSetting ?? throw new ArgumentNullException(nameof(connectionStringSetting));
         }
 
@@ -28,16 +28,11 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
         /// create a ConnectionStringSetting with a name like SqlServerAuthentication. The value of the SqlServerAuthentication app setting
         /// would look like "Data Source=test.database.windows.net;Database=TestDB;User ID={userid};Password={password}".
         /// </summary>
-        public string ConnectionStringSetting { get; set; }
+        public string ConnectionStringSetting { get; }
 
         /// <summary>
         /// The table name to upsert the values to.
         /// </summary>
-        public string CommandText { get; set; }
-
-        /// <summary>
-        /// Specifies <see cref="CommandText"/> as Text.
-        /// </summary>
-        public System.Data.CommandType CommandType { get; } = System.Data.CommandType.Text;
+        public string TableName { get; }
     }
 }
