@@ -4,7 +4,7 @@
 
 - [Azure SQL bindings for Azure Functions - Python](#azure-sql-bindings-for-azure-functions---python)
   - [Table of Contents](#table-of-contents)
-  - [Setup Function App](#setup-function-app)
+  - [Setup Function Project](#setup-function-project)
   - [Input Binding](#input-binding)
     - [function.json Properties for Input Bindings](#functionjson-properties-for-input-bindings)
     - [Setup for Input Bindings](#setup-for-input-bindings)
@@ -147,7 +147,7 @@ The following table explains the binding configuration properties that you set i
 
 Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server).
 
-- Open your app in VS Code
+- Open your project in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger ->  (Provide a function name) -> anonymous
 - In the file that opens (`__init__.py`), replace the `def main(req: func.HttpRequest) -> func.HttpResponse:` block with the below code. Note that the casing of the Object field names and the table column names must match.
