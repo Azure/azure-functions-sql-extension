@@ -130,12 +130,6 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     }
     ```
 
-    Add a preview version of the Python functions library to `requirements.txt`.
-
-    ```txt
-    azure-functions==1.11.3b1
-    ```
-
     Add a setting in `local.settings.json` to isolate the worker dependencies.
 
     ```json
