@@ -101,7 +101,7 @@ GRANT CREATE TABLE TO <UserName>
 
 - `SELECT` and `VIEW CHANGE TRACKING` permissions on the table
 
-These are required to retrieved the data about the changes occurring in the table.
+These are required to retrieve the data about the changes occurring in the table.
 
 ```sql
 USE <DatabaseName>
