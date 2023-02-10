@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using System.Data;
 using Microsoft.Azure.Functions.Worker.Extensions.Abstractions;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
@@ -13,10 +14,14 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
         /// </summary>
         /// <param name="commandTextOrProcedureName">Either a SQL query or stored procedure that will be run in the target database.</param>
         /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored</param>
-        public SqlInputAttribute(string commandTextOrProcedureName, string connectionStringSetting)
+        /// <param name="commandType">Specifies whether <see cref="CommandTextOrTarget"/> refers to a stored procedure or SQL query string. Defaults to <see cref="CommandType.Text"/></param>
+        /// <param name="parameters">Optional - Specifies the parameters that will be used to execute the SQL query or stored procedure. See <see cref="Parameters"/> for more details.</param>
+        public SqlInputAttribute(string commandTextOrProcedureName, string connectionStringSetting, CommandType commandType = CommandType.Text, string parameters = null)
         {
             this.CommandTextOrProcedureName = commandTextOrProcedureName ?? throw new ArgumentNullException(nameof(commandTextOrProcedureName));
             this.ConnectionStringSetting = connectionStringSetting ?? throw new ArgumentNullException(nameof(connectionStringSetting));
+            this.CommandType = commandType;
+            this.Parameters = parameters;
         }
 
         /// <summary>
@@ -40,7 +45,7 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
         /// Use <see cref="CommandType.StoredProcedure"/> for the former, <see cref="CommandType.Text"/> for the latter.
         /// Defaults to <see cref="CommandType.Text"/>.
         /// </summary>
-        public System.Data.CommandType CommandType { get; set; } = System.Data.CommandType.Text;
+        public CommandType CommandType { get; }
 
         /// <summary>
         /// Specifies the parameters that will be used to execute the SQL query or stored procedure specified in <see cref="CommandTextOrProcedureName"/>.
@@ -51,6 +56,6 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
         /// as in "@param1=,@param2=param2"
         /// Note that neither the parameter name nor the parameter value can have ',' or '='
         /// </summary>
-        public string Parameters { get; set; }
+        public string Parameters { get; }
     }
 }

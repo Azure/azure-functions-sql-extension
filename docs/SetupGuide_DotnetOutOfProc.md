@@ -96,8 +96,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "employees")] HttpRequest req,
         ILogger log,
         [SqlInput("select * from Employees",
-        "SqlConnectionString",
-        CommandType = System.Data.CommandType.Text)]
+        "SqlConnectionString")]
         IEnumerable<Employee> employees)
     {
         return employees;
@@ -143,8 +142,7 @@ The input binding executes the `select * from Products where Cost = @Cost` query
       HttpRequestData req,
       [SqlInput("select * from Products where Cost = @Cost",
           "SqlConnectionString",
-          CommandType = System.Data.CommandType.Text,
-          Parameters = "@Cost={cost}")]
+          parameters: "@Cost={cost}")]
       IEnumerable<Product> products)
   {
       return products;
@@ -182,8 +180,7 @@ In this case, the parameter value of the `@Name` parameter is an empty string.
       HttpRequestData req,
       [SqlInput("select * from Products where Cost = @Cost and Name = @Name",
           "SqlConnectionString",
-          CommandType = System.Data.CommandType.Text,
-          Parameters = "@Cost={cost},@Name=")]
+          parameters: "@Cost={cost},@Name=")]
       IEnumerable<Product> products)
   {
       return products;
@@ -201,8 +198,7 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
       HttpRequestData req,
       [SqlInput("if @Name is null select * from Products where Name is null else select * from Products where @Name = name",
           "SqlConnectionString",
-          CommandType = System.Data.CommandType.Text,
-          Parameters = "@Name={name}")]
+          parameters: "@Name={name}")]
       IEnumerable<Product> products)
   {
       return products;
@@ -220,8 +216,8 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
       HttpRequestData req,
       [SqlInput("SelectProductsCost",
           "SqlConnectionString",
-          CommandType = System.Data.CommandType.StoredProcedure,
-          Parameters = "@Cost={cost}")]
+          System.Data.CommandType.StoredProcedure,
+          "@Cost={cost}")]
       IEnumerable<Product> products)
   {
       return products;
@@ -239,8 +235,7 @@ public static async Task<List<Product>> Run(
      HttpRequestData req,
     [SqlInput("select * from Products where cost = @Cost",
          "SqlConnectionString",
-         CommandType = System.Data.CommandType.Text,
-         Parameters = "@Cost={cost}")]
+         parameters: "@Cost={cost}")]
      IAsyncEnumerable<Product> products)
 {
     var enumerator = products.GetAsyncEnumerator();

@@ -21,10 +21,14 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <param name="commandTextOrTarget">For an input binding, either a SQL query or stored procedure that will be run in the database. For an output binding, the table name to upsert the values to.</param>
         /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored</param>
-        public SqlAttribute(string commandTextOrTarget, string connectionStringSetting)
+        /// <param name="commandType">Specifies whether <see cref="CommandTextOrTarget"/> refers to a stored procedure or SQL query string. Defaults to <see cref="CommandType.Text"/></param>
+        /// <param name="parameters">Optional - Specifies the parameters that will be used to execute the SQL query or stored procedure. See <see cref="Parameters"/> for more details.</param>
+        public SqlAttribute(string commandTextOrTarget, string connectionStringSetting, CommandType commandType = CommandType.Text, string parameters = null)
         {
             this.CommandTextOrTarget = commandTextOrTarget ?? throw new ArgumentNullException(nameof(commandTextOrTarget));
             this.ConnectionStringSetting = connectionStringSetting ?? throw new ArgumentNullException(nameof(connectionStringSetting));
+            this.CommandType = commandType;
+            this.Parameters = parameters;
         }
 
         /// <summary>
@@ -50,7 +54,7 @@ namespace Microsoft.Azure.WebJobs
         /// Use <see cref="CommandType.StoredProcedure"/> for the former, <see cref="CommandType.Text"/> for the latter.
         /// Defaults to <see cref="CommandType.Text"/>
         /// </summary>
-        public CommandType CommandType { get; set; } = CommandType.Text;
+        public CommandType CommandType { get; }
 
         /// <summary>
         /// Specifies the parameters that will be used to execute the SQL query or stored procedure specified in <see cref="CommandTextOrTarget"/>.
@@ -62,6 +66,6 @@ namespace Microsoft.Azure.WebJobs
         /// Note that neither the parameter name nor the parameter value can have ',' or '='
         /// </summary>
         [AutoResolve]
-        public string Parameters { get; set; }
+        public string Parameters { get; }
     }
 }
