@@ -42,6 +42,82 @@ ALTER TABLE ['{table_name}'] ALTER COLUMN ['{primary_key_column_name}'] int NOT 
 ALTER TABLE ['{table_name}'] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED (['{primary_key_column_name}']);
 ```
 
+## Create Login and User
+
+SQL bindings connect to the target database by using a Connection String configured in the app settings. This will require a login be created that the function will use to access the server.
+
+For local testing and development using a SQL (username/password) or Azure Active Directory Login is typically the easiest, but for deployed function apps it is recommended to use [Azure Active Directory Managed Authentication](https://learn.microsoft.com/azure/azure-functions/functions-identity-access-azure-sql-with-managed-identity).
+
+## Assign Permissions
+
+The login used by the function will need to have the following permissions assigned to the user it's mapped to in order for it to successfully interact with the database. The permissions required for each type of binding is listed below.
+
+### Input Binding Permissions
+
+The permissions required by input bindings depend on the query being executed.
+
+#### Text Query Input Binding Permissions
+
+For text query input bindings you will need the permissions required to execute the statement, which will usually be `SELECT` on the object you're retrieving rows from.
+
+```sql
+USE <DatabaseName>
+GRANT SELECT ON <ObjectName> TO <UserName>
+```
+
+#### Stored Procedure Input Binding Permissions
+
+For stored procedure input bindings you will need `EXECUTE` permissions on the stored procedure.
+
+```sql
+USE <DatabaseName>
+GRANT EXECUTE ON <StoredProcedureName> TO <UserName>
+```
+
+### Output Binding Permissions
+
+- `SELECT`, `INSERT`, and `UPDATE` permissions on the table
+
+These are required to retrieve metadata and update the rows in the table.
+
+```sql
+USE <DatabaseName>
+GRANT SELECT, INSERT, UPDATE ON <TableName> TO <UserName>
+```
+
+**NOTE**: In some scenarios, the presence of table components such as a  SQL DML trigger may require additional permissions for the output binding to successfully complete the operation.
+
+### Trigger Permissions
+
+- `CREATE SCHEMA` and `CREATE TABLE` permissions on database
+
+This is required to create the [Internal State Tables](./BindingsOverview.md#internal-state-tables) required by the trigger.
+
+```sql
+USE <DatabaseName>
+GRANT CREATE SCHEMA TO <UserName>
+GRANT CREATE TABLE TO <UserName>
+```
+
+- `SELECT` and `VIEW CHANGE TRACKING` permissions on the table
+
+These are required to retrieve the data about the changes occurring in the table.
+
+```sql
+USE <DatabaseName>
+GRANT SELECT ON <TableName> TO <UserName>
+```
+
+- `SELECT`, `INSERT`, `UPDATE` and `DELETE` permissions on `az_func` schema
+  - Note this is usually automatically inherited if the login being used was the one that created the schema in the first place. If another user created the schema or ownership was changed afterwards then these permissions will need to be reapplied for the function to work.
+
+These are required to read and update the internal state of the function.
+
+```sql
+USE <DatabaseName>
+GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::az_func TO <UserName>
+```
+
 ## Create a Function Project
 
 Now you will need a Function Project to add the binding to. If you have one created already you can skip this step.
