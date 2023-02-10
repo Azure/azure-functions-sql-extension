@@ -108,27 +108,19 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 #### Query String
 
-The input binding executes the `select * from Products where Cost = @Cost` query, returning the result as json object in the body. The *parameters* attribute passes the `{cost}` specified in the URL that triggers the function, `getproducts/{cost}`, as the value of the `@Cost` parameter in the query. *commandType* is set to `Text`, since the constructor argument of the binding is a raw query.
-
-The function can be referred [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-js/GetProducts)
+See the [GetProducts](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-js/GetProducts) sample
 
 #### Empty Parameter Value
 
-In this case, the parameter value of the `@Name` parameter is an empty string.
-
-The function can be referred [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js/GetProductsNameEmpty)
+See the [GetProductsNameEmpty](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js/GetProductsNameEmpty) sample
 
 #### Null Parameter Value
 
-If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", the query returns all rows for which the Name column is `NULL`. Otherwise, it returns all rows for which the value of the Name column matches the string passed in `{name}`
-
-The function can be referred [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js/GetProductsNameNull)
+See the [GetProductsNameNull](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js/GetProductsNameNull) sample
 
 #### Stored Procedure
 
-`SelectsProductCost` is the name of a procedure stored in the user's database. In this case, *CommandType* is `System.Data.CommandType.StoredProcedure`. The parameter value of the `@Cost` parameter in the procedure is once again the `{cost}` specified in the `getproducts-storedprocedure/{cost}` URL.
-
-The function can be referred [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js/GetProductsStoredProcedure)
+See the [GetProductsStoredProcedure](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js/GetProductsStoredProcedure) sample
 
 ## Output Binding
 
@@ -204,13 +196,11 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 #### Array
 
-This output binding type requires the product array to be passed in the request body as JSON. Note also that the `Product[]` array being upserted must be returned by output binding function.
-
-The function can be referred [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js/AddProductsArray)
+See the [AddProductsArray](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js/AddProductsArray) sample
 
 #### Single Row
 
-The function can be referred [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js/AddProduct)
+See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js/AddProduct) sample
 
 ## Trigger Binding
 
