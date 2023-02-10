@@ -112,7 +112,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 id => $"Product {id}",
                 id => id * 100,
                 this.GetBatchProcessingTimeout(firstId, lastId, maxBatchSize: maxBatchSize));
-            await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromSeconds(5000), "Timed out waiting for MaxBatchSize configuration message");
+            await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromSeconds(5), "Timed out waiting for MaxBatchSize configuration message");
         }
 
         /// <summary>
