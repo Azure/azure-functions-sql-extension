@@ -154,7 +154,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 id => $"Product {id}",
                 id => id * 100,
                 this.GetBatchProcessingTimeout(firstId, lastId, maxBatchSize: maxBatchSize));
-            await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromSeconds(5000), "Timed out waiting for MaxBatchSize configuration message");
+            await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromSeconds(5), "Timed out waiting for MaxBatchSize configuration message");
         }
 
         /// <summary>
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             var taskCompletionSource = new TaskCompletionSource<bool>();
             DataReceivedEventHandler handler = TestUtils.CreateOutputReceievedHandler(
                 taskCompletionSource,
-                @"Starting change consumption loop. BatchSize: \d* PollingIntervalMs: (\d*)",
+                @"Starting change consumption loop. MaxBatchSize: \d* PollingIntervalMs: (\d*)",
                 "PollingInterval",
                 pollingIntervalMs.ToString());
             this.StartFunctionHost(
@@ -194,7 +194,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 id => $"Product {id}",
                 id => id * 100,
                 this.GetBatchProcessingTimeout(firstId, lastId, pollingIntervalMs: pollingIntervalMs));
-            await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromSeconds(5000), "Timed out waiting for PollingInterval configuration message");
+            await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromSeconds(5), "Timed out waiting for PollingInterval configuration message");
         }
 
         /// <summary>
