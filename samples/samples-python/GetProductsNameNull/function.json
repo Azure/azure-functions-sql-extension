@@ -1,0 +1,29 @@
+{
+    "bindings": [
+      {
+        "authLevel": "function",
+        "name": "req",
+        "type": "httpTrigger",
+        "direction": "in",
+        "methods": [
+          "get"
+        ],
+        "route":"getproducts-namenull/{name}"
+      },
+      {
+        "name": "$return",
+        "type": "http",
+        "direction": "out"
+      },
+      {
+        "name": "products",
+        "type": "sql",
+        "direction": "in",
+        "commandText": "if @Name is null select * from Products where Name is null else select * from Products where @Name = name",
+        "commandType": "Text",
+        "parameters": "@Name={name}",
+        "connectionStringSetting": "SqlConnectionString"
+      }
+    ],
+    "disabled": false
+  }
