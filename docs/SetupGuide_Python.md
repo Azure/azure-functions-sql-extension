@@ -133,7 +133,7 @@ _TODO_
 
 `SelectProductsCost` is the name of a procedure stored in the user's database. In this case, CommandType is `StoredProcedure`. The parameter value of the `@Cost` parameter in the procedure is once again the `{cost}` specified in the `getproducts-storedprocedure/{cost}` URL.
 
-https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-python/GetProductsStoredProcedure
+<https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-python/GetProductsStoredProcedure>
 
 ## Output Binding
 
