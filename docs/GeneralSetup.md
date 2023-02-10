@@ -50,7 +50,7 @@ For local testing and development using a SQL (username/password) or Azure Activ
 
 ## Assign Permissions
 
-The login used by the function will need to have the following permissions assigned to the user it's mapped to in order for it to function. The permissions required for each type of binding is listed below.
+The login used by the function will need to have the following permissions assigned to the user it's mapped to in order for it to successfully interact with the database. The permissions required for each type of binding is listed below.
 
 ### Input Binding Permissions
 
@@ -76,7 +76,7 @@ GRANT EXECUTE ON <StoredProcedureName> TO <UserName>
 
 ### Output Binding Permissions
 
-- `SELECT`, `INSERT`, `UPDATE` and `DELETE` permissions on the table
+- `SELECT`, `INSERT`, and `UPDATE` permissions on the table
 
 These are required to retrieve metadata and update the rows in the table.
 
@@ -84,6 +84,8 @@ These are required to retrieve metadata and update the rows in the table.
 USE <DatabaseName>
 GRANT SELECT, INSERT, UPDATE ON <TableName> TO <UserName>
 ```
+
+**NOTE**: In some scenarios, the presence of table components such as a  SQL DML trigger may require additional permissions for the output binding to successfully complete the operation.
 
 ### Trigger Permissions
 
@@ -99,7 +101,7 @@ GRANT CREATE TABLE TO <UserName>
 
 - `SELECT` and `VIEW CHANGE TRACKING` permissions on the table
 
-These are required to retrieve the data about the changes occurring in the table.
+These are required to retrieved the data about the changes occurring in the table.
 
 ```sql
 USE <DatabaseName>
