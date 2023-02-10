@@ -131,7 +131,7 @@ steps:
 - script: |
     pip3 install -r requirements.txt
   workingDirectory: $(Build.SourcesDirectory)/samples/samples-python
-  displayName: Install azure-functions-1.11.3b1
+  displayName: Install samples-python dependencies
 
 - task: Maven@3
   displayName: Build Java Samples
