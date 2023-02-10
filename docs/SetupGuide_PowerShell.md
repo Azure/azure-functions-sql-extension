@@ -4,7 +4,7 @@
 
 - [Azure SQL bindings for Azure Functions - PowerShell](#azure-sql-bindings-for-azure-functions---powershell)
   - [Table of Contents](#table-of-contents)
-  - [Setup Function App](#setup-function-app)
+  - [Setup Function Project](#setup-function-project)
   - [Input Binding](#input-binding)
     - [function.json Properties for Input Bindings](#functionjson-properties-for-input-bindings)
     - [Setup for Input Bindings](#setup-for-input-bindings)
@@ -22,13 +22,13 @@
       - [Single Row](#single-row)
   - [Trigger Binding](#trigger-binding)
 
-## Setup Function App
+## Setup Function Project
 
-These instructions will guide you through creating your Function App and adding the SQL binding extension. This only needs to be done once for every function app you create. If you have one created already you can skip this step.
+These instructions will guide you through creating your Function Project and adding the SQL binding extension. This only needs to be done once for every function project you create. If you have one created already you can skip this step.
 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
-2. Create a function app for PowerShell:
+2. Create a Function Project for PowerShell:
 
     ```bash
     mkdir MyApp
@@ -36,7 +36,7 @@ These instructions will guide you through creating your Function App and adding 
     func init --worker-runtime powershell
     ```
 
-3. Enable SQL bindings on the function app. More information can be found in the [Azure SQL bindings for Azure Functions docs](https://aka.ms/sqlbindings).
+3. Enable SQL bindings on the function project. More information can be found in the [Azure SQL bindings for Azure Functions docs](https://aka.ms/sqlbindings).
 
     Update the `host.json` file to the preview extension bundle.
 
@@ -69,7 +69,7 @@ The following table explains the binding configuration properties that you set i
 
 Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server).
 
-- Open your app that you created in [Create a Function App](./GeneralSetup.md#create-a-function-app) in VS Code
+- Open your project that you created in [Create a Function Project](./GeneralSetup.md#create-a-function-project) in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a function name) -> anonymous
 - In the file that opens (`run.ps1`), replace the code within the file the below code.
