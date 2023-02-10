@@ -27,7 +27,7 @@ These instructions will guide you through creating your Function Project and add
 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
-2. Create a function project for Python:
+2. Create a Function Project for Python:
     *See [#250](https://github.com/Azure/azure-functions-sql-extension/issues/250) before starting.*
 
     ```bash
