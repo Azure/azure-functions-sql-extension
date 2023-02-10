@@ -13,12 +13,10 @@
       - [Empty Parameter Value](#empty-parameter-value)
       - [Null Parameter Value](#null-parameter-value)
       - [Stored Procedure](#stored-procedure)
-      - [IAsyncEnumerable](#iasyncenumerable)
   - [Output Binding](#output-binding)
     - [function.json Properties for Output Bindings](#functionjson-properties-for-output-bindings)
     - [Setup for Output Bindings](#setup-for-output-bindings)
     - [Samples for Output Bindings](#samples-for-output-bindings)
-      - [ICollector\<T\>/IAsyncCollector\<T\>](#icollectortiasynccollectort)
       - [Array](#array)
       - [Single Row](#single-row)
   - [Trigger Binding](#trigger-binding)
@@ -110,23 +108,19 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 #### Query String
 
-_TODO_
+See the [GetProducts](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-js/GetProducts) sample
 
 #### Empty Parameter Value
 
-_TODO_
+See the [GetProductsNameEmpty](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js/GetProductsNameEmpty) sample
 
 #### Null Parameter Value
 
-_TODO_
+See the [GetProductsNameNull](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js/GetProductsNameNull) sample
 
 #### Stored Procedure
 
-_TODO_
-
-#### IAsyncEnumerable
-
-_TODO_
+See the [GetProductsStoredProcedure](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js/GetProductsStoredProcedure) sample
 
 ## Output Binding
 
@@ -200,17 +194,13 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 ### Samples for Output Bindings
 
-#### ICollector&lt;T&gt;/IAsyncCollector&lt;T&gt;
-
-_TODO_
-
 #### Array
 
-_TODO_
+See the [AddProductsArray](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js/AddProductsArray) sample
 
 #### Single Row
 
-_TODO_
+See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js/AddProduct) sample
 
 ## Trigger Binding
 
