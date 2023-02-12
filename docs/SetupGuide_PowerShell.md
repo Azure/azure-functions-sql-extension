@@ -17,7 +17,6 @@
     - [function.json Properties for Output Bindings](#functionjson-properties-for-output-bindings)
     - [Setup for Output Bindings](#setup-for-output-bindings)
     - [Samples for Output Bindings](#samples-for-output-bindings)
-      - [ICollector\<T\>/IAsyncCollector\<T\>](#icollectortiasynccollectort)
       - [Array](#array)
       - [Single Row](#single-row)
   - [Trigger Binding](#trigger-binding)
@@ -113,19 +112,19 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 #### Query String
 
-_TODO_
+See the [GetProducts](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-powershell/GetProducts) sample
 
 #### Empty Parameter Value
 
-_TODO_
+See the [GetProductsNameEmpty](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-powershell/GetProductsNameEmpty) sample
 
 #### Null Parameter Value
 
-_TODO_
+See the [GetProductsNameNull](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-powershell/GetProductsNameNull) sample
 
 #### Stored Procedure
 
-_TODO_
+See the [GetProductsStoredProcedure](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-powershell/GetProductsStoredProcedure) sample
 
 ## Output Binding
 
@@ -147,7 +146,7 @@ The following table explains the binding configuration properties that you set i
 
 Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server).
 
-- Open your app in VS Code
+- Open your project in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger ->  (Provide a function name) -> anonymous
 - In the file that opens (`run.ps1`), replace the code within the file the below code. Note that the casing of the Object field names and the table column names must match.
@@ -205,17 +204,14 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 ### Samples for Output Bindings
 
-#### ICollector&lt;T&gt;/IAsyncCollector&lt;T&gt;
-
-_TODO_
-
 #### Array
 
-_TODO_
+See the [AddProductsArray](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-powershell/AddProductsArray) sample
 
 #### Single Row
 
-_TODO_
+See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-powershell/AddProducte) sample
+
 
 ## Trigger Binding
 
