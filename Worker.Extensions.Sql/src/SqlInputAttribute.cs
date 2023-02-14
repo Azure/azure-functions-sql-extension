@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
         /// </summary>
         /// <param name="commandText">Either a SQL query or stored procedure that will be run in the target database.</param>
         /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored</param>
-        /// <param name="commandType">Specifies whether <see cref="CommandTextOrTarget"/> refers to a stored procedure or SQL query string. Defaults to <see cref="CommandType.Text"/></param>
+        /// <param name="commandType">Specifies whether <see cref="CommandText"/> refers to a stored procedure or SQL query string. Defaults to <see cref="CommandType.Text"/></param>
         /// <param name="parameters">Optional - Specifies the parameters that will be used to execute the SQL query or stored procedure. See <see cref="Parameters"/> for more details.</param>
         public SqlInputAttribute(string commandText, string connectionStringSetting, CommandType commandType = CommandType.Text, string parameters = null)
         {

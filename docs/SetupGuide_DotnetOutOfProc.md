@@ -66,9 +66,9 @@ See [Input Binding Overview](./BindingsOverview.md#input-binding) for general in
 
 The [SqlInputAttribute](https://github.com/Azure/azure-functions-sql-extension/blob/main/Worker.Extensions.Sql/src/SqlInputAttribute.cs) takes four arguments:
 
-- **CommandTextOrProcedureName**: Represents either a query string or the name of a stored procedure.
+- **CommandText**: Represents either a query string or the name of a stored procedure.
 - **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
-- **CommandType**: Specifies whether CommandTextOrProcedureName is a query (`System.Data.CommandType.Text`) or a stored procedure (`System.Data.CommandType.StoredProcedure`). Default is `Text`
+- **CommandType**: Specifies whether CommandText is a query (`System.Data.CommandType.Text`) or a stored procedure (`System.Data.CommandType.StoredProcedure`). Default is `Text`
 - **Parameters**: The parameters to the query/stored procedure. This string must follow the format "@param1=param1,@param2=param2" where @param1 is the name of the parameter and param1 is the parameter value. Each pair of parameter name, parameter value is separated by a comma. Within each pair, the parameter name and value is separated by an equals sign. This means that neither the parameter name nor value can contain "," or "=". To specify a `NULL` parameter value, do "@param1=null,@param2=param2". To specify an empty string as a value, do "@param1=,@param2=param2", i.e. do not put any text after the equals sign of the corresponding parameter name. This argument is auto-resolvable (see Query String examples).
 
 The following are valid binding types for the result of the query/stored procedure execution:
@@ -257,7 +257,7 @@ See [Output Binding Overview](./BindingsOverview.md#output-binding) for general 
 
 The [SqlOutputAttribute](https://github.com/Azure/azure-functions-sql-extension/blob/main/Worker.Extensions.Sql/src/SqlOutputAttribute.cs) takes two arguments:
 
-- **TableName**: Represents the name of the table into which rows will be upserted.
+- **CommandText**: Represents the name of the table into which rows will be upserted.
 - **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
 
 The following are valid binding types for the rows to be upserted into the table:
