@@ -30,4 +30,13 @@ code .
 
 4. Configure the Function App located in the [samples](./samples) folder by following the instructions [here](./docs/GeneralSetup.md#configure-function-app)
 
-5. Press F5 to run SQL bindings samples that are included in this repo. The output window should display startup information as well as the function endpoints that were started.
+5. Configure a local nuget source that will be used to build the .NET Out-of-Proc sample with the latest locally built extension package.
+
+Building the sample will cause a project to be created and built in the temp directory, which means it does not pick up on the nuget.config for this project. Without adding the source at the global level that project will fail to build since it will be looking for the dev-local version of the package (99.99.99).
+
+Note: This command must be ran from your **home directory** (or a directory outside the project repo).
+    ```powershell
+    dotnet nuget add source <PATH_TO_REPO_AZURE-FUNCTIONS-SQL-EXTENSION/local-packages>
+    ```
+
+6. Press F5 to run SQL bindings samples that are included in this repo. The output window should display startup information as well as the function endpoints that were started.
