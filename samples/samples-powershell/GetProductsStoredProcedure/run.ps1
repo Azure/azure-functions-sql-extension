@@ -1,6 +1,9 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License. See License.txt in the project root for license information.
 
+# `SelectsProductCost` is the name of a procedure stored in the user's database.
+# In this case, *CommandType* is `StoredProcedure`. 
+# The parameter value of the `@Cost` parameter in the procedure is once again the `{cost}` specified in the `getproducts-storedprocedure/{cost}` URL.
 using namespace System.Net
 
 # Trigger and input binding data are passed in via the param block.
