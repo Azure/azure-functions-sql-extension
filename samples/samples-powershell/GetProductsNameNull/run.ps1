@@ -1,7 +1,9 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License. See License.txt in the project root for license information.
 
-# The parameter value of the `@Name` parameter is an empty string in the parameters arguments.
+# If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null",
+# the query returns all rows for which the Name column is `NULL`. Otherwise, it returns
+# all rows for which the value of the Name column matches the string passed in `{name}`
 using namespace System.Net
 
 # Trigger and input binding data are passed in via the param block.
