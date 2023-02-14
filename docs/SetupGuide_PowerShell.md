@@ -210,7 +210,7 @@ See the [AddProductsArray](https://github.com/Azure/azure-functions-sql-extensio
 
 #### Single Row
 
-See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-powershell/AddProducte) sample
+See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-powershell/AddProduct) sample
 
 
 ## Trigger Binding
