@@ -122,7 +122,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             var command = new SqlCommand
             {
                 Connection = connection,
-                CommandText = attribute.CommandTextOrTarget
+                CommandText = attribute.CommandText
             };
             if (attribute.CommandType == CommandType.StoredProcedure)
             {

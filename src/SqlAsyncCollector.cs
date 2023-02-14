@@ -183,7 +183,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 this._serverProperties = await GetServerTelemetryProperties(connection, this._logger, CancellationToken.None);
                 Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps(this._serverProperties);
 
-                string fullTableName = attribute.CommandTextOrTarget;
+                string fullTableName = attribute.CommandText;
 
                 // Include the connection string hash as part of the key in case this customer has the same table in two different Sql Servers
                 string cacheKey = $"{connection.ConnectionString.GetHashCode()}-{fullTableName}";

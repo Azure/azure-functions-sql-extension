@@ -11,11 +11,11 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
         /// <summary>
         /// Creates an instance of the <see cref="SqlOutputAttribute"/>, which takes a list of rows and upserts them into the target table.
         /// </summary>
-        /// <param name="tableName">The table name to upsert the values to.</param>
+        /// <param name="commandText">The table name to upsert the values to.</param>
         /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored</param>
-        public SqlOutputAttribute(string tableName, string connectionStringSetting)
+        public SqlOutputAttribute(string commandText, string connectionStringSetting)
         {
-            this.TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
+            this.CommandText = commandText ?? throw new ArgumentNullException(nameof(commandText));
             this.ConnectionStringSetting = connectionStringSetting ?? throw new ArgumentNullException(nameof(connectionStringSetting));
         }
 
@@ -33,6 +33,6 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
         /// <summary>
         /// The table name to upsert the values to.
         /// </summary>
-        public string TableName { get; }
+        public string CommandText { get; }
     }
 }
