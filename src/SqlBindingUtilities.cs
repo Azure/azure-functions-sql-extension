@@ -303,7 +303,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 try
                 {
-                    string serverPropertiesQuery = $"SELECT SERVERPROPERTY('EngineEdition'), SERVERPROPERTY('EngineEdition')";
+                    string serverPropertiesQuery = $"SELECT SERVERPROPERTY('EngineEdition'), SERVERPROPERTY('Edition')";
 
                     logger.LogDebugWithThreadId($"BEGIN GetServerTelemetryProperties Query={serverPropertiesQuery}");
                     using (var selectServerEditionCommand = new SqlCommand(serverPropertiesQuery, connection))
@@ -311,7 +311,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         if (await reader.ReadAsync(cancellationToken))
                         {
-                            int engineEdition = reader.GetByte(0);
+                            int engineEdition = reader.GetInt32(0);
                             var serverProperties = new ServerProperties() { Edition = reader.GetString(1) };
                             // Mapping information from
                             // https://learn.microsoft.com/en-us/sql/t-sql/functions/serverproperty-transact-sql?view=sql-server-ver16
