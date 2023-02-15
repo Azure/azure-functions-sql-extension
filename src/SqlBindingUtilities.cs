@@ -311,8 +311,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         if (await reader.ReadAsync(cancellationToken))
                         {
-                            int engineEdition = reader.GetByte(0);
-                            var serverProperties = new ServerProperties() { Edition = reader.GetString(1) };
+                            int engineEdition = (int)reader.GetValue(0);
+                            var serverProperties = new ServerProperties() { Edition = reader.GetValue(1).ToString() };
                             // Mapping information from
                             // https://learn.microsoft.com/en-us/sql/t-sql/functions/serverproperty-transact-sql?view=sql-server-ver16
                             switch (engineEdition)
