@@ -98,10 +98,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         public void TestInvalidCommandType()
         {
             // Specify an invalid type
-            var attribute = new SqlAttribute("", "SqlConnectionString")
-            {
-                CommandType = System.Data.CommandType.TableDirect
-            };
+            var attribute = new SqlAttribute("", "SqlConnectionString", System.Data.CommandType.TableDirect);
             Assert.Throws<ArgumentException>(() => SqlBindingUtilities.BuildCommand(attribute, null));
         }
 
@@ -121,19 +118,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         public void TestValidCommandType()
         {
             string query = "select * from Products";
-            var attribute = new SqlAttribute(query, "SqlConnectionString")
-            {
-                CommandType = System.Data.CommandType.Text
-            };
+            var attribute = new SqlAttribute(query, "SqlConnectionString", System.Data.CommandType.Text);
             SqlCommand command = SqlBindingUtilities.BuildCommand(attribute, null);
             Assert.Equal(System.Data.CommandType.Text, command.CommandType);
             Assert.Equal(query, command.CommandText);
 
             string procedure = "StoredProcedure";
-            attribute = new SqlAttribute(procedure, "SqlConnectionString")
-            {
-                CommandType = System.Data.CommandType.StoredProcedure
-            };
+            attribute = new SqlAttribute(procedure, "SqlConnectionString", System.Data.CommandType.StoredProcedure);
             command = SqlBindingUtilities.BuildCommand(attribute, null);
             Assert.Equal(System.Data.CommandType.StoredProcedure, command.CommandType);
             Assert.Equal(procedure, command.CommandText);

@@ -21,8 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples
             HttpRequest req,
             [Sql("if @Name is null select * from Products where Name is null else select * from Products where @Name = name",
                 "SqlConnectionString",
-                CommandType = System.Data.CommandType.Text,
-                Parameters = "@Name={name}")]
+                parameters: "@Name={name}")]
             IEnumerable<Product> products)
         {
             return new OkObjectResult(products);

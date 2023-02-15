@@ -17,8 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.InputBindingSa
             HttpRequestData req,
             [SqlInput("SELECT TOP(CAST(@Count AS INT)) * FROM Products",
                 "SqlConnectionString",
-                CommandType = System.Data.CommandType.Text,
-                Parameters = "@Count={count}")]
+                parameters: "@Count={count}")]
             IEnumerable<Product> products)
         {
             return products;

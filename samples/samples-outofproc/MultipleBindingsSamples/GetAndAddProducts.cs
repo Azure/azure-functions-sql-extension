@@ -23,8 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.MultipleBindin
             HttpRequestData req,
             [SqlInput("SELECT * FROM Products",
                 "SqlConnectionString",
-                CommandType = System.Data.CommandType.Text,
-                Parameters = "@Cost={cost}")]
+                parameters: "@Cost={cost}")]
             IEnumerable<Product> products)
         {
             return products.ToArray();
