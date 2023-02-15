@@ -55,9 +55,9 @@ See [Input Binding Overview](./BindingsOverview.md#input-binding) for general in
 
 The [SqlAttribute](https://github.com/Azure/azure-functions-sql-extension/blob/main/src/SqlAttribute.cs) for Input bindings takes four arguments:
 
-- **CommandText**: Passed as a constructor argument to the binding. Represents either a query string or the name of a stored procedure.
-- **ConnectionStringSetting**: Passed as a constructor argument to the binding. Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
-- **CommandType**: Specifies whether CommandText is a query (`System.Data.CommandType.Text`) or a stored procedure (`System.Data.CommandType.StoredProcedure`)
+- **CommandText**: Represents either a query string or the name of a stored procedure based on the value of the CommandType.
+- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
+- **CommandType**: Specifies whether CommandText is a query (`System.Data.CommandType.Text`) or a stored procedure (`System.Data.CommandType.StoredProcedure`). Defaults to `CommandType.Text`.
 - **Parameters**: The parameters to the query/stored procedure. This string must follow the format "@param1=param1,@param2=param2" where @param1 is the name of the parameter and param1 is the parameter value. Each pair of parameter name, parameter value is separated by a comma. Within each pair, the parameter name and value is separated by an equals sign. This means that neither the parameter name nor value can contain "," or "=". To specify a `NULL` parameter value, do "@param1=null,@param2=param2". To specify an empty string as a value, do "@param1=,@param2=param2", i.e. do not put any text after the equals sign of the corresponding parameter name. This argument is auto-resolvable (see Query String examples).
 
 The following are valid binding types for the result of the query/stored procedure execution:
@@ -83,8 +83,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "employees")] HttpRequest req,
         ILogger log,
         [Sql("select * from Employees",
-        "SqlConnectionString"
-        CommandType = System.Data.CommandType.Text)]
+        "SqlConnectionString")]
         IEnumerable<Employee> employee)
     {
         return new OkObjectResult(employee);
@@ -130,8 +129,7 @@ The input binding executes the `select * from Products where Cost = @Cost` query
       HttpRequest req,
       [Sql("select * from Products where Cost = @Cost",
           "SqlConnectionString",
-          CommandType = System.Data.CommandType.Text,
-          Parameters = "@Cost={cost}")]
+          parameters: "@Cost={cost}")]
       IEnumerable<Product> products)
   {
       return (ActionResult)new OkObjectResult(products);
@@ -169,8 +167,7 @@ In this case, the parameter value of the `@Name` parameter is an empty string.
       HttpRequest req,
       [Sql("select * from Products where Cost = @Cost and Name = @Name",
           "SqlConnectionString",
-          CommandType = System.Data.CommandType.Text,
-          Parameters = "@Cost={cost},@Name=")]
+          parameters: "@Cost={cost},@Name=")]
       IEnumerable<Product> products)
   {
       return (ActionResult)new OkObjectResult(products);
@@ -188,8 +185,7 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
       HttpRequest req,
       [Sql("if @Name is null select * from Products where Name is null else select * from Products where @Name = name",
           "SqlConnectionString",
-          CommandType = System.Data.CommandType.Text,
-          Parameters = "@Name={name}")]
+          parameters: "@Name={name}")]
       IEnumerable<Product> products)
   {
       return (ActionResult)new OkObjectResult(products);
@@ -207,8 +203,8 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
       HttpRequest req,
       [Sql("SelectProductsCost",
           "SqlConnectionString",
-          CommandType = System.Data.CommandType.StoredProcedure,
-          Parameters = "@Cost={cost}")]
+          System.Data.CommandType.StoredProcedure,
+          "@Cost={cost}")]
       IEnumerable<Product> products)
   {
       return (ActionResult)new OkObjectResult(products);
@@ -225,8 +221,7 @@ public static async Task<IActionResult> Run(
      HttpRequest req,
     [Sql("select * from Products where cost = @Cost",
          "SqlConnectionString",
-         CommandType = System.Data.CommandType.Text,
-         Parameters = "@Cost={cost}")]
+         parameters: "@Cost={cost}")]
      IAsyncEnumerable<Product> products)
 {
     var enumerator = products.GetAsyncEnumerator();
@@ -248,8 +243,8 @@ See [Output Binding Overview](./BindingsOverview.md#output-binding) for general 
 
 The [SqlAttribute](https://github.com/Azure/azure-functions-sql-extension/blob/main/src/SqlAttribute.cs) for Output bindings takes two arguments:
 
-- **CommandText**: Passed as a constructor argument to the binding. Represents the name of the table into which rows will be upserted.
-- **ConnectionStringSetting**: Passed as a constructor argument to the binding. Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
+- **CommandText**: Represents the name of the table into which rows will be upserted.
+- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
 
 The following are valid binding types for the rows to be upserted into the table:
 
@@ -408,7 +403,7 @@ See [Trigger Binding Overview](./BindingsOverview.md#trigger-binding) for genera
 
 The SqlAttribute for Trigger bindings takes two [arguments](https://github.com/Azure/azure-functions-sql-extension/blob/main/src/TriggerBinding/SqlTriggerAttribute.cs)
 
-- **TableName**: Passed as a constructor argument to the binding. Represents the name of the table to be monitored for changes.
+- **TableName**: Represents the name of the table to be monitored for changes.
 - **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
 
 The trigger binding can bind to type `IReadOnlyList<SqlChange<T>>`:

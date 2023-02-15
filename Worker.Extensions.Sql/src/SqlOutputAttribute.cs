@@ -28,16 +28,11 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
         /// create a ConnectionStringSetting with a name like SqlServerAuthentication. The value of the SqlServerAuthentication app setting
         /// would look like "Data Source=test.database.windows.net;Database=TestDB;User ID={userid};Password={password}".
         /// </summary>
-        public string ConnectionStringSetting { get; set; }
+        public string ConnectionStringSetting { get; }
 
         /// <summary>
         /// The table name to upsert the values to.
         /// </summary>
-        public string CommandText { get; set; }
-
-        /// <summary>
-        /// Specifies <see cref="CommandText"/> as Text.
-        /// </summary>
-        public System.Data.CommandType CommandType { get; } = System.Data.CommandType.Text;
+        public string CommandText { get; }
     }
 }

@@ -18,8 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.InputBindingSa
             HttpRequestData req,
             [SqlInput("select * from Products where Cost = @Cost and Name = @Name",
                 "SqlConnectionString",
-                CommandType = System.Data.CommandType.Text,
-                Parameters = "@Cost={cost},@Name=")]
+                parameters: "@Cost={cost},@Name=")]
             IEnumerable<Product> products)
         {
             return products;
