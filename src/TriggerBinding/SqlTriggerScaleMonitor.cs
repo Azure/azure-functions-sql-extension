@@ -17,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// Makes the scale decision for incremental scaling(+1, 0, -1) for workers required based on unprocessed changes. 
     /// Guidance for scaling information can be found here https://learn.microsoft.com/en-us/azure/azure-functions/event-driven-scaling
     /// </summary>
-    public class SqlTriggerScaleMonitor : IScaleMonitor<SqlTriggerMetrics>
+    internal sealed class SqlTriggerScaleMonitor : IScaleMonitor<SqlTriggerMetrics>
     {
         private readonly ILogger _logger;
         private readonly SqlObject _userTable;
@@ -42,7 +42,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         async Task<ScaleMetrics> IScaleMonitor.GetMetricsAsync()
         {
             return await this.GetMetricsAsync();
-
         }
 
         public async Task<SqlTriggerMetrics> GetMetricsAsync()

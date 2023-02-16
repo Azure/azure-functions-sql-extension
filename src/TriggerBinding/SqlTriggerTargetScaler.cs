@@ -10,16 +10,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// <summary>
     /// Represents the target based scaler returning a target worker count.
     /// </summary>
-    public class SqlTriggerTargetScaler : ITargetScaler
+    internal sealed class SqlTriggerTargetScaler : ITargetScaler
     {
         private readonly string _userFunctionId;
+        private readonly string _userTableName;
         private readonly ILogger _logger;
         private readonly SqlTriggerMetricsProvider _metricsProvider;
         private readonly int _maxChangesPerWorker;
 
         public SqlTriggerTargetScaler(string userFunctionId, string userTableName, string connectionString, int maxChangesPerWorker, ILogger logger)
         {
-            _ = !string.IsNullOrEmpty(userTableName) ? true : throw new ArgumentNullException(userTableName);
+            this._userTableName = !string.IsNullOrEmpty(userTableName) ? userTableName : throw new ArgumentNullException(userTableName);
             this._userFunctionId = !string.IsNullOrEmpty(userFunctionId) ? userFunctionId : throw new ArgumentNullException(userFunctionId);
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this._metricsProvider = new SqlTriggerMetricsProvider(connectionString, logger, new SqlObject(userTableName), userFunctionId);
@@ -48,7 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             int targetWorkerCount = (int)Math.Ceiling(unprocessedChangeCount / (decimal)concurrency);
 
-            this._logger.LogInformation($"Target worker count for function '{this._userFunctionId}' is '{targetWorkerCount}' UnprocessedChangeCount ='{unprocessedChangeCount}', Concurrency='{concurrency}').");
+            this._logger.LogInformation($"Target worker count for function '{this._userFunctionId}' is '{targetWorkerCount}' TableName ='{this._userTableName}' UnprocessedChangeCount ='{unprocessedChangeCount}', Concurrency='{concurrency}').");
 
             return new TargetScalerResult
             {

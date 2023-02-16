@@ -5,7 +5,7 @@ using Microsoft.Azure.WebJobs.Host.Scale;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
-    public class SqlTriggerMetrics : ScaleMetrics
+    internal sealed class SqlTriggerMetrics : ScaleMetrics
     {
         /// <summary>
         /// The number of row changes in the user table that are not yet processed.
