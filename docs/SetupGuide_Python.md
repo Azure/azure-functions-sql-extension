@@ -203,7 +203,7 @@ See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree
 
 ## Python V2 Model
 
-See the Python V2 Model samples [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-python-v2/). More information about the Python V2 Model can be found [here](https://learn.microsoft.com/en-us/azure/azure-functions/functions-reference-python?tabs=asgi%2Capplication-level&pivots=python-mode-decorators).
+See the Python V2 Model samples [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-python-v2/). More information about the Python V2 Model can be found [here](https://learn.microsoft.com/azure/azure-functions/functions-reference-python?tabs=asgi%2Capplication-level&pivots=python-mode-decorators).
 
 ## Trigger Binding
 
