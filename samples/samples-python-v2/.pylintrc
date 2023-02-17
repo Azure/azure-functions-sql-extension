@@ -1,0 +1,16 @@
+[MASTER]
+
+ignore=.venv
+
+# List of plugins (as comma separated values of python module names) to load,
+# usually to register additional checkers.
+load-plugins=pylintfileheader
+
+file-header=# Copyright \(c\) Microsoft Corporation\. All rights reserved\.[\r\n]+# Licensed under the MIT License\.
+
+[MESSAGES CONTROL]
+# Disable the message, report, category or checker with the given id(s). You
+# can either give multiple identifier separated by comma (,) or put this option
+# multiple time (only on the command line, not in the configuration file where
+# it should appear only once).
+disable= R0801, W0108, W0613, C0103, C0114, C0115, C0116, E0401, C0301, R0913, R0914
