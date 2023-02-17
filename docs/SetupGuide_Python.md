@@ -19,6 +19,7 @@
     - [Samples for Output Bindings](#samples-for-output-bindings)
       - [Array](#array)
       - [Single Row](#single-row)
+  - [Python V2 Model](#python-v2-model)
   - [Trigger Binding](#trigger-binding)
 
 ## Setup Function Project
@@ -199,6 +200,10 @@ See the [AddProductsArray](https://github.com/Azure/azure-functions-sql-extensio
 #### Single Row
 
 See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-python/AddProduct) sample
+
+## Python V2 Model
+
+See the Python V2 Model samples [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-python-v2/). More information about the Python V2 Model can be found [here](https://learn.microsoft.com/en-us/azure/azure-functions/functions-reference-python?tabs=asgi%2Capplication-level&pivots=python-mode-decorators).
 
 ## Trigger Binding
 
