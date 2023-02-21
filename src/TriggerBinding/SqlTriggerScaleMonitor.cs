@@ -120,14 +120,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             metrics = metrics.TakeLast(minSamplesForScaling).ToArray();
 
             string counts = string.Join(", ", metrics.Select(metric => metric.UnprocessedChangeCount));
-            this._logger.LogInformation($"Unprocessed change counts: [{counts}], worker count: {workerCount}, maximum changes per worker: {this._maxChangesPerWorker}.");
+            this._logger.LogDebugWithThreadId($"Unprocessed change counts: [{counts}], worker count: {workerCount}, maximum changes per worker: {this._maxChangesPerWorker}.");
 
             // Add worker if the count of unprocessed changes per worker exceeds the maximum limit.
             long lastUnprocessedChangeCount = metrics.Last().UnprocessedChangeCount;
             if (lastUnprocessedChangeCount > workerCount * this._maxChangesPerWorker)
             {
                 status.Vote = ScaleVote.ScaleOut;
-                this._logger.LogInformation($"Requesting scale-out: Found too many unprocessed changes for table: '{this._userTable.FullName}' relative to the number of workers.");
+                this._logger.LogInformation($"Requesting scale-out: Found too many unprocessed changes: {lastUnprocessedChangeCount} for table: '{this._userTable.FullName}' relative to the number of workers.");
                 return status;
             }
 
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 else
                 {
-                    this._logger.LogDebug($"Avoiding scale-out: Found the unprocessed changes for table: '{this._userTable.FullName}' to be increasing" +
+                    this._logger.LogDebugWithThreadId($"Avoiding scale-out: Found the unprocessed changes: {expectedUnprocessedChangeCount} for table: '{this._userTable.FullName}' to be increasing" +
                         " but they may not exceed the maximum limit set for the workers.");
                 }
             }

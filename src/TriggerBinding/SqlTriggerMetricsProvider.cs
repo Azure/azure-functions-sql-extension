@@ -11,6 +11,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlTriggerConstants;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlTriggerUtils;
 
@@ -65,7 +67,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         {
                             using (SqlCommand getUnprocessedChangesCommand = this.BuildGetUnprocessedChangesCommand(connection, transaction, primaryKeyColumns, userTableId))
                             {
-                                this._logger.LogInformation("Getting change count");
                                 this._logger.LogDebugWithThreadId($"BEGIN GetUnprocessedChangeCount Query={getUnprocessedChangesCommand.CommandText}");
                                 var commandSw = Stopwatch.StartNew();
                                 unprocessedChangeCount = (long)await getUnprocessedChangesCommand.ExecuteScalarAsync();
@@ -75,8 +76,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             this._logger.LogDebugWithThreadId($"END GetUnprocessedChangeCount Duration={getUnprocessedChangesDurationMs}ms Count={unprocessedChangeCount}");
                             transaction.Commit();
                         }
-                        catch (Exception)
+                        catch (Exception ex)
                         {
+                            TelemetryInstance.TrackException(TelemetryErrorName.GetUnprocessedChangeCount, ex, null, new Dictionary<TelemetryMeasureName, double>() { { TelemetryMeasureName.GetUnprocessedChangesDurationMs, getUnprocessedChangesDurationMs } });
                             try
                             {
                                 transaction.Rollback();
@@ -84,6 +86,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             catch (Exception ex2)
                             {
                                 this._logger.LogError($"GetUnprocessedChangeCount : Failed to rollback transaction due to exception: {ex2.GetType()}. Exception message: {ex2.Message}");
+                                TelemetryInstance.TrackException(TelemetryErrorName.GetUnprocessedChangeCountRollback, ex2);
                             }
                             throw;
                         }
@@ -93,6 +96,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             catch (Exception ex)
             {
                 this._logger.LogError($"Failed to query count of unprocessed changes for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
+                TelemetryInstance.TrackException(TelemetryErrorName.GetUnprocessedChangeCount, ex);
                 throw;
             }
 

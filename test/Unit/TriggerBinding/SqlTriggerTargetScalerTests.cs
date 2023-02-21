@@ -20,10 +20,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [InlineData(100, null, 1)]
         public void SqlTriggerTargetScaler_Returns_Expected(int unprocessedChangeCount, int? concurrency, int expected)
         {
-            var context = new TargetScalerContext
-            {
-                InstanceConcurrency = concurrency
-            };
             var targetScaler = new SqlTriggerTargetScaler(
                 "testUserFunctionId",
                 "testUserTableName",
@@ -32,7 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
                 Mock.Of<ILogger>()
                 );
 
-            TargetScalerResult result = targetScaler.GetScaleResultInternal(context, unprocessedChangeCount);
+            TargetScalerResult result = targetScaler.GetScaleResultInternal(concurrency ?? SqlTriggerListener<object>.DefaultMaxChangesPerWorker, unprocessedChangeCount);
 
             Assert.Equal(result.TargetWorkerCount, expected);
         }

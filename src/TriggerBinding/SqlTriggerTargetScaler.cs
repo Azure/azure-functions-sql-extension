@@ -34,17 +34,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             SqlTriggerMetrics metrics = await this._metricsProvider.GetMetricsAsync();
 
-            return this.GetScaleResultInternal(context, metrics.UnprocessedChangeCount);
-        }
-
-        internal TargetScalerResult GetScaleResultInternal(TargetScalerContext context, long unprocessedChangeCount)
-        {
             // Instance concurrency value is set by the functions host when dynamic concurrency is enabled. See https://learn.microsoft.com/en-us/azure/azure-functions/functions-concurrency for more details.
             int concurrency = context.InstanceConcurrency ?? this._maxChangesPerWorker;
 
+            return this.GetScaleResultInternal(concurrency, metrics.UnprocessedChangeCount);
+        }
+
+        internal TargetScalerResult GetScaleResultInternal(int concurrency, long unprocessedChangeCount)
+        {
             if (concurrency < 1)
             {
-                throw new ArgumentOutOfRangeException($"Unexpected concurrency='{concurrency}' - the value must be > 0.");
+                throw new ArgumentOutOfRangeException(nameof(concurrency), $"Unexpected concurrency='{concurrency}' - the value must be > 0.");
             }
 
             int targetWorkerCount = (int)Math.Ceiling(unprocessedChangeCount / (decimal)concurrency);
