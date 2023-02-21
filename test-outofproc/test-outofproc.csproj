@@ -10,6 +10,9 @@
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" />
     <PackageReference Include="Microsoft.AspNetCore.Http" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Worker.Extensions.Sql\src\Microsoft.Azure.Functions.Worker.Extensions.Sql.csproj" />

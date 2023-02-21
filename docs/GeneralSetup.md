@@ -14,7 +14,6 @@ SQL Server on Docker makes it easy to set up and connect to a locally hosted ins
 
 Azure SQL Database is a fully managed platform as a service (PaaS) database engine that runs the latest stable version of the Microsoft SQL Server database engine. Instructions for getting started can be found [here](https://docs.microsoft.com/azure/azure-sql/database/single-database-create-quickstart).
 
-
 ## SQL Setup
 
 Next you'll configure your SQL Server database for use with Azure SQL binding for Azure Functions.
@@ -35,7 +34,7 @@ CREATE TABLE Employees (
 );
 ```
 
-2. Next a primary key must be set in your SQL table before using the bindings. To do this, run the queries below, replacing the placeholder values for your table and column.
+1. Next a primary key must be set in your SQL table before using the bindings. To do this, run the queries below, replacing the placeholder values for your table and column.
 
 ```sql
 ALTER TABLE ['{table_name}'] ALTER COLUMN ['{primary_key_column_name}'] int NOT NULL
@@ -43,18 +42,94 @@ ALTER TABLE ['{table_name}'] ALTER COLUMN ['{primary_key_column_name}'] int NOT 
 ALTER TABLE ['{table_name}'] ADD CONSTRAINT PKey PRIMARY KEY CLUSTERED (['{primary_key_column_name}']);
 ```
 
+## Create Login and User
 
-## Create a Function App
+SQL bindings connect to the target database by using a Connection String configured in the app settings. This will require a login be created that the function will use to access the server.
 
-Now you will need a Function App to add the binding to. If you have one created already you can skip this step.
+For local testing and development using a SQL (username/password) or Azure Active Directory Login is typically the easiest, but for deployed function apps it is recommended to use [Azure Active Directory Managed Authentication](https://learn.microsoft.com/azure/azure-functions/functions-identity-access-azure-sql-with-managed-identity).
+
+## Assign Permissions
+
+The login used by the function will need to have the following permissions assigned to the user it's mapped to in order for it to successfully interact with the database. The permissions required for each type of binding is listed below.
+
+### Input Binding Permissions
+
+The permissions required by input bindings depend on the query being executed.
+
+#### Text Query Input Binding Permissions
+
+For text query input bindings you will need the permissions required to execute the statement, which will usually be `SELECT` on the object you're retrieving rows from.
+
+```sql
+USE <DatabaseName>
+GRANT SELECT ON <ObjectName> TO <UserName>
+```
+
+#### Stored Procedure Input Binding Permissions
+
+For stored procedure input bindings you will need `EXECUTE` permissions on the stored procedure.
+
+```sql
+USE <DatabaseName>
+GRANT EXECUTE ON <StoredProcedureName> TO <UserName>
+```
+
+### Output Binding Permissions
+
+- `SELECT`, `INSERT`, and `UPDATE` permissions on the table
+
+These are required to retrieve metadata and update the rows in the table.
+
+```sql
+USE <DatabaseName>
+GRANT SELECT, INSERT, UPDATE ON <TableName> TO <UserName>
+```
+
+**NOTE**: In some scenarios, the presence of table components such as a  SQL DML trigger may require additional permissions for the output binding to successfully complete the operation.
+
+### Trigger Permissions
+
+- `CREATE SCHEMA` and `CREATE TABLE` permissions on database
+
+This is required to create the [Internal State Tables](./BindingsOverview.md#internal-state-tables) required by the trigger.
+
+```sql
+USE <DatabaseName>
+GRANT CREATE SCHEMA TO <UserName>
+GRANT CREATE TABLE TO <UserName>
+```
+
+- `SELECT` and `VIEW CHANGE TRACKING` permissions on the table
+
+These are required to retrieve the data about the changes occurring in the table.
+
+```sql
+USE <DatabaseName>
+GRANT SELECT ON <TableName> TO <UserName>
+```
+
+- `SELECT`, `INSERT`, `UPDATE` and `DELETE` permissions on `az_func` schema
+  - Note this is usually automatically inherited if the login being used was the one that created the schema in the first place. If another user created the schema or ownership was changed afterwards then these permissions will need to be reapplied for the function to work.
+
+These are required to read and update the internal state of the function.
+
+```sql
+USE <DatabaseName>
+GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::az_func TO <UserName>
+```
+
+## Create a Function Project
+
+Now you will need a Function Project to add the binding to. If you have one created already you can skip this step.
 
 These steps can be done in the Terminal/CLI or with PowerShell.
 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
-2. Create a function app for .NET, JavaScript, TypeScript, Python or Java.
+2. Create a function project for .NET, JavaScript, TypeScript, Python or Java.
 
     **.NET**
+
     ```bash
     mkdir MyApp
     cd MyApp
@@ -62,6 +137,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     ```
 
     **JavaScript (NodeJS)**
+
     ```bash
     mkdir MyApp
     cd MyApp
@@ -69,6 +145,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     ```
 
     **TypeScript (NodeJS)**
+
     ```bash
     mkdir MyApp
     cd MyApp
@@ -78,6 +155,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     **Python**
 
     *See [#250](https://github.com/Azure/azure-functions-sql-extension/issues/250) before starting.*
+
     ```bash
     mkdir MyApp
     cd MyApp
@@ -85,6 +163,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     ```
 
     **Java**
+
     ```bash
     mkdir MyApp
     cd MyApp
@@ -92,13 +171,14 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     ```
 
     **PowerShell**
+
     ```bash
     mkdir MyApp
     cd MyApp
     func init --worker-runtime powershell
     ```
 
-3. Enable SQL bindings on the function app. More information can be found in the [Azure SQL bindings for Azure Functions docs](https://aka.ms/sqlbindings).
+3. Enable SQL bindings on the function project. More information can be found in the [Azure SQL bindings for Azure Functions docs](https://aka.ms/sqlbindings).
 
     **.NET:** Install the extension.
 
@@ -107,6 +187,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     ```
 
     **JavaScript and TypeScript:** Update the `host.json` file to the preview extension bundle.
+
     ```json
     "extensionBundle": {
         "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
@@ -117,6 +198,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     **Python:**
 
     Update the `host.json` file to the preview extension bundle.
+
     ```json
     "extensionBundle": {
         "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
@@ -124,18 +206,15 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     }
     ```
 
-    Add a preview version of the Python functions library to `requirements.txt`.
-    ```txt
-    azure-functions==1.11.3b1
-    ```
-
     Add a setting in `local.settings.json` to isolate the worker dependencies.
+
     ```json
     "PYTHON_ISOLATE_WORKER_DEPENDENCIES": "1"
     ```
 
     **Java:**
     Update the `host.json` file to the preview extension bundle.
+
     ```json
     "extensionBundle": {
         "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
@@ -144,6 +223,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     ```
 
     Add the `azure-functions-java-library-sql` dependency to the pom.xml file.
+
     ```xml
     <dependency>
         <groupId>com.microsoft.azure.functions</groupId>
@@ -154,6 +234,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
 
      **PowerShell:**
     Update the `host.json` file to the preview extension bundle.
+
     ```json
     "extensionBundle": {
         "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
@@ -161,9 +242,9 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     }
     ```
 
-## Configure Function App
+## Configure Function Project
 
-Once you have your Function App you need to configure it for use with Azure SQL bindings for Azure Functions.
+Once you have your Function Project you need to configure it for use with Azure SQL bindings for Azure Functions.
 
 1. Ensure you have Azure Storage Emulator running. This is specific to the sample functions in this repository with a non-HTTP trigger. For information on the Azure Storage Emulator, refer to the docs on its use in [functions local development](https://docs.microsoft.com/azure/azure-functions/functions-app-settings#azurewebjobsstorage) and [installation](https://docs.microsoft.com/azure/storage/common/storage-use-emulator#get-the-storage-emulator).
 

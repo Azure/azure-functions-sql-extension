@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 using System.Collections.Generic;
 using System;
+using System.Linq;
 
 namespace DotnetIsolatedTests.Common
 {
@@ -138,6 +139,10 @@ namespace DotnetIsolatedTests.Common
 
         public string Nvarchar { get; set; }
 
+        public byte[] Binary { get; set; }
+
+        public byte[] Varbinary { get; set; }
+
         public override bool Equals(object obj)
         {
             if (obj is ProductColumnTypes)
@@ -149,7 +154,8 @@ namespace DotnetIsolatedTests.Common
                     this.FloatType == that.FloatType && this.Real == that.Real && this.Date == that.Date &&
                     this.Datetime == that.Datetime && this.Datetime2 == that.Datetime2 && this.DatetimeOffset == that.DatetimeOffset &&
                     this.SmallDatetime == that.SmallDatetime && this.Time == that.Time && this.CharType == that.CharType &&
-                    this.Varchar == that.Varchar && this.Nchar == that.Nchar && this.Nvarchar == that.Nvarchar;
+                    this.Varchar == that.Varchar && this.Nchar == that.Nchar && this.Nvarchar == that.Nvarchar &&
+                    this.Binary.SequenceEqual(that.Binary) && this.Varbinary.SequenceEqual(that.Varbinary);
             }
             return false;
         }
@@ -181,5 +187,16 @@ namespace DotnetIsolatedTests.Common
         public int ProductId { get; set; }
 
         public string Name { get; set; }
+    }
+
+    public class ProductUnsupportedTypes
+    {
+        public int ProductId { get; set; }
+
+        public string TextCol { get; set; }
+
+        public string NtextCol { get; set; }
+
+        public byte[] ImageCol { get; set; }
     }
 }

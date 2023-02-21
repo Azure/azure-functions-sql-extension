@@ -27,7 +27,9 @@ module.exports = async function (context, req) {
         "CharType": "test",
         "Varchar": "test",
         "Nchar": "\u2649",
-        "Nvarchar": "\u2649"
+        "Nvarchar": "\u2649",
+        "Binary": "dGVzdA==",
+        "Varbinary": "dGVzdA=="
     };
 
     context.bindings.product = JSON.stringify(product);

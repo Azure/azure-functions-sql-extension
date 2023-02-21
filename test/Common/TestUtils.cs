@@ -41,6 +41,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         /// </summary>
         /// <param name="connection">The connection.  This must be opened.</param>
         /// <param name="commandText">The scalar T-SQL command.</param>
+        /// <param name="logger">The method to call for logging output</param>
         /// <param name="catchException">Optional exception handling.  Pass back 'true' to handle the
         /// exception, 'false' to throw. If Null is passed in then all exceptions are thrown.</param>
         /// <param name="message">Optional message to write when this query is executed. Defaults to writing the query commandText</param>
@@ -48,6 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         public static int ExecuteNonQuery(
             IDbConnection connection,
             string commandText,
+            Action<string> logger,
             Predicate<Exception> catchException = null,
             string message = null)
         {
@@ -69,7 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
                     cmd.CommandText = commandText;
                     cmd.CommandType = CommandType.Text;
                     cmd.CommandTimeout = 60; // Increase from default 30s to prevent timeouts while connecting to Azure SQL DB
-                    Console.WriteLine(message);
+                    logger.Invoke(message);
                     return cmd.ExecuteNonQuery();
                 }
                 catch (Exception ex)
@@ -89,12 +91,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         /// </summary>
         /// <param name="connection">The connection.  This must be opened.</param>
         /// <param name="commandText">The scalar T-SQL command.</param>
+        /// <param name="logger">The method to call for logging output</param>
         /// <param name="catchException">Optional exception handling.  Pass back 'true' to handle the
         /// exception, 'false' to throw. If Null is passed in then all exceptions are thrown.</param>
         /// <returns>The scalar result</returns>
         public static object ExecuteScalar(
             IDbConnection connection,
             string commandText,
+            Action<string> logger,
             Predicate<Exception> catchException = null)
         {
             if (connection == null)
@@ -112,7 +116,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
                 {
                     cmd.CommandText = commandText;
                     cmd.CommandType = CommandType.Text;
-                    Console.WriteLine($"Executing scalar {commandText}");
+                    logger.Invoke($"Executing scalar {commandText}");
                     return cmd.ExecuteScalar();
                 }
                 catch (Exception ex)
@@ -132,10 +136,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         /// Retries the specified action, waiting for the specified duration in between each attempt
         /// </summary>
         /// <param name="action">The action to run</param>
+        /// <param name="logger">The method to call for logging output</param>
         /// <param name="retryCount">The max number of retries to attempt</param>
         /// <param name="waitDurationMs">The duration in milliseconds between each attempt</param>
         /// <exception cref="AggregateException">Aggregate of all exceptions thrown if all retries failed</exception>
-        public static void Retry(Action action, int retryCount = 3, int waitDurationMs = 10000)
+        public static void Retry(Action action, Action<string> logger, int retryCount = 3, int waitDurationMs = 10000)
         {
             var exceptions = new List<Exception>();
             while (true)
@@ -153,7 +158,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
                     {
                         throw new AggregateException($"Action failed all retries", exceptions);
                     }
-                    Console.WriteLine($"Error running action, retrying after {waitDurationMs}ms. {retryCount} retries left. {ex}");
+                    logger.Invoke($"Error running action, retrying after {waitDurationMs}ms. {retryCount} retries left. {ex}");
                     Thread.Sleep(waitDurationMs);
                 }
             }
@@ -171,7 +176,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         /// <summary>
         /// Returns a task that will complete when either the original task completes or the specified timeout is reached.
         /// </summary>
-        /// <typeparam name="TResult"></typeparam>
         /// <param name="task">The original task to wait on</param>
         /// <param name="timeout">The TimeSpan to wait for before a TimeoutException is thrown</param>
         /// <param name="message">The message to give the TimeoutException if a timeout occurs</param>
@@ -197,7 +201,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         /// <summary>
         /// Returns a task that will complete when either the original task completes or the specified timeout is reached.
         /// </summary>
-        /// <typeparam name="TResult"></typeparam>
         /// <param name="task">The original task to wait on</param>
         /// <param name="timeout">The TimeSpan to wait for before a TimeoutException is thrown</param>
         /// <param name="message">The message to give the TimeoutException if a timeout occurs</param>

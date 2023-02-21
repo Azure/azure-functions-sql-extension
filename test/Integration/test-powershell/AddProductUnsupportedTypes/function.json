@@ -1,0 +1,27 @@
+{
+  "bindings": [
+    {
+      "authLevel": "function",
+      "name": "Request",
+      "direction": "in",
+      "type": "httpTrigger",
+      "methods": [
+        "get"
+      ],
+      "route": "addproduct-unsupportedtypes"
+    },
+    {
+      "name": "response",
+      "type": "http",
+      "direction": "out"
+    },
+    {
+      "name": "product",
+      "type": "sql",
+      "direction": "out",
+      "commandText": "[dbo].[ProductsUnsupportedTypes]",
+      "connectionStringSetting": "SqlConnectionString"
+    }
+  ],
+  "disabled": false
+}

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingS
     public static class AddProduct
     {
         [Function("AddProduct")]
-        [SqlOutput("dbo.Products", ConnectionStringSetting = "SqlConnectionString")]
+        [SqlOutput("dbo.Products", "SqlConnectionString")]
         public static async Task<Product> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "addproduct")]
             HttpRequestData req)

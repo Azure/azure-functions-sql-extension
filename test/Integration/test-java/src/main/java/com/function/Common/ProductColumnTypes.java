@@ -7,7 +7,6 @@
 package com.function.Common;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
 
 public class ProductColumnTypes {
     private int ProductId;
@@ -21,22 +20,24 @@ public class ProductColumnTypes {
     private short TinyInt;
     private double FloatType;
     private double Real;
-    private Timestamp Date;
-    private Timestamp Datetime;
-    private Timestamp Datetime2;
-    private Timestamp DatetimeOffset;
-    private Timestamp SmallDatetime;
+    private String Date;
+    private String Datetime;
+    private String Datetime2;
+    private String DatetimeOffset;
+    private String SmallDatetime;
     private String Time;
     private String CharType;
     private String Varchar;
     private String Nchar;
     private String Nvarchar;
+    private String Binary;
+    private String Varbinary;
 
 
     public ProductColumnTypes(int productId, long bigInt, boolean bit, BigDecimal decimalType, BigDecimal money,
-    BigDecimal numeric, short smallInt, BigDecimal smallMoney, short tinyInt, double floatType, double real, Timestamp date,
-    Timestamp datetime, Timestamp datetime2, Timestamp datetimeOffset, Timestamp smallDatetime, String time, String charType,
-    String varchar, String nchar, String nvarchar) {
+    BigDecimal numeric, short smallInt, BigDecimal smallMoney, short tinyInt, double floatType, double real, String date,
+    String datetime, String datetime2, String datetimeOffset, String smallDatetime, String time, String charType,
+    String varchar, String nchar, String nvarchar, String binary, String varbinary) {
         ProductId = productId;
         BigInt = bigInt;
         Bit = bit;
@@ -58,6 +59,8 @@ public class ProductColumnTypes {
         Varchar = varchar;
         Nchar = nchar;
         Nvarchar = nvarchar;
+        Binary = binary;
+        Varbinary = varbinary;
     }
 
     public int getProductId() {
@@ -72,7 +75,7 @@ public class ProductColumnTypes {
         BigInt = bigInt;
     }
 
-    public boolean setBit() {
+    public boolean getBit() {
         return Bit;
     }
 
@@ -144,43 +147,43 @@ public class ProductColumnTypes {
         Real = real;
     }
 
-    public Timestamp getDate() {
+    public String getDate() {
         return Date;
     }
 
-    public void setDate(Timestamp date) {
+    public void setDate(String date) {
         Date = date;
     }
 
-    public Timestamp getDatetime() {
+    public String getDatetime() {
         return Datetime;
     }
 
-    public void setDatetime(Timestamp datetime) {
+    public void setDatetime(String datetime) {
         Datetime = datetime;
     }
 
-    public Timestamp getDatetime2() {
+    public String getDatetime2() {
         return Datetime2;
     }
 
-    public void setDatetime2(Timestamp datetime2) {
+    public void setDatetime2(String datetime2) {
         Datetime2 = datetime2;
     }
 
-    public Timestamp getDatetimeOffset() {
+    public String getDatetimeOffset() {
         return DatetimeOffset;
     }
 
-    public void setDatetimeOffset(Timestamp datetimeOffset) {
+    public void setDatetimeOffset(String datetimeOffset) {
         DatetimeOffset = datetimeOffset;
     }
 
-    public Timestamp getSmallDatetime() {
+    public String getSmallDatetime() {
         return SmallDatetime;
     }
 
-    public void setSmallDatetime(Timestamp smallDatetime) {
+    public void setSmallDatetime(String smallDatetime) {
         SmallDatetime = smallDatetime;
     }
 
@@ -222,5 +225,21 @@ public class ProductColumnTypes {
 
     public void setNvarchar(String nvarchar) {
         Nvarchar = nvarchar;
+    }
+
+    public String getBinary() {
+        return Binary;
+    }
+
+    public void setBinary(String binary) {
+        Binary = binary;
+    }
+
+    public String getVarbinary() {
+        return Varbinary;
+    }
+
+    public void setVarbinary(String varbinary) {
+        Varbinary = varbinary;
     }
 }

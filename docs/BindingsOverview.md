@@ -1,6 +1,7 @@
 # Azure SQL bindings for Azure Functions - Overview
 
 ## Table of Contents
+
 - [Azure SQL bindings for Azure Functions - Overview](#azure-sql-bindings-for-azure-functions---overview)
   - [Table of Contents](#table-of-contents)
   - [Input Binding](#input-binding)
@@ -12,11 +13,12 @@
     - [Retry support for Output Bindings](#retry-support-for-output-bindings)
   - [Trigger Binding](#trigger-binding)
     - [Change Tracking](#change-tracking)
+    - [Functionality Overview](#functionality-overview)
     - [Internal State Tables](#internal-state-tables)
       - [az\_func.GlobalState](#az_funcglobalstate)
       - [az\_func.Leases\_\*](#az_funcleases_)
     - [Configuration for Trigger Bindings](#configuration-for-trigger-bindings)
-      - [Sql\_Trigger\_BatchSize](#sql_trigger_batchsize)
+      - [Sql\_Trigger\_MaxBatchSize](#sql_trigger_maxbatchsize)
       - [Sql\_Trigger\_PollingIntervalMs](#sql_trigger_pollingintervalms)
       - [Sql\_Trigger\_MaxChangesPerWorker](#sql_trigger_maxchangesperworker)
     - [Scaling for Trigger Bindings](#scaling-for-trigger-bindings)
@@ -49,13 +51,16 @@ Typically Output Bindings require two things :
 Normally either of these are false then an error will be thrown. Below are the situations in which this is not the case :
 
 #### Identity Columns
+
 In the case where one of the primary key columns is an identity column, there are two options based on how the function defines the output object:
 
 1. If the identity column isn't included in the output object then a straight insert is always performed with the other column values. See [AddProductWithIdentityColumn](../samples/samples-csharp/OutputBindingSamples/AddProductWithIdentityColumn.cs) for an example.
 2. If the identity column is included (even if it's an optional nullable value) then a merge is performed similar to what happens when no identity column is present. This merge will either insert a new row or update an existing row based on the existence of a row that matches the primary keys (including the identity column). See [AddProductWithIdentityColumnIncluded](../samples/samples-csharp/OutputBindingSamples/AddProductWithIdentityColumnIncluded.cs) for an example.
 
 #### Columns with Default Values
+
 In the case where one of the primary key columns has a default value, there are also two options based on how the function defines the output object:
+
 1. If the column with a default value is not included in the output object, then a straight insert is always performed with the other values. See [AddProductWithDefaultPK](../samples/samples-csharp/OutputBindingSamples/AddProductWithDefaultPK.cs) for an example.
 2. If the column with a default value is included then a merge is performed similar to what happens when no default column is present. If there is a nullable column with a default value, then the provided column value in the output object will be upserted even if it is null.
 
@@ -65,7 +70,7 @@ There currently is no built-in support for errors that occur while executing out
 
 If using a .NET Function then `IAsyncCollector` can be used, and the function code can handle exceptions thrown by the call to `FlushAsync()`.
 
-See https://github.com/Azure/Azure-Functions/issues/891 for further information.
+See <https://github.com/Azure/Azure-Functions/issues/891> for further information.
 
 ## Trigger Binding
 
@@ -96,6 +101,26 @@ Azure SQL Trigger bindings utilize SQL [change tracking](https://docs.microsoft.
 
     > **NOTE:** The leases table contains all columns corresponding to the primary key from the user table and three additional columns named `_az_func_ChangeVersion`, `_az_func_AttemptCount` and `_az_func_LeaseExpirationTime`. If any of the primary key columns happen to have the same name, that will result in an error message listing any conflicts. In this case, the listed primary key columns must be renamed for the trigger to work.
 
+### Functionality Overview
+
+The Azure SQL Trigger binding uses a polling loop to check for changes, triggering the user function when changes are detected. At a high level the loop looks like this :
+
+```
+while (true) {
+    1. Get list of changes on table - up to a maximum number controlled by the Sql_Trigger_MaxBatchSize setting
+    2. Trigger function with list of changes
+    3. Wait for delay controlled by Sql_Trigger_PollingIntervalMs setting
+}
+```
+
+Changes will always be processed in the order that their changes were made, with the oldest changes being processed first. A couple notes about this :
+
+1. If changes to multiple rows are made at once the exact order that they'll be sent to the function is based on the order returned by the CHANGETABLE function
+2. Changes are "batched" together for a row - if multiple changes are made to a row between each iteration of the loop than only a single change entry will exist for that row that shows the difference between the last processed state and the current state
+3. If changes are made to a set of rows, and then another set of changes are made to half of those same rows then the half that wasn't changed a second time will be processed first. This is due to the above note with the changes being batched - the trigger will only see the "last" change made and use that for the order it processes them in
+
+See [Work with change tracking](https://learn.microsoft.com/sql/relational-databases/track-changes/work-with-change-tracking-sql-server) for more information on change tracking and how it is used by applications such as Azure SQL triggers.
+
 ### Internal State Tables
 
 The trigger functionality creates several tables to use for tracking the current state of the trigger. This allows state to be persisted across sessions and for multiple instances of a trigger binding to execute in parallel (for scaling purposes).
@@ -116,11 +141,11 @@ A `Leases_*` table is created for every unique instance of a function and table.
 
 This table is used to ensure that all changes are processed and that no change is processed more than once. This table consists of two groups of columns:
 
-   * A column for each column in the primary key of the target table - used to identify the row that it maps to in the target table
-   * A couple columns for tracking the state of each row. These are:
-     * `_az_func_ChangeVersion` for the change version of the row currently being processed
-     * `_az_func_AttemptCount` for tracking the number of times that a change has attempted to be processed to avoid getting stuck trying to process a change it's unable to handle
-     * `_az_func_LeaseExpirationTime` for tracking when the lease on this row for a particular instance is set to expire. This ensures that if an instance exits unexpectedly another instance will be able to pick up and process any changes it had leases for after the expiration time has passed.
+- A column for each column in the primary key of the target table - used to identify the row that it maps to in the target table
+- A couple columns for tracking the state of each row. These are:
+  - `_az_func_ChangeVersion` for the change version of the row currently being processed
+  - `_az_func_AttemptCount` for tracking the number of times that a change has attempted to be processed to avoid getting stuck trying to process a change it's unable to handle
+  - `_az_func_LeaseExpirationTime` for tracking when the lease on this row for a particular instance is set to expire. This ensures that if an instance exits unexpectedly another instance will be able to pick up and process any changes it had leases for after the expiration time has passed.
 
 A row is created for every row in the target table that is modified. These are then cleaned up after the changes are processed for a set of changes corresponding to a change tracking sync version.
 
@@ -128,9 +153,9 @@ A row is created for every row in the target table that is modified. These are t
 
 This section goes over some of the configuration values you can use to customize SQL trigger bindings. See [How to Use Azure Function App Settings](https://learn.microsoft.com/azure/azure-functions/functions-how-to-use-azure-function-app-settings) to learn more.
 
-#### Sql_Trigger_BatchSize
+#### Sql_Trigger_MaxBatchSize
 
-This controls the number of changes processed at once before being sent to the triggered function.
+This controls the maximum number of changes sent to the function during each iteration of the change processing loop.
 
 #### Sql_Trigger_PollingIntervalMs
 

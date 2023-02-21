@@ -80,6 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             private readonly IConfiguration _configuration;
 
             private readonly ILogger _logger;
+            private ServerProperties _serverProperties;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="SqlGenericsConverter<typeparamref name="T"/>"/> class.
@@ -182,7 +183,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     this._logger.LogDebugWithThreadId("BEGIN OpenBuildItemFromAttributeAsyncConnection");
                     await connection.OpenAsyncWithSqlErrorHandling(CancellationToken.None);
                     this._logger.LogDebugWithThreadId("END OpenBuildItemFromAttributeAsyncConnection");
-                    Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps();
+                    this._serverProperties = await SqlBindingUtilities.GetServerTelemetryProperties(connection, this._logger, CancellationToken.None);
+                    Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps(this._serverProperties);
                     TelemetryInstance.TrackConvert(type, props);
                     var dataTable = new DataTable();
                     adapter.Fill(dataTable);
@@ -202,7 +204,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 try
                 {
                     var asyncEnumerable = new SqlAsyncEnumerable<T>(SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, this._configuration), attribute);
-                    Dictionary<TelemetryPropertyName, string> props = asyncEnumerable.Connection.AsConnectionProps();
+                    Dictionary<TelemetryPropertyName, string> props = asyncEnumerable.Connection.AsConnectionProps(this._serverProperties);
                     TelemetryInstance.TrackConvert(ConvertType.IAsyncEnumerable, props);
                     return asyncEnumerable;
                 }

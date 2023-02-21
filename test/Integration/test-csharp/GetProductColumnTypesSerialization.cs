@@ -22,8 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-columntypesserialization")]
             HttpRequest req,
             [Sql("SELECT * FROM [dbo].[ProductsColumnTypes]",
-                CommandType = System.Data.CommandType.Text,
-                ConnectionStringSetting = "SqlConnectionString")]
+                "SqlConnectionString")]
             IEnumerable<ProductColumnTypes> products,
             ILogger log)
         {

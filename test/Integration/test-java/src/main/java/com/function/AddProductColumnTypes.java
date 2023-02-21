@@ -49,16 +49,18 @@ public class AddProductColumnTypes {
             (short)1,
             0.1,
             0.1,
-            new Timestamp(System.currentTimeMillis()),
-            new Timestamp(System.currentTimeMillis()),
-            new Timestamp(System.currentTimeMillis()),
-            new Timestamp(System.currentTimeMillis()),
-            new Timestamp(System.currentTimeMillis()),
+            new Timestamp(System.currentTimeMillis()).toString(),
+            new Timestamp(System.currentTimeMillis()).toString(),
+            new Timestamp(System.currentTimeMillis()).toString(),
+            new Timestamp(System.currentTimeMillis()).toString(),
+            new Timestamp(System.currentTimeMillis()).toString(),
             new Time(System.currentTimeMillis()).toString(),
             "test",
             "test",
             "\u2649",
-            "\u2649");
+            "\u2649",
+            "dGVzdA==",
+            "dGVzdA==");
         product.setValue(p);
 
         // Items were inserted successfully so return success, an exception would be thrown if there

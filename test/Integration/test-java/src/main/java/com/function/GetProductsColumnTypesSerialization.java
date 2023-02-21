@@ -19,6 +19,7 @@ import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
 import com.microsoft.azure.functions.sql.annotation.SQLInput;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Optional;
 import java.util.logging.Level;
@@ -40,22 +41,22 @@ public class GetProductsColumnTypesSerialization {
                 commandType = "Text",
                 connectionStringSetting = "SqlConnectionString")
                 ProductColumnTypes[] products,
-            ExecutionContext context) throws JsonProcessingException {
+            ExecutionContext context) throws JsonProcessingException, ParseException {
 
         ObjectMapper mapper = new ObjectMapper();
         SimpleDateFormat df = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'SSSXXX");
         mapper.setDateFormat(df);
         for (ProductColumnTypes product : products) {
             // Convert the datetimes to UTC (Java worker returns the datetimes in local timezone)
-            long date = product.getDate().getTime();
-            long datetime = product.getDatetime().getTime();
-            long datetime2 = product.getDatetime2().getTime();
-            long smallDateTime = product.getSmallDatetime().getTime();
-            int offset = Calendar.getInstance().getTimeZone().getOffset(product.getDatetime().getTime());
-            product.setDate(new Timestamp(date - offset));
-            product.setDatetime(new Timestamp(datetime - offset));
-            product.setDatetime2(new Timestamp(datetime2 - offset));
-            product.setSmallDatetime(new Timestamp(smallDateTime - offset));
+            long date = df.parse(product.getDate()).getTime();
+            long datetime = df.parse(product.getDatetime()).getTime();
+            long datetime2 = df.parse(product.getDatetime2()).getTime();
+            long smallDateTime = df.parse(product.getSmallDatetime()).getTime();
+            int offset = Calendar.getInstance().getTimeZone().getOffset(df.parse(product.getDatetime()).getTime());
+            product.setDate(new Timestamp(date - offset).toString());
+            product.setDatetime(new Timestamp(datetime - offset).toString());
+            product.setDatetime2(new Timestamp(datetime2 - offset).toString());
+            product.setSmallDatetime(new Timestamp(smallDateTime - offset).toString());
             context.getLogger().log(Level.INFO, mapper.writeValueAsString(product));
         }
         return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(mapper.writeValueAsString(products)).build();

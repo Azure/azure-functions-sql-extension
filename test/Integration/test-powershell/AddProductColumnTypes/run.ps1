@@ -33,6 +33,8 @@ $req_query = @{
     Varchar="test";
     Nchar="\u2649";
     Nvarchar="\u2649";
+    Binary="dGVzdA==";
+    Varbinary="dGVzdA==";
 };
 
 # Assign the value we want to pass to the SQL Output binding.

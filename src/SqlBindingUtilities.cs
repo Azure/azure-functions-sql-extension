@@ -10,6 +10,8 @@ using System.Threading;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -289,6 +291,74 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
             }
             return true;
+        }
+
+        /// <summary>
+        /// Get the Server Properties for the given connection.
+        /// </summary>
+        /// <returns>ServerProperties (EngineEdition and Edition) of the target Sql Server.</returns>
+        public static async Task<ServerProperties> GetServerTelemetryProperties(SqlConnection connection, ILogger logger, CancellationToken cancellationToken)
+        {
+            if (TelemetryInstance.Enabled)
+            {
+                try
+                {
+                    string serverPropertiesQuery = $"SELECT SERVERPROPERTY('EngineEdition'), SERVERPROPERTY('Edition')";
+
+                    logger.LogDebugWithThreadId($"BEGIN GetServerTelemetryProperties Query={serverPropertiesQuery}");
+                    using (var selectServerEditionCommand = new SqlCommand(serverPropertiesQuery, connection))
+                    using (SqlDataReader reader = await selectServerEditionCommand.ExecuteReaderAsync(cancellationToken))
+                    {
+                        if (await reader.ReadAsync(cancellationToken))
+                        {
+                            int engineEdition = reader.GetInt32(0);
+                            var serverProperties = new ServerProperties() { Edition = reader.GetString(1) };
+                            // Mapping information from
+                            // https://learn.microsoft.com/en-us/sql/t-sql/functions/serverproperty-transact-sql?view=sql-server-ver16
+                            switch (engineEdition)
+                            {
+                                case 1:
+                                    serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.DesktopEngine.ToString();
+                                    return serverProperties;
+                                case 2:
+                                    serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.Standard.ToString();
+                                    return serverProperties;
+                                case 3:
+                                    serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.Enterprise.ToString();
+                                    return serverProperties;
+                                case 4:
+                                    serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.Express.ToString();
+                                    return serverProperties;
+                                case 5:
+                                    serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.SQLDatabase.ToString();
+                                    return serverProperties;
+                                case 6:
+                                    serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.AzureSynapseAnalytics.ToString();
+                                    return serverProperties;
+                                case 8:
+                                    serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.AzureSQLManagedInstance.ToString();
+                                    return serverProperties;
+                                case 9:
+                                    serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.AzureSQLEdge.ToString();
+                                    return serverProperties;
+                                case 11:
+                                    serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.AzureSynapseserverlessSQLpool.ToString();
+                                    return serverProperties;
+                                default:
+                                    serverProperties.EngineEdition = engineEdition.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                                    return serverProperties;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError($"Exception in GetServerTelemetryProperties. Exception = {ex.Message}");
+                    TelemetryInstance.TrackException(TelemetryErrorName.GetServerTelemetryProperties, ex);
+                    return null;
+                }
+            }
+            return null;
         }
     }
 }

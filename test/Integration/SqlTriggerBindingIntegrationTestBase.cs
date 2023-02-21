@@ -15,6 +15,7 @@ using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
+    [LogTestName]
     public class SqlTriggerBindingIntegrationTestBase : IntegrationTestBase
     {
         public SqlTriggerBindingIntegrationTestBase(ITestOutputHelper output = null) : base(output)
@@ -128,7 +129,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             await actions();
 
             // Now wait until either we timeout or we've gotten all the expected changes, whichever comes first
-            Console.WriteLine($"[{DateTime.UtcNow:u}] Waiting for {operation} changes ({timeoutMs}ms)");
+            this.LogOutput($"[{DateTime.UtcNow:u}] Waiting for {operation} changes ({timeoutMs}ms)");
             await taskCompletion.Task.TimeoutAfter(TimeSpan.FromMilliseconds(timeoutMs), $"Timed out waiting for {operation} changes.");
 
             // Unhook handler since we're done monitoring these changes so we aren't checking other changes done later
@@ -180,17 +181,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         /// <summary>
         /// Gets a timeout value to use when processing the given number of changes, based on the
-        /// default batch size and polling interval.
+        /// default max batch size and polling interval.
         /// </summary>
         /// <param name="firstId">The first ID in the batch to process</param>
         /// <param name="lastId">The last ID in the batch to process</param>
-        /// <param name="batchSize">The batch size if different than the default batch size</param>
+        /// <param name="maxBatchSize">The max batch size if different than the default max batch size</param>
         /// <param name="pollingIntervalMs">The polling interval in ms if different than the default polling interval</param>
         /// <returns></returns>
-        public int GetBatchProcessingTimeout(int firstId, int lastId, int batchSize = SqlTableChangeMonitor<object>.DefaultBatchSize, int pollingIntervalMs = SqlTableChangeMonitor<object>.DefaultPollingIntervalMs)
+        public int GetBatchProcessingTimeout(int firstId, int lastId, int maxBatchSize = SqlTableChangeMonitor<object>.DefaultMaxBatchSize, int pollingIntervalMs = SqlTableChangeMonitor<object>.DefaultPollingIntervalMs)
         {
             int changesToProcess = lastId - firstId + 1;
-            int calculatedTimeout = (int)(Math.Ceiling((double)changesToProcess / batchSize // The number of batches to process
+            int calculatedTimeout = (int)(Math.Ceiling((double)changesToProcess / maxBatchSize // The number of batches to process
                 / this.FunctionHostList.Count) // The number of function host processes
                 * pollingIntervalMs // The length to process each batch
                 * 2); // Double to add buffer time for processing results & writing log messages

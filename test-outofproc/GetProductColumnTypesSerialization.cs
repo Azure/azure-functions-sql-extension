@@ -20,8 +20,7 @@ namespace DotnetIsolatedTests
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-columntypesserialization")]
             HttpRequest req,
             [SqlInput("SELECT * FROM [dbo].[ProductsColumnTypes]",
-                CommandType = System.Data.CommandType.Text,
-                ConnectionStringSetting = "SqlConnectionString")]
+                "SqlConnectionString")]
             IEnumerable<ProductColumnTypes> products)
         {
             return products;

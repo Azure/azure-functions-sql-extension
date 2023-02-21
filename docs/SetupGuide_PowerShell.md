@@ -1,9 +1,10 @@
 # Azure SQL bindings for Azure Functions - PowerShell
 
 ## Table of Contents
+
 - [Azure SQL bindings for Azure Functions - PowerShell](#azure-sql-bindings-for-azure-functions---powershell)
   - [Table of Contents](#table-of-contents)
-  - [Setup Function App](#setup-function-app)
+  - [Setup Function Project](#setup-function-project)
   - [Input Binding](#input-binding)
     - [function.json Properties for Input Bindings](#functionjson-properties-for-input-bindings)
     - [Setup for Input Bindings](#setup-for-input-bindings)
@@ -16,27 +17,28 @@
     - [function.json Properties for Output Bindings](#functionjson-properties-for-output-bindings)
     - [Setup for Output Bindings](#setup-for-output-bindings)
     - [Samples for Output Bindings](#samples-for-output-bindings)
-      - [ICollector\<T\>/IAsyncCollector\<T\>](#icollectortiasynccollectort)
       - [Array](#array)
       - [Single Row](#single-row)
   - [Trigger Binding](#trigger-binding)
 
-## Setup Function App
+## Setup Function Project
 
-These instructions will guide you through creating your Function App and adding the SQL binding extension. This only needs to be done once for every function app you create. If you have one created already you can skip this step.
+These instructions will guide you through creating your Function Project and adding the SQL binding extension. This only needs to be done once for every function project you create. If you have one created already you can skip this step.
 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
-2. Create a function app for PowerShell:
+2. Create a Function Project for PowerShell:
+
     ```bash
     mkdir MyApp
     cd MyApp
     func init --worker-runtime powershell
     ```
 
-3. Enable SQL bindings on the function app. More information can be found in the [Azure SQL bindings for Azure Functions docs](https://aka.ms/sqlbindings).
+3. Enable SQL bindings on the function project. More information can be found in the [Azure SQL bindings for Azure Functions docs](https://aka.ms/sqlbindings).
 
     Update the `host.json` file to the preview extension bundle.
+
     ```json
     "extensionBundle": {
         "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
@@ -66,7 +68,7 @@ The following table explains the binding configuration properties that you set i
 
 Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server).
 
-- Open your app that you created in [Create a Function App](./GeneralSetup.md#create-a-function-app) in VS Code
+- Open your project that you created in [Create a Function Project](./GeneralSetup.md#create-a-function-project) in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a function name) -> anonymous
 - In the file that opens (`run.ps1`), replace the code within the file the below code.
@@ -98,7 +100,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
     }
     ```
 
-    *In the above, "select * from Employees" is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [function.json Properties for Input Bindings](#functionjson-properties-for-input-bindings) section*
+    *In the above, `select * from Employees` is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [function.json Properties for Input Bindings](#functionjson-properties-for-input-bindings) section*
 
 - Open the local.settings.json file, and in the brackets for "Values," verify there is a 'SqlConnectionString.' If not, add it.
 - Hit 'F5' to run your code. This will start up the Functions Host with a local HTTP Trigger and SQL Input Binding.
@@ -110,19 +112,19 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 #### Query String
 
-_TODO_
+See the [GetProducts](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-powershell/GetProducts) sample
 
 #### Empty Parameter Value
 
-_TODO_
+See the [GetProductsNameEmpty](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-powershell/GetProductsNameEmpty) sample
 
 #### Null Parameter Value
 
-_TODO_
+See the [GetProductsNameNull](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-powershell/GetProductsNameNull) sample
 
 #### Stored Procedure
 
-_TODO_
+See the [GetProductsStoredProcedure](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-powershell/GetProductsStoredProcedure) sample
 
 ## Output Binding
 
@@ -144,7 +146,7 @@ The following table explains the binding configuration properties that you set i
 
 Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server).
 
-- Open your app in VS Code
+- Open your project in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger ->  (Provide a function name) -> anonymous
 - In the file that opens (`run.ps1`), replace the code within the file the below code. Note that the casing of the Object field names and the table column names must match.
@@ -194,6 +196,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
       "connectionStringSetting": "SqlConnectionString"
     }
     ```
+
     *In the above, "dbo.Employees" is the name of the table our output binding is upserting into. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [function.json Properties for Output Bindings](#functionjson-properties-for-output-bindings) section*
 
 - Hit 'F5' to run your code. Click the link to upsert the output array values in your SQL table. Your upserted values should launch in the browser.
@@ -201,17 +204,14 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 ### Samples for Output Bindings
 
-#### ICollector&lt;T&gt;/IAsyncCollector&lt;T&gt;
-
-_TODO_
-
 #### Array
 
-_TODO_
+See the [AddProductsArray](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-powershell/AddProductsArray) sample
 
 #### Single Row
 
-_TODO_
+See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-powershell/AddProduct) sample
+
 
 ## Trigger Binding
 

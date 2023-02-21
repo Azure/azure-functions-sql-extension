@@ -366,3 +366,6 @@ __azurite_db*__.json
 # Java build files
 repo/
 target/
+
+# Local nupkg files
+local-packages/

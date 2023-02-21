@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
         public int PollingIntervalMs;
 
         [Params(500, 2000)]
-        public int BatchSize;
+        public int MaxBatchSize;
 
         [GlobalSetup]
         public void GlobalSetup()
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
                 nameof(ProductsTrigger),
                 SupportedLanguages.CSharp,
                 environmentVariables: new Dictionary<string, string>() {
-                    { "Sql_Trigger_BatchSize", this.BatchSize.ToString() },
+                    { "Sql_Trigger_MaxBatchSize", this.MaxBatchSize.ToString() },
                     { "Sql_Trigger_PollingIntervalMs", this.PollingIntervalMs.ToString() }
                 });
         }
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
         [Arguments(5)]
         public async Task Run(double numBatches)
         {
-            int count = (int)(numBatches * this.BatchSize);
+            int count = (int)(numBatches * this.MaxBatchSize);
             await this.WaitForProductChanges(
                 1,
                 count,
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
                 () => { this.InsertProducts(1, count); return Task.CompletedTask; },
                 id => $"Product {id}",
                 id => id * 100,
-                this.GetBatchProcessingTimeout(1, count, batchSize: this.BatchSize));
+                this.GetBatchProcessingTimeout(1, count, maxBatchSize: this.MaxBatchSize));
         }
     }
 }

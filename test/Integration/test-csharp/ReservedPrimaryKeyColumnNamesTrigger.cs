@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [FunctionName(nameof(ReservedPrimaryKeyColumnNamesTrigger))]
         public static void Run(
-            [SqlTrigger("[dbo].[ProductsWithReservedPrimaryKeyColumnNames]", ConnectionStringSetting = "SqlConnectionString")]
+            [SqlTrigger("[dbo].[ProductsWithReservedPrimaryKeyColumnNames]", "SqlConnectionString")]
             IReadOnlyList<SqlChange<Product>> products)
         {
             throw new NotImplementedException("Associated test case should fail before the function is invoked.");

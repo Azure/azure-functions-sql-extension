@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System;
 using Microsoft.Azure.Functions.Worker.Extensions.Abstractions;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
@@ -8,13 +9,14 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
     public class SqlOutputAttribute : OutputBindingAttribute
     {
         /// <summary>
-        /// Creates an instance of the <see cref="SqlAttribute"/>, specifying the Sql attributes
-        /// the function supports.
+        /// Creates an instance of the <see cref="SqlOutputAttribute"/>, which takes a list of rows and upserts them into the target table.
         /// </summary>
-        /// <param name="commandText">The text of the command.</param>
-        public SqlOutputAttribute(string commandText)
+        /// <param name="commandText">The table name to upsert the values to.</param>
+        /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored</param>
+        public SqlOutputAttribute(string commandText, string connectionStringSetting)
         {
-            this.CommandText = commandText;
+            this.CommandText = commandText ?? throw new ArgumentNullException(nameof(commandText));
+            this.ConnectionStringSetting = connectionStringSetting ?? throw new ArgumentNullException(nameof(connectionStringSetting));
         }
 
         /// <summary>
@@ -26,16 +28,11 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
         /// create a ConnectionStringSetting with a name like SqlServerAuthentication. The value of the SqlServerAuthentication app setting
         /// would look like "Data Source=test.database.windows.net;Database=TestDB;User ID={userid};Password={password}".
         /// </summary>
-        public string ConnectionStringSetting { get; set; }
+        public string ConnectionStringSetting { get; }
 
         /// <summary>
         /// The table name to upsert the values to.
         /// </summary>
-        public string CommandText { get; set; }
-
-        /// <summary>
-        /// Specifies <see cref="CommandText"/> as Text.
-        /// </summary>
-        public System.Data.CommandType CommandType { get; } = System.Data.CommandType.Text;
+        public string CommandText { get; }
     }
 }
