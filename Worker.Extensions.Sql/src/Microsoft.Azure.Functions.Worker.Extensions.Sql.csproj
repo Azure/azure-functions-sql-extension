@@ -5,9 +5,9 @@
 		<RootNamespace>Microsoft.Azure.Functions.Worker.Extensions.Sql</RootNamespace>
 		<Description>Sql extension for .NET isolated Azure Functions</Description>
 		<Product>SQL Binding Worker</Product>
-		<!--Version information-->
-		<VersionPrefix>99.99.99</VersionPrefix>
-		<SupportedVersion>1.*-*</SupportedVersion>
+		<!-- Default Version for dev -->
+		<Version>99.99.99</Version>
+		<SupportedVersion>99.99.99</SupportedVersion>
 		<PackageId>Microsoft.Azure.Functions.Worker.Extensions.Sql</PackageId>
 		<PackageTags>Microsoft Azure WebJobs AzureFunctions Isolated DotnetIsolated SQL AzureSQL Worker</PackageTags>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
@@ -21,6 +21,14 @@
 		<PackageReference Include="System.Drawing.Common" />
 		<None Include="..\..\Images\pkgicon.png" Pack="true" PackagePath="" />
 		<None Include=".\README.md" Pack="true" PackagePath="" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- We want to build the extension project first since the Out of Proc sample project references the package produced
+			 by building that. But we don't want it as an actual runtime depdendency -->
+		<ProjectReference Include="..\..\src\Microsoft.Azure.WebJobs.Extensions.Sql.csproj">
+			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+		</ProjectReference>
 	</ItemGroup>
 
 	<ItemGroup>

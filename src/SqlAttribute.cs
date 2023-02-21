@@ -19,11 +19,24 @@ namespace Microsoft.Azure.WebJobs
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlAttribute/>"/> class.
         /// </summary>
-        /// <param name="commandText">The text of the command</param>
-        public SqlAttribute(string commandText)
+        /// <param name="commandText">For an input binding, either a SQL query or stored procedure that will be run in the database. For an output binding, the table name to upsert the values to.</param>
+        /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored</param>
+        /// <param name="commandType">Specifies whether <see cref="CommandText"/> refers to a stored procedure or SQL query string. Defaults to <see cref="CommandType.Text"/></param>
+        /// <param name="parameters">Optional - Specifies the parameters that will be used to execute the SQL query or stored procedure. See <see cref="Parameters"/> for more details.</param>
+        public SqlAttribute(string commandText, string connectionStringSetting, CommandType commandType = CommandType.Text, string parameters = null)
         {
             this.CommandText = commandText ?? throw new ArgumentNullException(nameof(commandText));
+            this.ConnectionStringSetting = connectionStringSetting ?? throw new ArgumentNullException(nameof(connectionStringSetting));
+            this.CommandType = commandType;
+            this.Parameters = parameters;
         }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SqlAttribute/>"/> class with default values for the CommandType and Parameters.
+        /// </summary>
+        /// <param name="commandText">For an input binding, either a SQL query or stored procedure that will be run in the database. For an output binding, the table name to upsert the values to.</param>
+        /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored</param>
+        public SqlAttribute(string commandText, string connectionStringSetting) : this(commandText, connectionStringSetting, CommandType.Text, null) { }
 
         /// <summary>
         /// The name of the app setting where the SQL connection string is stored
@@ -34,20 +47,21 @@ namespace Microsoft.Azure.WebJobs
         /// create a ConnectionStringSetting with a name like SqlServerAuthentication. The value of the SqlServerAuthentication app setting
         /// would look like "Data Source=test.database.windows.net;Database=TestDB;User ID={userid};Password={password}".
         /// </summary>
-        public string ConnectionStringSetting { get; set; }
+        public string ConnectionStringSetting { get; }
 
         /// <summary>
-        /// For an input binding, either a SQL query or stored procedure that will be run in the database referred to in the ConnectionString.
-        /// For an output binding, the table name.
+        /// For an input binding, either a SQL query or stored procedure that will be run in the target database.
+        /// For an output binding, the table name to upsert the values to.
         /// </summary>
         [AutoResolve]
         public string CommandText { get; }
 
         /// <summary>
         /// Specifies whether <see cref="CommandText"/> refers to a stored procedure or SQL query string.
-        /// Use <see cref="CommandType.StoredProcedure"/> for the former, <see cref="CommandType.Text"/> for the latter
+        /// Use <see cref="CommandType.StoredProcedure"/> for the former, <see cref="CommandType.Text"/> for the latter.
+        /// Defaults to <see cref="CommandType.Text"/>
         /// </summary>
-        public CommandType CommandType { get; set; } = CommandType.Text;
+        public CommandType CommandType { get; }
 
         /// <summary>
         /// Specifies the parameters that will be used to execute the SQL query or stored procedure specified in <see cref="CommandText"/>.
@@ -59,6 +73,6 @@ namespace Microsoft.Azure.WebJobs
         /// Note that neither the parameter name nor the parameter value can have ',' or '='
         /// </summary>
         [AutoResolve]
-        public string Parameters { get; set; }
+        public string Parameters { get; }
     }
 }

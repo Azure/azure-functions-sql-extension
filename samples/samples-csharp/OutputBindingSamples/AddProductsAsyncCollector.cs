@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproducts-asynccollector")]
             HttpRequest req,
-            [Sql("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] IAsyncCollector<Product> products)
+            [Sql("dbo.Products", "SqlConnectionString")] IAsyncCollector<Product> products)
         {
             List<Product> newProducts = ProductUtilities.GetNewProducts(5000);
             foreach (Product product in newProducts)

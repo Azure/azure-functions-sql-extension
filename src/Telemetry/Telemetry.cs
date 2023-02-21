@@ -350,7 +350,7 @@ This extension collect usage data in order to help us improve your experience. T
         ErrorCode,
         ErrorName,
         HasIdentityColumn,
-        HasConfiguredBatchSize,
+        HasConfiguredMaxBatchSize,
         HasConfiguredMaxChangesPerWorker,
         HasConfiguredPollingInterval,
         LeasesTableName,
@@ -361,6 +361,8 @@ This extension collect usage data in order to help us improve your experience. T
         Type,
         UserFunctionId,
         WorkerCount,
+        EngineEdition,
+        Edition,
     }
 
     /// <summary>
@@ -381,6 +383,7 @@ This extension collect usage data in order to help us improve your experience. T
         GetPrimaryKeysDurationMs,
         GetUnprocessedChangesDurationMs,
         InsertGlobalStateTableRowDurationMs,
+        MaxBatchSize,
         MaxChangesPerWorker,
         NumRows,
         PollingIntervalMs,
@@ -425,6 +428,13 @@ This extension collect usage data in order to help us improve your experience. T
         TriggerFunction,
         Upsert,
         UpsertRollback,
+        GetServerTelemetryProperties,
+    }
+
+    internal class ServerProperties
+    {
+        internal string EngineEdition;
+        internal string Edition;
     }
 }
 

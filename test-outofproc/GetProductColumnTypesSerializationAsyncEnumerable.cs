@@ -23,8 +23,7 @@ namespace DotnetIsolatedTests
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-columntypesserializationasyncenumerable")]
             HttpRequestData req,
             [SqlInput("SELECT * FROM [dbo].[ProductsColumnTypes]",
-                CommandType = System.Data.CommandType.Text,
-                ConnectionStringSetting = "SqlConnectionString")]
+                "SqlConnectionString")]
             IAsyncEnumerable<ProductColumnTypes> products)
         {
             // Test different cultures to ensure that serialization/deserialization works correctly for all types.

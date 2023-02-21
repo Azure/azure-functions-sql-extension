@@ -75,13 +75,25 @@ steps:
   displayName: Set logging level
   condition: and(succeeded(), ne(variables['AFSQLEXT_TEST_LOGLEVEL'], ''))
 
-  # Don't generate package so we can sign it before packaging
+  # The build process for the OOP samples involve generating a temporary csproj in the %TEMP% directory, so it doesn't pick
+  # up the custom nuget.config we have. Set up the local-packages source here so that it can build correctly. Running from
+  # WorkFolder so it applies globally.
 - task: DotNetCoreCLI@2
-  displayName: '.NET Build'
+  displayName: Set up local-packages Nuget source
+  inputs:
+    command: custom
+    custom: nuget
+    arguments: add source -n afsqlext.local $(Build.SourcesDirectory)/local-packages
+    workingDirectory: $(Agent.WorkFolder)
+
+  # Do an initial build for use during testing, this will have the OOP "supported version" set to the exact binaries version
+  # so it ensures we use the local version of the package
+- task: DotNetCoreCLI@2
+  displayName: .NET Build for Test
   inputs:
     command: build
-    projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=false -p:Version=${{ parameters.binariesVersion }} -p:SupportedVersion=${{ parameters.supportedVersion }}'
+    projects: ${{ parameters.solution }}
+    arguments: --configuration ${{ parameters.configuration }} -p:Version=${{ parameters.binariesVersion }} -p:SupportedVersion=${{ parameters.binariesVersion }}
 
 - task: CopyFiles@2
   displayName: 'Copy Sql extension dll to Azure Functions extension bundle'
@@ -119,7 +131,61 @@ steps:
 - script: |
     pip3 install -r requirements.txt
   workingDirectory: $(Build.SourcesDirectory)/samples/samples-python
-  displayName: Install azure-functions-1.11.3b1
+  displayName: Install samples-python dependencies
+
+- task: Maven@3
+  displayName: Build Java Samples
+  inputs:
+    mavenPomFile: samples/samples-java/pom.xml
+    # batch-mode and Slf4jMavenTransferListener definition are used to make the build logging verbose
+    # update-snapshot forces a check for updated library dependencies
+    options: --batch-mode --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
+    checkStyleRunAnalysis: true
+
+- task: Maven@3
+  displayName: Build Java Tests
+  inputs:
+    mavenPomFile: test/Integration/test-java/pom.xml
+    # batch-mode and Slf4jMavenTransferListener definition are used to make the build logging verbose
+    # update-snapshot forces a check for updated library dependencies
+    options: --batch-mode --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
+    checkStyleRunAnalysis: true
+
+- task: DotNetCoreCLI@2
+  displayName: '.NET Test'
+  env:
+    TEST_SERVER: '$(testServer)'
+    NODE_MODULES_PATH: '$(nodeModulesPath)'
+    AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
+  inputs:
+    command: test
+    projects: '${{ parameters.solution }}'
+    arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings'
+  condition: and(succeeded(), ne(variables['Agent.OS'], 'linux'))
+
+- task: DotNetCoreCLI@2
+  displayName: '.NET Test on Linux'
+  env:
+    SA_PASSWORD: '$(serverPassword)'
+    AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
+  inputs:
+    command: test
+    projects: '${{ parameters.solution }}'
+    arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings'
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
+
+- script: |
+    docker stop sql1
+    docker rm sql1
+  displayName: 'Stop and Remove SQL Server Image'
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
+
+- task: DotNetCoreCLI@2
+  displayName: .NET Build for Release
+  inputs:
+    command: build
+    projects: '${{ parameters.solution }}'
+    arguments: '--configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=false -p:Version=${{ parameters.binariesVersion }} -p:SupportedVersion=${{ parameters.supportedVersion }}'
 
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
   inputs:
@@ -263,53 +329,6 @@ steps:
     custom: pack
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) --no-build -p:PackageVersion="${{ parameters.nugetVersion }}" -p:GeneratePackageOnBuild=false'
-
-- task: Maven@3
-  displayName: Build Java Samples
-  inputs:
-    mavenPomFile: samples/samples-java/pom.xml
-    # batch-mode and Slf4jMavenTransferListener definition are used to make the build logging verbose
-    # update-snapshot forces a check for updated library dependencies
-    options: --batch-mode --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
-    checkStyleRunAnalysis: true
-
-- task: Maven@3
-  displayName: Build Java Tests
-  inputs:
-    mavenPomFile: test/Integration/test-java/pom.xml
-    # batch-mode and Slf4jMavenTransferListener definition are used to make the build logging verbose
-    # update-snapshot forces a check for updated library dependencies
-    options: --batch-mode --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
-    checkStyleRunAnalysis: true
-
-- task: DotNetCoreCLI@2
-  displayName: '.NET Test'
-  env:
-    TEST_SERVER: '$(testServer)'
-    NODE_MODULES_PATH: '$(nodeModulesPath)'
-    AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
-  inputs:
-    command: test
-    projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings'
-  condition: and(succeeded(), ne(variables['Agent.OS'], 'linux'))
-
-- task: DotNetCoreCLI@2
-  displayName: '.NET Test on Linux'
-  env:
-    SA_PASSWORD: '$(serverPassword)'
-    AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
-  inputs:
-    command: test
-    projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings'
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
-
-- script: |
-    docker stop sql1
-    docker rm sql1
-  displayName: 'Stop and Remove SQL Server Image'
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
 - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
   displayName: 'Component Detection'

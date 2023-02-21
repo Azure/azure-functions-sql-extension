@@ -13,18 +13,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     {
         /// <summary>
         /// Simple trigger function with additional logic to allow for verifying that the expected number
-        /// of changes was recieved in each batch.
+        /// of changes was received in each batch.
         /// </summary>
         [FunctionName(nameof(ProductsTriggerWithValidation))]
         public static void Run(
-            [SqlTrigger("[dbo].[Products]", ConnectionStringSetting = "SqlConnectionString")]
+            [SqlTrigger("[dbo].[Products]", "SqlConnectionString")]
             IReadOnlyList<SqlChange<Product>> changes,
             ILogger logger)
         {
-            string expectedBatchSize = Environment.GetEnvironmentVariable("TEST_EXPECTED_BATCH_SIZE");
-            if (!string.IsNullOrEmpty(expectedBatchSize) && int.Parse(expectedBatchSize) != changes.Count)
+            string expectedMaxBatchSize = Environment.GetEnvironmentVariable("TEST_EXPECTED_MAX_BATCH_SIZE");
+            if (!string.IsNullOrEmpty(expectedMaxBatchSize) && int.Parse(expectedMaxBatchSize) != changes.Count)
             {
-                throw new Exception($"Invalid batch size, got {changes.Count} changes but expected {expectedBatchSize}");
+                throw new Exception($"Invalid max batch size, got {changes.Count} changes but expected {expectedMaxBatchSize}");
             }
             // The output is used to inspect the trigger binding parameter in test methods.
             logger.LogInformation("SQL Changes: " + JsonConvert.SerializeObject(changes));

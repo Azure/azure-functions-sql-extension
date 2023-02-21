@@ -14,22 +14,24 @@ namespace Microsoft.Azure.WebJobs
     public sealed class SqlTriggerAttribute : Attribute
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="SqlTriggerAttribute"/> class.
+        /// Initializes a new instance of the <see cref="SqlTriggerAttribute"/> class, which triggers the function when any changes on the specified table are detected.
         /// </summary>
-        /// <param name="tableName">Name of the user table</param>
-        public SqlTriggerAttribute(string tableName)
+        /// <param name="tableName">Name of the table to watch for changes.</param>
+        /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored</param>
+        public SqlTriggerAttribute(string tableName, string connectionStringSetting)
         {
             this.TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
+            this.ConnectionStringSetting = connectionStringSetting ?? throw new ArgumentNullException(nameof(connectionStringSetting));
         }
 
         /// <summary>
         /// Name of the app setting containing the SQL connection string.
         /// </summary>
         [ConnectionString]
-        public string ConnectionStringSetting { get; set; }
+        public string ConnectionStringSetting { get; }
 
         /// <summary>
-        /// Name of the user table.
+        /// Name of the table to watch for changes.
         /// </summary>
         public string TableName { get; }
     }

@@ -17,14 +17,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.MultipleBindin
     public static class GetAndAddProducts
     {
         [Function("GetAndAddProducts")]
-        [SqlOutput("ProductsWithIdentity", ConnectionStringSetting = "SqlConnectionString")]
+        [SqlOutput("ProductsWithIdentity", "SqlConnectionString")]
         public static IEnumerable<Product> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getandaddproducts/{cost}")]
             HttpRequestData req,
             [SqlInput("SELECT * FROM Products",
-                CommandType = System.Data.CommandType.Text,
-                Parameters = "@Cost={cost}",
-                ConnectionStringSetting = "SqlConnectionString")]
+                "SqlConnectionString",
+                parameters: "@Cost={cost}")]
             IEnumerable<Product> products)
         {
             return products.ToArray();

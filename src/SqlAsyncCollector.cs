@@ -57,6 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
     internal class SqlAsyncCollector<T> : IAsyncCollector<T>, IDisposable
     {
+        private static readonly string[] UnsupportedTypes = { "NTEXT(*)", "TEXT(*)", "IMAGE(*)" };
         private const string RowDataParameter = "@rowData";
         private const string ColumnName = "COLUMN_NAME";
         private const string ColumnDefinition = "COLUMN_DEFINITION";
@@ -73,6 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         private readonly List<T> _rows = new List<T>();
         private readonly SemaphoreSlim _rowLock = new SemaphoreSlim(1, 1);
+        private ServerProperties _serverProperties;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlAsyncCollector<typeparamref name="T"/>"/> class.
@@ -178,7 +180,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 this._logger.LogDebugWithThreadId("BEGIN OpenUpsertRowsAsyncConnection");
                 await connection.OpenAsync();
                 this._logger.LogDebugWithThreadId("END OpenUpsertRowsAsyncConnection");
-                Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps();
+                this._serverProperties = await GetServerTelemetryProperties(connection, this._logger, CancellationToken.None);
+                Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps(this._serverProperties);
 
                 string fullTableName = attribute.CommandText;
 
@@ -206,7 +209,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     TelemetryInstance.TrackEvent(TelemetryEventName.TableInfoCacheMiss, props);
                     // set the columnNames for supporting T as JObject since it doesn't have columns in the member info.
-                    tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullTableName, this._logger, GetColumnNamesFromItem(rows.First()));
+                    tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullTableName, this._logger, GetColumnNamesFromItem(rows.First()), this._serverProperties);
                     var policy = new CacheItemPolicy
                     {
                         // Re-look up the primary key(s) after timeout (default timeout is 10 minutes)
@@ -229,9 +232,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw ex;
                 }
 
-                IEnumerable<string> bracketedColumnNamesFromItem = GetColumnNamesFromItem(rows.First())
+                IEnumerable<string> columnNamesFromItem = GetColumnNamesFromItem(rows.First());
+                IEnumerable<string> unsupportedColumns = columnNamesFromItem.Where(prop => UnsupportedTypes.Contains(tableInfo.Columns[prop], StringComparer.OrdinalIgnoreCase));
+                if (unsupportedColumns.Any())
+                {
+                    string message = $"The type(s) of the following column(s) are not supported: {string.Join(", ", unsupportedColumns.ToArray())}. See https://github.com/Azure/azure-functions-sql-extension#output-bindings for more details.";
+                    throw new InvalidOperationException(message);
+                }
+
+                IEnumerable<string> bracketedColumnNamesFromItem = columnNamesFromItem
                     .Where(prop => !tableInfo.PrimaryKeys.Any(k => k.IsIdentity && string.Equals(k.Name, prop, StringComparison.Ordinal))) // Skip any identity columns, those should never be updated
                     .Select(prop => prop.AsBracketQuotedString());
+                if (!bracketedColumnNamesFromItem.Any())
+                {
+                    string message = $"No property values found in item to upsert. If using query parameters, ensure that the casing of the parameter names and the property names match.";
+                    var ex = new InvalidOperationException(message);
+                    throw ex;
+                }
+
                 var table = new SqlObject(fullTableName);
                 string mergeOrInsertQuery = tableInfo.QueryType == QueryType.Insert ? TableInformation.GetInsertQuery(table, bracketedColumnNamesFromItem) :
                     TableInformation.GetMergeQuery(tableInfo.PrimaryKeys, table, bracketedColumnNamesFromItem);
@@ -540,9 +558,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <param name="logger">ILogger used to log any errors or warnings.</param>
             /// <param name="objectColumnNames">Column names from the object</param>
             /// <returns>TableInformation object containing primary keys, column types, etc.</returns>
-            public static async Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName, ILogger logger, IEnumerable<string> objectColumnNames)
+            public static async Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName, ILogger logger, IEnumerable<string> objectColumnNames, ServerProperties serverProperties)
             {
-                Dictionary<TelemetryPropertyName, string> sqlConnProps = sqlConnection.AsConnectionProps();
+                Dictionary<TelemetryPropertyName, string> sqlConnProps = sqlConnection.AsConnectionProps(serverProperties);
                 logger.LogDebugWithThreadId("BEGIN RetrieveTableInformationAsync");
                 var table = new SqlObject(fullName);
 

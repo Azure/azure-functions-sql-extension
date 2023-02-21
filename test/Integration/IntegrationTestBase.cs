@@ -126,8 +126,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 using var masterConnection = new SqlConnection(this.MasterConnectionString);
                 masterConnection.Open();
-                TestUtils.ExecuteNonQuery(masterConnection, $"CREATE DATABASE [{this.DatabaseName}]");
-            });
+                TestUtils.ExecuteNonQuery(masterConnection, $"CREATE DATABASE [{this.DatabaseName}]", this.LogOutput);
+            }, this.LogOutput);
 
             // Setup connection
             connectionStringBuilder.InitialCatalog = this.DatabaseName;
@@ -289,7 +289,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             return funcPath;
         }
 
-        private void LogOutput(string output)
+        protected void LogOutput(string output)
         {
             if (this.TestOutput != null)
             {
@@ -362,7 +362,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <param name="message">Optional message to write when this query is executed. Defaults to writing the query commandText</param>
         protected void ExecuteNonQuery(string commandText, string message = null)
         {
-            TestUtils.ExecuteNonQuery(this.Connection, commandText, message: message);
+            TestUtils.ExecuteNonQuery(this.Connection, commandText, this.LogOutput, message: message);
         }
 
         /// <summary>
@@ -370,7 +370,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         protected object ExecuteScalar(string commandText)
         {
-            return TestUtils.ExecuteScalar(this.Connection, commandText);
+            return TestUtils.ExecuteScalar(this.Connection, commandText, this.LogOutput);
         }
 
 
@@ -394,7 +394,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 // Drop the test database
                 using var masterConnection = new SqlConnection(this.MasterConnectionString);
                 masterConnection.Open();
-                TestUtils.ExecuteNonQuery(masterConnection, $"DROP DATABASE IF EXISTS {this.DatabaseName}");
+                TestUtils.ExecuteNonQuery(masterConnection, $"DROP DATABASE IF EXISTS {this.DatabaseName}", this.LogOutput);
             }
             catch (Exception e4)
             {

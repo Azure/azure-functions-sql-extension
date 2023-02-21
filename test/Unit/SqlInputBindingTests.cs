@@ -38,7 +38,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [Fact]
         public void TestNullCommandText()
         {
-            Assert.Throws<ArgumentNullException>(() => new SqlAttribute(null));
+            Assert.Throws<ArgumentNullException>(() => new SqlAttribute(null, "SqlConnectionString"));
+        }
+
+        [Fact]
+        public void TestNullConnectionStringSetting()
+        {
+            Assert.Throws<ArgumentNullException>(() => new SqlAttribute("SELECT * FROM dbo.Products", null));
         }
 
         [Fact]
@@ -65,7 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         public void TestNullArgumentsSqlAsyncEnumerableConstructor()
         {
             Assert.Throws<ArgumentNullException>(() => new SqlAsyncEnumerable<string>(connection, null));
-            Assert.Throws<ArgumentNullException>(() => new SqlAsyncEnumerable<string>(null, new SqlAttribute("")));
+            Assert.Throws<ArgumentNullException>(() => new SqlAsyncEnumerable<string>(null, new SqlAttribute("", "SqlConnectionString")));
         }
 
         /// <summary>
@@ -75,19 +81,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [Fact]
         public void TestInvalidOperationSqlAsyncEnumerableConstructor()
         {
-            Assert.Throws<InvalidOperationException>(() => new SqlAsyncEnumerable<string>(connection, new SqlAttribute("")));
+            Assert.Throws<InvalidOperationException>(() => new SqlAsyncEnumerable<string>(connection, new SqlAttribute("", "SqlConnectionString")));
         }
 
         [Fact]
         public void TestInvalidArgumentsBuildConnection()
         {
-            var attribute = new SqlAttribute("");
+            var attribute = new SqlAttribute("", "");
             Assert.Throws<ArgumentException>(() => SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, config.Object));
 
-            attribute = new SqlAttribute("")
-            {
-                ConnectionStringSetting = "ConnectionStringSetting"
-            };
+            attribute = new SqlAttribute("", "ConnectionStringSetting");
             Assert.Throws<ArgumentNullException>(() => SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, null));
         }
 
@@ -95,10 +98,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         public void TestInvalidCommandType()
         {
             // Specify an invalid type
-            var attribute = new SqlAttribute("")
-            {
-                CommandType = System.Data.CommandType.TableDirect
-            };
+            var attribute = new SqlAttribute("", "SqlConnectionString", System.Data.CommandType.TableDirect);
             Assert.Throws<ArgumentException>(() => SqlBindingUtilities.BuildCommand(attribute, null));
         }
 
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         public void TestDefaultCommandType()
         {
             string query = "select * from Products";
-            var attribute = new SqlAttribute(query);
+            var attribute = new SqlAttribute(query, "SqlConnectionString");
             SqlCommand command = SqlBindingUtilities.BuildCommand(attribute, null);
             // CommandType should default to Text
             Assert.Equal(System.Data.CommandType.Text, command.CommandType);
@@ -118,19 +118,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         public void TestValidCommandType()
         {
             string query = "select * from Products";
-            var attribute = new SqlAttribute(query)
-            {
-                CommandType = System.Data.CommandType.Text
-            };
+            var attribute = new SqlAttribute(query, "SqlConnectionString", System.Data.CommandType.Text);
             SqlCommand command = SqlBindingUtilities.BuildCommand(attribute, null);
             Assert.Equal(System.Data.CommandType.Text, command.CommandType);
             Assert.Equal(query, command.CommandText);
 
             string procedure = "StoredProcedure";
-            attribute = new SqlAttribute(procedure)
-            {
-                CommandType = System.Data.CommandType.StoredProcedure
-            };
+            attribute = new SqlAttribute(procedure, "SqlConnectionString", System.Data.CommandType.StoredProcedure);
             command = SqlBindingUtilities.BuildCommand(attribute, null);
             Assert.Equal(System.Data.CommandType.StoredProcedure, command.CommandType);
             Assert.Equal(procedure, command.CommandText);
@@ -231,7 +225,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [Fact]
         public async void TestWellformedDeserialization()
         {
-            var arg = new SqlAttribute(string.Empty);
+            var arg = new SqlAttribute(string.Empty, "SqlConnectionString");
             var converter = new Mock<SqlGenericsConverter<TestData>>(config.Object, logger.Object);
             string json = "[{ \"ID\":1,\"Name\":\"Broom\",\"Cost\":32.5,\"Timestamp\":\"2019-11-22T06:32:15\"},{ \"ID\":2,\"Name\":\"Brush\",\"Cost\":12.3," +
                 "\"Timestamp\":\"2017-01-27T03:13:11\"},{ \"ID\":3,\"Name\":\"Comb\",\"Cost\":100.12,\"Timestamp\":\"1997-05-03T10:11:56\"}]";
@@ -268,7 +262,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [Fact]
         public async void TestMalformedDeserialization()
         {
-            var arg = new SqlAttribute(string.Empty);
+            var arg = new SqlAttribute(string.Empty, "SqlConnectionString");
             var converter = new Mock<SqlGenericsConverter<TestData>>(config.Object, logger.Object);
 
             // SQL data is missing a field

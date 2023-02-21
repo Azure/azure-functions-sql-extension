@@ -3,7 +3,7 @@
 ## Table of Contents
 - [Azure SQL bindings for Azure Functions - Java](#azure-sql-bindings-for-azure-functions---java)
   - [Table of Contents](#table-of-contents)
-  - [Setup Function App](#setup-function-app)
+  - [Setup Function Project](#setup-function-project)
   - [Input Binding](#input-binding)
     - [SQLInput Attribute](#sqlinput-attribute)
     - [Setup for Input Bindings](#setup-for-input-bindings)
@@ -19,30 +19,35 @@
       - [Array](#array)
       - [Single Row](#single-row)
   - [Trigger Binding](#trigger-binding)
+  - [Known Issues](#known-issues)
 
-## Setup Function App
+## Setup Function Project
 
-These instructions will guide you through creating your Function App and adding the SQL binding extension. This only needs to be done once for every function app you create. If you have one created already you can skip this step.
+These instructions will guide you through creating your Function Project and adding the SQL binding extension. This only needs to be done once for every function project you create. If you have one created already you can skip this step.
 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
-2. Create a function app for Java:
+2. Create a Function Project for Java:
+
     ```bash
     mkdir MyApp
     cd MyApp
     func init --worker-runtime java
     ```
 
-3. Enable SQL bindings on the function app. More information can be found in the [Azure SQL bindings for Azure Functions docs](https://aka.ms/sqlbindings).
+3. Enable SQL bindings on the function project. More information can be found in the [Azure SQL bindings for Azure Functions docs](https://aka.ms/sqlbindings).
 
     Update the `host.json` file to the preview extension bundle.
+
     ```json
     "extensionBundle": {
         "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
         "version": "[4.*, 5.0.0)"
     }
     ```
+
     Add the Java library for SQL bindings to the pom.xml file.
+
     ```xml
     <dependency>
         <groupId>com.microsoft.azure.functions</groupId>
@@ -73,7 +78,7 @@ When you're developing locally, add your application settings in the local.setti
 
 Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server).
 
-- Open your app that you created in [Setup Function App](#setup-function-app) in VS Code
+- Open your app that you created in [Setup Function Project](#setup-function-project) in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a package name) -> (Provide a function name) -> anonymous
 - In the file that opens, replace the `public HttpResponseMessage run` block with the below code.
@@ -95,7 +100,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
     }
     ```
 
-    *In the above, "select * from Employees" is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [SQLInput Attribute](#sqlinput-attribute) section*
+    *In the above, `select * from Employees` is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [SQLInput Attribute](#sqlinput-attribute) section*
 
 - Add `import com.microsoft.azure.functions.sql.annotation.SQLInput;`
 - Create a new file and call it `Employee.java`
@@ -421,3 +426,9 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 ## Trigger Binding
 
 > Trigger binding support is only available for in-proc C# functions at present.
+
+## Known Issues
+
+- The [Azure Functions Java worker](https://github.com/Azure/azure-functions-java-worker) uses the [GSON library](https://github.com/google/gson) to serialize and deserialize data. Since we are unable to customize the GSON serializer in the Java worker, there are limitations with the default GSON serializer settings.
+- GSON is unable to parse `DATE` and `TIME` values from the SQL table as `java.sql.Date` and `java.sql.Time` types. The current workaround is to use String. Tracking issue: <https://github.com/Azure/azure-functions-sql-extension/issues/422>
+- On Linux, `java.sql.Timestamp` type gets serialized with an extra comma, causing the upsertion to fail. The current workaround is to use String. Tracking issue: <https://github.com/Azure/azure-functions-sql-extension/issues/521>

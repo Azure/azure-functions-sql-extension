@@ -17,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [Fact]
         public void TestNullCollectorConstructorArguments()
         {
-            var arg = new SqlAttribute(string.Empty);
+            var arg = new SqlAttribute(string.Empty, "SqlConnectionString");
             Assert.Throws<ArgumentNullException>(() => new SqlAsyncCollector<string>(config.Object, null, logger.Object));
             Assert.Throws<ArgumentNullException>(() => new SqlAsyncCollector<string>(null, arg, logger.Object));
         }

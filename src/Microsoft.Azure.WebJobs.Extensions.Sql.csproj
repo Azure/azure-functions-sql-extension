@@ -39,5 +39,15 @@
     <None Include="..\lib\Microsoft.SqlServer.TransactSql.ScriptDom.dll" Pack="true" PackagePath="lib/$(TargetFramework)" />
     <None Include="..\README.md" Pack="true" PackagePath="" />
   </ItemGroup>
-
+  <Target Name="CopyNupkg" AfterTargets="Pack">
+    <ItemGroup>
+      <_Packages Include=".\bin\$(Configuration)\*.nupkg" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_Packages)" DestinationFolder="../local-packages" />
+    <Message Text="Copied sql .nupkg to local-packages" Importance="high" />
+  </Target>
+  <Target Name="RemoveNugetPackageCache" BeforeTargets="Build">
+    <RemoveDir Directories="$(NugetPackageRoot)/$(PackageId.ToLower())/99.99.99"></RemoveDir>
+    <Message Text="Deleted nuget cache for $(PackageId.ToLower())/99.99.99" Importance="high" />
+  </Target>
 </Project>

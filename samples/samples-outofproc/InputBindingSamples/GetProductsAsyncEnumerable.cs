@@ -17,9 +17,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.InputBindingSa
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-async/{cost}")]
             HttpRequestData req,
             [SqlInput("select * from Products where cost = @Cost",
-                 CommandType = System.Data.CommandType.Text,
-                 Parameters = "@Cost={cost}",
-                 ConnectionStringSetting = "SqlConnectionString")]
+                "SqlConnectionString",
+                 parameters: "@Cost={cost}")]
              IAsyncEnumerable<Product> products)
         {
             IAsyncEnumerator<Product> enumerator = products.GetAsyncEnumerator();

@@ -17,9 +17,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-storedprocedure/{cost}")]
             HttpRequest req,
             [Sql("SelectProductsCost",
-                CommandType = System.Data.CommandType.StoredProcedure,
-                Parameters = "@Cost={cost}",
-                ConnectionStringSetting = "SqlConnectionString")]
+                "SqlConnectionString",
+                commandType: System.Data.CommandType.StoredProcedure,
+                parameters: "@Cost={cost}")]
             IEnumerable<Product> products)
         {
             return new OkObjectResult(products);
