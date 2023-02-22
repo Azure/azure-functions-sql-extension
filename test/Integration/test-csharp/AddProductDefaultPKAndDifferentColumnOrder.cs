@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
@@ -22,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [FunctionName("AddProductDefaultPKAndDifferentColumnOrder")]
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproductdefaultpkanddifferentcolumnorder")]
-            HttpRequest reg,
+            HttpRequest req,
             [Sql("dbo.ProductsWithDefaultPK", "SqlConnectionString")] out ProductDefaultPKAndDifferentColumnOrder output)
         {
             output = new ProductDefaultPKAndDifferentColumnOrder
