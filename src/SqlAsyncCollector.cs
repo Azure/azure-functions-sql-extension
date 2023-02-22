@@ -403,11 +403,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             rowData = JsonConvert.SerializeObject(rowsToUpsert, table.JsonSerializerSettings);
             IEnumerable<string> columnNamesFromItem = GetColumnNamesFromItem(rows.First());
-            var bracketColumnDefinitionsFromItem = new List<string>();
-            foreach (string columnName in columnNamesFromItem)
-            {
-                bracketColumnDefinitionsFromItem.Add($"{columnName.AsBracketQuotedString()} {table.Columns[columnName]}");
-            }
+            IEnumerable<string> bracketColumnDefinitionsFromItem = columnNamesFromItem.Select(c => $"{c.AsBracketQuotedString()} {table.Columns[c]}");
             newDataQuery = $"WITH {CteName} AS ( SELECT * FROM OPENJSON({RowDataParameter}) WITH ({string.Join(",", bracketColumnDefinitionsFromItem)}) )";
         }
 
