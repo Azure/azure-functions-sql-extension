@@ -52,11 +52,4 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common
 
         public int Cost { get; set; }
     }
-
-    public class ProductDefaultPKAndDifferentColumnOrder
-    {
-        public int Cost { get; set; }
-
-        public string Name { get; set; }
-    }
 }

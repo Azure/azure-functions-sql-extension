@@ -525,12 +525,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
-        /// Tests that rows are inserted correctly even if the order of the properties in the POCO/JSON object is different
-        /// from the order of the columns in the table when the table contains default values or identity columns in the primary key.
+        /// Tests that rows are inserted correctly when the table contains default values or identity columns even if the order of
+        /// the properties in the POCO/JSON object is different from the order of the columns in the table.
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.OutOfProc, SupportedLanguages.Java, SupportedLanguages.JavaScript, SupportedLanguages.PowerShell, SupportedLanguages.Python)]
         public void AddProductDefaultPKAndDifferentColumnOrderTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductDefaultPKAndDifferentColumnOrder), lang, true);
