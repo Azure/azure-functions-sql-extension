@@ -523,5 +523,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-unsupportedtypes").Wait());
             await foundExpectedMessageSource.Task.TimeoutAfter(TimeSpan.FromMilliseconds(2000), $"Timed out waiting for expected error message");
         }
+
+        /// <summary>
+        /// Tests that rows are inserted correctly when the table contains default values or identity columns even if the order of
+        /// the properties in the POCO/JSON object is different from the order of the columns in the table.
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        public void AddProductDefaultPKAndDifferentColumnOrderTest(SupportedLanguages lang)
+        {
+            this.StartFunctionHost(nameof(AddProductDefaultPKAndDifferentColumnOrder), lang, true);
+
+            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
+            this.SendOutputGetRequest("addproductdefaultpkanddifferentcolumnorder").Wait();
+            Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
+        }
     }
 }
