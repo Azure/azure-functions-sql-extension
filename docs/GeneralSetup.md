@@ -126,7 +126,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
-2. Create a function project for .NET, JavaScript, TypeScript, Python or Java.
+2. Create a function project for .NET, JavaScript, TypeScript, Python, Java, or PowerShell.
 
     **.NET**
 
@@ -153,8 +153,6 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     ```
 
     **Python**
-
-    *See [#250](https://github.com/Azure/azure-functions-sql-extension/issues/250) before starting.*
 
     ```bash
     mkdir MyApp
@@ -186,30 +184,13 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql --prerelease
     ```
 
-    **JavaScript and TypeScript:** Update the `host.json` file to the preview extension bundle.
+    **JavaScript, TypeScript, Python, Powershell:** Update the `host.json` file to the preview extension bundle.
 
     ```json
     "extensionBundle": {
         "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
         "version": "[4.*, 5.0.0)"
     }
-    ```
-
-    **Python:**
-
-    Update the `host.json` file to the preview extension bundle.
-
-    ```json
-    "extensionBundle": {
-        "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
-        "version": "[4.*, 5.0.0)"
-    }
-    ```
-
-    Add a setting in `local.settings.json` to isolate the worker dependencies.
-
-    ```json
-    "PYTHON_ISOLATE_WORKER_DEPENDENCIES": "1"
     ```
 
     **Java:**
@@ -230,16 +211,6 @@ These steps can be done in the Terminal/CLI or with PowerShell.
         <artifactId>azure-functions-java-library-sql</artifactId>
         <version>0.1.0</version>
     </dependency>
-    ```
-
-     **PowerShell:**
-    Update the `host.json` file to the preview extension bundle.
-
-    ```json
-    "extensionBundle": {
-        "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
-        "version": "[4.*, 5.0.0)"
-    }
     ```
 
 ## Configure Function Project
