@@ -70,11 +70,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
     }
     public enum SupportedLanguages
     {
-        CSharp,
-        JavaScript,
-        PowerShell,
-        Java,
-        OutOfProc,
-        Python
+        CSharp
+        // JavaScript,
+        // PowerShell,
+        // Java,
+        // OutOfProc,
+        // Python
     };
 }

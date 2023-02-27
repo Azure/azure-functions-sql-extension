@@ -50,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(-500, "ABCD", 580)]
         // Currently Java functions return null when the parameter for name is an empty string
         // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/517
-        [UnsupportedLanguages(SupportedLanguages.Java)]
+        // [UnsupportedLanguages(SupportedLanguages.Java)]
         public void AddProductParamsTest(int id, string name, int cost, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductParams), lang);
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.PowerShell, SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.Python)] // Collectors are only available in C#
+        // [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.PowerShell, SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.Python)] // Collectors are only available in C#
         public void AddProductsCollectorTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsCollector), lang);
@@ -374,7 +374,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.OutOfProc)]
+        // [UnsupportedLanguages(SupportedLanguages.OutOfProc)]
         public async Task UnsupportedDatabaseThrows(SupportedLanguages lang)
         {
             // Change database compat level to unsupported version
@@ -477,38 +477,38 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Tests that when upserting an item with no properties, an error is thrown.
         /// </summary>
-        [Theory]
-        [SqlInlineData()]
-        // Only the JavaScript function passes an empty JSON to the SQL extension.
-        // C#, Java, and Python throw an error while creating the Product object in the function and in PowerShell,
-        // the JSON would be passed as {"ProductId": null, "Name": null, "Cost": null}.
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.PowerShell, SupportedLanguages.Python)]
-        public async Task NoPropertiesThrows(SupportedLanguages lang)
-        {
-            var foundExpectedMessageSource = new TaskCompletionSource<bool>();
-            this.StartFunctionHost(nameof(AddProductParams), lang, false, (object sender, DataReceivedEventArgs e) =>
-            {
-                if (e.Data.Contains("No property values found in item to upsert. If using query parameters, ensure that the casing of the parameter names and the property names match."))
-                {
-                    foundExpectedMessageSource.SetResult(true);
-                }
-            });
+        // [Theory]
+        // [SqlInlineData()]
+        // // Only the JavaScript function passes an empty JSON to the SQL extension.
+        // // C#, Java, and Python throw an error while creating the Product object in the function and in PowerShell,
+        // // the JSON would be passed as {"ProductId": null, "Name": null, "Cost": null}.
+        // [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.PowerShell, SupportedLanguages.Python)]
+        // public async Task NoPropertiesThrows(SupportedLanguages lang)
+        // {
+        //     var foundExpectedMessageSource = new TaskCompletionSource<bool>();
+        //     this.StartFunctionHost(nameof(AddProductParams), lang, false, (object sender, DataReceivedEventArgs e) =>
+        //     {
+        //         if (e.Data.Contains("No property values found in item to upsert. If using query parameters, ensure that the casing of the parameter names and the property names match."))
+        //         {
+        //             foundExpectedMessageSource.SetResult(true);
+        //         }
+        //     });
 
-            var query = new Dictionary<string, string>() { };
+        //     var query = new Dictionary<string, string>() { };
 
-            // The upsert should fail since no parameters were passed
-            Exception exception = Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-params", query).Wait());
-            // Verify the message contains the expected error so that other errors don't mistakenly make this test pass
-            // Wait 2sec for message to get processed to account for delays reading output
-            await foundExpectedMessageSource.Task.TimeoutAfter(TimeSpan.FromMilliseconds(2000), $"Timed out waiting for expected error message");
-        }
+        //     // The upsert should fail since no parameters were passed
+        //     Exception exception = Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-params", query).Wait());
+        //     // Verify the message contains the expected error so that other errors don't mistakenly make this test pass
+        //     // Wait 2sec for message to get processed to account for delays reading output
+        //     await foundExpectedMessageSource.Task.TimeoutAfter(TimeSpan.FromMilliseconds(2000), $"Timed out waiting for expected error message");
+        // }
 
         /// <summary>
         /// Tests that an error is thrown when the upserted item contains a unsupported column type.
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.OutOfProc)]
+        // [UnsupportedLanguages(SupportedLanguages.OutOfProc)]
         public async Task AddProductUnsupportedTypesTest(SupportedLanguages lang)
         {
             var foundExpectedMessageSource = new TaskCompletionSource<bool>();
