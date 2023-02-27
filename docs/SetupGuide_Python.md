@@ -26,10 +26,9 @@
 
 These instructions will guide you through creating your Function Project and adding the SQL binding extension. This only needs to be done once for every function project you create. If you have one created already you can skip this step.
 
-1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
+1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local) (version >= 4.0.5030)
 
 2. Create a Function Project for Python:
-    *See [#250](https://github.com/Azure/azure-functions-sql-extension/issues/250) before starting.*
 
     ```bash
     mkdir MyApp
