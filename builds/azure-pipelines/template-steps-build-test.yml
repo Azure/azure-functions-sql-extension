@@ -176,7 +176,7 @@ steps:
     command: test
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} --filter FullyQualifiedName!~NoPropertiesThrows --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings'
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
+  condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: DotNetCoreCLI@2
   displayName: '.NET Test on Windows (Java, JavaScript, OutOfProc, PowerShell, and Python integration tests)'
@@ -189,7 +189,7 @@ steps:
     command: test
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} --filter FullyQualifiedName~Integration'
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
+  condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: DotNetCoreCLI@2
   displayName: '.NET Test on Linux (both unit and integration tests)'
@@ -200,7 +200,7 @@ steps:
     command: test
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }}'
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
+  condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'linux'))
 
 - script: |
     docker stop sql1
