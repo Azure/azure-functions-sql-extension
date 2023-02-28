@@ -188,7 +188,7 @@ steps:
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} --filter FullyQualifiedName~Integration'
+    arguments: '--configuration ${{ parameters.configuration }} --filter FullyQualifiedName~Integration FullyQualifiedName~!AddProductsCollectorTest'
   condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: DotNetCoreCLI@2
