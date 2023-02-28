@@ -421,7 +421,7 @@ See [How .csx works](https://learn.microsoft.com/azure/azure-functions/functions
         "version": "[4.*, 5.0.0)"
     }
 Once your have these set up, your project folder should resemble [Folder Structure](https://learn.microsoft.com/azure/azure-functions/functions-reference-csharp?tabs=functionsv2#folder-structure)
-5. Update your funtion.json and run.csx files under your **Function** folder following the [binding instructions](https://learn.microsoft.com/azure/azure-functions/functions-reference-csharp?tabs=functionsv2#binding-to-arguments)
+5. Update your funtion.json and run.csx files under your **Function** folder following the [binding instructions](https://learn.microsoft.com/azure/azure-functions/functions-reference-csharp?tabs=functionsv2#binding-to-arguments). You can also refer to our [Input Binding Samples](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/InputBindingSamples) and [Output Binding Samples](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/OutputBindingSamples)
  - Hit 'F5' to run your code. Click the link of the HTTP trigger from the output binding tutorial.
  - Update, insert, or delete rows in your SQL table while the function app is running and observe the function logs.
 - You should see the new log messages in the Visual Studio Code terminal containing the values of row-columns after the update operation.
