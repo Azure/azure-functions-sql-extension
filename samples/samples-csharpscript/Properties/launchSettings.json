@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "samples_csharpscript": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7280",
+      "launchBrowser": false
+    }
+  }
+}

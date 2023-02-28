@@ -21,6 +21,8 @@
       - [ICollector\<T\>/IAsyncCollector\<T\>](#icollectortiasynccollectort)
       - [Array](#array)
       - [Single Row](#single-row)
+  - [CSharp Scripting](#csharp-scripting)
+      - [Creating a function with CSharp Script](#creating-a-function-with-csharp-script)
   - [Trigger Binding](#trigger-binding)
     - [SqlTriggerAttribute](#sqltriggerattribute)
     - [Setup for Trigger Bindings](#setup-for-trigger-bindings)
@@ -399,6 +401,33 @@ public static IActionResult Run(
     return new CreatedResult($"/api/addproduct", product);
 }
 ```
+## CSharp Scripting
+
+See [How .csx works](https://learn.microsoft.com/azure/azure-functions/functions-reference-csharp?tabs=functionsv2#how-csx-works) for general information and how Azure Functions lets you develop functions using C# script (.csx).
+
+### Creating a function with CSharp Script
+
+1. Please follow [Setup Function Project](#setup-function-project) for .Net before you create a new CSharp scripting function.
+2. Create a folder for your new csx function **MyFunction** inside your function project **MyApp** and initialize it by running below.
+
+    ```bash
+    cd MyFunction
+    func new --csx
+    ```
+3. Once you execute func new --csx, it will prompt you to select a template using the up/down arrow keys, Please select **HTTP trigger** which prompts for function name, enter your function name **Function** on which it will create csharp script function scaffolding under **MyFunction/Function**.
+4. Open host.json under your MyFunction folder and update the Extension bundle to below and update local.settings.json with SqlConnectionString setting.
+    "extensionBundle": {
+        "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
+        "version": "[4.*, 5.0.0)"
+    }
+Once your have these set up, your project folder should resemble [Folder Structure](https://learn.microsoft.com/azure/azure-functions/functions-reference-csharp?tabs=functionsv2#folder-structure)
+5. Update your funtion.json and run.csx files under your **Function** folder following the [binding instructions](https://learn.microsoft.com/azure/azure-functions/functions-reference-csharp?tabs=functionsv2#binding-to-arguments)
+ - Hit 'F5' to run your code. Click the link of the HTTP trigger from the output binding tutorial.
+ - Update, insert, or delete rows in your SQL table while the function app is running and observe the function logs.
+- You should see the new log messages in the Visual Studio Code terminal containing the values of row-columns after the update operation.
+- Congratulations! You have successfully created your first CSharp Script function binding!
+
+The repo contains examples of each of these binding types [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript).
 
 ## Trigger Binding
 
@@ -474,3 +503,4 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Update, insert, or delete rows in your SQL table while the function app is running and observe the function logs.
 - You should see the new log messages in the Visual Studio Code terminal containing the values of row-columns after the update operation.
 - Congratulations! You have successfully created your first SQL trigger binding!
+
