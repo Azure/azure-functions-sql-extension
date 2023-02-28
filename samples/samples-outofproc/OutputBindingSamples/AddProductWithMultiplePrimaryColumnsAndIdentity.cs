@@ -2,7 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using Microsoft.Azure.Functions.Worker.Http;
-using Microsoft.Azure.Functions.Worker.Extension.Sql;
+using Microsoft.Azure.Functions.Worker.Extensions.Sql;
 using Microsoft.Azure.Functions.Worker;
 using System.Web;
 using System.Collections.Specialized;
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingS
         /// <param name="req">The original request that triggered the function</param>
         /// <returns>The new product object that will be upserted</returns>
         [Function(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity))]
-        [SqlOutput("dbo.ProductsWithMultiplePrimaryColumnsAndIdentity", ConnectionStringSetting = "SqlConnectionString")]
+        [SqlOutput("dbo.ProductsWithMultiplePrimaryColumnsAndIdentity", "SqlConnectionString")]
         public static MultiplePrimaryKeyProductWithoutId Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproductwithmultipleprimarycolumnsandidentity")]
             HttpRequestData req)

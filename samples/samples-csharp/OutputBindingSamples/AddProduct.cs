@@ -12,7 +12,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "addproduct")]
             [FromBody] Product prod,
-            [Sql("dbo.Products", ConnectionStringSetting = "SqlConnectionString")] out Product product)
+            [Sql("dbo.Products", "SqlConnectionString")] out Product product)
         {
             product = prod;
             return new CreatedResult($"/api/addproduct", product);

@@ -20,9 +20,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproductsbycost")]
             HttpRequest req,
             [Sql("%Sp_SelectCost%",
-                CommandType = System.Data.CommandType.StoredProcedure,
-                Parameters = "@Cost=%ProductCost%",
-                ConnectionStringSetting = "SqlConnectionString")]
+                "SqlConnectionString",
+                commandType: System.Data.CommandType.StoredProcedure,
+                parameters: "@Cost=%ProductCost%")]
             IEnumerable<Product> products)
         {
             return new OkObjectResult(products);

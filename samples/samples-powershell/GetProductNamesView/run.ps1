@@ -1,7 +1,10 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License. See License.txt in the project root for license information.
+
 using namespace System.Net
 
 # Trigger and input binding data are passed in via the param block.
-param($Request, $products)
+param($Request, $TriggerMetadata, $products)
 
 # Write to the Azure Functions log stream.
 Write-Host "PowerShell function with SQL Input Binding processed a request."

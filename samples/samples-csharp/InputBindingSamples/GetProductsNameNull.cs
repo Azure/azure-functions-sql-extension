@@ -20,9 +20,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-namenull/{name}")]
             HttpRequest req,
             [Sql("if @Name is null select * from Products where Name is null else select * from Products where @Name = name",
-                CommandType = System.Data.CommandType.Text,
-                Parameters = "@Name={name}",
-                ConnectionStringSetting = "SqlConnectionString")]
+                "SqlConnectionString",
+                parameters: "@Name={name}")]
             IEnumerable<Product> products)
         {
             return new OkObjectResult(products);

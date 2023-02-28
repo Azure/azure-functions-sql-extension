@@ -80,6 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             private readonly IConfiguration _configuration;
 
             private readonly ILogger _logger;
+            private ServerProperties _serverProperties;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="SqlGenericsConverter<typeparamref name="T"/>"/> class.
@@ -134,9 +135,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </param>
             /// <param name="cancellationToken">The cancellationToken is not used in this method</param>
             /// <returns>
-            /// The JSON string. I.e., if the result has two rows from a table with schema ProductID: int, Name: varchar, Cost: int,
+            /// The JSON string. I.e., if the result has two rows from a table with schema ProductId: int, Name: varchar, Cost: int,
             /// then the returned JSON string could look like
-            /// [{"productID":3,"name":"Bottle","cost":90},{"productID":5,"name":"Cup","cost":100}]
+            /// [{"productId":3,"name":"Bottle","cost":90},{"productId":5,"name":"Cup","cost":100}]
             /// </returns>
             async Task<string> IAsyncConverter<SqlAttribute, string>.ConvertAsync(SqlAttribute attribute, CancellationToken cancellationToken)
             {
@@ -180,9 +181,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     adapter.SelectCommand = command;
                     this._logger.LogDebugWithThreadId("BEGIN OpenBuildItemFromAttributeAsyncConnection");
-                    await connection.OpenAsync();
+                    await connection.OpenAsyncWithSqlErrorHandling(CancellationToken.None);
                     this._logger.LogDebugWithThreadId("END OpenBuildItemFromAttributeAsyncConnection");
-                    Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps();
+                    this._serverProperties = await SqlBindingUtilities.GetServerTelemetryProperties(connection, this._logger, CancellationToken.None);
+                    Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps(this._serverProperties);
                     TelemetryInstance.TrackConvert(type, props);
                     var dataTable = new DataTable();
                     adapter.Fill(dataTable);
@@ -202,7 +204,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 try
                 {
                     var asyncEnumerable = new SqlAsyncEnumerable<T>(SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, this._configuration), attribute);
-                    Dictionary<TelemetryPropertyName, string> props = asyncEnumerable.Connection.AsConnectionProps();
+                    Dictionary<TelemetryPropertyName, string> props = asyncEnumerable.Connection.AsConnectionProps(this._serverProperties);
                     TelemetryInstance.TrackConvert(ConvertType.IAsyncEnumerable, props);
                     return asyncEnumerable;
                 }

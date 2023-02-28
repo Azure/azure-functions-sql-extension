@@ -48,9 +48,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
     }
 
+    public enum QueryType
+    {
+        Insert,
+        Merge
+    }
+
     /// <typeparam name="T">A user-defined POCO that represents a row of the user's table</typeparam>
     internal class SqlAsyncCollector<T> : IAsyncCollector<T>, IDisposable
     {
+        private static readonly string[] UnsupportedTypes = { "NTEXT(*)", "TEXT(*)", "IMAGE(*)" };
         private const string RowDataParameter = "@rowData";
         private const string ColumnName = "COLUMN_NAME";
         private const string ColumnDefinition = "COLUMN_DEFINITION";
@@ -58,8 +65,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const string HasDefault = "has_default";
         private const string IsIdentity = "is_identity";
         private const string CteName = "cte";
-
-        private const string Collation = "Collation";
 
         private const int AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES = 10;
 
@@ -69,6 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         private readonly List<T> _rows = new List<T>();
         private readonly SemaphoreSlim _rowLock = new SemaphoreSlim(1, 1);
+        private ServerProperties _serverProperties;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlAsyncCollector<typeparamref name="T"/>"/> class.
@@ -95,7 +101,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             using (SqlConnection connection = BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
                 this._logger.LogDebugWithThreadId("BEGIN OpenSqlAsyncCollectorVerifyDatabaseSupportedConnection");
-                connection.Open();
+                connection.OpenAsyncWithSqlErrorHandling(CancellationToken.None).Wait();
                 this._logger.LogDebugWithThreadId("END OpenSqlAsyncCollectorVerifyDatabaseSupportedConnection");
                 VerifyDatabaseSupported(connection, logger, CancellationToken.None).Wait();
             }
@@ -114,7 +120,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             if (item != null)
             {
                 await this._rowLock.WaitAsync(cancellationToken);
-                TelemetryInstance.TrackEvent(TelemetryEventName.AddAsync);
                 try
                 {
                     this._rows.Add(item);
@@ -166,7 +171,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="rows"> The rows to be upserted </param>
         /// <param name="attribute"> Contains the name of the table to be modified and SQL connection information </param>
         /// <param name="configuration"> Used to build up the connection </param>
-        private async Task UpsertRowsAsync(IEnumerable<T> rows, SqlAttribute attribute, IConfiguration configuration)
+        private async Task UpsertRowsAsync(IList<T> rows, SqlAttribute attribute, IConfiguration configuration)
         {
             this._logger.LogDebugWithThreadId("BEGIN UpsertRowsAsync");
             var upsertRowsAsyncSw = Stopwatch.StartNew();
@@ -175,7 +180,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 this._logger.LogDebugWithThreadId("BEGIN OpenUpsertRowsAsyncConnection");
                 await connection.OpenAsync();
                 this._logger.LogDebugWithThreadId("END OpenUpsertRowsAsyncConnection");
-                Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps();
+                this._serverProperties = await GetServerTelemetryProperties(connection, this._logger, CancellationToken.None);
+                Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps(this._serverProperties);
 
                 string fullTableName = attribute.CommandText;
 
@@ -203,7 +209,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     TelemetryInstance.TrackEvent(TelemetryEventName.TableInfoCacheMiss, props);
                     // set the columnNames for supporting T as JObject since it doesn't have columns in the member info.
-                    tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullTableName, this._logger, GetColumnNamesFromItem(rows.First()));
+                    tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullTableName, this._logger, GetColumnNamesFromItem(rows.First()), this._serverProperties);
                     var policy = new CacheItemPolicy
                     {
                         // Re-look up the primary key(s) after timeout (default timeout is 10 minutes)
@@ -226,7 +232,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw ex;
                 }
 
-                TelemetryInstance.TrackEvent(TelemetryEventName.UpsertStart, props);
+                IEnumerable<string> columnNamesFromItem = GetColumnNamesFromItem(rows.First());
+                IEnumerable<string> unsupportedColumns = columnNamesFromItem.Where(prop => UnsupportedTypes.Contains(tableInfo.Columns[prop], StringComparer.OrdinalIgnoreCase));
+                if (unsupportedColumns.Any())
+                {
+                    string message = $"The type(s) of the following column(s) are not supported: {string.Join(", ", unsupportedColumns.ToArray())}. See https://github.com/Azure/azure-functions-sql-extension#output-bindings for more details.";
+                    throw new InvalidOperationException(message);
+                }
+
+                IEnumerable<string> bracketedColumnNamesFromItem = columnNamesFromItem
+                    .Where(prop => !tableInfo.PrimaryKeys.Any(k => k.IsIdentity && string.Equals(k.Name, prop, StringComparison.Ordinal))) // Skip any identity columns, those should never be updated
+                    .Select(prop => prop.AsBracketQuotedString());
+                if (!bracketedColumnNamesFromItem.Any())
+                {
+                    string message = $"No property values found in item to upsert. If using query parameters, ensure that the casing of the parameter names and the property names match.";
+                    var ex = new InvalidOperationException(message);
+                    throw ex;
+                }
+
+                var table = new SqlObject(fullTableName);
+                string mergeOrInsertQuery = tableInfo.QueryType == QueryType.Insert ? TableInformation.GetInsertQuery(table, bracketedColumnNamesFromItem) :
+                    TableInformation.GetMergeQuery(tableInfo.PrimaryKeys, table, bracketedColumnNamesFromItem);
+
                 this._logger.LogDebugWithThreadId("BEGIN UpsertRowsTransaction");
                 var transactionSw = Stopwatch.StartNew();
                 int batchSize = 1000;
@@ -243,7 +270,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         batchCount++;
                         GenerateDataQueryForMerge(tableInfo, batch, out string newDataQuery, out string rowData);
-                        command.CommandText = $"{newDataQuery} {tableInfo.Query};";
+                        command.CommandText = $"{newDataQuery} {mergeOrInsertQuery};";
                         this._logger.LogDebugWithThreadId($"UpsertRowsTransactionBatch - Query={command.CommandText}");
                         par.Value = rowData;
                         await command.ExecuteNonQueryAsync();
@@ -255,10 +282,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     { TelemetryMeasureName.BatchCount, batchCount },
                     { TelemetryMeasureName.TransactionDurationMs, transactionSw.ElapsedMilliseconds },
-                    { TelemetryMeasureName.CommandDurationMs, commandSw.ElapsedMilliseconds }
+                    { TelemetryMeasureName.CommandDurationMs, commandSw.ElapsedMilliseconds },
+                    { TelemetryMeasureName.BatchSize, batchSize },
+                    { TelemetryMeasureName.NumRows, rows.Count }
                 };
-                    TelemetryInstance.TrackEvent(TelemetryEventName.UpsertEnd, props, measures);
-                    this._logger.LogDebugWithThreadId($"END UpsertRowsTransaction Duration={transactionSw.ElapsedMilliseconds}ms Upserted {rows.Count()} row(s) into database: {connection.Database} and table: {fullTableName}.");
+                    TelemetryInstance.TrackEvent(TelemetryEventName.Upsert, props, measures);
+                    this._logger.LogDebugWithThreadId($"END UpsertRowsTransaction Duration={transactionSw.ElapsedMilliseconds}ms Upserted {rows.Count} row(s) into database: {connection.Database} and table: {fullTableName}.");
                     this._logger.LogDebugWithThreadId($"END UpsertRowsAsync Duration={upsertRowsAsyncSw.ElapsedMilliseconds}ms");
                 }
                 catch (Exception ex)
@@ -326,7 +355,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             IList<T> rowsToUpsert = new List<T>();
 
-            var uniqueUpdatedPrimaryKeys = new HashSet<string>(table.Comparer);
+            var uniqueUpdatedPrimaryKeys = new HashSet<string>();
 
             // If there are duplicate primary keys, we'll need to pick the LAST (most recent) row per primary key.
             foreach (T row in rows.Reverse())
@@ -342,12 +371,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     else
                     {
                         // SQL Server allows 900 bytes per primary key, so use that as a baseline
-                        var combinedPrimaryKey = new StringBuilder(900 * table.PrimaryKeys.Count());
+                        var combinedPrimaryKey = new StringBuilder(900 * table.PrimaryKeyProperties.Count());
                         // Look up primary key of T. Because we're going in the same order of properties every time,
                         // we can assume that if two rows with the same primary key are in the list, they will collide
-                        foreach (PropertyInfo primaryKey in table.PrimaryKeys)
+                        foreach (PropertyInfo primaryKeyProperty in table.PrimaryKeyProperties)
                         {
-                            object value = primaryKey.GetValue(row);
+                            object value = primaryKeyProperty.GetValue(row);
                             // Identity columns are allowed to be optional, so just skip the key if it doesn't exist
                             if (value == null)
                             {
@@ -368,26 +397,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 else
                 {
                     // ToDo: add check for duplicate primary keys once we find a way to get primary keys.
-                    // JObjects ignore serializer settings (https://web.archive.org/web/20171005181503/http://json.codeplex.com/workitem/23853)
-                    // so we have to manually convert property names to lower case before inserting into the query in that case
-                    if (table.Comparer == StringComparer.OrdinalIgnoreCase)
-                    {
-                        (row as JObject).LowercasePropertyNames();
-                    }
                     rowsToUpsert.Add(row);
                 }
             }
 
             rowData = JsonConvert.SerializeObject(rowsToUpsert, table.JsonSerializerSettings);
             IEnumerable<string> columnNamesFromItem = GetColumnNamesFromItem(rows.First());
-            IEnumerable<string> bracketColumnDefinitionsFromItem = table.Columns.Where(c => columnNamesFromItem.Contains(c.Key, table.Comparer))
-                .Select(c => $"{c.Key.AsBracketQuotedString()} {c.Value}");
+            IEnumerable<string> bracketColumnDefinitionsFromItem = columnNamesFromItem.Select(c => $"{c.AsBracketQuotedString()} {table.Columns[c]}");
             newDataQuery = $"WITH {CteName} AS ( SELECT * FROM OPENJSON({RowDataParameter}) WITH ({string.Join(",", bracketColumnDefinitionsFromItem)}) )";
         }
 
         public class TableInformation
         {
-            public IEnumerable<PropertyInfo> PrimaryKeys { get; }
+            public List<PrimaryKey> PrimaryKeys { get; }
+
+            public IEnumerable<PropertyInfo> PrimaryKeyProperties { get; }
 
             /// <summary>
             /// All of the columns, along with their data types, for SQL to use to turn JSON into a table
@@ -400,15 +424,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             public IEnumerable<string> ColumnDefinitions => this.Columns.Select(c => $"{c.Key} {c.Value}");
 
             /// <summary>
-            /// The StringComparer to use when comparing column names. Ex. StringComparer.Ordinal or StringComparer.OrdinalIgnoreCase
+            /// Whether to use an insert query or merge query.
             /// </summary>
-            public StringComparer Comparer { get; }
-
-            /// <summary>
-            /// T-SQL merge or insert statement generated from primary keys
-            /// and column names for a specific table.
-            /// </summary>
-            public string Query { get; }
+            public QueryType QueryType { get; }
 
             /// <summary>
             /// Whether at least one of the primary keys on this table is an identity column
@@ -420,12 +438,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </summary>
             public JsonSerializerSettings JsonSerializerSettings { get; }
 
-            public TableInformation(IEnumerable<PropertyInfo> primaryKeys, IDictionary<string, string> columns, StringComparer comparer, string query, bool hasIdentityColumnPrimaryKeys)
+            public TableInformation(List<PrimaryKey> primaryKeys, IEnumerable<PropertyInfo> primaryKeyProperties, IDictionary<string, string> columns, QueryType queryType, bool hasIdentityColumnPrimaryKeys)
             {
                 this.PrimaryKeys = primaryKeys;
+                this.PrimaryKeyProperties = primaryKeyProperties;
                 this.Columns = columns;
-                this.Comparer = comparer;
-                this.Query = query;
+                this.QueryType = queryType;
                 this.HasIdentityColumnPrimaryKeys = hasIdentityColumnPrimaryKeys;
 
                 // Convert datetime strings to ISO 8061 format to avoid potential errors on the server when converting into a datetime. This
@@ -433,20 +451,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // https://docs.microsoft.com/previous-versions/sql/sql-server-2008-r2/ms180878(v=sql.105)
                 this.JsonSerializerSettings = new JsonSerializerSettings
                 {
-                    ContractResolver = new DynamicPOCOContractResolver(columns, comparer),
+                    ContractResolver = new DynamicPOCOContractResolver(columns),
                     DateFormatString = ISO_8061_DATETIME_FORMAT
                 };
-            }
-            public static bool GetCaseSensitivityFromCollation(string collation)
-            {
-                return collation.Contains("_CS_");
-            }
-
-            public static string GetDatabaseCollationQuery(SqlConnection sqlConnection)
-            {
-                return $@"
-                    SELECT
-                        DATABASEPROPERTYEX('{sqlConnection.Database}', '{Collation}') AS {Collation};";
             }
 
             /// <summary>
@@ -550,48 +557,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <param name="logger">ILogger used to log any errors or warnings.</param>
             /// <param name="objectColumnNames">Column names from the object</param>
             /// <returns>TableInformation object containing primary keys, column types, etc.</returns>
-            public static async Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName, ILogger logger, IEnumerable<string> objectColumnNames)
+            public static async Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName, ILogger logger, IEnumerable<string> objectColumnNames, ServerProperties serverProperties)
             {
-                Dictionary<TelemetryPropertyName, string> sqlConnProps = sqlConnection.AsConnectionProps();
-                TelemetryInstance.TrackEvent(TelemetryEventName.GetTableInfoStart, sqlConnProps);
+                Dictionary<TelemetryPropertyName, string> sqlConnProps = sqlConnection.AsConnectionProps(serverProperties);
                 logger.LogDebugWithThreadId("BEGIN RetrieveTableInformationAsync");
                 var table = new SqlObject(fullName);
 
-                // Get case sensitivity from database collation (default to false if any exception occurs)
-                bool caseSensitive = false;
                 var tableInfoSw = Stopwatch.StartNew();
-                var caseSensitiveSw = Stopwatch.StartNew();
-                try
-                {
-                    string getDatabaseCollationQuery = GetDatabaseCollationQuery(sqlConnection);
-                    logger.LogDebugWithThreadId($"BEGIN GetCaseSensitivity Query=\"{getDatabaseCollationQuery}\"");
-                    var cmdCollation = new SqlCommand(getDatabaseCollationQuery, sqlConnection);
-                    using (SqlDataReader rdr = await cmdCollation.ExecuteReaderAsync())
-                    {
-                        string collation = "";
-                        while (await rdr.ReadAsync())
-                        {
-                            collation = rdr[Collation].ToString();
-                            caseSensitive = GetCaseSensitivityFromCollation(collation);
-                        }
-                        caseSensitiveSw.Stop();
-                        TelemetryInstance.TrackDuration(TelemetryEventName.GetCaseSensitivity, caseSensitiveSw.ElapsedMilliseconds, sqlConnProps);
-                        logger.LogDebugWithThreadId($"END GetCaseSensitivity Collation={collation} CaseSensitive={caseSensitive} Duration={caseSensitiveSw.ElapsedMilliseconds}ms");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // Since this doesn't rethrow make sure we stop here too (don't use finally because we want the execution time to be the same here and in the
-                    // overall event but we also only want to send the GetCaseSensitivity event if it succeeds)
-                    caseSensitiveSw.Stop();
-                    TelemetryInstance.TrackException(TelemetryErrorName.GetCaseSensitivity, ex, sqlConnProps);
-                    logger.LogWarning($"Encountered exception while retrieving database collation: {ex}. Case insensitive behavior will be used by default.");
-                }
-
-                StringComparer comparer = caseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase;
 
                 // Get all column names and types
-                var columnDefinitionsFromSQL = new Dictionary<string, string>(comparer);
+                var columnDefinitionsFromSQL = new Dictionary<string, string>();
                 var columnDefinitionsSw = Stopwatch.StartNew();
                 try
                 {
@@ -602,7 +577,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         while (await rdr.ReadAsync())
                         {
-                            string columnName = caseSensitive ? rdr[ColumnName].ToString() : rdr[ColumnName].ToString().ToLowerInvariant();
+                            string columnName = rdr[ColumnName].ToString();
                             columnDefinitionsFromSQL.Add(columnName, rdr[ColumnDefinition].ToString());
                         }
                         columnDefinitionsSw.Stop();
@@ -639,7 +614,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         while (await rdr.ReadAsync())
                         {
-                            string columnName = caseSensitive ? rdr[ColumnName].ToString() : rdr[ColumnName].ToString().ToLowerInvariant();
+                            string columnName = rdr[ColumnName].ToString();
                             primaryKeys.Add(new PrimaryKey(columnName, bool.Parse(rdr[IsIdentity].ToString()), bool.Parse(rdr[HasDefault].ToString())));
                         }
                         primaryKeysSw.Stop();
@@ -664,11 +639,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
 
                 // Match SQL Primary Key column names to POCO property objects. Ensure none are missing.
-                StringComparison comparison = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-                IEnumerable<PropertyInfo> primaryKeyProperties = typeof(T).GetProperties().Where(f => primaryKeys.Any(k => string.Equals(k.Name, f.Name, comparison)));
-                IEnumerable<string> primaryKeysFromObject = objectColumnNames.Where(f => primaryKeys.Any(k => string.Equals(k.Name, f, comparison)));
+                IEnumerable<PropertyInfo> primaryKeyProperties = typeof(T).GetProperties().Where(f => primaryKeys.Any(k => string.Equals(k.Name, f.Name, StringComparison.Ordinal)));
+                IEnumerable<string> primaryKeysFromObject = objectColumnNames.Where(f => primaryKeys.Any(k => string.Equals(k.Name, f, StringComparison.Ordinal)));
                 IEnumerable<PrimaryKey> missingPrimaryKeysFromItem = primaryKeys
-                    .Where(k => !primaryKeysFromObject.Contains(k.Name, comparer));
+                    .Where(k => !primaryKeysFromObject.Contains(k.Name));
                 bool hasIdentityColumnPrimaryKeys = primaryKeys.Any(k => k.IsIdentity);
                 bool hasDefaultColumnPrimaryKeys = primaryKeys.Any(k => k.HasDefault);
                 // If none of the primary keys are an identity column or have a default value then we require that all primary keys be present in the POCO so we can
@@ -683,55 +657,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 // If any identity columns or columns with default values aren't included in the object then we have to generate a basic insert since the merge statement expects all primary key
                 // columns to exist. (the merge statement can handle nullable columns though if those exist)
-                bool usingInsertQuery = (hasIdentityColumnPrimaryKeys || hasDefaultColumnPrimaryKeys) && missingPrimaryKeysFromItem.Any();
-
-                IEnumerable<string> bracketedColumnNamesFromItem = objectColumnNames
-                    .Where(prop => !primaryKeys.Any(k => k.IsIdentity && string.Equals(k.Name, prop, comparison))) // Skip any identity columns, those should never be updated
-                    .Select(prop => prop.AsBracketQuotedString());
-                string query = usingInsertQuery ? GetInsertQuery(table, bracketedColumnNamesFromItem) : GetMergeQuery(primaryKeys, table, bracketedColumnNamesFromItem);
+                QueryType queryType = (hasIdentityColumnPrimaryKeys || hasDefaultColumnPrimaryKeys) && missingPrimaryKeysFromItem.Any() ? QueryType.Insert : QueryType.Merge;
 
                 tableInfoSw.Stop();
                 var durations = new Dictionary<TelemetryMeasureName, double>()
                 {
-                    { TelemetryMeasureName.GetCaseSensitivityDurationMs, caseSensitiveSw.ElapsedMilliseconds },
                     { TelemetryMeasureName.GetColumnDefinitionsDurationMs, columnDefinitionsSw.ElapsedMilliseconds },
                     { TelemetryMeasureName.GetPrimaryKeysDurationMs, primaryKeysSw.ElapsedMilliseconds }
                 };
-                sqlConnProps.Add(TelemetryPropertyName.QueryType, usingInsertQuery ? "insert" : "merge");
+                sqlConnProps.Add(TelemetryPropertyName.QueryType, queryType.ToString());
                 sqlConnProps.Add(TelemetryPropertyName.HasIdentityColumn, hasIdentityColumnPrimaryKeys.ToString());
-                TelemetryInstance.TrackDuration(TelemetryEventName.GetTableInfoEnd, tableInfoSw.ElapsedMilliseconds, sqlConnProps, durations);
+                TelemetryInstance.TrackDuration(TelemetryEventName.GetTableInfo, tableInfoSw.ElapsedMilliseconds, sqlConnProps, durations);
                 logger.LogDebugWithThreadId($"END RetrieveTableInformationAsync Duration={tableInfoSw.ElapsedMilliseconds}ms DB and Table: {sqlConnection.Database}.{fullName}. Primary keys: [{string.Join(",", primaryKeys.Select(pk => pk.Name))}]. SQL Column and Definitions:  [{string.Join(",", columnDefinitionsFromSQL)}] Object columns: [{string.Join(",", objectColumnNames)}]");
-                return new TableInformation(primaryKeyProperties, columnDefinitionsFromSQL, comparer, query, hasIdentityColumnPrimaryKeys);
+                return new TableInformation(primaryKeys, primaryKeyProperties, columnDefinitionsFromSQL, queryType, hasIdentityColumnPrimaryKeys);
             }
         }
 
         public class DynamicPOCOContractResolver : DefaultContractResolver
         {
             private readonly IDictionary<string, string> _propertiesToSerialize;
-            private readonly StringComparer _comparer;
 
-            public DynamicPOCOContractResolver(IDictionary<string, string> sqlColumns, StringComparer comparer)
+            public DynamicPOCOContractResolver(IDictionary<string, string> sqlColumns)
             {
                 // we only want to serialize POCO properties that correspond to SQL columns
                 this._propertiesToSerialize = sqlColumns;
-                this._comparer = comparer;
             }
 
             protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
             {
                 var properties = base
                     .CreateProperties(type, memberSerialization)
-                    .ToDictionary(p => p.PropertyName, this._comparer);
+                    .ToDictionary(p => p.PropertyName);
 
                 // Make sure the ordering of columns matches that of SQL
                 // Necessary for proper matching of column names to JSON that is generated for each batch of data
                 IList<JsonProperty> propertiesToSerialize = new List<JsonProperty>(properties.Count);
                 foreach (KeyValuePair<string, string> column in this._propertiesToSerialize)
                 {
-                    if (properties.ContainsKey(column.Key))
+                    if (properties.TryGetValue(column.Key, out JsonProperty value))
                     {
-                        JsonProperty sqlColumn = properties[column.Key];
-                        sqlColumn.PropertyName = this._comparer == StringComparer.Ordinal ? sqlColumn.PropertyName : sqlColumn.PropertyName.ToLowerInvariant();
+                        JsonProperty sqlColumn = value;
+                        sqlColumn.PropertyName = sqlColumn.PropertyName;
                         propertiesToSerialize.Add(sqlColumn);
                     }
                 }

@@ -14,7 +14,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples
         [FunctionName("QueueTriggerProducts")]
         public static void Run(
             [QueueTrigger("testqueue")] string queueMessage, ILogger log,
-            [Sql("[dbo].[Products]", ConnectionStringSetting = "SqlConnectionString")] ICollector<Product> products)
+            [Sql("[dbo].[Products]", "SqlConnectionString")] ICollector<Product> products)
         {
             int totalUpserts = 100;
             log.LogInformation($"[QueueTrigger]: {DateTime.Now} starting execution {queueMessage}. Rows to generate={totalUpserts}.");

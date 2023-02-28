@@ -16,12 +16,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "addproduct-missingcolumnsexception")]
             HttpRequest req,
-            [Sql("dbo.ProductsCostNotNull", ConnectionStringSetting = "SqlConnectionString")] out ProductMissingColumns product)
+            [Sql("dbo.ProductsCostNotNull", "SqlConnectionString")] out ProductMissingColumns product)
         {
             product = new ProductMissingColumns
             {
                 Name = "test",
-                ProductID = 1
+                ProductId = 1
                 // Cost is missing
             };
             return new CreatedResult($"/api/addproduct-missingcolumnsexception", product);

@@ -127,8 +127,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 using var masterConnection = new SqlConnection(this.MasterConnectionString);
                 masterConnection.Open();
-                TestUtils.ExecuteNonQuery(masterConnection, $"CREATE DATABASE [{this.DatabaseName}]");
-            });
+                TestUtils.ExecuteNonQuery(masterConnection, $"CREATE DATABASE [{this.DatabaseName}]", this.LogOutput);
+            }, this.LogOutput);
 
             // Setup connection
             connectionStringBuilder.InitialCatalog = this.DatabaseName;
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// - The functionName is different than its route.<br/>
         /// - You can start multiple functions by passing in a space-separated list of function names.<br/>
         /// </remarks>
-        protected void StartFunctionHost(string functionName, SupportedLanguages language, bool useTestFolder = false, DataReceivedEventHandler customOutputHandler = null, IDictionary<string, string> environmentVariables = null)
+        public void StartFunctionHost(string functionName, SupportedLanguages language, bool useTestFolder = false, DataReceivedEventHandler customOutputHandler = null, IDictionary<string, string> environmentVariables = null)
         {
             string workingDirectory = language == SupportedLanguages.CSharp && useTestFolder ? TestUtils.GetPathToBin() : Path.Combine(TestUtils.GetPathToBin(), "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), language));
             if (language == SupportedLanguages.Java)
@@ -171,6 +171,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 workingDirectory = useTestFolder ? Path.Combine(TestUtils.GetPathToBin(), "..", "..", "..", "Integration", "test-java") : workingDirectory;
                 string projectName = useTestFolder ? "test-java-1666041146813" : "samples-java-1665766173929";
                 workingDirectory = Path.Combine(workingDirectory, "target", "azure-functions", projectName);
+            }
+            if (language == SupportedLanguages.OutOfProc && useTestFolder)
+            {
+                workingDirectory = Path.Combine(workingDirectory, "test");
             }
 
             if (!Directory.Exists(workingDirectory))
@@ -285,7 +289,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             return funcPath;
         }
 
-        private void LogOutput(string output)
+        protected void LogOutput(string output)
         {
             if (this.TestOutput != null)
             {
@@ -354,9 +358,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Executes a command against the current connection.
         /// </summary>
-        protected void ExecuteNonQuery(string commandText)
+        /// <param name="command">Command text to execute</param>
+        /// <param name="message">Optional message to write when this query is executed. Defaults to writing the query commandText</param>
+        protected void ExecuteNonQuery(string commandText, string message = null)
         {
-            TestUtils.ExecuteNonQuery(this.Connection, commandText);
+            TestUtils.ExecuteNonQuery(this.Connection, commandText, this.LogOutput, message: message);
         }
 
         /// <summary>
@@ -364,7 +370,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         protected object ExecuteScalar(string commandText)
         {
-            return TestUtils.ExecuteScalar(this.Connection, commandText);
+            return TestUtils.ExecuteScalar(this.Connection, commandText, this.LogOutput);
         }
 
 
@@ -388,7 +394,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 // Drop the test database
                 using var masterConnection = new SqlConnection(this.MasterConnectionString);
                 masterConnection.Open();
-                TestUtils.ExecuteNonQuery(masterConnection, $"DROP DATABASE IF EXISTS {this.DatabaseName}");
+                TestUtils.ExecuteNonQuery(masterConnection, $"DROP DATABASE IF EXISTS {this.DatabaseName}", this.LogOutput);
             }
             catch (Exception e4)
             {
@@ -457,10 +463,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             var queryBuilder = new StringBuilder();
             foreach (Product p in products)
             {
-                queryBuilder.AppendLine($"INSERT INTO dbo.Products VALUES({p.ProductID}, '{p.Name}', {p.Cost});");
+                queryBuilder.AppendLine($"INSERT INTO dbo.Products VALUES({p.ProductId}, '{p.Name}', {p.Cost});");
             }
 
-            this.ExecuteNonQuery(queryBuilder.ToString());
+            this.ExecuteNonQuery(queryBuilder.ToString(), $"Inserting {products.Length} products");
         }
 
         protected static Product[] GetProducts(int n, int cost)
@@ -470,7 +476,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 result[i - 1] = new Product
                 {
-                    ProductID = i,
+                    ProductId = i,
                     Name = "test",
                     Cost = cost * i
                 };
@@ -485,7 +491,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 result[i] = new Product
                 {
-                    ProductID = i,
+                    ProductId = i,
                     Name = "test",
                     Cost = cost
                 };
@@ -500,7 +506,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 result[i] = new Product
                 {
-                    ProductID = i + offset,
+                    ProductId = i + offset,
                     Name = name,
                     Cost = cost
                 };

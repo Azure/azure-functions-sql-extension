@@ -15,7 +15,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     {
         [FunctionName(nameof(MultiFunctionTrigger1))]
         public static void MultiFunctionTrigger1(
-            [SqlTrigger("[dbo].[Products]", ConnectionStringSetting = "SqlConnectionString")]
+            [SqlTrigger("[dbo].[Products]", "SqlConnectionString")]
             IReadOnlyList<SqlChange<Product>> products,
             ILogger logger)
         {
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [FunctionName(nameof(MultiFunctionTrigger2))]
         public static void MultiFunctionTrigger2(
-            [SqlTrigger("[dbo].[Products]", ConnectionStringSetting = "SqlConnectionString")]
+            [SqlTrigger("[dbo].[Products]", "SqlConnectionString")]
             IReadOnlyList<SqlChange<Product>> products,
             ILogger logger)
         {

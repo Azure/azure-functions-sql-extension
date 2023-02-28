@@ -4,8 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
@@ -15,18 +13,17 @@ using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
     [Collection(IntegrationTestsCollection.Name)]
-    public class SqlTriggerBindingIntegrationTests : IntegrationTestBase
+    public class SqlTriggerBindingIntegrationTests : SqlTriggerBindingIntegrationTestBase
     {
         public SqlTriggerBindingIntegrationTests(ITestOutputHelper output = null) : base(output)
         {
-            this.EnableChangeTrackingForDatabase();
+
         }
 
         /// <summary>
@@ -76,33 +73,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
-        /// Verifies that manually setting the batch size correctly changes the number of changes processed at once
+        /// Verifies that manually setting the batch size using the original config var correctly changes the
+        /// number of changes processed at once.
         /// </summary>
         [Fact]
         public async Task BatchSizeOverrideTriggerTest()
         {
             // Use enough items to require 4 batches to be processed but then
-            // set the batch size to the same value so they can all be processed in one
+            // set the max batch size to the same value so they can all be processed in one
             // batch. The test will only wait for ~1 batch worth of time so will timeout
-            // if the batch size isn't actually changed
-            const int batchSize = SqlTableChangeMonitor<object>.DefaultBatchSize * 4;
+            // if the max batch size isn't actually changed
+            const int maxBatchSize = SqlTableChangeMonitor<object>.DefaultMaxBatchSize * 4;
             const int firstId = 1;
-            const int lastId = batchSize;
+            const int lastId = maxBatchSize;
             this.SetChangeTrackingForTable("Products");
             var taskCompletionSource = new TaskCompletionSource<bool>();
             DataReceivedEventHandler handler = TestUtils.CreateOutputReceievedHandler(
                 taskCompletionSource,
-                @"Starting change consumption loop. BatchSize: (\d*) PollingIntervalMs: \d*",
-                "BatchSize",
-                batchSize.ToString());
+                @"Starting change consumption loop. MaxBatchSize: (\d*) PollingIntervalMs: \d*",
+                "MaxBatchSize",
+                maxBatchSize.ToString());
             this.StartFunctionHost(
                 nameof(ProductsTriggerWithValidation),
                 SupportedLanguages.CSharp,
                 useTestFolder: true,
                 customOutputHandler: handler,
                 environmentVariables: new Dictionary<string, string>() {
-                    { "TEST_EXPECTED_BATCH_SIZE", batchSize.ToString() },
-                    { "Sql_Trigger_BatchSize", batchSize.ToString() }
+                    { "TEST_EXPECTED_MAX_BATCH_SIZE", maxBatchSize.ToString() },
+                    { "Sql_Trigger_BatchSize", maxBatchSize.ToString() } // Use old BatchSize config
                 }
             );
 
@@ -113,8 +111,50 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 () => { this.InsertProducts(firstId, lastId); return Task.CompletedTask; },
                 id => $"Product {id}",
                 id => id * 100,
-                this.GetBatchProcessingTimeout(firstId, lastId, batchSize: batchSize));
-            await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromSeconds(5000), "Timed out waiting for BatchSize configuration message");
+                this.GetBatchProcessingTimeout(firstId, lastId, maxBatchSize: maxBatchSize));
+            await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromSeconds(5), "Timed out waiting for MaxBatchSize configuration message");
+        }
+
+        /// <summary>
+        /// Verifies that manually setting the max batch size correctly changes the number of changes processed at once
+        /// </summary>
+        [Fact]
+        public async Task MaxBatchSizeOverrideTriggerTest()
+        {
+            // Use enough items to require 4 batches to be processed but then
+            // set the max batch size to the same value so they can all be processed in one
+            // batch. The test will only wait for ~1 batch worth of time so will timeout
+            // if the max batch size isn't actually changed
+            const int maxBatchSize = SqlTableChangeMonitor<object>.DefaultMaxBatchSize * 4;
+            const int firstId = 1;
+            const int lastId = maxBatchSize;
+            this.SetChangeTrackingForTable("Products");
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            DataReceivedEventHandler handler = TestUtils.CreateOutputReceievedHandler(
+                taskCompletionSource,
+                @"Starting change consumption loop. MaxBatchSize: (\d*) PollingIntervalMs: \d*",
+                "MaxBatchSize",
+                maxBatchSize.ToString());
+            this.StartFunctionHost(
+                nameof(ProductsTriggerWithValidation),
+                SupportedLanguages.CSharp,
+                useTestFolder: true,
+                customOutputHandler: handler,
+                environmentVariables: new Dictionary<string, string>() {
+                    { "TEST_EXPECTED_MAX_BATCH_SIZE", maxBatchSize.ToString() },
+                    { "Sql_Trigger_MaxBatchSize", maxBatchSize.ToString() }
+                }
+            );
+
+            await this.WaitForProductChanges(
+                firstId,
+                lastId,
+                SqlChangeOperation.Insert,
+                () => { this.InsertProducts(firstId, lastId); return Task.CompletedTask; },
+                id => $"Product {id}",
+                id => id * 100,
+                this.GetBatchProcessingTimeout(firstId, lastId, maxBatchSize: maxBatchSize));
+            await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromSeconds(5), "Timed out waiting for MaxBatchSize configuration message");
         }
 
         /// <summary>
@@ -127,13 +167,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // Use enough items to require 5 batches to be processed - the test will
             // only wait for the expected time and timeout if the default polling
             // interval isn't actually modified.
-            const int lastId = SqlTableChangeMonitor<object>.DefaultBatchSize * 5;
+            const int lastId = SqlTableChangeMonitor<object>.DefaultMaxBatchSize * 5;
             const int pollingIntervalMs = SqlTableChangeMonitor<object>.DefaultPollingIntervalMs / 2;
             this.SetChangeTrackingForTable("Products");
             var taskCompletionSource = new TaskCompletionSource<bool>();
             DataReceivedEventHandler handler = TestUtils.CreateOutputReceievedHandler(
                 taskCompletionSource,
-                @"Starting change consumption loop. BatchSize: \d* PollingIntervalMs: (\d*)",
+                @"Starting change consumption loop. MaxBatchSize: \d* PollingIntervalMs: (\d*)",
                 "PollingInterval",
                 pollingIntervalMs.ToString());
             this.StartFunctionHost(
@@ -154,7 +194,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 id => $"Product {id}",
                 id => id * 100,
                 this.GetBatchProcessingTimeout(firstId, lastId, pollingIntervalMs: pollingIntervalMs));
-            await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromSeconds(5000), "Timed out waiting for PollingInterval configuration message");
+            await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromSeconds(5), "Timed out waiting for PollingInterval configuration message");
         }
 
         /// <summary>
@@ -513,172 +553,40 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 "SQL bindings require a database compatibility level of 130 or higher to function. Current compatibility level = 120");
         }
 
-        private void EnableChangeTrackingForDatabase()
+        /// <summary>
+        /// Tests that when a user function throws an exception we'll retry executing that function once the lease timeout expires
+        /// </summary>
+        [Fact]
+        public async Task FunctionExceptionsCauseRetry()
         {
-            this.ExecuteNonQuery($@"
-                ALTER DATABASE [{this.DatabaseName}]
-                SET CHANGE_TRACKING = ON
-                (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON);
-            ");
-        }
-
-        protected void SetChangeTrackingForTable(string tableName, bool enable = true)
-        {
-            this.ExecuteNonQuery($@"
-                ALTER TABLE [dbo].[{tableName}]
-                {(enable ? "ENABLE" : "DISABLE")} CHANGE_TRACKING;
-            ");
-        }
-
-        protected void InsertProducts(int firstId, int lastId)
-        {
-            // Only 1000 items are allowed to be inserted into a single INSERT statement so if we have more than 1000 batch them up into separate statements
-            var builder = new StringBuilder();
-            do
+            this.SetChangeTrackingForTable("Products");
+            this.StartFunctionHost(nameof(TriggerWithException), SupportedLanguages.CSharp, true);
+            TaskCompletionSource taskCompletionSource = new();
+            void TestExceptionMessageSeen(object sender, DataReceivedEventArgs e)
             {
-                int batchCount = Math.Min(lastId - firstId + 1, 1000);
-                builder.Append($"INSERT INTO [dbo].[Products] VALUES {string.Join(",\n", Enumerable.Range(firstId, batchCount).Select(id => $"({id}, 'Product {id}', {id * 100})"))}; ");
-                firstId += batchCount;
-            } while (firstId < lastId);
-            this.ExecuteNonQuery(builder.ToString());
-        }
-
-        protected void UpdateProducts(int firstId, int lastId)
-        {
-            int count = lastId - firstId + 1;
-            this.ExecuteNonQuery(
-                "UPDATE [dbo].[Products]\n" +
-                "SET Name = 'Updated ' + Name\n" +
-                "WHERE ProductId IN (" + string.Join(", ", Enumerable.Range(firstId, count)) + ");");
-        }
-
-        protected void DeleteProducts(int firstId, int lastId)
-        {
-            int count = lastId - firstId + 1;
-            this.ExecuteNonQuery(
-                "DELETE FROM [dbo].[Products]\n" +
-                "WHERE ProductId IN (" + string.Join(", ", Enumerable.Range(firstId, count)) + ");");
-        }
-
-        protected async Task WaitForProductChanges(
-            int firstId,
-            int lastId,
-            SqlChangeOperation operation,
-            Func<Task> actions,
-            Func<int, string> getName,
-            Func<int, int> getCost,
-            int timeoutMs,
-            string messagePrefix = "SQL Changes: ")
-        {
-            var expectedIds = Enumerable.Range(firstId, lastId - firstId + 1).ToHashSet();
-            int index = 0;
-
-            var taskCompletion = new TaskCompletionSource<bool>();
-
-            void MonitorOutputData(object sender, DataReceivedEventArgs e)
-            {
-                if (e.Data != null && (index = e.Data.IndexOf(messagePrefix, StringComparison.Ordinal)) >= 0)
+                if (e.Data.Contains(TriggerWithException.ExceptionMessage))
                 {
-                    string json = e.Data[(index + messagePrefix.Length)..];
-                    IReadOnlyList<SqlChange<Product>> changes = JsonConvert.DeserializeObject<IReadOnlyList<SqlChange<Product>>>(json);
-                    foreach (SqlChange<Product> change in changes)
-                    {
-                        Assert.Equal(operation, change.Operation); // Expected change operation
-                        Product product = change.Item;
-                        Assert.NotNull(product); // Product deserialized correctly
-                        Assert.Contains(product.ProductID, expectedIds); // We haven't seen this product ID yet, and it's one we expected to see
-                        expectedIds.Remove(product.ProductID);
-                        Assert.Equal(getName(product.ProductID), product.Name); // The product has the expected name
-                        Assert.Equal(getCost(product.ProductID), product.Cost); // The product has the expected cost
-                    }
-                    if (expectedIds.Count == 0)
-                    {
-                        taskCompletion.SetResult(true);
-                    }
+                    taskCompletionSource.SetResult();
                 }
             };
-            // Set up listener for the changes coming in
-            foreach (Process functionHost in this.FunctionHostList)
-            {
-                functionHost.OutputDataReceived += MonitorOutputData;
-            }
+            this.FunctionHost.OutputDataReceived += TestExceptionMessageSeen;
+            int firstId = 1;
+            int lastId = 30;
+            int batchProcessingTimeout = this.GetBatchProcessingTimeout(1, 30);
+            Task changesTask = this.WaitForProductChanges(
+                firstId,
+                lastId,
+                SqlChangeOperation.Insert,
+                () => { this.InsertProducts(firstId, lastId); return Task.CompletedTask; },
+                id => $"Product {id}",
+                id => id * 100,
+                (SqlTableChangeMonitor<object>.LeaseIntervalInSeconds * 1000) + batchProcessingTimeout);
 
-            // Now that we've set up our listener trigger the actions to monitor
-            await actions();
+            // First wait for the exception message to show up
+            await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromMilliseconds(this.GetBatchProcessingTimeout(1, 30)), "Timed out waiting for exception message");
+            // Now wait for the retry to occur and successfully pass
+            await changesTask;
 
-            // Now wait until either we timeout or we've gotten all the expected changes, whichever comes first
-            Console.WriteLine($"[{DateTime.UtcNow:u}] Waiting for {operation} changes ({timeoutMs}ms)");
-            await taskCompletion.Task.TimeoutAfter(TimeSpan.FromMilliseconds(timeoutMs), $"Timed out waiting for {operation} changes.");
-
-            // Unhook handler since we're done monitoring these changes so we aren't checking other changes done later
-            foreach (Process functionHost in this.FunctionHostList)
-            {
-                functionHost.OutputDataReceived -= MonitorOutputData;
-            }
-        }
-
-        /// <summary>
-        /// Launches the functions runtime host, waits for it to encounter error while starting the SQL trigger listener,
-        /// and asserts that the logged error message matches with the supplied error message.
-        /// </summary>
-        /// <param name="functionName">Name of the user function that should cause error in trigger listener</param>
-        /// <param name="useTestFolder">Whether the functions host should be launched from test folder</param>
-        /// <param name="expectedErrorMessage">Expected error message string</param>
-        private void StartFunctionHostAndWaitForError(string functionName, bool useTestFolder, string expectedErrorMessage)
-        {
-            string errorMessage = null;
-            var tcs = new TaskCompletionSource<bool>();
-
-            void OutputHandler(object sender, DataReceivedEventArgs e)
-            {
-                if (errorMessage == null && e.Data?.Contains("Failed to start SQL trigger listener") == true)
-                {
-                    // SQL trigger listener throws exception of type InvalidOperationException for all error conditions.
-                    string exceptionPrefix = "Exception: System.InvalidOperationException: ";
-                    int index = e.Data.IndexOf(exceptionPrefix, StringComparison.Ordinal);
-                    Assert.NotEqual(-1, index);
-
-                    errorMessage = e.Data[(index + exceptionPrefix.Length)..];
-                    tcs.SetResult(true);
-                }
-            };
-
-            // All trigger integration tests are only using C# functions for testing at the moment.
-            this.StartFunctionHost(functionName, SupportedLanguages.CSharp, useTestFolder, OutputHandler);
-
-            // The functions host generally logs the error message within a second after starting up.
-            const int BufferTimeForErrorInSeconds = 15;
-            bool isCompleted = tcs.Task.Wait(TimeSpan.FromSeconds(BufferTimeForErrorInSeconds));
-
-            this.FunctionHost.OutputDataReceived -= OutputHandler;
-            this.FunctionHost.Kill(true);
-
-            Assert.True(isCompleted, "Functions host did not log failure to start SQL trigger listener within specified time.");
-            Assert.Equal(expectedErrorMessage, errorMessage);
-        }
-
-        /// <summary>
-        /// Gets a timeout value to use when processing the given number of changes, based on the
-        /// default batch size and polling interval.
-        /// </summary>
-        /// <param name="firstId">The first ID in the batch to process</param>
-        /// <param name="lastId">The last ID in the batch to process</param>
-        /// <param name="batchSize">The batch size if different than the default batch size</param>
-        /// <param name="pollingIntervalMs">The polling interval in ms if different than the default polling interval</param>
-        /// <returns></returns>
-        protected int GetBatchProcessingTimeout(int firstId, int lastId, int batchSize = SqlTableChangeMonitor<object>.DefaultBatchSize, int pollingIntervalMs = SqlTableChangeMonitor<object>.DefaultPollingIntervalMs)
-        {
-            int changesToProcess = lastId - firstId + 1;
-            int calculatedTimeout = (int)(Math.Ceiling((double)changesToProcess / batchSize // The number of batches to process
-                / this.FunctionHostList.Count) // The number of function host processes
-                * pollingIntervalMs // The length to process each batch
-                * 2); // Double to add buffer time for processing results & writing log messages
-
-            // Always have a timeout of at least 10sec since there's a certain amount of overhead
-            // always expected from each run regardless of the number of batches being processed and the delay
-            // These tests aren't testing performance so giving extra processing time is fine as long as the
-            // results themselves are correct
-            return Math.Max(calculatedTimeout, 10000);
         }
     }
 }

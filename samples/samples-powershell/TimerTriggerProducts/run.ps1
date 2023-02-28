@@ -1,6 +1,9 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License. See License.txt in the project root for license information.
+
 using namespace System.Net
 
-param($myTimer)
+param($myTimer, $TriggerMetadata)
 $executionNumber = 0;
 $totalUpserts = 1000;
 
@@ -11,9 +14,9 @@ Write-Host "[QueueTrigger]: $start starting execution $executionNumber. Rows to 
 $products = @()
 for ($i = 0; $i -lt $totalUpserts; $i++) {
     $products += [PSCustomObject]@{
-        productId = $i;
-        name = "test";
-        cost = 100 * $i;
+        ProductId = $i;
+        Name = "test";
+        Cost = 100 * $i;
     }
 }
 $end = Get-Date

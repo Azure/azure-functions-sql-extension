@@ -41,6 +41,8 @@ stages:
     workspace:
       clean: all
 
+    timeoutInMinutes: '90'
+
     steps:
     - template: 'template-steps-build-test.yml'
       parameters:
@@ -49,3 +51,4 @@ stages:
         nugetVersion: '1.0.0-test'
         binariesVersion: '1.0.0'
         testFilter: '$(testFilter)'
+        supportedVersion: '1.*-*'

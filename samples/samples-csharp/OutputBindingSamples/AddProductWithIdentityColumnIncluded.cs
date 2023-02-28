@@ -25,12 +25,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples
         public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproductwithidentitycolumnincluded")]
             HttpRequest req,
-            [Sql("dbo.ProductsWithIdentity", ConnectionStringSetting = "SqlConnectionString")] out ProductWithOptionalId product)
+            [Sql("dbo.ProductsWithIdentity", "SqlConnectionString")] out ProductWithOptionalId product)
         {
             product = new ProductWithOptionalId
             {
                 Name = req.Query["name"],
-                ProductID = string.IsNullOrEmpty(req.Query["productId"]) ? null : int.Parse(req.Query["productId"]),
+                ProductId = string.IsNullOrEmpty(req.Query["productId"]) ? null : int.Parse(req.Query["productId"]),
                 Cost = int.Parse(req.Query["cost"])
             };
             return new CreatedResult($"/api/addproductwithidentitycolumnincluded", product);

@@ -39,10 +39,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         {
             Type parameterType = typeof(IReadOnlyList<SqlChange<object>>);
             Task testCode() { return CreateTriggerBindingAsync(parameterType, nameof(UserFunctionWithoutConnectionString)); }
-            ArgumentException exception = await Assert.ThrowsAsync<ArgumentException>(testCode);
+            ArgumentException exception = await Assert.ThrowsAsync<ArgumentNullException>(testCode);
 
             Assert.Equal(
-                "Must specify ConnectionStringSetting, which should refer to the name of an app setting that contains a SQL connection string",
+                "Value cannot be null. (Parameter 'connectionStringSetting')",
                 exception.Message);
         }
 
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [InlineData(typeof(IReadOnlyList<IReadOnlyList<object>>))]
         public async Task TryCreateAsync_InvalidTriggerParameterType_ThrowsException(Type parameterType)
         {
-            Task testCode() { return CreateTriggerBindingAsync(parameterType, nameof(UserFunctionWithoutConnectionString)); }
+            Task testCode() { return CreateTriggerBindingAsync(parameterType, nameof(UserFunctionWithAttribute)); }
             InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(testCode);
 
             Assert.Equal(
@@ -96,8 +96,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 
         private static void UserFunctionWithoutAttribute<T>(T _) { }
 
-        private static void UserFunctionWithoutConnectionString<T>([SqlTrigger("testTableName")] T _) { }
+        private static void UserFunctionWithoutConnectionString<T>([SqlTrigger("testTableName", null)] T _) { }
 
-        private static void UserFunctionWithAttribute<T>([SqlTrigger("testTableName", ConnectionStringSetting = "testConnectionStringSetting")] T _) { }
+        private static void UserFunctionWithAttribute<T>([SqlTrigger("testTableName", "testConnectionStringSetting")] T _) { }
     }
 }

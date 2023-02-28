@@ -41,13 +41,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         /// </summary>
         /// <param name="connection">The connection.  This must be opened.</param>
         /// <param name="commandText">The scalar T-SQL command.</param>
+        /// <param name="logger">The method to call for logging output</param>
         /// <param name="catchException">Optional exception handling.  Pass back 'true' to handle the
         /// exception, 'false' to throw. If Null is passed in then all exceptions are thrown.</param>
+        /// <param name="message">Optional message to write when this query is executed. Defaults to writing the query commandText</param>
         /// <returns>The number of rows affected</returns>
         public static int ExecuteNonQuery(
             IDbConnection connection,
             string commandText,
-            Predicate<Exception> catchException = null)
+            Action<string> logger,
+            Predicate<Exception> catchException = null,
+            string message = null)
         {
             if (connection == null)
             {
@@ -57,6 +61,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
             {
                 throw new ArgumentNullException(nameof(commandText));
             }
+            message ??= $"Executing non-query {commandText}";
 
             using (IDbCommand cmd = connection.CreateCommand())
             {
@@ -65,8 +70,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 
                     cmd.CommandText = commandText;
                     cmd.CommandType = CommandType.Text;
-                    cmd.CommandTimeout = 60000; // Increase from default 30s to prevent timeouts while connecting to Azure SQL DB
-                    Console.WriteLine($"Executing non-query {commandText}");
+                    cmd.CommandTimeout = 60; // Increase from default 30s to prevent timeouts while connecting to Azure SQL DB
+                    logger.Invoke(message);
                     return cmd.ExecuteNonQuery();
                 }
                 catch (Exception ex)
@@ -86,12 +91,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         /// </summary>
         /// <param name="connection">The connection.  This must be opened.</param>
         /// <param name="commandText">The scalar T-SQL command.</param>
+        /// <param name="logger">The method to call for logging output</param>
         /// <param name="catchException">Optional exception handling.  Pass back 'true' to handle the
         /// exception, 'false' to throw. If Null is passed in then all exceptions are thrown.</param>
         /// <returns>The scalar result</returns>
         public static object ExecuteScalar(
             IDbConnection connection,
             string commandText,
+            Action<string> logger,
             Predicate<Exception> catchException = null)
         {
             if (connection == null)
@@ -109,7 +116,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
                 {
                     cmd.CommandText = commandText;
                     cmd.CommandType = CommandType.Text;
-                    Console.WriteLine($"Executing scalar {commandText}");
+                    logger.Invoke($"Executing scalar {commandText}");
                     return cmd.ExecuteScalar();
                 }
                 catch (Exception ex)
@@ -129,10 +136,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         /// Retries the specified action, waiting for the specified duration in between each attempt
         /// </summary>
         /// <param name="action">The action to run</param>
+        /// <param name="logger">The method to call for logging output</param>
         /// <param name="retryCount">The max number of retries to attempt</param>
         /// <param name="waitDurationMs">The duration in milliseconds between each attempt</param>
         /// <exception cref="AggregateException">Aggregate of all exceptions thrown if all retries failed</exception>
-        public static void Retry(Action action, int retryCount = 3, int waitDurationMs = 10000)
+        public static void Retry(Action action, Action<string> logger, int retryCount = 3, int waitDurationMs = 10000)
         {
             var exceptions = new List<Exception>();
             while (true)
@@ -150,7 +158,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
                     {
                         throw new AggregateException($"Action failed all retries", exceptions);
                     }
-                    Console.WriteLine($"Error running action, retrying after {waitDurationMs}ms. {retryCount} retries left. {ex}");
+                    logger.Invoke($"Error running action, retrying after {waitDurationMs}ms. {retryCount} retries left. {ex}");
                     Thread.Sleep(waitDurationMs);
                 }
             }
@@ -165,6 +173,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
             return jsonStr.Trim().Replace(" ", "").Replace(Environment.NewLine, "");
         }
 
+        /// <summary>
+        /// Returns a task that will complete when either the original task completes or the specified timeout is reached.
+        /// </summary>
+        /// <param name="task">The original task to wait on</param>
+        /// <param name="timeout">The TimeSpan to wait for before a TimeoutException is thrown</param>
+        /// <param name="message">The message to give the TimeoutException if a timeout occurs</param>
+        /// <returns>A Task that will either complete once the original task completes or throw if the timeout period is reached, whichever occurs first</returns>
+        /// <exception cref="TimeoutException">If the timeout is reached and the original Task hasn't completed</exception>
         public static async Task<TResult> TimeoutAfter<TResult>(this Task<TResult> task, TimeSpan timeout, string message = "The operation has timed out.")
         {
 
@@ -175,6 +191,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
             {
                 timeoutCancellationTokenSource.Cancel();
                 return await task;  // Very important in order to propagate exceptions
+            }
+            else
+            {
+                throw new TimeoutException(message);
+            }
+        }
+
+        /// <summary>
+        /// Returns a task that will complete when either the original task completes or the specified timeout is reached.
+        /// </summary>
+        /// <param name="task">The original task to wait on</param>
+        /// <param name="timeout">The TimeSpan to wait for before a TimeoutException is thrown</param>
+        /// <param name="message">The message to give the TimeoutException if a timeout occurs</param>
+        /// <returns>A Task that will either complete once the original task completes or throw if the timeout period is reached, whichever occurs first</returns>
+        /// <exception cref="TimeoutException">If the timeout is reached and the original Task hasn't completed</exception>
+        public static async Task TimeoutAfter(this Task task, TimeSpan timeout, string message = "The operation has timed out.")
+        {
+
+            using var timeoutCancellationTokenSource = new CancellationTokenSource();
+
+            Task completedTask = await Task.WhenAny(task, Task.Delay(timeout, timeoutCancellationTokenSource.Token));
+            if (completedTask == task)
+            {
+                timeoutCancellationTokenSource.Cancel();
+                await task;  // Very important in order to propagate exceptions
             }
             else
             {

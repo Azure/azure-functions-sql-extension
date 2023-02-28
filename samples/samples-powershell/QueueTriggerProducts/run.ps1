@@ -1,12 +1,14 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License. See License.txt in the project root for license information.
+
 using namespace System.Net
 
 # Trigger binding data passed in via param block
-param($queueMessage)
+param($queueMessage, $TriggerMetadata)
 $totalUpserts = 100;
 # Write to the Azure Functions log stream.
 Write-Host "[QueueTrigger]: $Get-Date starting execution $queueMessage. Rows to generate=$totalUpserts."
 
-# Update req_body with the body of the request
 # Note that this expects the body to be a JSON object or array of objects 
 # which have a property matching each of the columns in the table to upsert to.
 $start = Get-Date
@@ -14,9 +16,9 @@ $start = Get-Date
 $products = @()
 for ($i = 0; $i -lt $totalUpserts; $i++) {
     $products += [PSCustomObject]@{
-        productId = $i;
-        name = "test";
-        cost = 100 * $i;
+        ProductId = $i;
+        Name = "test";
+        Cost = 100 * $i;
     }
 }
 # Assign the value we want to pass to the SQL Output binding. 

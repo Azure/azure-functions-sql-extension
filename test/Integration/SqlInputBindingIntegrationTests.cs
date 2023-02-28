@@ -13,6 +13,7 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
     [Collection(IntegrationTestsCollection.Name)]
+    [LogTestName]
     public class SqlInputBindingIntegrationTests : IntegrationTestBase
     {
         public SqlInputBindingIntegrationTests(ITestOutputHelper output) : base(output)
@@ -137,23 +138,44 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Theory]
         [SqlInlineData("en-US")]
         [SqlInlineData("it-IT")]
-        [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.PowerShell, SupportedLanguages.Java)] // IAsyncEnumerable is only available in C#
+        [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.PowerShell, SupportedLanguages.Java, SupportedLanguages.Python)] // IAsyncEnumerable is only available in C#
         public async void GetProductsColumnTypesSerializationAsyncEnumerableTest(string culture, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsColumnTypesSerializationAsyncEnumerable), lang, true);
 
             string datetime = "2022-10-20 12:39:13.123";
+            ProductColumnTypes[] expectedResponse = JsonConvert.DeserializeObject<ProductColumnTypes[]>("[{\"ProductId\":999,\"BigInt\":999,\"Bit\":true,\"DecimalType\":1.2345,\"Money\":1.2345,\"Numeric\":1.2345,\"SmallInt\":1,\"SmallMoney\":1.2345,\"TinyInt\":1,\"FloatType\":0.1,\"Real\":0.1,\"Date\":\"2022-10-20T00:00:00.000Z\",\"Datetime\":\"2022-10-20T12:39:13.123Z\",\"Datetime2\":\"2022-10-20T12:39:13.123Z\",\"DatetimeOffset\":\"2022-10-20T12:39:13.123Z\",\"SmallDatetime\":\"2022-10-20T12:39:00.000Z\",\"Time\":\"12:39:13.1230000\",\"CharType\":\"test\",\"Varchar\":\"test\",\"Nchar\":\"\uFFFD\u0020\u0020\u0020\",\"Nvarchar\":\"\uFFFD\",\"Binary\":\"dGVzdA==\",\"Varbinary\":\"dGVzdA==\"}]");
+
             this.ExecuteNonQuery("INSERT INTO [dbo].[ProductsColumnTypes] VALUES (" +
-                "999, " + // ProductId
-                $"CONVERT(DATETIME, '{datetime}'), " + // Datetime field
-                $"CONVERT(DATETIME2, '{datetime}'))"); // Datetime2 field
+                "999, " + // ProductId,
+                "999, " + // BigInt
+                "1, " + // Bit
+                "1.2345, " + // DecimalType
+                "1.2345, " + // Money
+                "1.2345, " + // Numeric
+                "1, " + // SmallInt
+                "1.2345, " + // SmallMoney
+                "1, " + // TinyInt
+                ".1, " + // FloatType
+                ".1, " + // Real
+                $"CONVERT(DATE, '{datetime}'), " + // Date
+                $"CONVERT(DATETIME, '{datetime}'), " + // Datetime
+                $"CONVERT(DATETIME2, '{datetime}'), " + // Datetime2
+                $"CONVERT(DATETIMEOFFSET, '{datetime}'), " + // DatetimeOffset
+                $"CONVERT(SMALLDATETIME, '{datetime}'), " + // SmallDatetime
+                $"CONVERT(TIME, '{datetime}'), " + // Time
+                "'test', " + // CharType
+                "'test', " + // Varchar
+                "NCHAR(0xD84C), " + // Nchar
+                "NCHAR(0xD84C), " +  // Nvarchar
+                "CONVERT(BINARY, 'test'), " + // Binary
+                "CONVERT(VARBINARY, 'test'))"); // Varbinary
 
             HttpResponseMessage response = await this.SendInputRequest("getproducts-columntypesserializationasyncenumerable", $"?culture={culture}");
             // We expect the datetime and datetime2 fields to be returned in UTC format
-            string expectedResponse = "[{\"productId\":999,\"datetime\":\"2022-10-20T12:39:13.123Z\",\"datetime2\":\"2022-10-20T12:39:13.123Z\"}]";
             string actualResponse = await response.Content.ReadAsStringAsync();
-
-            Assert.Equal(expectedResponse, TestUtils.CleanJsonString(actualResponse), StringComparer.OrdinalIgnoreCase);
+            ProductColumnTypes[] actualProductResponse = JsonConvert.DeserializeObject<ProductColumnTypes[]>(actualResponse);
+            Assert.Equal(expectedResponse, actualProductResponse);
         }
 
         /// <summary>
@@ -161,26 +183,71 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        // Java worker returns timestamps in local time zone
-        // https://github.com/Azure/azure-functions-sql-extension/issues/515
-        [UnsupportedLanguages(SupportedLanguages.Java)]
         public async void GetProductsColumnTypesSerializationTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsColumnTypesSerialization), lang, true);
 
             string datetime = "2022-10-20 12:39:13.123";
             this.ExecuteNonQuery("INSERT INTO [dbo].[ProductsColumnTypes] VALUES (" +
-                "999, " + // ProductId
-                $"CONVERT(DATETIME, '{datetime}'), " + // Datetime field
-                $"CONVERT(DATETIME2, '{datetime}'))"); // Datetime2 field
+                "999, " + // ProductId,
+                "999, " + // BigInt
+                "1, " + // Bit
+                "1.2345, " + // DecimalType
+                "1.2345, " + // Money
+                "1.2345, " + // Numeric
+                "1, " + // SmallInt
+                "1.2345, " + // SmallMoney
+                "1, " + // TinyInt
+                ".1, " + // FloatType
+                ".1, " + // Real
+                $"CONVERT(DATE, '{datetime}'), " + // Date
+                $"CONVERT(DATETIME, '{datetime}'), " + // Datetime
+                $"CONVERT(DATETIME2, '{datetime}'), " + // Datetime2
+                $"CONVERT(DATETIMEOFFSET, '{datetime}'), " + // DatetimeOffset
+                $"CONVERT(SMALLDATETIME, '{datetime}'), " + // SmallDatetime
+                $"CONVERT(TIME, '{datetime}'), " + // Time
+                "'test', " + // CharType
+                "'test', " + // Varchar
+                "NCHAR(0xD84C), " + // Nchar
+                "NCHAR(0xD84C), " +  // Nvarchar
+                "CONVERT(BINARY, 'test'), " + // Binary
+                "CONVERT(VARBINARY, 'test'))"); // Varbinary
 
             HttpResponseMessage response = await this.SendInputRequest("getproducts-columntypesserialization");
-            // We expect the datetime and datetime2 fields to be returned in UTC format
-            ProductColumnTypes[] expectedResponse = JsonConvert.DeserializeObject<ProductColumnTypes[]>("[{\"ProductId\":999,\"Datetime\":\"2022-10-20T12:39:13.123Z\",\"Datetime2\":\"2022-10-20T12:39:13.123Z\"}]");
+            // We expect the date fields to be returned in UTC format
+            ProductColumnTypes[] expectedResponse = JsonConvert.DeserializeObject<ProductColumnTypes[]>("[{\"ProductId\":999,\"BigInt\":999,\"Bit\":true,\"DecimalType\":1.2345,\"Money\":1.2345,\"Numeric\":1.2345,\"SmallInt\":1,\"SmallMoney\":1.2345,\"TinyInt\":1,\"FloatType\":0.1,\"Real\":0.1,\"Date\":\"2022-10-20T00:00:00.000Z\",\"Datetime\":\"2022-10-20T12:39:13.123Z\",\"Datetime2\":\"2022-10-20T12:39:13.123Z\",\"DatetimeOffset\":\"2022-10-20T12:39:13.123Z\",\"SmallDatetime\":\"2022-10-20T12:39:00.000Z\",\"Time\":\"12:39:13.1230000\",\"CharType\":\"test\",\"Varchar\":\"test\",\"Nchar\":\"\uFFFD\u0020\u0020\u0020\",\"Nvarchar\":\"\uFFFD\",\"Binary\":\"dGVzdA==\",\"Varbinary\":\"dGVzdA==\"}]");
             string actualResponse = await response.Content.ReadAsStringAsync();
             ProductColumnTypes[] actualProductResponse = JsonConvert.DeserializeObject<ProductColumnTypes[]>(actualResponse);
-
             Assert.Equal(expectedResponse, actualProductResponse);
+        }
+
+        /// <summary>
+        /// Tests that querying from a case sensitive database works correctly.
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        public async void GetProductsFromCaseSensitiveDatabase(SupportedLanguages lang)
+        {
+            this.StartFunctionHost(nameof(GetProducts), lang);
+
+            // Change database collation to case sensitive
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
+
+            // Generate T-SQL to insert 10 rows of data with cost 100
+            Product[] products = GetProductsWithSameCost(10, 100);
+            this.InsertProducts(products);
+
+            // Run the function
+            HttpResponseMessage response = await this.SendInputRequest("getproducts", "100");
+
+            // Verify result
+            string actualResponse = await response.Content.ReadAsStringAsync();
+            Product[] actualProductResponse = JsonConvert.DeserializeObject<Product[]>(actualResponse);
+
+            Assert.Equal(products, actualProductResponse);
+
+            // Change database collation back to case insensitive
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
         }
     }
 }

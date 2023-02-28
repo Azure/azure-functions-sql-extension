@@ -10,6 +10,8 @@ using System.Threading;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -202,6 +204,161 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new InvalidOperationException($"SQL bindings require a database compatibility level of 130 or higher to function. Current compatibility level = {compatLevel}");
                 }
             }
+        }
+
+        /// <summary>
+        /// Opens a connection and handles some specific errors if they occur.
+        /// </summary>
+        /// <param name="connection">The connection to open</param>
+        /// <param name="cancellationToken">The cancellation token to pass to the OpenAsync call</param>
+        /// <returns>The task that will be completed when the connection is made</returns>
+        /// <exception cref="InvalidOperationException">Thrown if an error occurred that we want to wrap with more information</exception>
+        internal static async Task OpenAsyncWithSqlErrorHandling(this SqlConnection connection, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await connection.OpenAsync(cancellationToken);
+            }
+            catch (Exception e)
+            {
+                SqlException sqlEx = e is AggregateException a ? a.InnerExceptions.OfType<SqlException>().First() :
+                    e is SqlException s ? s :
+                    null;
+                // Error number for:
+                //  A connection was successfully established with the server, but then an error occurred during the login process.
+                //  The certificate chain was issued by an authority that is not trusted.
+                // Add on some more information to help the user figure out how to solve it
+                if (sqlEx?.Number == -2146893019)
+                {
+                    throw new InvalidOperationException("The default values for encryption on connections have been changed, please review your configuration to ensure you have the correct values for your server. See https://aka.ms/afsqlext-connection for more details.", e);
+                }
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Checks whether an exception is a fatal SqlException. It is deteremined to be fatal
+        /// if the Class value of the Exception is 20 or higher, see
+        /// https://learn.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlexception#remarks
+        /// for details
+        /// </summary>
+        /// <param name="e">The exception to check</param>
+        /// <returns>True if the exception is a fatal SqlClientException, false otherwise</returns>
+        internal static bool IsFatalSqlException(this Exception e)
+        {
+            // Most SqlExceptions wrap the original error from the native driver, so make sure to check both
+            return (e as SqlException)?.Class >= 20 || (e.InnerException as SqlException)?.Class >= 20;
+        }
+
+        /// <summary>
+        /// Attempts to ensure that this connection is open, if it currently is in a broken state
+        /// then it will close the connection and re-open it.
+        /// </summary>
+        /// <param name="conn">The connection</param>
+        /// <param name="forceReconnect">Whether to force the connection to be re-established, regardless of its current state</param>
+        /// <param name="logger">Logger to log events to</param>
+        /// <param name="connectionName">The name of the connection to display in the log messages</param>
+        /// <param name="token">Cancellation token to pass to the Open call</param>
+        /// <returns>True if the connection is open, either because it was able to be re-established or because it was already open. False if the connection could not be re-established.</returns>
+        internal static async Task<bool> TryEnsureConnected(this SqlConnection conn,
+            bool forceReconnect,
+            ILogger logger,
+            string connectionName,
+            CancellationToken token)
+        {
+            if (forceReconnect || conn.State.HasFlag(ConnectionState.Broken | ConnectionState.Closed))
+            {
+                logger.LogWarning($"{connectionName} is broken, attempting to reconnect...");
+                logger.LogDebugWithThreadId($"BEGIN RetryOpen{connectionName}");
+                try
+                {
+                    // Sometimes the connection state is listed as open even if a fatal exception occurred, see
+                    // https://github.com/dotnet/SqlClient/issues/1874 for details. So in that case we want to first
+                    // close the connection so we can retry (otherwise it'll throw saying the connection is still open)
+                    if (conn.State == ConnectionState.Open)
+                    {
+                        conn.Close();
+                    }
+                    await conn.OpenAsync(token);
+                    logger.LogInformation($"Successfully re-established {connectionName}!");
+                    logger.LogDebugWithThreadId($"END RetryOpen{connectionName}");
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    logger.LogError($"Exception reconnecting {connectionName}. Exception = {e.Message}");
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Get the Server Properties for the given connection.
+        /// </summary>
+        /// <returns>ServerProperties (EngineEdition and Edition) of the target Sql Server.</returns>
+        public static async Task<ServerProperties> GetServerTelemetryProperties(SqlConnection connection, ILogger logger, CancellationToken cancellationToken)
+        {
+            if (TelemetryInstance.Enabled)
+            {
+                try
+                {
+                    string serverPropertiesQuery = $"SELECT SERVERPROPERTY('EngineEdition'), SERVERPROPERTY('Edition')";
+
+                    logger.LogDebugWithThreadId($"BEGIN GetServerTelemetryProperties Query={serverPropertiesQuery}");
+                    using (var selectServerEditionCommand = new SqlCommand(serverPropertiesQuery, connection))
+                    using (SqlDataReader reader = await selectServerEditionCommand.ExecuteReaderAsync(cancellationToken))
+                    {
+                        if (await reader.ReadAsync(cancellationToken))
+                        {
+                            int engineEdition = reader.GetInt32(0);
+                            var serverProperties = new ServerProperties() { Edition = reader.GetString(1) };
+                            // Mapping information from
+                            // https://learn.microsoft.com/en-us/sql/t-sql/functions/serverproperty-transact-sql?view=sql-server-ver16
+                            switch (engineEdition)
+                            {
+                                case 1:
+                                    serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.DesktopEngine.ToString();
+                                    return serverProperties;
+                                case 2:
+                                    serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.Standard.ToString();
+                                    return serverProperties;
+                                case 3:
+                                    serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.Enterprise.ToString();
+                                    return serverProperties;
+                                case 4:
+                                    serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.Express.ToString();
+                                    return serverProperties;
+                                case 5:
+                                    serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.SQLDatabase.ToString();
+                                    return serverProperties;
+                                case 6:
+                                    serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.AzureSynapseAnalytics.ToString();
+                                    return serverProperties;
+                                case 8:
+                                    serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.AzureSQLManagedInstance.ToString();
+                                    return serverProperties;
+                                case 9:
+                                    serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.AzureSQLEdge.ToString();
+                                    return serverProperties;
+                                case 11:
+                                    serverProperties.EngineEdition = SqlBindingConstants.EngineEdition.AzureSynapseserverlessSQLpool.ToString();
+                                    return serverProperties;
+                                default:
+                                    serverProperties.EngineEdition = engineEdition.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                                    return serverProperties;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError($"Exception in GetServerTelemetryProperties. Exception = {ex.Message}");
+                    TelemetryInstance.TrackException(TelemetryErrorName.GetServerTelemetryProperties, ex);
+                    return null;
+                }
+            }
+            return null;
         }
     }
 }

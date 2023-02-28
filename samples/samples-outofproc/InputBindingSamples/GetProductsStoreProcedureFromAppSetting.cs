@@ -2,9 +2,9 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Collections.Generic;
-using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.Common;
-using Microsoft.Azure.Functions.Worker.Extension.Sql;
+using Microsoft.Azure.Functions.Worker.Extensions.Sql;
 using Microsoft.Azure.Functions.Worker;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.InputBindingSamples
@@ -18,11 +18,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.InputBindingSa
         [Function("GetProductsStoredProcedureFromAppSetting")]
         public static IEnumerable<Product> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproductsbycost")]
-            HttpRequest req,
+            HttpRequestData req,
             [SqlInput("%Sp_SelectCost%",
-                CommandType = System.Data.CommandType.StoredProcedure,
-                Parameters = "@Cost=%ProductCost%",
-                ConnectionStringSetting = "SqlConnectionString")]
+                "SqlConnectionString",
+                System.Data.CommandType.StoredProcedure,
+                "@Cost=%ProductCost%")]
             IEnumerable<Product> products)
         {
             return products;

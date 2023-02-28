@@ -13,18 +13,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     {
         /// <summary>
         /// This function is used to test compatability with converting various data types to their respective
-        /// SQL server types. 
+        /// SQL server types.
         /// </summary>
         [FunctionName(nameof(AddProductColumnTypes))]
         public static IActionResult Run(
                 [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproduct-columntypes")] HttpRequest req,
-                [Sql("dbo.ProductsColumnTypes", ConnectionStringSetting = "SqlConnectionString")] out ProductColumnTypes product)
+                [Sql("dbo.ProductsColumnTypes", "SqlConnectionString")] out ProductColumnTypes product)
         {
             product = new ProductColumnTypes()
             {
-                ProductID = int.Parse(req.Query["productId"]),
-                Datetime = DateTime.UtcNow,
-                Datetime2 = DateTime.UtcNow
+                ProductId = int.Parse(req.Query["productId"]),
+                BigInt = int.MaxValue,
+                Bit = true,
+                DecimalType = 1.2345M,
+                Money = 1.23M,
+                Numeric = 1.2345M,
+                SmallInt = 0,
+                SmallMoney = 1.23M,
+                TinyInt = 1,
+                FloatType = 1.2,
+                Real = 1.2f,
+                Date = DateTime.Now,
+                Datetime = DateTime.Now,
+                Datetime2 = DateTime.Now,
+                DatetimeOffset = DateTime.Now,
+                SmallDatetime = DateTime.Now,
+                Time = DateTime.Now.TimeOfDay,
+                CharType = "test",
+                Varchar = "test",
+                Nchar = "\u2649",
+                Nvarchar = "\u2649",
             };
 
             // Items were inserted successfully so return success, an exception would be thrown if there

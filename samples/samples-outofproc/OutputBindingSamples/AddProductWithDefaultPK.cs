@@ -2,7 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.Common;
-using Microsoft.Azure.Functions.Worker.Extension.Sql;
+using Microsoft.Azure.Functions.Worker.Extensions.Sql;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using System.Threading.Tasks;
@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingS
         /// <param name="req">The original request that triggered the function</param>
         /// <returns>The new product object that will be upserted</returns>
         [Function(nameof(AddProductWithDefaultPK))]
-        [SqlOutput("dbo.ProductsWithDefaultPK", ConnectionStringSetting = "SqlConnectionString")]
+        [SqlOutput("dbo.ProductsWithDefaultPK", "SqlConnectionString")]
         public static async Task<ProductWithDefaultPK> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "addproductwithdefaultpk")]
             HttpRequestData req)

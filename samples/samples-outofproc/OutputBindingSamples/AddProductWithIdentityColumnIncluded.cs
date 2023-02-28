@@ -3,7 +3,7 @@
 
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.Common;
-using Microsoft.Azure.Functions.Worker.Extension.Sql;
+using Microsoft.Azure.Functions.Worker.Extensions.Sql;
 using Microsoft.Azure.Functions.Worker;
 using System.Web;
 using System.Collections.Specialized;
@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingS
         /// <param name="req">The original request that triggered the function</param>
         /// <returns>The new product object that will be upserted</returns>
         [Function(nameof(AddProductWithIdentityColumnIncluded))]
-        [SqlOutput("dbo.ProductsWithIdentity", ConnectionStringSetting = "SqlConnectionString")]
+        [SqlOutput("dbo.ProductsWithIdentity", "SqlConnectionString")]
         public static ProductWithOptionalId Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "addproductwithidentitycolumnincluded")]
             HttpRequestData req)
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingS
             var product = new ProductWithOptionalId
             {
                 Name = queryStrings["name"],
-                ProductID = string.IsNullOrEmpty(queryStrings["productId"]) ? null : int.Parse(queryStrings["productId"], null),
+                ProductId = string.IsNullOrEmpty(queryStrings["productId"]) ? null : int.Parse(queryStrings["productId"], null),
                 Cost = int.Parse(queryStrings["cost"], null)
             };
             return product;

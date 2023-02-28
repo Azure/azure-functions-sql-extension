@@ -13,7 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
         {
             bool runAll = args.Length == 0;
 
-            using var testFixture = new BaseTestFixture(false);
+            using var testFixture = new IntegrationTestFixture();
 
             // **IMPORTANT** If changing these make sure to update template-steps-performance.yml as well
             if (runAll || args.Contains("input"))
@@ -43,6 +43,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
             if (runAll || args.Contains("trigger_parallel"))
             {
                 BenchmarkRunner.Run<SqlTriggerBindingPerformance_Parallelization>();
+            }
+            if (runAll || args.Contains("trigger_changerate"))
+            {
+                BenchmarkRunner.Run<SqlTriggerBindingPerformance_ChangeRate>();
             }
         }
     }

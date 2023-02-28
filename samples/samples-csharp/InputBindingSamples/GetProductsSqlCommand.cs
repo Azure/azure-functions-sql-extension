@@ -16,9 +16,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "getproducts-sqlcommand/{cost}")]
             HttpRequest req,
             [Sql("select * from Products where cost = @Cost",
-                CommandType = System.Data.CommandType.Text,
-                Parameters = "@Cost={cost}",
-                ConnectionStringSetting = "SqlConnectionString")]
+                "SqlConnectionString",
+                parameters: "@Cost={cost}")]
             SqlCommand command)
         {
             string result = string.Empty;
@@ -28,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples
                 using SqlDataReader reader = command.ExecuteReader();
                 while (reader.Read())
                 {
-                    result += $"ProductID: {reader["ProductID"]},  Name: {reader["Name"]}, Cost: {reader["Cost"]}\n";
+                    result += $"ProductId: {reader["ProductId"]},  Name: {reader["Name"]}, Cost: {reader["Cost"]}\n";
                 }
             }
             return new OkObjectResult(result);
