@@ -4,13 +4,14 @@ using System;
 using System.Collections.Generic;
 using Xunit.Sdk;
 using System.Reflection;
+using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 {
     /// <summary>
     /// SqlInlineData attribute class for adding language parameter data to tests. This allows
     /// tests to be run against all the supported languages list that are specified in the SupportedLanguages
-    /// list of this class (ex: CSharp, JavaScript)
+    /// list of this class
     /// </summary>
     public class SqlInlineDataAttribute : DataAttribute
     {
@@ -26,7 +27,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
             // Add each supported language to the args and add the newly created list of args
             // with the language parameter to the testData
             // [a, b, c] -> [[a, b, c, SupportedLang1], [a, b,  c, SupportedLang2], ..]
-            foreach (SupportedLanguages lang in Enum.GetValues(typeof(SupportedLanguages)))
+            string languages = Environment.GetEnvironmentVariable("LANGUAGES_TO_TEST");
+            SupportedLanguages[] supportedLanguages = languages == null ? (SupportedLanguages[])Enum.GetValues(typeof(SupportedLanguages))
+                : languages.Split(',').Select(l => (SupportedLanguages)Enum.Parse(typeof(SupportedLanguages), l)).ToArray();
+            foreach (SupportedLanguages lang in supportedLanguages)
             {
                 var listOfValues = new List<object>();
                 foreach (object val in args)
@@ -71,10 +75,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
     public enum SupportedLanguages
     {
         CSharp,
-        JavaScript
-        // PowerShell,
-        // Java,
-        // OutOfProc,
-        // Python
+        JavaScript,
+        PowerShell,
+        Java,
+        OutOfProc,
+        Python
     };
 }

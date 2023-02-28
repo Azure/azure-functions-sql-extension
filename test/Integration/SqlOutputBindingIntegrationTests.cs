@@ -50,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(-500, "ABCD", 580)]
         // Currently Java functions return null when the parameter for name is an empty string
         // Issue link: https://github.com/Azure/azure-functions-sql-extension/issues/517
-        // [UnsupportedLanguages(SupportedLanguages.Java)]
+        [UnsupportedLanguages(SupportedLanguages.Java)]
         public void AddProductParamsTest(int id, string name, int cost, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductParams), lang);
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.JavaScript)]//, SupportedLanguages.PowerShell, SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.Python)] // Collectors are only available in C#
+        [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.PowerShell, SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.Python)] // Collectors are only available in C#
         public void AddProductsCollectorTest(SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(AddProductsCollector), lang);
@@ -374,7 +374,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        // [UnsupportedLanguages(SupportedLanguages.OutOfProc)]
+        [UnsupportedLanguages(SupportedLanguages.OutOfProc)]
         public async Task UnsupportedDatabaseThrows(SupportedLanguages lang)
         {
             // Change database compat level to unsupported version
@@ -482,7 +482,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         // Only the JavaScript function passes an empty JSON to the SQL extension.
         // C#, Java, and Python throw an error while creating the Product object in the function and in PowerShell,
         // the JSON would be passed as {"ProductId": null, "Name": null, "Cost": null}.
-        [UnsupportedLanguages(SupportedLanguages.CSharp)]//, SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.PowerShell, SupportedLanguages.Python)]
+        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.PowerShell, SupportedLanguages.Python)]
         public async Task NoPropertiesThrows(SupportedLanguages lang)
         {
             var foundExpectedMessageSource = new TaskCompletionSource<bool>();
@@ -508,7 +508,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        // [UnsupportedLanguages(SupportedLanguages.OutOfProc)]
+        [UnsupportedLanguages(SupportedLanguages.OutOfProc)]
         public async Task AddProductUnsupportedTypesTest(SupportedLanguages lang)
         {
             var foundExpectedMessageSource = new TaskCompletionSource<bool>();

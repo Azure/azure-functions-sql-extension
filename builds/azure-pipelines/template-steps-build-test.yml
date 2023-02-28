@@ -152,15 +152,29 @@ steps:
     checkStyleRunAnalysis: true
 
 - task: DotNetCoreCLI@2
-  displayName: '.NET Test'
+  displayName: '.NET Test - CSharp'
   env:
     TEST_SERVER: '$(testServer)'
     NODE_MODULES_PATH: '$(nodeModulesPath)'
     AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
+    LANGUAGES_TO_TEST: 'CSharp'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings'
+  condition: and(succeeded(), ne(variables['Agent.OS'], 'linux'))
+
+- task: DotNetCoreCLI@2
+  displayName: '.NET Test - Java, JavaScript, OutOfProc, PowerShell, Python'
+  env:
+    TEST_SERVER: '$(testServer)'
+    NODE_MODULES_PATH: '$(nodeModulesPath)'
+    AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
+    LANGUAGES_TO_TEST: 'Java,JavaScript,OutOfProc,PowerShell,Python'
+  inputs:
+    command: test
+    projects: '${{ parameters.solution }}'
+    arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }}'
   condition: and(succeeded(), ne(variables['Agent.OS'], 'linux'))
 
 - task: DotNetCoreCLI@2

@@ -166,16 +166,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public void StartFunctionHost(string functionName, SupportedLanguages language, bool useTestFolder = false, DataReceivedEventHandler customOutputHandler = null, IDictionary<string, string> environmentVariables = null)
         {
             string workingDirectory = language == SupportedLanguages.CSharp && useTestFolder ? TestUtils.GetPathToBin() : Path.Combine(TestUtils.GetPathToBin(), "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), language));
-            // if (language == SupportedLanguages.Java)
-            // {
-            //     workingDirectory = useTestFolder ? Path.Combine(TestUtils.GetPathToBin(), "..", "..", "..", "Integration", "test-java") : workingDirectory;
-            //     string projectName = useTestFolder ? "test-java-1666041146813" : "samples-java-1665766173929";
-            //     workingDirectory = Path.Combine(workingDirectory, "target", "azure-functions", projectName);
-            // }
-            // if (language == SupportedLanguages.OutOfProc && useTestFolder)
-            // {
-            //     workingDirectory = Path.Combine(workingDirectory, "test");
-            // }
+            if (language == SupportedLanguages.Java)
+            {
+                workingDirectory = useTestFolder ? Path.Combine(TestUtils.GetPathToBin(), "..", "..", "..", "Integration", "test-java") : workingDirectory;
+                string projectName = useTestFolder ? "test-java-1666041146813" : "samples-java-1665766173929";
+                workingDirectory = Path.Combine(workingDirectory, "target", "azure-functions", projectName);
+            }
+            if (language == SupportedLanguages.OutOfProc && useTestFolder)
+            {
+                workingDirectory = Path.Combine(workingDirectory, "test");
+            }
 
             if (!Directory.Exists(workingDirectory))
             {
