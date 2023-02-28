@@ -19,7 +19,7 @@ public static ProductWithoutId Run(HttpRequest req, ILogger log, [Sql("dbo.Produ
 
     string responseMessage = string.IsNullOrEmpty(product.Name)
         ? "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response."
-                : $"Hello, This HTTP triggered function executed successfully.";
+                : $"Hello, {product.Name}. This HTTP triggered function executed successfully.";
 
     return product;
 }

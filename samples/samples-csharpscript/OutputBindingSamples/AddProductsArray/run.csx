@@ -16,8 +16,8 @@ public static Product[] Run(HttpRequest req, ILogger log, [Sql("dbo.Products", "
     products = JsonConvert.DeserializeObject<Product[]>(requestBody);
 
     string responseMessage = products.Length > 0
-        ? "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response."
-                : $"Hello, This HTTP triggered function executed successfully.";
+        ? "This HTTP triggered function executed successfully."
+                : "No data passed, Please pass the objects to upsert in the request body.";
 
     return products;
 }

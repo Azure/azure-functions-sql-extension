@@ -27,7 +27,7 @@ public static ProductWithoutId[] Run(HttpRequest req, ILogger log, [Sql("dbo.Pro
 
     string responseMessage = products.Length > 0
         ? "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response."
-                : $"Hello, This HTTP triggered function executed successfully.";
+                : "No data passed, Please pass the objects to upsert in the request body.";
 
     return products;
 }

@@ -16,7 +16,7 @@
         "direction": "out"
       },
       {
-        "name": "products",
+        "name": "product",
         "type": "sql",
         "direction": "out",
         "commandText": "[dbo].[ProductsWithDefaultPK]",
