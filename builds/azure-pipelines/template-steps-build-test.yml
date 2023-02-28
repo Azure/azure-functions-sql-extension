@@ -3,7 +3,6 @@ parameters:
   solution: ''
   nugetVersion: ''
   binariesVersion: ''
-  testFilter: ''
   testServer: ''
   supportedVersion: ''
 
@@ -152,20 +151,35 @@ steps:
     checkStyleRunAnalysis: true
 
 - task: DotNetCoreCLI@2
-  displayName: '.NET Test - CSharp'
+  displayName: '.NET Test on Mac (unit tests only)'
   env:
     TEST_SERVER: '$(testServer)'
     NODE_MODULES_PATH: '$(nodeModulesPath)'
     AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
+  inputs:
+    command: test
+    projects: '${{ parameters.solution }}'
+    # Disabling integration tests on macOS due to issues with running MSSQL on Docker
+    # We need to set up a self-hosted agent with Docker running by default: https://github.com/microsoft/azure-pipelines-tasks/issues/12823
+    arguments: '--configuration ${{ parameters.configuration }} --filter FullyQualifiedName!~Integration'
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Darwin'))
+
+- task: DotNetCoreCLI@2
+  displayName: '.NET Test on Windows (unit tests and CSharp integration tests'
+  env:
+    TEST_SERVER: '$(testServer)'
+    NODE_MODULES_PATH: '$(nodeModulesPath)'
+    AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
+    # Only running CSharp integration tests to get accurate code coverage numbers
     LANGUAGES_TO_TEST: 'CSharp'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings'
-  condition: and(succeeded(), ne(variables['Agent.OS'], 'linux'))
+    arguments: '--configuration ${{ parameters.configuration }} --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings'
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: DotNetCoreCLI@2
-  displayName: '.NET Test - Java, JavaScript, OutOfProc, PowerShell, Python'
+  displayName: '.NET Test on Windows (Java, JavaScript, OutOfProc, PowerShell, and Python integration tests)'
   env:
     TEST_SERVER: '$(testServer)'
     NODE_MODULES_PATH: '$(nodeModulesPath)'
@@ -174,18 +188,18 @@ steps:
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }}'
-  condition: and(succeeded(), ne(variables['Agent.OS'], 'linux'))
+    arguments: '--configuration ${{ parameters.configuration }} --filter FullyQualifiedName~Integration'
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: DotNetCoreCLI@2
-  displayName: '.NET Test on Linux'
+  displayName: '.NET Test on Linux (both unit and integration tests)'
   env:
     SA_PASSWORD: '$(serverPassword)'
     AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} ${{ parameters.testFilter }} --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings'
+    arguments: '--configuration ${{ parameters.configuration }}'
   condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
 - script: |
