@@ -175,6 +175,7 @@ steps:
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
+    # Skip any non-CSharp integration tests
     arguments: '--configuration ${{ parameters.configuration }} --filter FullyQualifiedName!~NoPropertiesThrows --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings'
   condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
 
@@ -188,6 +189,7 @@ steps:
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
+    # Skip any CSharp only integration tests
     arguments: '--configuration ${{ parameters.configuration }} --filter "FullyQualifiedName~Integration & FullyQualifiedName!~AddProductsCollectorTest"'
   condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
 
