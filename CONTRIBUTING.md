@@ -20,11 +20,11 @@ In order to test changes it is suggested that you have a SQL server set up to co
 
 2. Clone repo and open in VS Code:
 
-```bash
-git clone https://github.com/Azure/azure-functions-sql-extension
-cd azure-functions-sql-extension
-code .
-```
+   ```bash
+   git clone https://github.com/Azure/azure-functions-sql-extension
+   cd azure-functions-sql-extension
+   code .
+   ```
 3. Install extensions when prompted after VS Code opens
    - Note: This includes the Azure Functions, C#, and editorconfig extensions
 
@@ -32,9 +32,9 @@ code .
 
 5. Configure a local nuget source that will be used to build the .NET Out-of-Proc sample with the latest locally built extension package.
 
-Building the sample will cause a project to be created and built in the temp directory, which means it does not pick up on the nuget.config for this project. Without adding the source at the global level that project will fail to build since it will be looking for the dev-local version of the package (99.99.99).
+   Building the sample will cause a project to be created and built in the temp directory, which means it does not pick up on the nuget.config for this project. Without adding the source at the global level that project will fail to build since it will be looking for the dev-local version of the package (99.99.99).
 
-Note: This command must be ran from your **home directory** (or a directory outside the project repo).
+   Note: This command must be ran from your **home directory** (or a directory outside the project repo).
     ```powershell
     dotnet nuget add source <PATH_TO_REPO_AZURE-FUNCTIONS-SQL-EXTENSION/local-packages>
     ```
