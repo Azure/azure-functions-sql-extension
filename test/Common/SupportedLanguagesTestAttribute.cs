@@ -72,6 +72,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
             this.UnsuppportedLanguages.AddRange(argsWithUnsupportedLangs);
         }
     }
+
+    // When adding a new supported language, update the LANGUAGES_TO_TEST environment variable in the
+    // .NET Test on Windows (unit tests and .NET In-Proc integration tests) task in the build pipeline.
     public enum SupportedLanguages
     {
         CSharp,

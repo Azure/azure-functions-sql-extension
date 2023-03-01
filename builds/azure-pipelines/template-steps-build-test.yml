@@ -159,8 +159,6 @@ steps:
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
-    # Disabling integration tests on macOS due to issues with running MSSQL on Docker
-    # We need to set up a self-hosted agent with Docker running by default: https://github.com/microsoft/azure-pipelines-tasks/issues/12823
     arguments: '--configuration ${{ parameters.configuration }} --filter FullyQualifiedName!~Integration'
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Darwin'))
 
@@ -175,7 +173,8 @@ steps:
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
-    # Skip any non-CSharp integration tests
+    # Skip any non .NET In-Proc integration tests. Otherwise, the following error will be thrown:
+    # System.InvalidOperationException : No data found for Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration.SqlOutputBindingIntegrationTests.NoPropertiesThrows
     arguments: '--configuration ${{ parameters.configuration }} --filter FullyQualifiedName!~NoPropertiesThrows --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings'
   condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
 
