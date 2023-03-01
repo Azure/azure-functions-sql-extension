@@ -427,7 +427,37 @@ Once your have these set up, your project folder should resemble [Folder Structu
 - You should see the new log messages in the Visual Studio Code terminal containing the values of row-columns after the update operation.
 - Congratulations! You have successfully created your first CSharp Script function binding!
 
-The repo contains examples of each of these binding types [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript).
+### Samples for Input Bindings
+
+#### Query String
+
+See the [GetProducts](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-csharpscript/InputBindingSamples/GetProducts) sample
+
+#### Empty Parameter Value
+
+See the [GetProductsNameEmpty](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/InputBindingSamples/GetProductsNameEmpty) sample
+
+#### Null Parameter Value
+
+See the [GetProductsNameNull](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/InputBindingSamples/GetProductsNameNull) sample
+
+#### Stored Procedure
+
+See the [GetProductsStoredProcedure](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/InputBindingSamples/GetProductsStoredProcedure) sample
+
+### Samples for Output Bindings
+
+#### Array
+
+See the [AddProductsArray](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/OutputBindingSamples/AddProductsArray) sample
+
+#### Single Row
+
+See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/OutputBindingSamples/AddProduct) sample
+
+### Sample with multiple Bindings
+
+See the [GetAndAddProducts](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/InputBindingSamples/GetAndAddProducts) sample
 
 ## Trigger Binding
 
