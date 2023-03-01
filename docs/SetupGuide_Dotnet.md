@@ -23,6 +23,8 @@
       - [Single Row](#single-row)
   - [CSharp Scripting](#csharp-scripting)
       - [Creating a function with CSharp Script](#creating-a-function-with-csharp-script)
+      - [Samples for Input Bindings](#samples-for-csharpscript-input-bindings)
+      - [Samples for Output Bindings](#samples-for-csharpscript-output-bindings)
   - [Trigger Binding](#trigger-binding)
     - [SqlTriggerAttribute](#sqltriggerattribute)
     - [Setup for Trigger Bindings](#setup-for-trigger-bindings)
@@ -427,7 +429,7 @@ Once your have these set up, your project folder should resemble [Folder Structu
 - You should see the new log messages in the Visual Studio Code terminal containing the values of row-columns after the update operation.
 - Congratulations! You have successfully created your first CSharp Script function binding!
 
-### Samples for Input Bindings
+### Samples for CSharpScript Input Bindings
 
 #### Query String
 
@@ -445,7 +447,7 @@ See the [GetProductsNameNull](https://github.com/Azure/azure-functions-sql-exten
 
 See the [GetProductsStoredProcedure](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/InputBindingSamples/GetProductsStoredProcedure) sample
 
-### Samples for Output Bindings
+### Samples for CSharpScript Output Bindings
 
 #### Array
 

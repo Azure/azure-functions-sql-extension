@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
-#load "../../product.csx"
+#load "../../Common/product.csx"
 #r "Newtonsoft.Json"
 
 using System.Net;
