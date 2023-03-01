@@ -6,8 +6,6 @@ When you submit a pull request, a CLA bot will automatically determine whether y
 
 This project has adopted the Microsoft Open Source Code of Conduct. For more information see the Code of Conduct FAQ or contact opencode@microsoft.com with any additional questions or comments.
 
-<br>
-
 ## Contributor Getting Started
 
 ### SQL Setup
@@ -25,6 +23,7 @@ In order to test changes it is suggested that you have a SQL server set up to co
    cd azure-functions-sql-extension
    code .
    ```
+
 3. Install extensions when prompted after VS Code opens
    - Note: This includes the Azure Functions, C#, and editorconfig extensions
 
@@ -35,8 +34,15 @@ In order to test changes it is suggested that you have a SQL server set up to co
    Building the sample will cause a project to be created and built in the temp directory, which means it does not pick up on the nuget.config for this project. Without adding the source at the global level that project will fail to build since it will be looking for the dev-local version of the package (99.99.99).
 
    Note: This command must be ran from your **home directory** (or a directory outside the project repo).
+
     ```powershell
     dotnet nuget add source <PATH_TO_REPO_AZURE-FUNCTIONS-SQL-EXTENSION/local-packages>
     ```
 
 6. Press F5 to run SQL bindings samples that are included in this repo. The output window should display startup information as well as the function endpoints that were started.
+
+## Development Notes
+
+### JSON Serialization/Deserialization
+
+We currently use the Newtonsoft library for all JSON Serialization/Deserialization. This library allows setting global defaults to use when using methods such as `JsonConvert.SerializeObject` or `JsonConvert.DeserializeObject`. In order to avoid issues with a user function or other extension setting these default values to something we don't expect ALL serialization/deserialization must be done through the `JsonSerializeObject` or `JsonDeserializeObject` methods in the [Utils](https://github.com/Azure/azure-functions-sql-extension/blob/main/src/Utils.cs) class. These avoid using the default global settings to ensure that the same settings are used no matter what.
