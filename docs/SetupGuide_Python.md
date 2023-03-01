@@ -19,16 +19,16 @@
     - [Samples for Output Bindings](#samples-for-output-bindings)
       - [Array](#array)
       - [Single Row](#single-row)
+  - [Python V2 Model](#python-v2-model)
   - [Trigger Binding](#trigger-binding)
 
 ## Setup Function Project
 
 These instructions will guide you through creating your Function Project and adding the SQL binding extension. This only needs to be done once for every function project you create. If you have one created already you can skip this step.
 
-1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
+1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local) (version >= 4.0.5030)
 
 2. Create a Function Project for Python:
-    *See [#250](https://github.com/Azure/azure-functions-sql-extension/issues/250) before starting.*
 
     ```bash
     mkdir MyApp
@@ -199,6 +199,10 @@ See the [AddProductsArray](https://github.com/Azure/azure-functions-sql-extensio
 #### Single Row
 
 See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-python/AddProduct) sample
+
+## Python V2 Model
+
+See the Python V2 Model samples [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-python-v2/). More information about the Python V2 Model can be found [here](https://learn.microsoft.com/azure/azure-functions/functions-reference-python?tabs=asgi%2Capplication-level&pivots=python-mode-decorators).
 
 ## Trigger Binding
 

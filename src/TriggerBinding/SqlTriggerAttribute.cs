@@ -28,7 +28,7 @@ namespace Microsoft.Azure.WebJobs
         /// Name of the app setting containing the SQL connection string.
         /// </summary>
         [ConnectionString]
-        public string ConnectionStringSetting { get; set; }
+        public string ConnectionStringSetting { get; }
 
         /// <summary>
         /// Name of the table to watch for changes.

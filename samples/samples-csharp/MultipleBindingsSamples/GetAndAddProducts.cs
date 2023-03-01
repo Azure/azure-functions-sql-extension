@@ -22,8 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.MultipleBindingsSamples
             HttpRequest req,
             [Sql("SELECT * FROM Products",
                 "SqlConnectionString",
-                CommandType = System.Data.CommandType.Text,
-                Parameters = "@Cost={cost}")]
+                parameters: "@Cost={cost}")]
             IEnumerable<Product> products,
             [Sql("ProductsWithIdentity",
                 "SqlConnectionString")]

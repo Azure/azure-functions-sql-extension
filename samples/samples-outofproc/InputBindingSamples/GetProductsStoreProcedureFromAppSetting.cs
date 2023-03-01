@@ -21,8 +21,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.InputBindingSa
             HttpRequestData req,
             [SqlInput("%Sp_SelectCost%",
                 "SqlConnectionString",
-                CommandType = System.Data.CommandType.StoredProcedure,
-                Parameters = "@Cost=%ProductCost%")]
+                System.Data.CommandType.StoredProcedure,
+                "@Cost=%ProductCost%")]
             IEnumerable<Product> products)
         {
             return products;

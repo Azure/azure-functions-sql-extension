@@ -199,4 +199,11 @@ namespace DotnetIsolatedTests.Common
 
         public byte[] ImageCol { get; set; }
     }
+
+    public class ProductDefaultPKWithDifferentColumnOrder
+    {
+        public int Cost { get; set; }
+
+        public string Name { get; set; }
+    }
 }

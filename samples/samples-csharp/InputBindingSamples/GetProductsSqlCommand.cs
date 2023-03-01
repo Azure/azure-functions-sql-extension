@@ -17,8 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples
             HttpRequest req,
             [Sql("select * from Products where cost = @Cost",
                 "SqlConnectionString",
-                CommandType = System.Data.CommandType.Text,
-                Parameters = "@Cost={cost}")]
+                parameters: "@Cost={cost}")]
             SqlCommand command)
         {
             string result = string.Empty;
