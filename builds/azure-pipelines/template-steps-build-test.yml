@@ -180,7 +180,7 @@ steps:
   condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: DotNetCoreCLI@2
-  displayName: '.NET Test on Windows (Java, JavaScript, OutOfProc, PowerShell, and Python integration tests)'
+  displayName: '.NET Test on Windows (Non .NET In-Proc)'
   env:
     TEST_SERVER: '$(testServer)'
     NODE_MODULES_PATH: '$(nodeModulesPath)'
