@@ -165,7 +165,7 @@ steps:
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Darwin'))
 
 - task: DotNetCoreCLI@2
-  displayName: '.NET Test on Windows (unit tests and CSharp integration tests)'
+  displayName: '.NET Test on Windows (unit tests and .NET In-Proc integration tests)'
   env:
     TEST_SERVER: '$(testServer)'
     NODE_MODULES_PATH: '$(nodeModulesPath)'
