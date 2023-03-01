@@ -46,6 +46,7 @@ Databases on SQL Server, Azure SQL Database, or Azure SQL Managed Instance which
 - **By Design:** The table used by a SQL binding or SQL trigger cannot contain two columns that only differ by casing (Ex. 'Name' and 'name').
 - **By Design:** Non-CSharp functions using SQL bindings against tables with columns of data types `BINARY` or `VARBINARY` need to map those columns to a string type. Input bindings will return the binary value as a base64 encoded string. Output bindings require the value upserted to binary columns to be a base64 encoded string.
 - **Planned for Future Support:** SQL bindings against tables with columns of data types `GEOMETRY` and `GEOGRAPHY` are not supported. Issue is tracked [here](https://github.com/Azure/azure-functions-sql-extension/issues/654).
+- Issues resulting from upstream dependencies can be found [here](https://github.com/Azure/azure-functions-sql-extension/issues?q=is%3Aopen+is%3Aissue+label%3Aupstream).
 
 ### Output Bindings
 
@@ -65,7 +66,7 @@ Databases on SQL Server, Azure SQL Database, or Azure SQL Managed Instance which
 
 ### Trigger Bindings
 
-- Trigger bindings will exhibit undefined behavior if the SQL table schema gets modified while the user application is running, for example, if a column is added, renamed or deleted or if the primary key is modified or deleted. In such cases, restarting the application should help resolve any errors.
+- **By Design:** Trigger bindings will exhibit undefined behavior if the SQL table schema gets modified while the user application is running, for example, if a column is added, renamed or deleted or if the primary key is modified or deleted. In such cases, restarting the application should help resolve any errors.
 
 ## Telemetry
 
