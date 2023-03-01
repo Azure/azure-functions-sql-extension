@@ -21,10 +21,6 @@
       - [ICollector\<T\>/IAsyncCollector\<T\>](#icollectortiasynccollectort)
       - [Array](#array)
       - [Single Row](#single-row)
-  - [CSharp Scripting](#csharp-scripting)
-      - [Creating a function with CSharp Script](#creating-a-function-with-csharp-script)
-      - [Samples for Input Bindings](#samples-for-csharpscript-input-bindings)
-      - [Samples for Output Bindings](#samples-for-csharpscript-output-bindings)
   - [Trigger Binding](#trigger-binding)
     - [SqlTriggerAttribute](#sqltriggerattribute)
     - [Setup for Trigger Bindings](#setup-for-trigger-bindings)
@@ -59,9 +55,9 @@ See [Input Binding Overview](./BindingsOverview.md#input-binding) for general in
 
 The [SqlAttribute](https://github.com/Azure/azure-functions-sql-extension/blob/main/src/SqlAttribute.cs) for Input bindings takes four arguments:
 
-- **CommandText**: Passed as a constructor argument to the binding. Represents either a query string or the name of a stored procedure.
-- **ConnectionStringSetting**: Passed as a constructor argument to the binding. Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
-- **CommandType**: Specifies whether CommandText is a query (`System.Data.CommandType.Text`) or a stored procedure (`System.Data.CommandType.StoredProcedure`)
+- **CommandText**: Represents either a query string or the name of a stored procedure based on the value of the CommandType.
+- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
+- **CommandType**: Specifies whether CommandText is a query (`System.Data.CommandType.Text`) or a stored procedure (`System.Data.CommandType.StoredProcedure`). Defaults to `CommandType.Text`.
 - **Parameters**: The parameters to the query/stored procedure. This string must follow the format "@param1=param1,@param2=param2" where @param1 is the name of the parameter and param1 is the parameter value. Each pair of parameter name, parameter value is separated by a comma. Within each pair, the parameter name and value is separated by an equals sign. This means that neither the parameter name nor value can contain "," or "=". To specify a `NULL` parameter value, do "@param1=null,@param2=param2". To specify an empty string as a value, do "@param1=,@param2=param2", i.e. do not put any text after the equals sign of the corresponding parameter name. This argument is auto-resolvable (see Query String examples).
 
 The following are valid binding types for the result of the query/stored procedure execution:
@@ -87,8 +83,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "employees")] HttpRequest req,
         ILogger log,
         [Sql("select * from Employees",
-        "SqlConnectionString"
-        CommandType = System.Data.CommandType.Text)]
+        "SqlConnectionString")]
         IEnumerable<Employee> employee)
     {
         return new OkObjectResult(employee);
@@ -134,8 +129,7 @@ The input binding executes the `select * from Products where Cost = @Cost` query
       HttpRequest req,
       [Sql("select * from Products where Cost = @Cost",
           "SqlConnectionString",
-          CommandType = System.Data.CommandType.Text,
-          Parameters = "@Cost={cost}")]
+          parameters: "@Cost={cost}")]
       IEnumerable<Product> products)
   {
       return (ActionResult)new OkObjectResult(products);
@@ -173,8 +167,7 @@ In this case, the parameter value of the `@Name` parameter is an empty string.
       HttpRequest req,
       [Sql("select * from Products where Cost = @Cost and Name = @Name",
           "SqlConnectionString",
-          CommandType = System.Data.CommandType.Text,
-          Parameters = "@Cost={cost},@Name=")]
+          parameters: "@Cost={cost},@Name=")]
       IEnumerable<Product> products)
   {
       return (ActionResult)new OkObjectResult(products);
@@ -192,8 +185,7 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
       HttpRequest req,
       [Sql("if @Name is null select * from Products where Name is null else select * from Products where @Name = name",
           "SqlConnectionString",
-          CommandType = System.Data.CommandType.Text,
-          Parameters = "@Name={name}")]
+          parameters: "@Name={name}")]
       IEnumerable<Product> products)
   {
       return (ActionResult)new OkObjectResult(products);
@@ -211,8 +203,8 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
       HttpRequest req,
       [Sql("SelectProductsCost",
           "SqlConnectionString",
-          CommandType = System.Data.CommandType.StoredProcedure,
-          Parameters = "@Cost={cost}")]
+          System.Data.CommandType.StoredProcedure,
+          "@Cost={cost}")]
       IEnumerable<Product> products)
   {
       return (ActionResult)new OkObjectResult(products);
@@ -229,8 +221,7 @@ public static async Task<IActionResult> Run(
      HttpRequest req,
     [Sql("select * from Products where cost = @Cost",
          "SqlConnectionString",
-         CommandType = System.Data.CommandType.Text,
-         Parameters = "@Cost={cost}")]
+         parameters: "@Cost={cost}")]
      IAsyncEnumerable<Product> products)
 {
     var enumerator = products.GetAsyncEnumerator();
@@ -252,8 +243,8 @@ See [Output Binding Overview](./BindingsOverview.md#output-binding) for general 
 
 The [SqlAttribute](https://github.com/Azure/azure-functions-sql-extension/blob/main/src/SqlAttribute.cs) for Output bindings takes two arguments:
 
-- **CommandText**: Passed as a constructor argument to the binding. Represents the name of the table into which rows will be upserted.
-- **ConnectionStringSetting**: Passed as a constructor argument to the binding. Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
+- **CommandText**: Represents the name of the table into which rows will be upserted.
+- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
 
 The following are valid binding types for the rows to be upserted into the table:
 
@@ -403,63 +394,6 @@ public static IActionResult Run(
     return new CreatedResult($"/api/addproduct", product);
 }
 ```
-## CSharp Scripting
-
-See [How .csx works](https://learn.microsoft.com/azure/azure-functions/functions-reference-csharp?tabs=functionsv2#how-csx-works) for general information and how Azure Functions lets you develop functions using C# script (.csx).
-
-### Creating a function with CSharp Script
-
-1. Please follow [Setup Function Project](#setup-function-project) for .Net before you create a new CSharp scripting function.
-2. Create a folder for your new csx function **MyFunction** inside your function project **MyApp** and initialize it by running below.
-
-    ```bash
-    cd MyFunction
-    func new --csx
-    ```
-3. Once you execute func new --csx, it will prompt you to select a template using the up/down arrow keys, Please select **HTTP trigger** which prompts for function name, enter your function name **Function** on which it will create csharp script function scaffolding under **MyFunction/Function**.
-4. Open host.json under your MyFunction folder and update the Extension bundle to below and update local.settings.json with SqlConnectionString setting.
-    "extensionBundle": {
-        "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
-        "version": "[4.*, 5.0.0)"
-    }
-Once your have these set up, your project folder should resemble [Folder Structure](https://learn.microsoft.com/azure/azure-functions/functions-reference-csharp?tabs=functionsv2#folder-structure)
-5. Update your funtion.json and run.csx files under your **Function** folder following the [binding instructions](https://learn.microsoft.com/azure/azure-functions/functions-reference-csharp?tabs=functionsv2#binding-to-arguments). You can also refer to our [Input Binding Samples](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/InputBindingSamples) and [Output Binding Samples](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/OutputBindingSamples)
- - Hit 'F5' to run your code. Click the link of the HTTP trigger from the output binding tutorial.
- - Update, insert, or delete rows in your SQL table while the function app is running and observe the function logs.
-- You should see the new log messages in the Visual Studio Code terminal containing the values of row-columns after the update operation.
-- Congratulations! You have successfully created your first CSharp Script function binding!
-
-### Samples for CSharpScript Input Bindings
-
-#### Query String
-
-See the [GetProducts](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-csharpscript/InputBindingSamples/GetProducts) sample
-
-#### Empty Parameter Value
-
-See the [GetProductsNameEmpty](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/InputBindingSamples/GetProductsNameEmpty) sample
-
-#### Null Parameter Value
-
-See the [GetProductsNameNull](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/InputBindingSamples/GetProductsNameNull) sample
-
-#### Stored Procedure
-
-See the [GetProductsStoredProcedure](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/InputBindingSamples/GetProductsStoredProcedure) sample
-
-### Samples for CSharpScript Output Bindings
-
-#### Array
-
-See the [AddProductsArray](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/OutputBindingSamples/AddProductsArray) sample
-
-#### Single Row
-
-See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/OutputBindingSamples/AddProduct) sample
-
-### Sample with multiple Bindings
-
-See the [GetAndAddProducts](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/InputBindingSamples/GetAndAddProducts) sample
 
 ## Trigger Binding
 
@@ -469,7 +403,7 @@ See [Trigger Binding Overview](./BindingsOverview.md#trigger-binding) for genera
 
 The SqlAttribute for Trigger bindings takes two [arguments](https://github.com/Azure/azure-functions-sql-extension/blob/main/src/TriggerBinding/SqlTriggerAttribute.cs)
 
-- **TableName**: Passed as a constructor argument to the binding. Represents the name of the table to be monitored for changes.
+- **TableName**: Represents the name of the table to be monitored for changes.
 - **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
 
 The trigger binding can bind to type `IReadOnlyList<SqlChange<T>>`:
@@ -535,4 +469,3 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Update, insert, or delete rows in your SQL table while the function app is running and observe the function logs.
 - You should see the new log messages in the Visual Studio Code terminal containing the values of row-columns after the update operation.
 - Congratulations! You have successfully created your first SQL trigger binding!
-
