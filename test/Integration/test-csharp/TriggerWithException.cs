@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -29,7 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 threwException = true;
                 throw new Exception(ExceptionMessage);
             }
-            logger.LogInformation("SQL Changes: " + JsonConvert.SerializeObject(changes));
+            logger.LogInformation("SQL Changes: " + Utils.JsonSerializeObject(changes));
         }
     }
 }
