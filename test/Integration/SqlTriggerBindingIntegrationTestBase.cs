@@ -96,7 +96,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     IReadOnlyList<SqlChange<Product>> changes;
                     try
                     {
-                        changes = Utils.DeserializeObject<IReadOnlyList<SqlChange<Product>>>(json);
+                        changes = Utils.JsonDeserializeObject<IReadOnlyList<SqlChange<Product>>>(json);
                     }
                     catch (Exception ex)
                     {
