@@ -9,7 +9,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
-using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -97,7 +96,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     IReadOnlyList<SqlChange<Product>> changes;
                     try
                     {
-                        changes = JsonConvert.DeserializeObject<IReadOnlyList<SqlChange<Product>>>(json);
+                        changes = Utils.JsonDeserializeObject<IReadOnlyList<SqlChange<Product>>>(json);
                     }
                     catch (Exception ex)
                     {

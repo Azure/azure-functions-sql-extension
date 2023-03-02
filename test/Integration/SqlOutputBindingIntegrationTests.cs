@@ -8,7 +8,6 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Xunit;
 using Xunit.Abstractions;
-using Newtonsoft.Json;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -37,7 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "Cost", cost }
             };
 
-            this.SendOutputPostRequest("addproduct", JsonConvert.SerializeObject(query)).Wait();
+            this.SendOutputPostRequest("addproduct", Utils.JsonSerializeObject(query)).Wait();
 
             // Verify result
             Assert.Equal(name, this.ExecuteScalar($"select Name from Products where ProductId={id}"));
@@ -96,7 +95,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 }
             };
 
-            this.SendOutputPostRequest("addproducts-array", JsonConvert.SerializeObject(prods)).Wait();
+            this.SendOutputPostRequest("addproducts-array", Utils.JsonSerializeObject(prods)).Wait();
 
             // Function call changes first 2 rows to (1, 'Cup', 2) and (2, 'Glasses', 12)
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(1) FROM Products WHERE Cost = 100"));
@@ -364,8 +363,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "Cost", 1 }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
-            this.SendOutputPostRequest("addproductwithdefaultpk", JsonConvert.SerializeObject(product)).Wait();
-            this.SendOutputPostRequest("addproductwithdefaultpk", JsonConvert.SerializeObject(product)).Wait();
+            this.SendOutputPostRequest("addproductwithdefaultpk", Utils.JsonSerializeObject(product)).Wait();
+            this.SendOutputPostRequest("addproductwithdefaultpk", Utils.JsonSerializeObject(product)).Wait();
             Assert.Equal(2, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
         }
 
@@ -422,7 +421,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "Cost", 100 }
             };
 
-            this.SendOutputPostRequest("addproduct", JsonConvert.SerializeObject(query)).Wait();
+            this.SendOutputPostRequest("addproduct", Utils.JsonSerializeObject(query)).Wait();
 
             // Verify result
             Assert.Equal("test", this.ExecuteScalar($"select Name from Products where ProductId=0"));
@@ -467,8 +466,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "Name", "test2" }
             };
 
-            this.SendOutputPostRequest("addproduct", JsonConvert.SerializeObject(query1)).Wait();
-            this.SendOutputPostRequest("addproduct", JsonConvert.SerializeObject(query2)).Wait();
+            this.SendOutputPostRequest("addproduct", Utils.JsonSerializeObject(query1)).Wait();
+            this.SendOutputPostRequest("addproduct", Utils.JsonSerializeObject(query2)).Wait();
 
             // Verify result
             Assert.Equal("test2", this.ExecuteScalar($"select Name from Products where ProductId=0"));

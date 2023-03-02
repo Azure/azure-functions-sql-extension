@@ -7,7 +7,6 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples;
-using Newtonsoft.Json;
 using BenchmarkDotNet.Attributes;
 
 
@@ -30,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
         public async Task<HttpResponseMessage> AddProductsArrayTest(int count)
         {
             Product[] productsToAdd = GetProductsWithSameCost(count, 100);
-            return await this.SendOutputPostRequest("addproducts-array", JsonConvert.SerializeObject(productsToAdd));
+            return await this.SendOutputPostRequest("addproducts-array", Utils.JsonSerializeObject(productsToAdd));
         }
 
         [IterationCleanup]

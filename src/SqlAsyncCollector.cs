@@ -401,7 +401,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
             }
 
-            rowData = JsonConvert.SerializeObject(rowsToUpsert, table.JsonSerializerSettings);
+            rowData = Utils.JsonSerializeObject(rowsToUpsert, table.JsonSerializerSettings);
             IEnumerable<string> columnNamesFromItem = GetColumnNamesFromItem(rows.First());
             IEnumerable<string> bracketColumnDefinitionsFromItem = columnNamesFromItem.Select(c => $"{c.AsBracketQuotedString()} {table.Columns[c]}");
             newDataQuery = $"WITH {CteName} AS ( SELECT * FROM OPENJSON({RowDataParameter}) WITH ({string.Join(",", bracketColumnDefinitionsFromItem)}) )";
