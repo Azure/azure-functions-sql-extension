@@ -46,11 +46,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private async Task<long> GetUnprocessedChangeCountAsync()
         {
             long unprocessedChangeCount = 0L;
+            long getUnprocessedChangesDurationMs = 0L;
 
             try
             {
-                long getUnprocessedChangesDurationMs = 0L;
-
                 using (var connection = new SqlConnection(this._connectionString))
                 {
                     this._logger.LogDebugWithThreadId("BEGIN OpenGetUnprocessedChangesConnection");
@@ -76,9 +75,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             this._logger.LogDebugWithThreadId($"END GetUnprocessedChangeCount Duration={getUnprocessedChangesDurationMs}ms Count={unprocessedChangeCount}");
                             transaction.Commit();
                         }
-                        catch (Exception ex)
+                        catch (Exception)
                         {
-                            TelemetryInstance.TrackException(TelemetryErrorName.GetUnprocessedChangeCount, ex, null, new Dictionary<TelemetryMeasureName, double>() { { TelemetryMeasureName.GetUnprocessedChangesDurationMs, getUnprocessedChangesDurationMs } });
                             try
                             {
                                 transaction.Rollback();
@@ -96,7 +94,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             catch (Exception ex)
             {
                 this._logger.LogError($"Failed to query count of unprocessed changes for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
-                TelemetryInstance.TrackException(TelemetryErrorName.GetUnprocessedChangeCount, ex);
+                TelemetryInstance.TrackException(TelemetryErrorName.GetUnprocessedChangeCount, ex, null, new Dictionary<TelemetryMeasureName, double>() { { TelemetryMeasureName.GetUnprocessedChangesDurationMs, getUnprocessedChangesDurationMs } });
                 throw;
             }
 

@@ -81,7 +81,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
             ScaleStatus scaleStatus = monitor.GetScaleStatus(context);
 
             Assert.Equal(ScaleVote.ScaleOut, scaleStatus.Vote);
-            Assert.Contains("Requesting scale-out: Found too many unprocessed changes for table: 'testTableName' relative to the number of workers.", logMessages);
+            Assert.Contains($"Requesting scale-out: Found too many unprocessed changes: {unprocessedChangeCounts.Last()} for table: 'testTableName' relative to the number of workers.", string.Join(" ", logMessages));
         }
 
         /// <summary>
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
             ScaleStatus scaleStatus = monitor.GetScaleStatus(context);
 
             Assert.Equal(ScaleVote.None, scaleStatus.Vote);
-            Assert.Contains("Avoiding scale-out: Found the unprocessed changes for table: 'testTableName' to be increasing but they may not exceed the maximum limit set for the workers.", logMessages);
+            Assert.Contains($"Avoiding scale-out: Found the unprocessed changes: {unprocessedChangeCounts.Last()} for table: 'testTableName' to be increasing but they may not exceed the maximum limit set for the workers.", string.Join(" ", logMessages));
         }
 
         /// <summary>

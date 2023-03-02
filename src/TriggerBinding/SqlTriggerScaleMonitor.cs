@@ -156,7 +156,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 else
                 {
-                    this._logger.LogDebugWithThreadId($"Avoiding scale-out: Found the unprocessed changes: {expectedUnprocessedChangeCount} for table: '{this._userTable.FullName}' to be increasing" +
+                    this._logger.LogDebugWithThreadId($"Avoiding scale-out: Found the unprocessed changes: {lastUnprocessedChangeCount} for table: '{this._userTable.FullName}' to be increasing" +
                         " but they may not exceed the maximum limit set for the workers.");
                 }
             }

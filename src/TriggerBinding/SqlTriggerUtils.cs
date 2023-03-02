@@ -17,6 +17,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Gets the names and types of primary key columns of the user table.
         /// </summary>
+        /// <param name="connection">SQL connection used to connect to user database</param>
+        /// <param name="userTableId">ID of the user table</param>
+        /// <param name="logger">Facilitates logging of messages</param>
+        /// <param name="userTableName">Name of the user table, doesn't need to be escaped since it's only used for logging</param>
+        /// <param name="cancellationToken">Cancellation token to pass to the command</param>
         /// <exception cref="InvalidOperationException">
         /// Thrown if there are no primary key columns present in the user table or if their names conflict with columns in leases table.
         /// </exception>
@@ -80,6 +85,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Returns the object ID of the user table.
         /// </summary>
+        /// <param name="connection">SQL connection used to connect to user database</param>
+        /// <param name="userTableQuotedFullName">User table name with quotes, used to get object id</param>
+        /// <param name="logger">Facilitates logging of messages</param>
+        /// <param name="cancellationToken">Cancellation token to pass to the command</param>
         /// <exception cref="InvalidOperationException">Thrown in case of error when querying the object ID for the user table</exception>
         public static async Task<int> GetUserTableIdAsync(SqlConnection connection, string userTableQuotedFullName, ILogger logger, CancellationToken cancellationToken)
         {
