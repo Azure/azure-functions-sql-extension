@@ -114,7 +114,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     }
                     if (await this._reader.ReadAsync())
                     {
-                        this.Current = JsonConvert.DeserializeObject<T>(this.SerializeRow());
+                        this.Current = Utils.JsonDeserializeObject<T>(this.SerializeRow());
                         return true;
                     }
                 }
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     DateFormatString = ISO_8061_DATETIME_FORMAT
                 };
-                return JsonConvert.SerializeObject(SqlBindingUtilities.BuildDictionaryFromSqlRow(this._reader), jsonSerializerSettings);
+                return Utils.JsonSerializeObject(SqlBindingUtilities.BuildDictionaryFromSqlRow(this._reader), jsonSerializerSettings);
             }
         }
     }
