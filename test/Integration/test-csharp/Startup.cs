@@ -19,10 +19,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings
             {
                 Formatting = Formatting.Indented,
-                // Test code - not security issue
-#pragma warning disable CA2327
                 TypeNameHandling = TypeNameHandling.Objects,
-#pragma warning restore CA2327
                 ContractResolver = new CamelCasePropertyNamesContractResolver()
             };
         }

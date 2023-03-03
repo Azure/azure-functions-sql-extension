@@ -1,0 +1,28 @@
+{
+  "version": "latest",
+  "suppressionSets": {
+    "mySuppressionSet": {
+      "name": "mySuppressionSet",
+      "createdDate": "2023-03-03 20:49:19Z",
+      "lastUpdatedDate": "2023-03-03 20:49:19Z"
+    }
+  },
+  "results": {
+    "58bc9024c09874f7872bfa9ece9299c99c34b98575b042df5eb273d1eea364ef": {
+      "signature": "58bc9024c09874f7872bfa9ece9299c99c34b98575b042df5eb273d1eea364ef",
+      "alternativeSignatures": [
+        "bcd71b9cea5d86bd7d2387d60eb45120b01bd53d8f83efbe5cb2cc655d3c2723"
+      ],
+      "target": "test/Integration/test-csharp/Startup.cs",
+      "memberOf": [
+        "mySuppressionSet"
+      ],
+      "tool": "roslynanalyzers",
+      "ruleId": "CA2327",
+      "justification": "Test code",
+      "createdDate": "2023-03-03 20:49:19Z",
+      "expirationDate": null,
+      "type": null
+    }
+  }
+}
