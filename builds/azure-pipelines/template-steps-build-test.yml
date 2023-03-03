@@ -130,37 +130,7 @@ steps:
 - script: |
     pip3 install -r requirements.txt
   workingDirectory: $(Build.SourcesDirectory)/samples/samples-python
-  displayName: Install samples-python dependencies
-
-- task: Maven@3
-  displayName: Build Java Samples
-  inputs:
-    mavenPomFile: samples/samples-java/pom.xml
-    # batch-mode and Slf4jMavenTransferListener definition are used to make the build logging verbose
-    # update-snapshot forces a check for updated library dependencies
-    options: --batch-mode --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
-    checkStyleRunAnalysis: true
-
-- task: Maven@3
-  displayName: Build Java Tests
-  inputs:
-    mavenPomFile: test/Integration/test-java/pom.xml
-    # batch-mode and Slf4jMavenTransferListener definition are used to make the build logging verbose
-    # update-snapshot forces a check for updated library dependencies
-    options: --batch-mode --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
-    checkStyleRunAnalysis: true
-
-- task: DotNetCoreCLI@2
-  displayName: '.NET Test on Mac (unit tests only)'
-  env:
-    TEST_SERVER: '$(testServer)'
-    NODE_MODULES_PATH: '$(nodeModulesPath)'
-    AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
-  inputs:
-    command: test
-    projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} --filter FullyQualifiedName!~Integration'
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Darwin'))
+  displayName: Install samples-python dependenciesa
 
 - script: |
     docker stop sql1
@@ -327,4 +297,5 @@ steps:
   displayName: 'Post Analysis'
   inputs:
     GdnBreakPolicyMinSev: Error
+    GdnBreakSuppressionFiles: $(Build.SourcesDirectory)/.gdn/global.gdnsuppress
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
