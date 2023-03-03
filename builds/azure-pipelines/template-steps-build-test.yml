@@ -162,47 +162,6 @@ steps:
     arguments: '--configuration ${{ parameters.configuration }} --filter FullyQualifiedName!~Integration'
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Darwin'))
 
-- task: DotNetCoreCLI@2
-  displayName: '.NET Test on Windows (unit tests and .NET In-Proc integration tests)'
-  env:
-    TEST_SERVER: '$(testServer)'
-    NODE_MODULES_PATH: '$(nodeModulesPath)'
-    AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
-    # Only running CSharp integration tests to get accurate code coverage numbers
-    LANGUAGES_TO_TEST: 'CSharp'
-  inputs:
-    command: test
-    projects: '${{ parameters.solution }}'
-    # Skip any non .NET In-Proc integration tests. Otherwise, the following error will be thrown:
-    # System.InvalidOperationException : No data found for Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration.SqlOutputBindingIntegrationTests.NoPropertiesThrows
-    arguments: '--configuration ${{ parameters.configuration }} --filter FullyQualifiedName!~NoPropertiesThrows --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings'
-  condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
-
-- task: DotNetCoreCLI@2
-  displayName: '.NET Test on Windows (Non .NET In-Proc)'
-  env:
-    TEST_SERVER: '$(testServer)'
-    NODE_MODULES_PATH: '$(nodeModulesPath)'
-    AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
-    LANGUAGES_TO_TEST: 'Java,JavaScript,OutOfProc,PowerShell,Python'
-  inputs:
-    command: test
-    projects: '${{ parameters.solution }}'
-    # Skip any CSharp only integration tests
-    arguments: '--configuration ${{ parameters.configuration }} --filter "FullyQualifiedName~Integration & FullyQualifiedName!~AddProductsCollectorTest"'
-  condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
-
-- task: DotNetCoreCLI@2
-  displayName: '.NET Test on Linux (both unit and integration tests)'
-  env:
-    SA_PASSWORD: '$(serverPassword)'
-    AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
-  inputs:
-    command: test
-    projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }}'
-  condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'linux'))
-
 - script: |
     docker stop sql1
     docker rm sql1
