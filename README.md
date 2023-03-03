@@ -41,29 +41,32 @@ Databases on SQL Server, Azure SQL Database, or Azure SQL Managed Instance which
 
 ## Known Issues
 
-- The table used by a SQL binding or SQL trigger cannot contain two columns that only differ by casing (Ex. 'Name' and 'name').
-- Non-CSharp functions using SQL bindings against tables with columns of data types `BINARY` or `VARBINARY` need to map those columns to a string type. Input bindings will return the binary value as a base64 encoded string. Output bindings require the value upserted to binary columns to be a base64 encoded string.
-- SQL bindings against tables with columns of data types `GEOMETRY` and `GEOGRAPHY` are not supported. Issue is tracked [here](https://github.com/Azure/azure-functions-sql-extension/issues/654).
+> **Note:** While we are actively working on resolving these issues, some may not be supported at this time. We appreciate your patience as we work to improve the Azure Functions SQL Extension.
+
+- **By Design:** The table used by a SQL binding or SQL trigger cannot contain two columns that only differ by casing (Ex. 'Name' and 'name').
+- **By Design:** Non-CSharp functions using SQL bindings against tables with columns of data types `BINARY` or `VARBINARY` need to map those columns to a string type. Input bindings will return the binary value as a base64 encoded string. Output bindings require the value upserted to binary columns to be a base64 encoded string.
+- **Planned for Future Support:** SQL bindings against tables with columns of data types `GEOMETRY` and `GEOGRAPHY` are not supported. Issue is tracked [here](https://github.com/Azure/azure-functions-sql-extension/issues/654).
+- Issues resulting from upstream dependencies can be found [here](https://github.com/Azure/azure-functions-sql-extension/issues?q=is%3Aopen+is%3Aissue+label%3Aupstream).
 
 ### Output Bindings
 
-- Output bindings against tables with columns of data types `NTEXT`, `TEXT`, or `IMAGE` are not supported and data upserts will fail. These types [will be removed](https://docs.microsoft.com/sql/t-sql/data-types/ntext-text-and-image-transact-sql) in a future version of SQL Server and are not compatible with the `OPENJSON` function used by this Azure Functions binding.
-- .NET In-Proc output bindings against tables with columns of data types `DATE`, `DATETIME`, `DATETIME2`, `DATETIMEOFFSET`, or `SMALLDATETIME` will convert values for those columns to ISO8061 format ("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fffZ") before upsertion. This does not happen for functions written in C# out-of-proc or other languages.
-- Output bindings execution order is not deterministic ([azure-webjobs-sdk#1025](https://github.com/Azure/azure-webjobs-sdk/issues/1025)) and so the order that data is upserted is not guaranteed. This can be problematic if, for example, you upsert rows to two separate tables with one having a foreign key reference to another. The upsert will fail if the dependent table does its upsert first.
+- **By Design:** Output bindings against tables with columns of data types `NTEXT`, `TEXT`, or `IMAGE` are not supported and data upserts will fail. These types [will be removed](https://docs.microsoft.com/sql/t-sql/data-types/ntext-text-and-image-transact-sql) in a future version of SQL Server and are not compatible with the `OPENJSON` function used by this Azure Functions binding.
+- **By Design:** .NET In-Proc output bindings against tables with columns of data types `DATE`, `DATETIME`, `DATETIME2`, `DATETIMEOFFSET`, or `SMALLDATETIME` will convert values for those columns to ISO8061 format ("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fffZ") before upsertion. This does not happen for functions written in C# out-of-proc or other languages.
+- **By Design:** Output bindings execution order is not deterministic ([azure-webjobs-sdk#1025](https://github.com/Azure/azure-webjobs-sdk/issues/1025)) and so the order that data is upserted is not guaranteed. This can be problematic if, for example, you upsert rows to two separate tables with one having a foreign key reference to another. The upsert will fail if the dependent table does its upsert first.
 
     Some options for working around this :
   - Have multiple functions, with dependent functions being triggered by the initial functions (through a trigger binding or other such method)
   - Use [dynamic (imperative)](https://learn.microsoft.com/azure/azure-functions/functions-bindings-expressions-patterns#binding-at-runtime) bindings (.NET only)
   - Use [IAsyncCollector](https://learn.microsoft.com/azure/azure-functions/functions-dotnet-class-library?tabs=v2%2Ccmd#writing-multiple-output-values) and call `FlushAsync` in the order desired (.NET only)
-- For PowerShell Functions that use hashtables must use the `[ordered]@` for the request query or request body assertion in order to upsert the data to the SQL table properly. An example can be found [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-powershell/AddProductsWithIdentityColumnArray/run.ps1).
-- Java, PowerShell, and Python Functions using Output bindings cannot pass in null or empty values via the query string.
+- **Planned for Future Support:** For PowerShell Functions that use hashtables must use the `[ordered]@` for the request query or request body assertion in order to upsert the data to the SQL table properly. An example can be found [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-powershell/AddProductsWithIdentityColumnArray/run.ps1).
+- **Planned for Future Support:** Java, PowerShell, and Python Functions using Output bindings cannot pass in null or empty values via the query string.
   - Java: Issue is tracked [here](https://github.com/Azure/azure-functions-java-worker/issues/683).
   - PowerShell: The workaround is to use the `$TriggerMetadata[$keyName]` to retrieve the query property - an example can be found [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-powershell/AddProductParams/run.ps1). Issue is tracked [here](https://github.com/Azure/azure-functions-powershell-worker/issues/895).
   - Python: The workaround is to use `parse_qs` - an example can be found [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-python/AddProductParams/__init__.py). Issue is tracked [here](https://github.com/Azure/azure-functions-python-worker/issues/894).
 
 ### Trigger Bindings
 
-- Trigger bindings will exhibit undefined behavior if the SQL table schema gets modified while the user application is running, for example, if a column is added, renamed or deleted or if the primary key is modified or deleted. In such cases, restarting the application should help resolve any errors.
+- **By Design:** Trigger bindings will exhibit undefined behavior if the SQL table schema gets modified while the user application is running, for example, if a column is added, renamed or deleted or if the primary key is modified or deleted. In such cases, restarting the application should help resolve any errors.
 
 ## Telemetry
 
