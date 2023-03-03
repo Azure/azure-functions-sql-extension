@@ -297,5 +297,5 @@ steps:
   displayName: 'Post Analysis'
   inputs:
     GdnBreakPolicyMinSev: Error
-    GdnBreakSuppressionFiles: $(Build.SourcesDirectory)/.gdn/global.gdnsuppress
+    GdnBreakSuppressionFiles: $(Build.SourcesDirectory)\.gdn\global.gdnsuppress
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))

@@ -1,7 +1,7 @@
 {
   "version": "latest",
   "suppressionSets": {
-    "mySuppressionSet": {
+    "default": {
       "name": "mySuppressionSet",
       "createdDate": "2023-03-03 20:49:19Z",
       "lastUpdatedDate": "2023-03-03 20:49:19Z"
@@ -15,7 +15,7 @@
       ],
       "target": "test/Integration/test-csharp/Startup.cs",
       "memberOf": [
-        "mySuppressionSet"
+        "default"
       ],
       "tool": "roslynanalyzers",
       "ruleId": "CA2327",
