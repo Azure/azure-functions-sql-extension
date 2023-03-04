@@ -298,4 +298,5 @@ steps:
   inputs:
     GdnBreakPolicyMinSev: Error
     GdnBreakSuppressionFiles: $(Build.SourcesDirectory)\.gdn\global.gdnsuppress
+    GdnBreakSuppressionSets: default
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
