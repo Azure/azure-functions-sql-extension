@@ -169,10 +169,10 @@ steps:
   inputs:
     GdnExportTsvFile: true
     GdnExportHtmlFile: true
-    GdnExportOutputBaselineFile: myBaseline
-    GdnExportOutputBaseline: myBaselinedResults
-    GdnExportOutputSuppressionFile: mySuppressions
-    GdnExportOutputSuppressionSet: mySuppressionSet
+    GdnExportOutputBaselineFile: global
+    GdnExportOutputBaseline: default
+    GdnExportOutputSuppressionFile: global
+    GdnExportOutputSuppressionSet: default
     GdnExportPolicyMinSev: Warning
     GdnExportGdnToolApiScanSeverity: Warning
     GdnExportGdnToolArmorySeverity: Warning
