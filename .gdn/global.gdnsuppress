@@ -8,19 +8,19 @@
     }
   },
   "results": {
-    "58bc9024c09874f7872bfa9ece9299c99c34b98575b042df5eb273d1eea364ef": {
-      "signature": "58bc9024c09874f7872bfa9ece9299c99c34b98575b042df5eb273d1eea364ef",
+    "ca10defb8fec9465dfe4498e42cba30292f9a69efe6233abbae5ba34b4c225be": {
+      "signature": "ca10defb8fec9465dfe4498e42cba30292f9a69efe6233abbae5ba34b4c225be",
       "alternativeSignatures": [
-        "bcd71b9cea5d86bd7d2387d60eb45120b01bd53d8f83efbe5cb2cc655d3c2723"
+        "5bfeff7ec71591199ef537dd60901433a062477e70427ea95caef4741c9a7c4e"
       ],
       "target": "test/Integration/test-csharp/Startup.cs",
       "memberOf": [
-        "default"
+        "mySuppressionSet"
       ],
       "tool": "roslynanalyzers",
       "ruleId": "CA2327",
       "justification": "Test code",
-      "createdDate": "2023-03-03 20:49:19Z",
+      "createdDate": "2023-03-04 00:22:21Z",
       "expirationDate": null,
       "type": null
     }
