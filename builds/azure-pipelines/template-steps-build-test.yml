@@ -216,66 +216,6 @@ steps:
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=false -p:Version=${{ parameters.binariesVersion }} -p:SupportedVersion=${{ parameters.supportedVersion }}'
 
-- task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
-  inputs:
-    InputType: 'CommandLine'
-    arguments: 'analyze $(Build.SourcesDirectory)\src\bin\${{ parameters.configuration }}\* --recurse --verbose'
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
-
-# Don't run for PRs since this currently breaks on runs from forks. We run this daily ourselves anyways.
-- task: securedevelopmentteam.vss-secure-development-tools.build-task-roslynanalyzers.RoslynAnalyzers@3
-  inputs:
-    userProvideBuildInfo: 'autoMsBuildInfo'
-  env:
-    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'), ne(variables['Build.Reason'], 'PullRequest'))
-
-- task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@2
-  inputs:
-    toolMajorVersion: V2
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
-
-- task: securedevelopmentteam.vss-secure-development-tools.build-task-report.SdtReport@2
-  displayName: 'Create Security Analysis Report'
-  inputs:
-    GdnExportTsvFile: true
-    GdnExportHtmlFile: true
-    GdnExportOutputBaselineFile: myBaseline
-    GdnExportOutputBaseline: myBaselinedResults
-    GdnExportOutputSuppressionFile: mySuppressions
-    GdnExportOutputSuppressionSet: mySuppressionSet
-    GdnExportPolicyMinSev: Warning
-    GdnExportGdnToolApiScanSeverity: Warning
-    GdnExportGdnToolArmorySeverity: Warning
-    GdnExportGdnToolBanditSeverity: Warning
-    GdnExportGdnToolBinSkimSeverity: Warning
-    GdnExportGdnToolCodesignValidationSeverity: Warning
-    GdnExportGdnToolCredScanSeverity: Warning
-    GdnExportGdnToolESLintSeverity: Warning
-    GdnExportGdnToolFlawfinderSeverity: Warning
-    GdnExportGdnToolFortifyScaSeverity: Warning
-    GdnExportGdnToolFxCopSeverity: Warning
-    GdnExportGdnToolGosecSeverity: Warning
-    GdnExportGdnToolModernCopSeverity: Warning
-    GdnExportGdnToolPoliCheckSeverity: Warning
-    GdnExportGdnToolRoslynAnalyzersSeverity: Warning
-    GdnExportGdnToolSDLNativeRulesSeverity: Warning
-    GdnExportGdnToolSemmleSeverity: Warning
-    GdnExportGdnToolSpotBugsSeverity: Warning
-    GdnExportGdnToolTSLintSeverity: Warning
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
-
-- task: securedevelopmentteam.vss-secure-development-tools.build-task-publishsecurityanalysislogs.PublishSecurityAnalysisLogs@3
-  displayName: 'Publish Security Analysis Logs'
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
-
-- task: securedevelopmentteam.vss-secure-development-tools.build-task-uploadtotsa.TSAUpload@2
-  displayName: 'TSA upload to Codebase: Sql Bindings Stamp: TSA'
-  inputs:
-    GdnPublishTsaOnboard: true
-    GdnPublishTsaConfigFile: '$(Build.SourcesDirectory)\builds\TSAConfig.gdntsa'
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'), eq(variables['TSA_UPLOAD'], 'true'))
-
 # 5.0 isn't supported on Mac yet
 - task: UseDotNet@2
   displayName: 'Install .NET Core 2.1.x SDK for CodeSigning on Mac'
@@ -359,6 +299,66 @@ steps:
     projects: '${{ parameters.solution }}'
     arguments: '--configuration ${{ parameters.configuration }} --output $(Build.ArtifactStagingDirectory) --no-build -p:PackageVersion="${{ parameters.nugetVersion }}" -p:GeneratePackageOnBuild=false'
 
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
+  inputs:
+    InputType: 'CommandLine'
+    arguments: 'analyze $(Build.SourcesDirectory)\src\bin\${{ parameters.configuration }}\* --recurse --verbose'
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
+
+# Don't run for PRs since this currently breaks on runs from forks. We run this daily ourselves anyways.
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-roslynanalyzers.RoslynAnalyzers@3
+  inputs:
+    userProvideBuildInfo: 'autoMsBuildInfo'
+  env:
+    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'), ne(variables['Build.Reason'], 'PullRequest'))
+
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@2
+  inputs:
+    toolMajorVersion: V2
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
+
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-report.SdtReport@2
+  displayName: 'Create Security Analysis Report'
+  inputs:
+    GdnExportTsvFile: true
+    GdnExportHtmlFile: true
+    GdnExportOutputBaselineFile: global
+    GdnExportOutputBaseline: default
+    GdnExportOutputSuppressionFile: global
+    GdnExportOutputSuppressionSet: default
+    GdnExportPolicyMinSev: Warning
+    GdnExportGdnToolApiScanSeverity: Warning
+    GdnExportGdnToolArmorySeverity: Warning
+    GdnExportGdnToolBanditSeverity: Warning
+    GdnExportGdnToolBinSkimSeverity: Warning
+    GdnExportGdnToolCodesignValidationSeverity: Warning
+    GdnExportGdnToolCredScanSeverity: Warning
+    GdnExportGdnToolESLintSeverity: Warning
+    GdnExportGdnToolFlawfinderSeverity: Warning
+    GdnExportGdnToolFortifyScaSeverity: Warning
+    GdnExportGdnToolFxCopSeverity: Warning
+    GdnExportGdnToolGosecSeverity: Warning
+    GdnExportGdnToolModernCopSeverity: Warning
+    GdnExportGdnToolPoliCheckSeverity: Warning
+    GdnExportGdnToolRoslynAnalyzersSeverity: Warning
+    GdnExportGdnToolSDLNativeRulesSeverity: Warning
+    GdnExportGdnToolSemmleSeverity: Warning
+    GdnExportGdnToolSpotBugsSeverity: Warning
+    GdnExportGdnToolTSLintSeverity: Warning
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
+
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-publishsecurityanalysislogs.PublishSecurityAnalysisLogs@3
+  displayName: 'Publish Security Analysis Logs'
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
+
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-uploadtotsa.TSAUpload@2
+  displayName: 'TSA upload to Codebase: Sql Bindings Stamp: TSA'
+  inputs:
+    GdnPublishTsaOnboard: true
+    GdnPublishTsaConfigFile: '$(Build.SourcesDirectory)\builds\TSAConfig.gdntsa'
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'), eq(variables['TSA_UPLOAD'], 'true'))
+
 - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
   displayName: 'Component Detection'
   inputs:
@@ -368,4 +368,6 @@ steps:
   displayName: 'Post Analysis'
   inputs:
     GdnBreakPolicyMinSev: Error
+    GdnBreakSuppressionFiles: $(Build.SourcesDirectory)\.gdn\global.gdnsuppress
+    GdnBreakSuppressionSets: default
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
