@@ -7,7 +7,7 @@ Needs Logs:
 ```json
 {
   "logging": {
-      "fileLoggingMode": "debugOnly",
+      "fileLoggingMode": "always",
       "logLevel": {
         "default": "Debug"
       }
