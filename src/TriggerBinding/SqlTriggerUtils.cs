@@ -100,14 +100,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 if (!await reader.ReadAsync(cancellationToken))
                 {
-                    throw new InvalidOperationException($"Received empty response when querying the object ID for table: '{userTableQuotedFullName}'.");
+                    throw new InvalidOperationException($"Received empty response when querying the object ID for table: {userTableQuotedFullName}.");
                 }
 
                 object userTableId = reader.GetValue(0);
 
                 if (userTableId is DBNull)
                 {
-                    throw new InvalidOperationException($"Could not find table: '{userTableQuotedFullName}'.");
+                    throw new InvalidOperationException($"Could not find table: {userTableQuotedFullName}.");
                 }
                 logger.LogDebugWithThreadId($"END GetUserTableId TableId={userTableId}");
                 return (int)userTableId;
