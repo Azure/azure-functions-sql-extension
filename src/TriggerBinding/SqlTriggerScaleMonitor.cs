@@ -172,7 +172,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 else
                 {
-                    this._logger.LogDebug($"Avoiding scale-in: Found the unprocessed changes for table: '{this._userTable.FullName}' to be decreasing" +
+                    this._logger.LogDebugWithThreadId($"Avoiding scale-in: Found the unprocessed changes for table: '{this._userTable.FullName}' to be decreasing" +
                         " but they are high enough to require all existing workers for processing.");
                 }
             }

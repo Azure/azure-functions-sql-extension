@@ -176,7 +176,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
             ScaleStatus scaleStatus = monitor.GetScaleStatus(context);
 
             Assert.Equal(ScaleVote.None, scaleStatus.Vote);
-            Assert.Contains("Avoiding scale-in: Found the unprocessed changes for table: 'testTableName' to be decreasing but they are high enough to require all existing workers for processing.", logMessages);
+            Assert.Contains("Avoiding scale-in: Found the unprocessed changes for table: 'testTableName' to be decreasing but they are high enough to require all existing workers for processing.", string.Join(" ", logMessages));
         }
 
         /// <summary>

@@ -50,8 +50,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly bool _hasConfiguredMaxChangesPerWorker = false;
 
         private SqlTableChangeMonitor<T> _changeMonitor;
-        private IScaleMonitor<SqlTriggerMetrics> _scaleMonitor;
-        private ITargetScaler _targetScaler;
+        private readonly IScaleMonitor<SqlTriggerMetrics> _scaleMonitor;
+        private readonly ITargetScaler _targetScaler;
 
         private int _listenerState = ListenerNotStarted;
 
@@ -81,6 +81,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_MaxChangesPerWorker}'. Ensure that the value is a positive integer.");
             }
             this._hasConfiguredMaxChangesPerWorker = configuredMaxChangesPerWorker != null;
+
+            this._scaleMonitor = new SqlTriggerScaleMonitor(this._userFunctionId, this._userTable.FullName, this._connectionString, this._maxChangesPerWorker, this._logger);
+            this._targetScaler = new SqlTriggerTargetScaler(this._userFunctionId, this._userTable.FullName, this._connectionString, this._maxChangesPerWorker, this._logger);
         }
 
         public void Cancel()
@@ -118,7 +121,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                     await VerifyDatabaseSupported(connection, this._logger, cancellationToken);
 
-                    int userTableId = await GetUserTableIdAsync(connection, this._userTable.QuotedFullName, this._logger, cancellationToken);
+                    int userTableId = await GetUserTableIdAsync(connection, this._userTable.FullName, this._logger, cancellationToken);
                     IReadOnlyList<(string name, string type)> primaryKeyColumns = await GetPrimaryKeyColumnsAsync(connection, userTableId, this._logger, this._userTable.FullName, cancellationToken);
                     IReadOnlyList<string> userTableColumns = await this.GetUserTableColumnsAsync(connection, userTableId, cancellationToken);
 
@@ -164,9 +167,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         [TelemetryMeasureName.TransactionDurationMs] = transactionSw.ElapsedMilliseconds,
                         [TelemetryMeasureName.MaxChangesPerWorker] = this._maxChangesPerWorker
                     };
-
-                    this._scaleMonitor = new SqlTriggerScaleMonitor(this._userFunctionId, this._userTable.FullName, this._connectionString, this._maxChangesPerWorker, this._logger);
-                    this._targetScaler = new SqlTriggerTargetScaler(this._userFunctionId, this._userTable.FullName, this._connectionString, this._maxChangesPerWorker, this._logger);
 
                     TelemetryInstance.TrackEvent(
                         TelemetryEventName.StartListener,
