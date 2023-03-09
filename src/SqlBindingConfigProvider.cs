@@ -12,6 +12,10 @@ using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Azure.WebJobs.Logging;
+using Microsoft.Data.SqlClient;
+using System.Reflection;
+using System.Diagnostics;
+using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -53,6 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             ILogger logger = this._loggerFactory.CreateLogger(LogCategories.Bindings);
             TelemetryInstance.Initialize(this._configuration, logger);
+            LogDependentAssemblyVersions(logger);
 #pragma warning disable CS0618 // Fine to use this for our stuff
             FluentBindingRule<SqlAttribute> inputOutputRule = context.AddBindingRule<SqlAttribute>();
             var converter = new SqlConverter(this._configuration, logger);
@@ -63,6 +68,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             FluentBindingRule<SqlTriggerAttribute> triggerRule = context.AddBindingRule<SqlTriggerAttribute>();
             triggerRule.BindToTrigger(new SqlTriggerBindingProvider(this._configuration, this._hostIdProvider, this._loggerFactory));
+        }
+
+        private static readonly Assembly[] _dependentAssemblies = {
+            typeof(SqlConnection).Assembly, // Microsoft.Data.SqlClient
+            typeof(JsonConvert).Assembly // Newtonsoft.Json
+        };
+
+        /// <summary>
+        /// Log the versions of important dependent assemblies for troubleshooting support. The Azure Functions host skips checking
+        /// versions for most assemblies loaded so to allow customers to bring their own versions of assemblies and not have conflicts,
+        /// but this may end up causing issues in our extension so we log the version loaded of some critical dependencies to ensure
+        /// the version is expected.
+        /// </summary>
+        private static void LogDependentAssemblyVersions(ILogger logger)
+        {
+            foreach (Assembly assembly in _dependentAssemblies)
+            {
+                try
+                {
+                    logger.LogInformation($"Using {assembly.GetName().Name} {FileVersionInfo.GetVersionInfo(assembly.Location).ProductVersion}");
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning($"Error logging version for assembly {assembly.FullName}. {ex}");
+                }
+
+            }
         }
     }
 
