@@ -10,6 +10,7 @@ using Microsoft.Azure.WebJobs.Host.Triggers;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -65,18 +66,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 return Task.FromResult<ITriggerBinding>(null);
             }
 
-            if (!IsValidTriggerParameterType(parameter.ParameterType))
+            Type parameterType = parameter.ParameterType;
+            if (!IsValidTriggerParameterType(parameterType))
             {
-                throw new InvalidOperationException($"Can't bind SqlTriggerAttribute to type {parameter.ParameterType}." +
-                    " Only IReadOnlyList<SqlChange<T>> is supported, where T is the type of user-defined POCO that" +
-                    " matches the schema of the user table");
+                throw new InvalidOperationException($"Can't bind SqlTriggerAttribute to type {parameter.ParameterType}.");
             }
 
             string connectionString = SqlBindingUtilities.GetConnectionString(attribute.ConnectionStringSetting, this._configuration);
 
-            // Extract the POCO type 'T' and use it to instantiate class 'SqlTriggerBinding<T>'.
-            Type userType = parameter.ParameterType.GetGenericArguments()[0].GetGenericArguments()[0];
-            Type bindingType = typeof(SqlTriggerBinding<>).MakeGenericType(userType);
+            Type bindingType;
+            if (parameterType == typeof(string))
+            {
+                bindingType = typeof(SqlTriggerBinding<>).MakeGenericType(typeof(JObject));
+            }
+            else
+            {
+                // Extract the POCO type 'T' and use it to instantiate class 'SqlTriggerBinding<T>'.
+                Type userType = parameter.ParameterType.GetGenericArguments()[0].GetGenericArguments()[0];
+                bindingType = typeof(SqlTriggerBinding<>).MakeGenericType(userType);
+            }
 
             var constructorParameterTypes = new Type[] { typeof(string), typeof(string), typeof(ParameterInfo), typeof(IHostIdProvider), typeof(ILogger), typeof(IConfiguration) };
             ConstructorInfo bindingConstructor = bindingType.GetConstructor(constructorParameterTypes);
@@ -88,15 +96,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Checks if the type of trigger parameter in the user function is of form <see cref="IReadOnlyList<SqlChange{T}>" />.
+        /// Checks if the type of trigger parameter in the user function is of form string or <see cref="IReadOnlyList<SqlChange{T}>" />.
         /// </summary>
         private static bool IsValidTriggerParameterType(Type type)
         {
             return
-                type.IsGenericType &&
+                type == typeof(string) ||
+                (type.IsGenericType &&
                 type.GetGenericTypeDefinition() == typeof(IReadOnlyList<>) &&
                 type.GetGenericArguments()[0].IsGenericType &&
-                type.GetGenericArguments()[0].GetGenericTypeDefinition() == typeof(SqlChange<>);
+                type.GetGenericArguments()[0].GetGenericTypeDefinition() == typeof(SqlChange<>));
         }
     }
 }
