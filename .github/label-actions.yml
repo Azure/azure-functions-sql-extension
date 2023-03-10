@@ -1,29 +1,23 @@
 # actions for Needs Logs label
 Needs Logs:
-  comment: "We need more info to debug your particular issue. If you could attach your logs to the issue, it would help us fix the issue much faster.
+  comment: |
+    We need more info to debug your particular issue. If you could attach your logs to the issue, it would help us fix the issue much faster.
 
-1. Set the default logging level to `Debug` and enable logging to a file. To do this ensure the following entries are in your `host.json`. ([instructions](https://learn.microsoft.com/azure/azure-functions/configure-monitoring?tabs=v2#configure-log-levels))
+    1. Set the default logging level to `Debug` and enable logging to a file. To do this ensure the following entries are in your `host.json`. ([instructions](https://learn.microsoft.com/azure/azure-functions/configure-monitoring?tabs=v2#configure-log-levels))
 
+    ```json
+    {
+      "logging": {
+        "fileLoggingMode": "always",
+        "logLevel": {
+          "default": "Debug"
+        }
+      }
+    }
+    ```
 
-{
+    2. Restart your function and reproduce your issue
 
-	\"logging\": {
+    3. Get the log file and attach it to this issue. By default this will be in `%TMP%/LogFiles/Application/Functions/Host`.
 
-		\"fileLoggingMode\": \"always\",
-
-		\"logLevel\": {
-
-			\"default\": \"Debug\"
-
-		}
-
-	}
-
-}
-
-2. Restart your function and reproduce your issue
-
-3. Get the log file and attach it to this issue. By default this will be in `%TMP%/LogFiles/Application/Functions/Host`.
-
-**NOTE** Debug logging will include information such as Database and table names, if you do not wish to include this information you can either redact it from the logs before attaching or let us know and we will provide a way to send logs directly to us.
-"
+    **NOTE** Debug logging will include information such as Database and table names, if you do not wish to include this information you can either redact it from the logs before attaching or let us know and we will provide a way to send logs directly to us.
