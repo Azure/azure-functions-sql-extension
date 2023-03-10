@@ -4,7 +4,6 @@ Needs Logs:
 
 1. Set the default logging level to `Debug` and enable logging to a file. To do this ensure the following entries are in your `host.json`. ([instructions](https://learn.microsoft.com/azure/azure-functions/configure-monitoring?tabs=v2#configure-log-levels))
 
-```json
 
 {
 
@@ -21,8 +20,6 @@ Needs Logs:
 	}
 
 }
-
-```
 
 2. Restart your function and reproduce your issue
 
