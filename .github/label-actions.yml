@@ -8,17 +8,17 @@ Needs Logs:
 
 {
 
-  \"logging\": {
+	\"logging\": {
 
-      \"fileLoggingMode\": \"always\",
+		\"fileLoggingMode\": \"always\",
 
-      \"logLevel\": {
+		\"logLevel\": {
 
-        \"default\": \"Debug\"
+			\"default\": \"Debug\"
 
-      }
+		}
 
-  }
+	}
 
 }
 
