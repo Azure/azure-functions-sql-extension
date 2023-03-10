@@ -26,9 +26,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 
         public short TinyInt { get; set; }
 
-        public Double FloatType { get; set; }
+        public double FloatType { get; set; }
 
-        public Single Real { get; set; }
+        public float Real { get; set; }
 
         public DateTime Date { get; set; }
 
