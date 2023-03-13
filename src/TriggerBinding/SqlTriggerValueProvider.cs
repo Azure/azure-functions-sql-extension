@@ -55,7 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             if (this._isString)
             {
-                return Task.FromResult<object>(JArray.FromObject(this._value).ToString(Newtonsoft.Json.Formatting.None));
+                return Task.FromResult<object>(Utils.JsonSerializeObject(this._value));
             }
 
             return Task.FromResult(this._value);

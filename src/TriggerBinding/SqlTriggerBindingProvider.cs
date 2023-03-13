@@ -75,6 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string connectionString = SqlBindingUtilities.GetConnectionString(attribute.ConnectionStringSetting, this._configuration);
 
             Type bindingType;
+            // Instantiate class 'SqlTriggerBinding<JObject>' for non .NET In-Proc functions.
             if (parameterType == typeof(string))
             {
                 bindingType = typeof(SqlTriggerBinding<>).MakeGenericType(typeof(JObject));
