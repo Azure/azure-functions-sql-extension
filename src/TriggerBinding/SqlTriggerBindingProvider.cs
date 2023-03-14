@@ -69,7 +69,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             Type parameterType = parameter.ParameterType;
             if (!IsValidTriggerParameterType(parameterType))
             {
-                throw new InvalidOperationException($"Can't bind SqlTriggerAttribute to type {parameter.ParameterType}.");
+                throw new InvalidOperationException($"Can't bind SqlTriggerAttribute to type {parameter.ParameterType}, this is not a supported type.");
             }
 
             string connectionString = SqlBindingUtilities.GetConnectionString(attribute.ConnectionStringSetting, this._configuration);
