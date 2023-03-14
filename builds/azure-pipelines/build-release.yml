@@ -1,5 +1,14 @@
 trigger: none
 
+parameters: # parameters are shown up in ADO UI in a build queue time
+- name: 'ReleaseType'
+  displayName: 'Type of release'
+  type: string
+  default: preview
+  values:
+    - full
+    - preview
+
 pr: none
 
 schedules:
@@ -18,7 +27,7 @@ variables:
   versionMajorMinor: '$(versionMajor).$(versionMinor)'  # This variable is only used for the counter so we reset properly when either major or minor is bumped
   versionPatch: $[counter(variables['versionMajorMinor'], 0)] # This will reset when we bump minor version
   binariesVersion: '$(versionMajor).$(versionMinor).$(versionPatch)'
-  nugetVersion: '$(binariesVersion)-preview'
+  nugetVersion: $[replace(replace('True', eq(parameters.ReleaseType, 'full'), '$(binariesVersion)'),'True','$(binariesVersion)-preview')] # This will set the preview tag to the version based on the ReleaseType parameter.
   supportedVersion: '$(versionMajor).*-*'
   LGTM.UploadSnapshot: true
   Semmle.SkipAnalysis: true
