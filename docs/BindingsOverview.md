@@ -139,6 +139,12 @@ This table stores information about each function being executed, what table tha
 
 A `Leases_*` table is created for every unique instance of a function and table. The full name will be in the format `Leases_<FunctionId>_<TableId>` where `<FunctionId>` is generated from the function ID and `<TableId>` is the object ID of the table being tracked. Such as `Leases_7d12c06c6ddff24c_1845581613`.
 
+NOTE: `FunctionId` is generated from a couple of inputs:
+    - The HostId, which is a hash of the assembly name containing the function
+    - The full class and method name of the function
+
+If either of these values are changed then a new FunctionId will be generated and result in the function starting over from the beginning, including creating a new Leases table.
+
 This table is used to ensure that all changes are processed and that no change is processed more than once. This table consists of two groups of columns:
 
 - A column for each column in the primary key of the target table - used to identify the row that it maps to in the target table
