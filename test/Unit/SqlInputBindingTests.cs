@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlConverters;
-using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -20,7 +19,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
     public class SqlInputBindingTests
     {
         private static readonly Mock<IConfiguration> config = new();
-        private static readonly Mock<IHostIdProvider> hostIdProvider = new();
         private static readonly Mock<ILoggerFactory> loggerFactory = new();
         private static readonly Mock<ILogger> logger = new();
         private static readonly SqlConnection connection = new();
@@ -28,9 +26,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [Fact]
         public void TestNullConfiguration()
         {
-            Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(null, hostIdProvider.Object, loggerFactory.Object));
-            Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(config.Object, null, loggerFactory.Object));
-            Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(config.Object, hostIdProvider.Object, null));
+            Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(null, loggerFactory.Object));
+            Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(config.Object, loggerFactory.Object));
+            Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(config.Object, null));
             Assert.Throws<ArgumentNullException>(() => new SqlConverter(null, logger.Object));
             Assert.Throws<ArgumentNullException>(() => new SqlGenericsConverter<string>(null, logger.Object));
         }
@@ -50,7 +48,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [Fact]
         public void TestNullContext()
         {
-            var configProvider = new SqlBindingConfigProvider(config.Object, hostIdProvider.Object, loggerFactory.Object);
+            var configProvider = new SqlBindingConfigProvider(config.Object, loggerFactory.Object);
             Assert.Throws<ArgumentNullException>(() => configProvider.Initialize(null));
         }
 

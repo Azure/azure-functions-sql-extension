@@ -24,30 +24,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
             {
                 BenchmarkRunner.Run<SqlOutputBindingPerformance>();
             }
-            if (runAll || args.Contains("trigger"))
-            {
-                BenchmarkRunner.Run<SqlTriggerBindingPerformance>();
-            }
-            if (runAll || args.Contains("trigger_batch"))
-            {
-                BenchmarkRunner.Run<SqlTriggerBindingPerformance_BatchOverride>();
-            }
-            if (runAll || args.Contains("trigger_poll"))
-            {
-                BenchmarkRunner.Run<SqlTriggerBindingPerformance_PollingIntervalOverride>();
-            }
-            if (runAll || args.Contains("trigger_overrides"))
-            {
-                BenchmarkRunner.Run<SqlTriggerPerformance_Overrides>();
-            }
-            if (runAll || args.Contains("trigger_parallel"))
-            {
-                BenchmarkRunner.Run<SqlTriggerBindingPerformance_Parallelization>();
-            }
-            if (runAll || args.Contains("trigger_changerate"))
-            {
-                BenchmarkRunner.Run<SqlTriggerBindingPerformance_ChangeRate>();
-            }
         }
     }
 }

@@ -9,11 +9,6 @@ parameters:
     default:
       - input
       - output
-      - trigger
-      - trigger_batch
-      - trigger_poll
-      - trigger_overrides
-      - trigger_parallel
 
 steps:
 - task: UseDotNet@2
