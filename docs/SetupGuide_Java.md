@@ -18,7 +18,6 @@
     - [Samples for Output Bindings](#samples-for-output-bindings)
       - [Array](#array)
       - [Single Row](#single-row)
-  - [Trigger Binding](#trigger-binding)
   - [Known Issues](#known-issues)
 
 ## Setup Function Project
@@ -422,10 +421,6 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
         return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(product).build();
     }
 ```
-
-## Trigger Binding
-
-> Trigger binding support is only available for in-proc C# functions at present.
 
 ## Known Issues
 
