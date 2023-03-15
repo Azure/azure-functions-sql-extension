@@ -22,6 +22,7 @@
     - [Samples for Output Bindings](#samples-for-output-bindings)
       - [Array](#array)
       - [Single Row](#single-row)
+  - [Trigger Binding](#trigger-binding)
 
 ## Binding Model
 
@@ -347,3 +348,7 @@ public static Task<Product> Run(
     return prod;
 }
 ```
+
+## Trigger Binding
+
+> Trigger binding support is only available for in-proc C# functions at present.
