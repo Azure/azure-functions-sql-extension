@@ -213,7 +213,9 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
 
 #### IAsyncEnumerable
 
-Using the `IAsyncEnumerable` binding generally requires that the `Run` function be `async`. It is also important to call `DisposeAsync` at the end of function execution to make sure all resources used by the enumerator are freed.
+Using the `IAsyncEnumerable` binding generally requires that the `Run` function be `async`.
+
+**Note:** It is important to call `DisposeAsync` at the end of function execution to make sure all resources used by the enumerator are freed. If `DisposeAsync` is not called, the SQL connection will remain open and result in resource leaks.
 
 ```csharp
 public static async Task<IActionResult> Run(

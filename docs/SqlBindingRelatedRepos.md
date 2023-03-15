@@ -34,7 +34,7 @@ Currently SQL Bindings is part of the 3.x and 4.x Preview bundles.
 
 [Azure/azure-functions-extension-bundles at v4.x-preview (github.com)](https://github.com/Azure/azure-functions-extension-bundles/tree/v4.x-preview)
 
-## Python SQL Bindings
+## Azure Function Worker Related Repos
 
 ### Python Library
 
@@ -50,5 +50,10 @@ End to end tests for SQL Bindings in the Python Worker.
 
 ### PowerShell Worker
 
-PowerShell language worker for Azure Functions.
-[Azure/azure-functions-powershell-worker: PowerShell worker for Azure Functions. (github.com)](https://github.com/Azure/azure-functions-powershell-worker)
+[PowerShell language worker for Azure Functions](https://github.com/Azure/azure-functions-powershell-worker)
+
+### Java Worker 
+[Java language worker for Azure Functions](https://github.com/Azure/azure-functions-java-worker)
+
+### NodeJS Worker 
+[NodeJS (Javascript/Typescript) worker for Azure Functions](https://github.com/Azure/azure-functions-nodejs-worker)
