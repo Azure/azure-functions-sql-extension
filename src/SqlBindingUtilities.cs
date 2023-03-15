@@ -237,7 +237,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Checks whether an exception is a fatal SqlException. It is deteremined to be fatal
+        /// Checks whether an exception is a fatal SqlException. It is determined to be fatal
         /// if the Class value of the Exception is 20 or higher, see
         /// https://learn.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlexception#remarks
         /// for details
@@ -248,6 +248,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             // Most SqlExceptions wrap the original error from the native driver, so make sure to check both
             return (e as SqlException)?.Class >= 20 || (e.InnerException as SqlException)?.Class >= 20;
+        }
+
+        /// <summary>
+        /// Checks whether the connection state is currently Broken or Closed
+        /// </summary>
+        /// <param name="conn">The connection to check</param>
+        /// <returns>True if the connection is broken or closed, false otherwise</returns>
+        internal static bool IsBrokenOrClosed(this SqlConnection conn)
+        {
+            return conn.State == ConnectionState.Broken || conn.State == ConnectionState.Closed;
         }
 
         /// <summary>
@@ -266,7 +276,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string connectionName,
             CancellationToken token)
         {
-            if (forceReconnect || conn.State.HasFlag(ConnectionState.Broken | ConnectionState.Closed))
+            if (forceReconnect || conn.IsBrokenOrClosed())
             {
                 logger.LogWarning($"{connectionName} is broken, attempting to reconnect...");
                 logger.LogDebugWithThreadId($"BEGIN RetryOpen{connectionName}");
