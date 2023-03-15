@@ -19,6 +19,7 @@
     - [Samples for Output Bindings](#samples-for-output-bindings)
       - [Array](#array)
       - [Single Row](#single-row)
+  - [Trigger Binding](#trigger-binding)
 
 ## Setup Function Project
 
@@ -210,3 +211,8 @@ See the [AddProductsArray](https://github.com/Azure/azure-functions-sql-extensio
 #### Single Row
 
 See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-powershell/AddProduct) sample
+
+
+## Trigger Binding
+
+> Trigger binding support is only available for in-proc C# functions at present.
