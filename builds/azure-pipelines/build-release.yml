@@ -22,7 +22,7 @@ schedules:
 variables:
   solution: '**/*.sln'
   configuration: 'Release'
-  versionMajor: 1
+  versionMajor: 2
   versionMinor: 0
   versionMajorMinor: '$(versionMajor).$(versionMinor)'  # This variable is only used for the counter so we reset properly when either major or minor is bumped
   versionPatch: $[counter(variables['versionMajorMinor'], 0)] # This will reset when we bump minor version
