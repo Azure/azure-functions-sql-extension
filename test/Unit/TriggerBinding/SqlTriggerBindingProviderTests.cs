@@ -62,7 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
             InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(testCode);
 
             Assert.Equal(
-                $"Can't bind SqlTriggerAttribute to type {parameterType}. Only IReadOnlyList<SqlChange<T>> is supported, where T is the type of user-defined POCO that matches the schema of the user table",
+                $"Can't bind SqlTriggerAttribute to type {parameterType}, this is not a supported type.",
                 exception.Message);
         }
 
