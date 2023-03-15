@@ -21,6 +21,7 @@
       - [Array](#array)
       - [Single Row](#single-row)
     - [Sample with multiple Bindings](#sample-with-multiple-bindings)
+  - [Trigger Binding](#trigger-binding)
 
 ## CSharp Scripting
 
@@ -226,3 +227,8 @@ See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree
 ### Sample with multiple Bindings
 
 See the [GetAndAddProducts](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/InputBindingSamples/GetAndAddProducts) sample
+
+
+## Trigger Binding
+
+> Trigger binding support is only available for in-proc C# functions at present.
