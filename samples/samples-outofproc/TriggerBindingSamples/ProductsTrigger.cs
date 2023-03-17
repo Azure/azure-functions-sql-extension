@@ -13,12 +13,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.TriggerBinding
 {
     public class ProductsTrigger
     {
-        private static Action<ILogger, string, Exception> _loggerMessage;
-
-        public ProductsTrigger()
-        {
-            _loggerMessage = LoggerMessage.Define<string>(LogLevel.Information, eventId: new EventId(0, "INFO"), formatString: "{Message}");
-        }
+        private static readonly Action<ILogger, string, Exception> _loggerMessage = LoggerMessage.Define<string>(LogLevel.Information, eventId: new EventId(0, "INFO"), formatString: "{Message}");
 
         [Function("ProductsTrigger")]
         public static void Run(
