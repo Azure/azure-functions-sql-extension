@@ -31,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc)]
+        [UnsupportedLanguages(SupportedLanguages.Java)]
         public async Task SingleOperationTriggerTest(SupportedLanguages lang)
         {
             this.SetChangeTrackingForTable("Products");
