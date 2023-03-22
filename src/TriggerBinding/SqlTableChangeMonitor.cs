@@ -241,8 +241,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                                 await this.ReleaseLeasesAsync(connection, token);
                             }
                         }
-                        catch (Exception e) when (e.IsFatalSqlException())
+                        catch (Exception e) when (e.IsFatalSqlException() || connection.IsBrokenOrClosed())
                         {
+                            // Retry connection if there was a fatal SQL exception or something else caused the connection to be closed
+                            // since that indicates some other issue occurred (such as dropped network) and may be able to be recovered
                             this._logger.LogError($"Fatal SQL Client exception processing changes. Will attempt to reestablish connection in {this._pollingIntervalInMs}ms. Exception = {e.Message}");
                             forceReconnect = true;
                         }
@@ -372,9 +374,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 this._rowsToProcess = new List<IReadOnlyDictionary<string, object>>();
                 this._logger.LogError($"Failed to check for changes in table '{this._userTable.FullName}' due to exception: {e.GetType()}. Exception message: {e.Message}");
                 TelemetryInstance.TrackException(TelemetryErrorName.GetChanges, e, this._telemetryProps);
-                if (e.IsFatalSqlException())
+                if (e.IsFatalSqlException() || connection.IsBrokenOrClosed())
                 {
-                    // If we get a fatal SQL Client exception here let it bubble up so we can try to re-establish the connection
+                    // If we get a fatal SQL Client exception or the connection is broken let it bubble up so we can try to re-establish the connection
                     throw;
                 }
             }
@@ -483,8 +485,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         {
                             await this.RenewLeasesAsync(connection, token);
                         }
-                        catch (Exception e) when (e.IsFatalSqlException())
+                        catch (Exception e) when (e.IsFatalSqlException() || connection.IsBrokenOrClosed())
                         {
+                            // Retry connection if there was a fatal SQL exception or something else caused the connection to be closed
+                            // since that indicates some other issue occurred (such as dropped network) and may be able to be recovered
                             forceReconnect = true;
                         }
 

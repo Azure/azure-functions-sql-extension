@@ -29,11 +29,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Ensures that the user function gets invoked for each of the insert, update and delete operation.
         /// </summary>
-        [Fact]
-        public async Task SingleOperationTriggerTest()
+        [Theory]
+        [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Java)]
+        public async Task SingleOperationTriggerTest(SupportedLanguages lang)
         {
             this.SetChangeTrackingForTable("Products");
-            this.StartFunctionHost(nameof(ProductsTrigger), SupportedLanguages.CSharp);
+            this.StartFunctionHost(nameof(ProductsTrigger), lang);
 
             int firstId = 1;
             int lastId = 30;
