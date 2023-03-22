@@ -4,7 +4,7 @@ parameters: # parameters are shown up in ADO UI in a build queue time
 - name: 'ReleaseType'
   displayName: 'Type of release'
   type: string
-  default: full
+  default: preview
   values:
     - full
     - preview
