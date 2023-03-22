@@ -139,6 +139,12 @@ This table stores information about each function being executed, what table tha
 
 A `Leases_*` table is created for every unique instance of a function and table. The full name will be in the format `Leases_<FunctionId>_<TableId>` where `<FunctionId>` is generated from the function ID and `<TableId>` is the object ID of the table being tracked. Such as `Leases_7d12c06c6ddff24c_1845581613`.
 
+To find the name of the leases table associated with your function, look in the log output for a line such as this which is emitted when the trigger is started.
+
+`SQL trigger Leases table: [az_func].[Leases_84d975fca0f7441a_901578250]`
+
+This log message is at the `Information` level, so make sure your log level is set correctly.
+
 NOTE: `FunctionId` is generated from a couple of inputs:
     - The HostId, which is a hash of the assembly name containing the function
     - The full class and method name of the function
@@ -194,3 +200,25 @@ Note that these retries are outside the built in idle connection retry logic tha
 If an exception occurs in the user function when processing changes then those rows will be retried again in 60 seconds. Other changes will be processed as normal during this time, but the rows that caused the exception will be ignored until the timeout period has elapsed.
 
 If the function execution fails 5 times in a row for a given row then that row is completely ignored for all future changes.
+
+You can run this query to see what rows have failed 5 times and are currently ignored, see [Leases table](#az_funcleases_) documentation for how to get the correct Leases table to query for your function.
+
+```sql
+SELECT * FROM [az_func].[Leases_<FunctionId>_<TableId>] WHERE _az_func_AttemptCount = 5
+```
+
+To reset a row and enable functions to try processing it again set the `_az_func_AttemptCount` value to 0.
+
+e.g.
+
+```sql
+UPDATE [Products].[az_func].[Leases_<FunctionId>_<TableId>] SET _az_func_AttemptCount = 0 WHERE _az_func_AttemptCount = 5
+```
+
+> Note: This will reset ALL ignored rows. To reset only a specific row change the WHERE clause to select only the row you want to update.
+
+e.g.
+
+```sql
+UPDATE [Products].[az_func].[Leases_<FunctionId>_<TableId>] SET _az_func_AttemptCount = 0 WHERE ProductId = 123
+```
