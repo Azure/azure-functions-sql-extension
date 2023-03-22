@@ -37,10 +37,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
         public const string TelemetryOptoutSetting = "AzureFunctionsSqlBindingsTelemetryOptOut";
 
         public const string WelcomeMessage = @"Azure SQL binding for Azure Functions
----------------------
-Telemetry
----------
-This extension collect usage data in order to help us improve your experience. The data is anonymous and doesn't include any personal information. You can opt-out of telemetry by setting the " + TelemetryOptoutEnvVar + " environment variable or the " + TelemetryOptoutSetting + @" + app setting to '1', 'true' or 'yes';
+-----------------------------------------------
+Azure Functions SQL Binding Extension Telemetry
+-----------------------------------------------
+This extension collects usage data in order to help us improve your experience. The data is anonymous and doesn't include any personal information. You can opt-out of telemetry by setting the " + TelemetryOptoutEnvVar + " environment variable or the " + TelemetryOptoutSetting + @" app setting to '1', 'true' or 'yes'.
+
+To learn more about our Privacy Statement visit this link: https://go.microsoft.com/fwlink/?LinkID=824704
 ";
 
         public void Initialize(IConfiguration config, ILogger logger)
