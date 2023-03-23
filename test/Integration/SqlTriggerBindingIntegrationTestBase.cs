@@ -145,7 +145,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <param name="functionName">Name of the user function that should cause error in trigger listener</param>
         /// <param name="useTestFolder">Whether the functions host should be launched from test folder</param>
         /// <param name="expectedErrorMessage">Expected error message string</param>
-        protected void StartFunctionHostAndWaitForError(string functionName, bool useTestFolder, string expectedErrorMessage)
+        protected void StartFunctionHostAndWaitForError(string functionName, SupportedLanguages lang, bool useTestFolder, string expectedErrorMessage)
         {
             string errorMessage = null;
             var tcs = new TaskCompletionSource<bool>();
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             };
 
             // All trigger integration tests are only using C# functions for testing at the moment.
-            this.StartFunctionHost(functionName, SupportedLanguages.CSharp, useTestFolder, OutputHandler);
+            this.StartFunctionHost(functionName, lang, useTestFolder, OutputHandler);
 
             // The functions host generally logs the error message within a second after starting up.
             const int BufferTimeForErrorInSeconds = 15;
