@@ -19,7 +19,6 @@ dotnet_diagnostic.CS1573.severity = none
 dotnet_diagnostic.CS1572.severity = none
 dotnet_diagnostic.CS1570.severity = none
 dotnet_diagnostic.CS1574.severity = none
-dotnet_diagnostic.CS1584.severity = error
 
 #### Core EditorConfig Options ####
 
