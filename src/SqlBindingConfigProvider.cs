@@ -30,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly ILoggerFactory _loggerFactory;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SqlBindingConfigProvider/>"/> class.
+        /// Initializes a new instance of the <see cref="SqlBindingConfigProvider"/> class.
         /// </summary>
         /// <exception cref="ArgumentNullException">
         /// Thrown if either parameter is null
