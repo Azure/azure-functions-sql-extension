@@ -13,10 +13,9 @@ dotnet_diagnostic.IDE0130.severity = none
 # CA1805: Do not initialize unnecessarily - It's better to be explicit when initializing vars to ensure correct value is used
 dotnet_diagnostic.CA1805.severity = none
 
-# Documentation related warnings, mark as error once they are fixed
+# Documentation related warnings, remove once they are fixed
 dotnet_diagnostic.CS1591.severity = none
 dotnet_diagnostic.CS1573.severity = none
-dotnet_diagnostic.CS1572.severity = none
 dotnet_diagnostic.CS1570.severity = error
 dotnet_diagnostic.CS1574.severity = error
 dotnet_diagnostic.CS1584.severity = error

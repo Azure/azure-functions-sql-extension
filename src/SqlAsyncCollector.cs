@@ -79,14 +79,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlAsyncCollector{T}"/> class.
         /// </summary>
-        /// <param name="connection">
-        /// Contains the SQL connection that will be used by the collector when it inserts SQL rows
-        /// into the user's table
+        /// <param name="configuration">
+        /// Contains the function's configuration properties
         /// </param>
         /// <param name="attribute">
         /// Contains as one of its attributes the SQL table that rows will be inserted into
         /// </param>
-        /// <param name="loggerFactory">
+        /// <param name="logger">
         /// Logger Factory for creating an ILogger
         /// </param>
         /// <exception cref="ArgumentNullException">
