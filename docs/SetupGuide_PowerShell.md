@@ -159,17 +159,17 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
     $req_body = @(
         @{
-            EmployeeId=1,
-            FirstName="Hello",
-            LastName="World",
-            Company="Microsoft",
+            EmployeeId=1
+            FirstName="Hello"
+            LastName="World"
+            Company="Microsoft"
             Team="Functions"
         },
         @{
-            EmployeeId=2,
-            FirstName="Hi",
-            LastName="SQLupdate",
-            Company="Microsoft",
+            EmployeeId=2
+            FirstName="Hi"
+            LastName="SQLupdate"
+            Company="Microsoft"
             Team="Functions"
         }
     );
