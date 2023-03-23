@@ -2,6 +2,5 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 module.exports = async function (context, changes) {
-    // logger.LogInformation("Trigger1 Changes: " + Utils.JsonSerializeObject(products));
     context.log(`Trigger2 Changes: ${JSON.stringify(changes)}`)
 }

@@ -4,8 +4,7 @@
 using namespace System.Net
 
 param($changes)
-$changesJson = $changes | ConvertTo-Json
 # The output is used to inspect the trigger binding parameter in test methods.
 # Removing new lines for testing purposes.
-$changesJson = $changesJson -replace [Environment]::NewLine,"";
+$changesJson = $changes | ConvertTo-Json -Compress
 Write-Host "SQL Changes: $changesJson"
