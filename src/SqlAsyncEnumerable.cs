@@ -17,7 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly SqlAttribute _attribute;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SqlAsyncEnumerable<typeparamref name="T"/>"/> class.
+        /// Initializes a new instance of the <see cref="SqlAsyncEnumerable{T}"/> class.
         /// </summary>
         /// <param name="connection">The SqlConnection to be used by the enumerator</param>
         /// <param name="attribute">The attribute containing the query, parameters, and query type</param>
@@ -33,7 +33,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Returns the enumerator associated with this enumerable. The enumerator will execute the query specified
         /// in attribute and "lazily" grab the SQL rows corresponding to the query result. It will only read a
-        /// row into memory if <see cref="MoveNextAsync"/> is called
+        /// row into memory if <see cref="SqlAsyncEnumerator.MoveNextAsync"/> is called
         /// </summary>
         /// <param name="cancellationToken">The cancellationToken is not used in this method</param>
         /// <returns>The enumerator</returns>
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             private readonly SqlAttribute _attribute;
             private SqlDataReader _reader;
             /// <summary>
-            /// Initializes a new instance of the <see cref="SqlAsyncEnumerator<typeparamref name="T"/>"/> class.
+            /// Initializes a new instance of the <see cref="SqlAsyncEnumerator"/> class.
             /// </summary>
             /// <param name="connection">The SqlConnection to be used by the enumerator</param>
             /// <param name="attribute">The attribute containing the query, parameters, and query type</param>
