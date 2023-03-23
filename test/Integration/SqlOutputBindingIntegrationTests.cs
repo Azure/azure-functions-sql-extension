@@ -446,7 +446,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         /// <summary>
         /// Tests that subsequent upserts work correctly when the object properties are different from the first upsert.
-        ///
+        /// </summary>
         [Theory]
         [SqlInlineData()]
         public void AddProductWithDifferentPropertiesTest(SupportedLanguages lang)

@@ -77,7 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private ServerProperties _serverProperties;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SqlAsyncCollector<typeparamref name="T"/>"/> class.
+        /// Initializes a new instance of the <see cref="SqlAsyncCollector{T}"/> class.
         /// </summary>
         /// <param name="connection">
         /// Contains the SQL connection that will be used by the collector when it inserts SQL rows
@@ -486,7 +486,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             /// <summary>
-            /// Generates SQL query that can be used to retrieve column names & types of a table
+            /// Generates SQL query that can be used to retrieve column names and types of a table
             /// </summary>
             public static string GetColumnDefinitionsQuery(SqlObject table)
             {
