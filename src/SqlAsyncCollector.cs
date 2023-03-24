@@ -79,14 +79,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlAsyncCollector{T}"/> class.
         /// </summary>
-        /// <param name="connection">
-        /// Contains the SQL connection that will be used by the collector when it inserts SQL rows
-        /// into the user's table
+        /// <param name="configuration">
+        /// Contains the function's configuration properties
         /// </param>
         /// <param name="attribute">
         /// Contains as one of its attributes the SQL table that rows will be inserted into
         /// </param>
-        /// <param name="loggerFactory">
+        /// <param name="logger">
         /// Logger Factory for creating an ILogger
         /// </param>
         /// <exception cref="ArgumentNullException">
@@ -350,6 +349,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         /// <param name="table">Information about the table we will be upserting into</param>
         /// <param name="rows">Rows to be upserted</param>
+        /// <param name="newDataQuery">Generated T-SQL data query</param>
+        /// <param name="rowData">Serialized rows to be upserted represented as JSON string</param>
         /// <returns>T-SQL containing data for merge</returns>
         private static void GenerateDataQueryForMerge(TableInformation table, IEnumerable<T> rows, out string newDataQuery, out string rowData)
         {
@@ -556,6 +557,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <param name="fullName">Full name of table, including schema (if exists).</param>
             /// <param name="logger">ILogger used to log any errors or warnings.</param>
             /// <param name="objectColumnNames">Column names from the object</param>
+            /// <param name="serverProperties">EngineEdition and Edition of the target Sql Server.</param>
             /// <returns>TableInformation object containing primary keys, column types, etc.</returns>
             public static async Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName, ILogger logger, IEnumerable<string> objectColumnNames, ServerProperties serverProperties)
             {
