@@ -24,6 +24,11 @@
 
   <Target Name="CopySamples" AfterTargets="Build">
     <ItemGroup>
+      <_DatabaseItems Include="..\samples\Database\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_DatabaseItems)" DestinationFolder="$(OutDir)\Database\%(RecursiveDir)" />
+    <Message Text="Copied SQL Scripts to $(OutDir)\Database" Importance="high" />
+    <ItemGroup>
       <_CSharpCopyItems Include="..\samples\samples-csharp\bin\$(Configuration)\$(TargetFramework)\**\*.*" />
     </ItemGroup>
     <Copy SourceFiles="@(_CSharpCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\CSharp\%(RecursiveDir)" />
