@@ -1,0 +1,5 @@
+# See https://github.com/dotnet/roslyn-analyzers/blob/main/.editorconfig for an example on different settings and how they're used
+
+[*.csx]
+
+dotnet_diagnostic.CS0659.severity = none # overrides Object.Equals but does not override Object.GetHashCode() - not necessary for our samples
