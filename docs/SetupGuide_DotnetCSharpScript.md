@@ -57,7 +57,7 @@ These instructions will guide you through creating your Function Project and add
         "version": "[4.*, 5.0.0)"
     }
     ```
-    Once your have these set up, your project folder should resemble [Folder Structure](https://learn.microsoft.com/azure/azure-functions/functions-reference-csharp?tabs=functionsv2#folder-structure)
+    Once you have these set up, your project folder should resemble [Folder Structure](https://learn.microsoft.com/azure/azure-functions/functions-reference-csharp?tabs=functionsv2#folder-structure)
 
 ## Input Binding
 
