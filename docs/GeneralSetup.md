@@ -4,7 +4,7 @@ This document contains all the initial setup instructions needed to make your ow
 
 ## Create a SQL Server
 
-First you'll need a SQL server for the bindings to connect to. If you already have your own set up then you can skip this step, otherwise pick from one of the below options.
+First, you'll need a SQL server for the bindings to connect to. If you already have your own set up then you can skip this step, otherwise pick from one of the below options.
 
 ### Docker container
 
@@ -16,11 +16,11 @@ Azure SQL Database is a fully managed platform as a service (PaaS) database engi
 
 ## SQL Setup
 
-Next you'll configure your SQL Server database for use with Azure SQL binding for Azure Functions.
+Next, you'll configure your SQL Server database for use with Azure SQL binding for Azure Functions.
 
 This will require connecting to and running queries - you can use [Azure Data Studio](https://docs.microsoft.com/sql/azure-data-studio/download-azure-data-studio) or the [MSSQL for VS Code Extension](https://docs.microsoft.com/sql/tools/visual-studio-code/sql-server-develop-use-vscode) to do this.
 
-1. First you'll need a table to run queries against. If you already have one you'd like to use then you can skip this step.
+1. First, you'll need a table to run queries against. If you already have one you'd like to use then you can skip this step.
 
     Otherwise connect to your database and run the following query to create a simple table to start with.
 
@@ -153,7 +153,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql --prerelease
     ```
 
-    **JavaScript, TypeScript, Python, Powershell:** Update the `host.json` file to the preview extension bundle.
+    **JavaScript, TypeScript, Python, PowerShell:** Update the `host.json` file to the preview extension bundle.
 
     ```json
     "extensionBundle": {
@@ -206,7 +206,7 @@ Once you have your Function Project you need to configure it for use with Azure 
     (<i>Note: when pasting in the connection string, you will need to replace part of the connection string where it says '{your_password}' with your Azure SQL Server password</i>)
    </details>
 
-3. Open the generated `local.settings.json` file and in the `Values` section verify you have the below. If not, add the below and replace `{connection_string}` with the your connection string from the previous step:
+3. Open the generated `local.settings.json` file and in the `Values` section verify you have the below. If not, add the below and replace `{connection_string}` with your connection string from the previous step:
 
     ```json
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
@@ -218,6 +218,6 @@ You have setup your local environment and are now ready to create your first Azu
 
 - [.NET](./SetupGuide_Dotnet.md)
 - [Java](./SetupGuide_Java.md)
-- [Javascript](./SetupGuide_Javascript.md)
+- [JavaScript](./SetupGuide_Javascript.md)
 - [Python](./SetupGuide_Python.md)
 - [PowerShell](./SetupGuide_PowerShell.md)
