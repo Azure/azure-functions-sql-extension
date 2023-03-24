@@ -335,7 +335,7 @@ When you're developing locally, add your application settings in the local.setti
 
 Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server), and that you have the 'Employee.java' class from the [Setup for Input Bindings](#setup-for-input-bindings) section.
 
-- Open your app in VSCode
+- Open your app in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a package name) -> (Provide a function name) -> anonymous
 - In the file that opens, replace the `public HttpResponseMessage run` block with the below code.
