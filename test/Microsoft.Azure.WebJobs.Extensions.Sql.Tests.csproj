@@ -67,6 +67,10 @@
       <_CSharpScriptCopyItems Include="Integration\test-csx\**\*.*" />
     </ItemGroup>
     <Copy SourceFiles="@(_CSharpScriptCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\CSharpscript\%(RecursiveDir)" />
+    <ItemGroup>
+      <_CommonCopyItems Include="..\samples\samples-csharpscript\Common\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_CommonCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\Common\%(RecursiveDir)" />
     <Message Text="Copied CSX Samples output to $(OutDir)\SqlExtensionSamples\CSharpscript" Importance="high" />
   </Target>
 </Project>

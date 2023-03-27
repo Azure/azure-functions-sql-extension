@@ -3,12 +3,12 @@
     {
       "authLevel": "function",
       "name": "req",
-      "direction": "in",
       "type": "httpTrigger",
+      "direction": "in",
       "methods": [
-        "post"
+        "get"
       ],
-      "route": "addproduct-missingcolumns"
+      "route": "getproducts-async/{cost}"
     },
     {
       "name": "$return",
@@ -16,12 +16,13 @@
       "direction": "out"
     },
     {
-      "name": "product",
+      "name": "products",
       "type": "sql",
-      "direction": "out",
-      "commandText": "[dbo].[Products]",
+      "direction": "in",
+      "commandText": "select * from Products where Cost = @Cost",
+      "commandType": "Text",
+      "parameters": "@Cost={cost}",
       "connectionStringSetting": "SqlConnectionString"
     }
-  ],
-  "disabled": false
+  ]
 }
