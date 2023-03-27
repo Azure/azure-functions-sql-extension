@@ -91,6 +91,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
                 route = "getemployees")
                 HttpRequestMessage<Optional<String>> request,
             @SQLInput(
+                name = "employees",
                 commandText = "SELECT * FROM Employees",
                 commandType = "Text",
                 connectionStringSetting = "SqlConnectionString")
@@ -106,7 +107,6 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Paste the below in the file. These are the column names of our SQL table. Note that the casing of the Object field names and the table column names must match.
 
     ```java
-    package com.function.Common;
     public class Employee {
         private int EmployeeId;
         private String LastName;
@@ -155,7 +155,6 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
     }
     ```
 
-- Navigate back to your HttpTriggerJava file.
 - Open the local.settings.json file, and in the brackets for "Values," verify there is a 'SqlConnectionString.' If not, add it.
 - Hit 'F5' to run your code. This will start up the Functions Host with a local HTTP Trigger and SQL Input Binding.
 - Click the link that appears in your terminal.
@@ -336,29 +335,30 @@ When you're developing locally, add your application settings in the local.setti
 
 Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server), and that you have the 'Employee.java' class from the [Setup for Input Bindings](#setup-for-input-bindings) section.
 
-- Open your app in VSCode
+- Open your app in VS Code
 - Press 'F1' and search for 'Azure Functions: Create Function'
 - Choose HttpTrigger -> (Provide a package name) -> (Provide a function name) -> anonymous
 - In the file that opens, replace the `public HttpResponseMessage run` block with the below code.
 
     ```java
     public HttpResponseMessage run(
-            @HttpTrigger(
-                name = "req",
-                methods = {HttpMethod.GET},
-                authLevel = AuthorizationLevel.ANONYMOUS,
-                route = "addemployees-array")
-                HttpRequestMessage<Optional<String>> request,
-            @SQLOutput(
-                name = "output",
-                commandText = "dbo.Employees",
-                connectionStringSetting = "SqlConnectionString")
-                OutputBinding<Employee[]> output) {
-        output = new Employee[]
-            {
-                new Employee(1, "Hello", "World", "Microsoft", "Functions"),
-                new Employee(2, "Hi", "SQLupdate", "Microsoft", "Functions")
-            };
+        @HttpTrigger(
+            name = "req",
+            methods = {HttpMethod.GET},
+            authLevel = AuthorizationLevel.ANONYMOUS,
+            route = "addemployees-array")
+            HttpRequestMessage<Optional<String>> request,
+        @SQLOutput(
+            name = "output",
+            commandText = "dbo.Employees",
+            connectionStringSetting = "SqlConnectionString")
+            OutputBinding<Employee[]> output) {
+        Employee[] employees = new Employee[]
+        {
+            new Employee(1, "Hello", "World", "Microsoft", "Functions"),
+            new Employee(2, "Hi", "SQLupdate", "Microsoft", "Functions")
+        };
+        output.setValue(employees);
         return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(output).build();
     }
     ```

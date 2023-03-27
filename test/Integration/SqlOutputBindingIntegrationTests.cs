@@ -144,7 +144,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.StartFunctionHost(nameof(QueueTriggerProducts), lang);
 
             string uri = $"http://localhost:{this.Port}/admin/functions/QueueTriggerProducts";
-            string json = "{ 'input': 'Test Data' }";
+            string json = /*lang=json*/ "{ 'input': 'Test Data' }";
 
             this.SendPostRequest(uri, json).Wait();
 
@@ -446,7 +446,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         /// <summary>
         /// Tests that subsequent upserts work correctly when the object properties are different from the first upsert.
-        ///
+        /// </summary>
         [Theory]
         [SqlInlineData()]
         public void AddProductWithDifferentPropertiesTest(SupportedLanguages lang)
