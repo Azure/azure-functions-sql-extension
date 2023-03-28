@@ -400,6 +400,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // Verify the message contains the expected error so that other errors don't mistakenly make this test pass
             // Wait 2sec for message to get processed to account for delays reading output
             await foundExpectedMessageSource.Task.TimeoutAfter(TimeSpan.FromMilliseconds(2000), $"Timed out waiting for expected error message");
+
+            // Change database compat level back to supported level
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET COMPATIBILITY_LEVEL = 150;");
         }
 
         /// <summary>
