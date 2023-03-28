@@ -1,3 +1,3 @@
 ﻿CREATE VIEW ProductNames
-AS 
-	SELECT p.Name FROM Products p;
+AS
+    SELECT p.Name FROM Products p;
