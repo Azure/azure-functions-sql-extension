@@ -111,8 +111,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 using var masterConnection = new SqlConnection(this.MasterConnectionString);
                 masterConnection.Open();
-                TestUtils.ExecuteNonQuery(masterConnection, $"CREATE DATABASE [{this.DatabaseName}]", this.LogOutput);
-            }, this.LogOutput);
+                TestUtils.ExecuteNonQuery(masterConnection, $"CREATE DATABASE [{this.DatabaseName}]");
+                // Enable change tracking for trigger tests
+                TestUtils.ExecuteNonQuery(masterConnection, $"ALTER DATABASE [{this.DatabaseName}] SET CHANGE_TRACKING = ON (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON);");
+            });
 
             connectionStringBuilder.InitialCatalog = this.DatabaseName;
 
@@ -137,7 +139,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 // Drop the test database
                 using var masterConnection = new SqlConnection(this.MasterConnectionString);
                 masterConnection.Open();
-                TestUtils.ExecuteNonQuery(masterConnection, $"DROP DATABASE IF EXISTS {this.DatabaseName}", this.LogOutput);
+                TestUtils.ExecuteNonQuery(masterConnection, $"DROP DATABASE IF EXISTS {this.DatabaseName}");
             }
             catch (Exception e4)
             {
@@ -145,11 +147,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
 
             GC.SuppressFinalize(this);
-        }
-
-        private void LogOutput(string output)
-        {
-            Console.WriteLine(output);
         }
     }
 }

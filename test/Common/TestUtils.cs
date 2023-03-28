@@ -49,7 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         public static int ExecuteNonQuery(
             IDbConnection connection,
             string commandText,
-            Action<string> logger,
+            Action<string> logger = null,
             Predicate<Exception> catchException = null,
             string message = null)
         {
@@ -62,6 +62,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
                 throw new ArgumentNullException(nameof(commandText));
             }
             message ??= $"Executing non-query {commandText}";
+            logger ??= Console.WriteLine;
 
             using (IDbCommand cmd = connection.CreateCommand())
             {
@@ -98,7 +99,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         public static object ExecuteScalar(
             IDbConnection connection,
             string commandText,
-            Action<string> logger,
+            Action<string> logger = null,
             Predicate<Exception> catchException = null)
         {
             if (connection == null)
@@ -109,6 +110,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
             {
                 throw new ArgumentNullException(nameof(commandText));
             }
+
+            logger ??= Console.WriteLine;
 
             using (IDbCommand cmd = connection.CreateCommand())
             {
@@ -140,8 +143,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         /// <param name="retryCount">The max number of retries to attempt</param>
         /// <param name="waitDurationMs">The duration in milliseconds between each attempt</param>
         /// <exception cref="AggregateException">Aggregate of all exceptions thrown if all retries failed</exception>
-        public static void Retry(Action action, Action<string> logger, int retryCount = 3, int waitDurationMs = 10000)
+        public static void Retry(Action action, Action<string> logger = null, int retryCount = 3, int waitDurationMs = 10000)
         {
+            logger ??= Console.WriteLine;
             var exceptions = new List<Exception>();
             while (true)
             {
