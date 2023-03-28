@@ -39,11 +39,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         private DbConnection Connection;
 
         /// <summary>
-        /// Connection string to the master database on the test server, mainly used for database setup and teardown.
-        /// </summary>
-        private string MasterConnectionString;
-
-        /// <summary>
         /// Connection string to the database created for the test
         /// </summary>
         protected string DbConnectionString { get; private set; }
@@ -67,84 +62,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public IntegrationTestBase(ITestOutputHelper output = null)
         {
             this.TestOutput = output;
-            this.SetupDatabase();
+            this.SetupDatabaseObjects();
         }
 
         /// <summary>
-        /// Sets up a test database for the current test to use.
+        /// Sets up the tables, views, and stored procedures needed for tests in the database created
+        /// in IntegrationTestFixture.
         /// </summary>
-        /// <remarks>
-        /// The server the database will be created on can be set by the environment variable "TEST_SERVER", otherwise localhost will be used by default.
-        /// By default, integrated authentication will be used to connect to the server, unless the env variable "SA_PASSWORD" is set.
-        /// In this case, connection will be made using SQL login with user "SA" and the provided password.
-        /// </remarks>
-        private void SetupDatabase()
+        private void SetupDatabaseObjects()
         {
-            SqlConnectionStringBuilder connectionStringBuilder;
-            string connectionString = Environment.GetEnvironmentVariable("TEST_CONNECTION_STRING");
-            if (connectionString != null)
-            {
-                this.MasterConnectionString = connectionString;
-                connectionStringBuilder = new SqlConnectionStringBuilder(connectionString);
-            }
-            else
-            {
-                // Get the test server name from environment variable "TEST_SERVER", default to localhost if not set
-                string testServer = Environment.GetEnvironmentVariable("TEST_SERVER");
-                if (string.IsNullOrEmpty(testServer))
-                {
-                    testServer = "localhost";
-                }
-
-                // First connect to master to create the database
-                connectionStringBuilder = new SqlConnectionStringBuilder()
-                {
-                    DataSource = testServer,
-                    InitialCatalog = "master",
-                    Pooling = false,
-                    Encrypt = SqlConnectionEncryptOption.Optional
-                };
-
-                // Either use integrated auth or SQL login depending if SA_PASSWORD is set
-                string userId = "SA";
-                string password = Environment.GetEnvironmentVariable("SA_PASSWORD");
-                if (string.IsNullOrEmpty(password))
-                {
-                    connectionStringBuilder.IntegratedSecurity = true;
-                }
-                else
-                {
-                    connectionStringBuilder.UserID = userId;
-                    connectionStringBuilder.Password = password;
-                }
-                this.MasterConnectionString = connectionStringBuilder.ToString();
-            }
-
-            // Create database
-            // Retry this in case the server isn't fully initialized yet
-            this.DatabaseName = TestUtils.GetUniqueDBName("SqlBindingsTest");
-            TestUtils.Retry(() =>
-            {
-                using var masterConnection = new SqlConnection(this.MasterConnectionString);
-                masterConnection.Open();
-                TestUtils.ExecuteNonQuery(masterConnection, $"CREATE DATABASE [{this.DatabaseName}]", this.LogOutput);
-            }, this.LogOutput);
-
-            // Setup connection
-            connectionStringBuilder.InitialCatalog = this.DatabaseName;
-            this.DbConnectionString = connectionStringBuilder.ToString();
+            // Get the connection string from the environment variable set in IntegrationTestFixture
+            this.DbConnectionString = Environment.GetEnvironmentVariable("SqlConnectionString");
             this.Connection = new SqlConnection(this.DbConnectionString);
             this.Connection.Open();
-
-            // Create the database definition
+            this.DatabaseName = this.Connection.Database;
             // Create these in a specific order since things like views require that their underlying objects have been created already
             // Ideally all the sql files would be in a sqlproj and can just be deployed
             this.ExecuteAllScriptsInFolder(Path.Combine(TestUtils.GetPathToBin(), "Database", "Tables"));
+            // Separate DROP and CREATE for views and procedures  since CREATE VIEW/PROCEDURE needs to be the first statement in the batch
+            this.ExecuteAllScriptsInFolder(Path.Combine(TestUtils.GetPathToBin(), "Database", "Views", "Drop"));
             this.ExecuteAllScriptsInFolder(Path.Combine(TestUtils.GetPathToBin(), "Database", "Views"));
+            this.ExecuteAllScriptsInFolder(Path.Combine(TestUtils.GetPathToBin(), "Database", "StoredProcedures", "Drop"));
             this.ExecuteAllScriptsInFolder(Path.Combine(TestUtils.GetPathToBin(), "Database", "StoredProcedures"));
-
-            // Set SqlConnectionString env var for the Function to use
-            Environment.SetEnvironmentVariable("SqlConnectionString", connectionStringBuilder.ToString());
         }
 
         private void ExecuteAllScriptsInFolder(string folder)
@@ -388,18 +327,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
 
             this.DisposeFunctionHosts();
-
-            try
-            {
-                // Drop the test database
-                using var masterConnection = new SqlConnection(this.MasterConnectionString);
-                masterConnection.Open();
-                TestUtils.ExecuteNonQuery(masterConnection, $"DROP DATABASE IF EXISTS {this.DatabaseName}", this.LogOutput);
-            }
-            catch (Exception e4)
-            {
-                this.LogOutput($"Failed to drop {this.DatabaseName}, Error: {e4.Message}");
-            }
 
             GC.SuppressFinalize(this);
         }
