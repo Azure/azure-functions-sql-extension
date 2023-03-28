@@ -569,6 +569,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 lang,
                 false,
                 "SQL bindings require a database compatibility level of 130 or higher to function. Current compatibility level = 120");
+
+            // Change database compat level back to supported level
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET COMPATIBILITY_LEVEL = 150");
         }
 
         /// <summary>
