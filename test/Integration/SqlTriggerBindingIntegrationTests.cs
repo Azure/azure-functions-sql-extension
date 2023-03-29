@@ -80,7 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc)]
+        [UnsupportedLanguages(SupportedLanguages.Java)]
         public async Task BatchSizeOverrideTriggerTest(SupportedLanguages lang)
         {
             // Use enough items to require 4 batches to be processed but then
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc)]
+        [UnsupportedLanguages(SupportedLanguages.Java)]
         public async Task MaxBatchSizeOverrideTriggerTest(SupportedLanguages lang)
         {
             // Use enough items to require 4 batches to be processed but then
