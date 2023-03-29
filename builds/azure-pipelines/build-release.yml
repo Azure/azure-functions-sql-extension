@@ -58,7 +58,7 @@ stages:
     workspace:
       clean: all
 
-    timeoutInMinutes: '90'
+    timeoutInMinutes: '120'
 
     steps:
       - template: 'template-steps-build-test.yml'
@@ -78,7 +78,7 @@ stages:
     workspace:
       clean: all
 
-    timeoutInMinutes: '90'
+    timeoutInMinutes: '120'
 
     steps:
       - template: 'template-steps-build-test.yml'
