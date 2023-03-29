@@ -108,6 +108,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Congratulations! You have successfully created your first SQL input binding!
 
 ### Samples for Input Bindings
+The database scripts used for the following samples can be found [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/Database).
 
 #### Query String
 
