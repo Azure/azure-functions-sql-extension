@@ -875,6 +875,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string userTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = u.{col.name.AsBracketQuotedString()}"));
             string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
 
+            // Get the list of changes from CHANGETABLE that meet the following criteria:
+            // * Null LeaseExpirationTime AND (Null ChangeVersion OR ChangeVersion < Current change version for that row from CHANGETABLE)
+            //   OR
+            // * LeaseExpirationTime < Current Time
+            //
+            // The LeaseExpirationTime is only used for rows currently being processed - so if we see a
+            // row whose lease has expired that means that something must have happened to the function
+            // processing it before it was able to complete successfully. In that case we want to pick it
+            // up regardless since we know it should be processed - no need to check the change version.
+            // Once a row is successfully processed the LeaseExpirationTime column is set to NULL.
             string getChangesQuery = $@"
                 {AppLockStatements}
 

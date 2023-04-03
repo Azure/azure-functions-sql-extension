@@ -12,11 +12,7 @@
       - [Columns with Default Values](#columns-with-default-values)
     - [Retry support for Output Bindings](#retry-support-for-output-bindings)
   - [Trigger Binding](#trigger-binding)
-    - [Change Tracking](#change-tracking)
-    - [Functionality Overview](#functionality-overview)
-    - [Internal State Tables](#internal-state-tables)
-      - [az\_func.GlobalState](#az_funcglobalstate)
-      - [az\_func.Leases\_\*](#az_funcleases_)
+    - [Change Tracking Setup](#change-tracking-setup)
     - [Configuration for Trigger Bindings](#configuration-for-trigger-bindings)
       - [Sql\_Trigger\_MaxBatchSize](#sql_trigger_maxbatchsize)
       - [Sql\_Trigger\_PollingIntervalMs](#sql_trigger_pollingintervalms)
@@ -76,7 +72,9 @@ See <https://github.com/Azure/Azure-Functions/issues/891> for further informatio
 
 Azure SQL Trigger bindings monitor the user table for changes (i.e., row inserts, updates, and deletes) and invokes the function with updated rows.
 
-### Change Tracking
+For an in-depth explanation of how the trigger functions see the [Trigger Binding](./TriggerBinding.md) documentation.
+
+### Change Tracking Setup
 
 Azure SQL Trigger bindings utilize SQL [change tracking](https://docs.microsoft.com/sql/relational-databases/track-changes/about-change-tracking-sql-server) functionality to monitor the user table for changes. As such, it is necessary to enable change tracking on the SQL database and the SQL table before using the trigger support. The change tracking can be enabled through the following two queries.
 
@@ -100,66 +98,6 @@ Azure SQL Trigger bindings utilize SQL [change tracking](https://docs.microsoft.
     For more information, please refer to the documentation [here](https://docs.microsoft.com/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server#enable-change-tracking-for-a-table). The trigger needs to have read access on the table being monitored for changes as well as to the change tracking system tables. It also needs write access to an `az_func` schema within the database, where it will create additional leases tables to store the trigger states and leases. Each function trigger will thus have an associated change tracking table and leases table.
 
     > **NOTE:** The leases table contains all columns corresponding to the primary key from the user table and three additional columns named `_az_func_ChangeVersion`, `_az_func_AttemptCount` and `_az_func_LeaseExpirationTime`. If any of the primary key columns happen to have the same name, that will result in an error message listing any conflicts. In this case, the listed primary key columns must be renamed for the trigger to work.
-
-### Functionality Overview
-
-The Azure SQL Trigger binding uses a polling loop to check for changes, triggering the user function when changes are detected. At a high level the loop looks like this :
-
-```
-while (true) {
-    1. Get list of changes on table - up to a maximum number controlled by the Sql_Trigger_MaxBatchSize setting
-    2. Trigger function with list of changes
-    3. Wait for delay controlled by Sql_Trigger_PollingIntervalMs setting
-}
-```
-
-Changes will always be processed in the order that their changes were made, with the oldest changes being processed first. A couple notes about this :
-
-1. If changes to multiple rows are made at once the exact order that they'll be sent to the function is based on the order returned by the CHANGETABLE function
-2. Changes are "batched" together for a row - if multiple changes are made to a row between each iteration of the loop than only a single change entry will exist for that row that shows the difference between the last processed state and the current state
-3. If changes are made to a set of rows, and then another set of changes are made to half of those same rows then the half that wasn't changed a second time will be processed first. This is due to the above note with the changes being batched - the trigger will only see the "last" change made and use that for the order it processes them in
-
-See [Work with change tracking](https://learn.microsoft.com/sql/relational-databases/track-changes/work-with-change-tracking-sql-server) for more information on change tracking and how it is used by applications such as Azure SQL triggers.
-
-### Internal State Tables
-
-The trigger functionality creates several tables to use for tracking the current state of the trigger. This allows state to be persisted across sessions and for multiple instances of a trigger binding to execute in parallel (for scaling purposes).
-
-In addition, a schema named `az_func` will be created that the tables will belong to.
-
-The login the trigger is configured to use must be given permissions to create these tables and schema. If not, then an error will be thrown and the trigger will fail to run.
-
-If the tables are deleted or modified, then unexpected behavior may occur. To reset the state of the triggers, first stop all currently running functions with trigger bindings and then either truncate or delete the tables. The next time a function with a trigger binding is started, it will recreate the tables as necessary.
-
-#### az_func.GlobalState
-
-This table stores information about each function being executed, what table that function is watching and what the [last sync state](https://learn.microsoft.com/sql/relational-databases/track-changes/work-with-change-tracking-sql-server) that has been processed.
-
-#### az_func.Leases_*
-
-A `Leases_*` table is created for every unique instance of a function and table. The full name will be in the format `Leases_<FunctionId>_<TableId>` where `<FunctionId>` is generated from the function ID and `<TableId>` is the object ID of the table being tracked. Such as `Leases_7d12c06c6ddff24c_1845581613`.
-
-To find the name of the leases table associated with your function, look in the log output for a line such as this which is emitted when the trigger is started.
-
-`SQL trigger Leases table: [az_func].[Leases_84d975fca0f7441a_901578250]`
-
-This log message is at the `Information` level, so make sure your log level is set correctly.
-
-NOTE: `FunctionId` is generated from a couple of inputs:
-    - The HostId, which is a hash of the assembly name containing the function
-    - The full class and method name of the function
-
-If either of these values are changed then a new FunctionId will be generated and result in the function starting over from the beginning, including creating a new Leases table.
-
-This table is used to ensure that all changes are processed and that no change is processed more than once. This table consists of two groups of columns:
-
-- A column for each column in the primary key of the target table - used to identify the row that it maps to in the target table
-- A couple columns for tracking the state of each row. These are:
-  - `_az_func_ChangeVersion` for the change version of the row currently being processed
-  - `_az_func_AttemptCount` for tracking the number of times that a change has attempted to be processed to avoid getting stuck trying to process a change it's unable to handle
-  - `_az_func_LeaseExpirationTime` for tracking when the lease on this row for a particular instance is set to expire. This ensures that if an instance exits unexpectedly another instance will be able to pick up and process any changes it had leases for after the expiration time has passed.
-
-A row is created for every row in the target table that is modified. These are then cleaned up after the changes are processed for a set of changes corresponding to a change tracking sync version.
 
 ### Configuration for Trigger Bindings
 
