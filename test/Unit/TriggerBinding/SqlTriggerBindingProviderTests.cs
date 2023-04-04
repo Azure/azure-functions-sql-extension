@@ -67,7 +67,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         }
 
         /// <summary>
-        /// Verifies that <see cref="SqlTriggerBinding"/> is returned if the <see cref="SqlTriggerAttribute"/> has all
+        /// Verifies that <see cref="SqlTriggerBinding{T}"/> is returned if the <see cref="SqlTriggerAttribute"/> has all
         /// required properties set and it is applied on the trigger parameter of supported type.
         /// </summary>
         [Fact]
