@@ -76,7 +76,7 @@ To learn more about our Privacy Statement visit this link: https://go.microsoft.
                 this._client = new TelemetryClient(telemetryConfig);
                 this._client.Context.Session.Id = CurrentSessionId;
                 this._client.Context.Device.OperatingSystem = RuntimeInformation.OSDescription;
-                // Filter out sensitive information that we don't need
+                // Filter out sensitive information that we don't need. Empty values are ignored so just set some default string for each.
                 //   RoleInstance - It can contain information such as the machine and domain name of the client
                 //   NodeName - It can contain information such as the machine and domain name of the client
                 //   Ip - We don't need any location info
