@@ -30,7 +30,7 @@ public @interface SQLInput {
     /**
      * Text or Stored Procedure.
      */
-    String commandType();
+    CommandType commandType();
 
     /**
      * Parameters to the query or stored procedure. This string must follow the format
