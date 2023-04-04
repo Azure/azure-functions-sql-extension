@@ -58,7 +58,7 @@ These instructions will guide you through creating your Function Project and add
         "version": "[4.*, 5.0.0)"
     }
     ```
-    Once your have these set up, your project folder should resemble [Folder Structure](https://learn.microsoft.com/azure/azure-functions/functions-reference-csharp?tabs=functionsv2#folder-structure)
+    Once you have these set up, your project folder should resemble [Folder Structure](https://learn.microsoft.com/azure/azure-functions/functions-reference-csharp?tabs=functionsv2#folder-structure)
 
 ## Input Binding
 
@@ -127,6 +127,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Congratulations! You have successfully created your first SQL input binding!
 
 ### Samples for Input Bindings
+The database scripts used for the following samples can be found [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/Database).
 
 #### Query String
 

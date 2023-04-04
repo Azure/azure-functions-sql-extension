@@ -17,7 +17,7 @@ namespace Microsoft.Azure.WebJobs
     public sealed class SqlAttribute : Attribute
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="SqlAttribute/>"/> class.
+        /// Initializes a new instance of the <see cref="SqlAttribute"/> class.
         /// </summary>
         /// <param name="commandText">For an input binding, either a SQL query or stored procedure that will be run in the database. For an output binding, the table name to upsert the values to.</param>
         /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored</param>
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.WebJobs
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SqlAttribute/>"/> class with default values for the CommandType and Parameters.
+        /// Initializes a new instance of the <see cref="SqlAttribute"/> class with default values for the CommandType and Parameters.
         /// </summary>
         /// <param name="commandText">For an input binding, either a SQL query or stored procedure that will be run in the database. For an output binding, the table name to upsert the values to.</param>
         /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored</param>

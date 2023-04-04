@@ -14,7 +14,7 @@ public static Product Run(HttpRequest req, ILogger log, [Sql("dbo.Products", "Sq
 {
     log.LogInformation("C# HTTP trigger function processed a request.");
 
-    product = product = new Product
+    product = new Product
     {
         Name = req.Query["name"],
         ProductId = int.Parse(req.Query["productId"]),
