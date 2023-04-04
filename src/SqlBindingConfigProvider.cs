@@ -20,7 +20,7 @@ using Newtonsoft.Json;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     /// <summary>
-    /// Exposes SQL input and output bindings
+    /// Exposes SQL input, output and trigger bindings
     /// </summary>
     [Extension("sql")]
     internal class SqlBindingConfigProvider : IExtensionConfigProvider
