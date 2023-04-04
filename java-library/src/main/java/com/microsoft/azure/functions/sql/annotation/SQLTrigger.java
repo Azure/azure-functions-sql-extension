@@ -25,10 +25,10 @@ public @interface SQLTrigger {
     /**
      * Name of the table to watch for changes.
     */
-    String tableName() default "";
+    String tableName();
 
     /**
      * Setting name for SQL connection string.
     */
-    String connectionStringSetting() default "";
+    String connectionStringSetting();
 }
