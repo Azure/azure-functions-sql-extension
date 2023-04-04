@@ -30,7 +30,6 @@ public class GetProductsNameEmpty {
             @SQLInput(
                 name = "products",
                 commandText = "SELECT * FROM Products WHERE Cost = @Cost and Name = @Name",
-                commandType = "Text",
                 parameters = "@Cost={cost},@Name=",
                 connectionStringSetting = "SqlConnectionString")
                 Product[] products) {

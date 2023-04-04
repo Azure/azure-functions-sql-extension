@@ -34,14 +34,12 @@ public class GetProductsFromTwoTables {
             @SQLInput(
                 name = "products",
                 commandText = "SELECT * FROM Products WHERE Cost = @Cost",
-                commandType = "Text",
                 parameters = "@Cost={cost}",
                 connectionStringSetting = "SqlConnectionString")
                 Product[] products,
             @SQLInput(
                 name = "productsWithIdentity",
                 commandText = "SELECT * FROM ProductsWithIdentity WHERE Cost = @Cost",
-                commandType = "Text",
                 parameters = "@Cost={cost}",
                 connectionStringSetting = "SqlConnectionString")
                 Product[] productsWithIdentity) {

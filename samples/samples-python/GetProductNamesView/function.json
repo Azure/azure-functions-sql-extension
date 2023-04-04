@@ -20,7 +20,6 @@
         "type": "sql",
         "direction": "in",
         "commandText": "SELECT * FROM ProductNames",
-        "commandType": "Text",
         "connectionStringSetting": "SqlConnectionString"
       }
     ],

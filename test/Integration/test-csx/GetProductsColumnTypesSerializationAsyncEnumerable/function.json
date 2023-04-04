@@ -20,7 +20,6 @@
       "type": "sql",
       "direction": "in",
       "commandText": "SELECT * FROM [dbo].[ProductsColumnTypes]",
-      "commandType": "Text",
       "connectionStringSetting": "SqlConnectionString"
     }
   ],

@@ -93,7 +93,6 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
             @SQLInput(
                 name = "employees",
                 commandText = "SELECT * FROM Employees",
-                commandType = "Text",
                 connectionStringSetting = "SqlConnectionString")
                 Employee[] employees) {
         return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(employees).build();
@@ -180,7 +179,6 @@ public HttpResponseMessage run(
         @SQLInput(
             name = "products",
             commandText = "SELECT * FROM Products WHERE Cost = @Cost",
-            commandType = "Text",
             parameters = "@Cost={cost}",
             connectionStringSetting = "SqlConnectionString")
             Product[] products) {
@@ -257,7 +255,6 @@ In this case, the parameter value of the @Name parameter is an empty string.
             @SQLInput(
                 name = "products",
                 commandText = "SELECT * FROM Products WHERE Cost = @Cost and Name = @Name",
-                commandType = "Text",
                 parameters = "@Cost={cost},@Name=",
                 connectionStringSetting = "SqlConnectionString")
                 Product[] products) {
@@ -282,7 +279,6 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
             @SQLInput(
                 name = "products",
                 commandText = "IF @Name IS NULL SELECT * FROM Products WHERE Name IS NULL ELSE SELECT * FROM Products WHERE Name = @Name",
-                commandType = "Text",
                 parameters = "@Name={name}",
                 connectionStringSetting = "SqlConnectionString")
                 Product[] products) {

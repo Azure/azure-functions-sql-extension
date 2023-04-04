@@ -20,7 +20,6 @@
       "type": "sql",
       "direction": "in",
       "commandText": "if @Name is null select * from Products where Name is null else select * from Products where @Name = name",
-      "commandType": "Text",
       "parameters": "@Name={name}",
       "connectionStringSetting": "SqlConnectionString"
     }

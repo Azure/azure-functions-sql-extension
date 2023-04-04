@@ -39,6 +39,14 @@ namespace Microsoft.Azure.WebJobs
         public SqlAttribute(string commandText, string connectionStringSetting) : this(commandText, connectionStringSetting, CommandType.Text, null) { }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="SqlAttribute"/> class with default value for the CommandType.
+        /// </summary>
+        /// <param name="commandText">For an input binding, either a SQL query or stored procedure that will be run in the database. For an output binding, the table name to upsert the values to.</param>
+        /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored</param>
+        /// <param name="parameters">Optional - Specifies the parameters that will be used to execute the SQL query or stored procedure. See <see cref="Parameters"/> for more details.</param>
+        public SqlAttribute(string commandText, string connectionStringSetting, string parameters) : this(commandText, connectionStringSetting, CommandType.Text, parameters) { }
+
+        /// <summary>
         /// The name of the app setting where the SQL connection string is stored
         /// (see https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection).
         /// The attributes specified in the connection string are listed here

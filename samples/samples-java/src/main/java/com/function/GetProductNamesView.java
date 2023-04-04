@@ -30,7 +30,6 @@ public class GetProductNamesView {
             @SQLInput(
                 name = "productNames",
                 commandText = "SELECT * FROM ProductNames",
-                commandType = "Text",
                 connectionStringSetting = "SqlConnectionString")
                 ProductName[] products) {
 

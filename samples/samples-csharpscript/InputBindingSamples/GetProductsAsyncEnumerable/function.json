@@ -20,7 +20,6 @@
       "type": "sql",
       "direction": "in",
       "commandText": "select * from Products where Cost = @Cost",
-      "commandType": "Text",
       "parameters": "@Cost={cost}",
       "connectionStringSetting": "SqlConnectionString"
     }

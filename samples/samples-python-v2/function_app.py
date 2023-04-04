@@ -17,7 +17,6 @@ app = func.FunctionApp()
 @app.route(route="getproducts/{cost}")
 @app.generic_input_binding(arg_name="products", type="sql",
                         CommandText="SELECT * FROM Products WHERE Cost = @Cost",
-                        CommandType="Text",
                         Parameters="@Cost={cost}",
                         ConnectionStringSetting="SqlConnectionString",
                         data_type=DataType.STRING)

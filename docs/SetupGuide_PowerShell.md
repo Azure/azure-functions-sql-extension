@@ -94,7 +94,6 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
       "type": "sql",
       "direction": "in",
       "commandText": "select * from Employees",
-      "commandType": "Text",
       "connectionStringSetting": "SqlConnectionString"
     }
     ```

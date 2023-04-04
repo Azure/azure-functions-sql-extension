@@ -38,7 +38,6 @@ public class GetProductsColumnTypesSerialization {
             @SQLInput(
                 name = "products",
                 commandText = "SELECT * FROM [dbo].[ProductsColumnTypes]",
-                commandType = "Text",
                 connectionStringSetting = "SqlConnectionString")
                 ProductColumnTypes[] products,
             ExecutionContext context) throws JsonProcessingException, ParseException {

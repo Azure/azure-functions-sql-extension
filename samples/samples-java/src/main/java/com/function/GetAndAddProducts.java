@@ -36,7 +36,6 @@ public class GetAndAddProducts {
             @SQLInput(
                 name = "products",
                 commandText = "SELECT * FROM Products WHERE Cost = @Cost",
-                commandType = "Text",
                 parameters = "@Cost={cost}",
                 connectionStringSetting = "SqlConnectionString")
                 Product[] products,
