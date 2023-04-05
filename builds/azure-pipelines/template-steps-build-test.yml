@@ -102,6 +102,14 @@ steps:
     targetFolder: $(azureFunctionsExtensionBundlePath)/bin
     overWrite: true
 
+- task: CopyFiles@2
+  displayName: 'Copy local Sql package to local-packages folder'
+  inputs:
+    sourceFolder: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}
+    contents: *
+    targetFolder: $(Build.SourcesDirectory)/local-packages
+    overWrite: true
+
 - script: |
     npm install
     npm run lint
