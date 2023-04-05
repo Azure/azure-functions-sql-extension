@@ -45,7 +45,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
-            return configuration.GetConnectionStringOrSetting(connectionStringSetting);
+            string connectionString = configuration.GetConnectionStringOrSetting(connectionStringSetting);
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                throw new ArgumentException(connectionString == null ? $"ConnectionStringSetting '{connectionStringSetting}' is missing in your function app settings, please add the setting with a valid SQL connection string." :
+                $"ConnectionStringSetting '{connectionStringSetting}' is empty in your function app settings, please update the setting with a valid SQL connection string.");
+            }
+            return connectionString;
         }
 
         /// <summary>
