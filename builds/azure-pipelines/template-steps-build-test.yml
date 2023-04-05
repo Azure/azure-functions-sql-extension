@@ -102,6 +102,7 @@ steps:
     targetFolder: $(azureFunctionsExtensionBundlePath)/bin
     overWrite: true
 
+  # Copy the Sql nupkg to ensure it's available for tests.
 - task: CopyFiles@2
   displayName: 'Copy local Sql package to local-packages folder'
   inputs:
