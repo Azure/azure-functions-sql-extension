@@ -10,6 +10,5 @@ if ($expectedMaxBatchSize -and $expectedMaxBatchSize -ne $changes.Count) {
     throw "Invalid max batch size, got $($changes.Count) changes but expected $expectedMaxBatchSize"
 }
 
-$changesJson = $changes | ConvertTo-Json
-$changesJson = $changesJson -replace [Environment]::NewLine,"";
+$changesJson = $changes | ConvertTo-Json -Compress
 Write-Host "SQL Changes: $changesJson"
