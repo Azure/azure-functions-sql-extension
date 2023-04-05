@@ -107,7 +107,7 @@ steps:
   displayName: 'Copy local Sql package to local-packages folder'
   inputs:
     sourceFolder: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}
-    contents: *
+    contents: '*'
     targetFolder: $(Build.SourcesDirectory)/local-packages
     overWrite: true
 
