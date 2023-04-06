@@ -102,12 +102,12 @@ steps:
     targetFolder: $(azureFunctionsExtensionBundlePath)/bin
     overWrite: true
 
-  # Copy the Sql nupkg to ensure it's available for tests.
+  # Copy the Sql nupkg to ensure it's available for tests since the package copy task is failing occasionally so having this redundancy.
 - task: CopyFiles@2
   displayName: 'Copy local Sql package to local-packages folder'
   inputs:
     sourceFolder: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}
-    contents: '*'
+    contents: '*.nupkg'
     targetFolder: $(Build.SourcesDirectory)/local-packages
     overWrite: true
 
