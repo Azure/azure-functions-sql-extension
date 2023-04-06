@@ -6,6 +6,8 @@
 
 package com.function;
 
+import com.function.Common.SqlChangeProduct;
+import com.google.gson.Gson;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.sql.annotation.SQLTrigger;
@@ -19,13 +21,13 @@ public class ProductsTriggerWithValidation {
                 name = "changes",
                 tableName = "[dbo].[Products]",
                 connectionStringSetting = "SqlConnectionString")
-                String changes,
+                SqlChangeProduct[] changes,
             ExecutionContext context) throws Exception {
 
         int expectedMaxBatchSize = Integer.parseInt(System.getenv("TEST_EXPECTED_MAX_BATCH_SIZE"));
-        if (expectedMaxBatchSize != changes.length()) {
-            throw new Exception("Invalid max batch size, got " + changes.length() + " changes but expected " + expectedMaxBatchSize);
+        if (expectedMaxBatchSize != changes.length) {
+            throw new Exception("Invalid max batch size, got " + changes.length + " changes but expected " + expectedMaxBatchSize);
         }
-        context.getLogger().log(Level.INFO, "SQL Changes: " + changes);
+        context.getLogger().log(Level.INFO, "SQL Changes: " + new Gson().toJson(changes));
     }
 }

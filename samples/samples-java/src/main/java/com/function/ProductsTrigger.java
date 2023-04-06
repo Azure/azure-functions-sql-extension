@@ -9,6 +9,8 @@ package com.function;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.sql.annotation.SQLTrigger;
+import com.function.Common.SqlChangeProduct;
+import com.google.gson.Gson;
 
 import java.util.logging.Level;
 
@@ -19,9 +21,9 @@ public class ProductsTrigger {
                 name = "changes",
                 tableName = "[dbo].[Products]",
                 connectionStringSetting = "SqlConnectionString")
-                String changes,
+                SqlChangeProduct[] changes,
             ExecutionContext context) {
 
-        context.getLogger().log(Level.INFO, "SQL Changes: " + changes);
+        context.getLogger().log(Level.INFO, "SQL Changes: " + new Gson().toJson(changes));
     }
 }
