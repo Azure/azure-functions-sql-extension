@@ -109,6 +109,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Congratulations! You have successfully created your first SQL input binding!
 
 ### Samples for Input Bindings
+The database scripts used for the following samples can be found [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/Database).
 
 #### Query String
 
@@ -160,17 +161,17 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
     $req_body = @(
         @{
-            EmployeeId=1,
-            FirstName="Hello",
-            LastName="World",
-            Company="Microsoft",
+            EmployeeId=1
+            FirstName="Hello"
+            LastName="World"
+            Company="Microsoft"
             Team="Functions"
         },
         @{
-            EmployeeId=2,
-            FirstName="Hi",
-            LastName="SQLupdate",
-            Company="Microsoft",
+            EmployeeId=2
+            FirstName="Hi"
+            LastName="SQLupdate"
+            Company="Microsoft"
             Team="Functions"
         }
     );

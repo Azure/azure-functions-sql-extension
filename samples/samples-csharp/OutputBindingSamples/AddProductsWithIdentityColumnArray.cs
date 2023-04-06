@@ -16,7 +16,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples
         /// ID will be generated upon insert.
         /// </summary>
         /// <param name="req">The original request that triggered the function</param>
-        /// <param name="product">The created Product object</param>
+        /// <param name="products">The created Product array</param>
         /// <returns>The CreatedResult containing the new object that was inserted</returns>
         [FunctionName(nameof(AddProductsWithIdentityColumnArray))]
         public static IActionResult Run(

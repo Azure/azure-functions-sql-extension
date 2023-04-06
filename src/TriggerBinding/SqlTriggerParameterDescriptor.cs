@@ -8,7 +8,7 @@ using Microsoft.Azure.WebJobs.Host.Protocols;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     /// <summary>
-    /// Trigger parameter descriptor for <see cref="SqlTriggerBinding">.
+    /// Trigger parameter descriptor for <see cref="SqlTriggerBinding{T}" />.
     /// </summary>
     internal sealed class SqlTriggerParameterDescriptor : TriggerParameterDescriptor
     {

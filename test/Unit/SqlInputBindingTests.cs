@@ -76,8 +76,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 
         /// <summary>
         /// SqlAsyncEnumerable should throw InvalidOperationExcepion when invoked with an invalid connection
-        /// string setting and It should fail here since we're passing an empty connection string.
-        /// <summary>
+        /// string setting. It should fail here since we're passing an empty connection string.
+        /// </summary>
         [Fact]
         public void TestInvalidOperationSqlAsyncEnumerableConstructor()
         {
