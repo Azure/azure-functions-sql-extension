@@ -17,7 +17,7 @@ public static ProductWithOptionalId Run(HttpRequest req, ILogger log, [Sql("dbo.
     product = product = new ProductWithOptionalId
     {
         Name = req.Query["name"],
-        ProductId = int.Parse(req.Query["productId"]),
+        ProductId = string.IsNullOrEmpty(req.Query["productId"]) ? (int?)null : int.Parse(req.Query["productId"]),
         Cost = int.Parse(req.Query["cost"])
     };
 

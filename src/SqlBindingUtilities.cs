@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Builds a connection using the connection string attached to the app setting with name ConnectionStringSetting
         /// </summary>
-        /// <param name="attribute">The name of the app setting that stores the SQL connection string</param>
+        /// <param name="connectionStringSetting">The name of the app setting that stores the SQL connection string</param>
         /// <param name="configuration">Used to obtain the value of the app setting</param>
         /// <exception cref="ArgumentException">
         /// Thrown if ConnectionStringSetting is empty or null
