@@ -31,6 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.CSharpscript)]
         public async Task SingleOperationTriggerTest(SupportedLanguages lang)
         {
             this.SetChangeTrackingForTable("Products");
@@ -79,6 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.CSharpscript)]
         public async Task BatchSizeOverrideTriggerTest(SupportedLanguages lang)
         {
             // Use enough items to require 4 batches to be processed but then
@@ -122,6 +124,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.CSharpscript)]
         public async Task MaxBatchSizeOverrideTriggerTest(SupportedLanguages lang)
         {
             // Use enough items to require 4 batches to be processed but then
@@ -163,8 +166,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Verifies that manually setting the polling interval correctly changes the delay between processing each batch of changes
         /// </summary>
-        [Fact]
-        public async Task PollingIntervalOverrideTriggerTest()
+        [Theory]
+        [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
+        public async Task PollingIntervalOverrideTriggerTest(SupportedLanguages lang)
         {
             const int firstId = 1;
             // Use enough items to require 5 batches to be processed - the test will
@@ -181,7 +186,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 pollingIntervalMs.ToString());
             this.StartFunctionHost(
                 nameof(ProductsTriggerWithValidation),
-                SupportedLanguages.CSharp,
+                lang,
                 useTestFolder: true,
                 customOutputHandler: handler,
                 environmentVariables: new Dictionary<string, string>() {
@@ -206,6 +211,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.CSharpscript)]
         public async Task MultiOperationTriggerTest(SupportedLanguages lang)
         {
             int firstId = 1;
@@ -285,8 +291,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Ensures correct functionality with multiple user functions tracking the same table.
         /// </summary>
-        [Fact]
-        public async Task MultiFunctionTriggerTest()
+        [Theory]
+        [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
+        public async Task MultiFunctionTriggerTest(SupportedLanguages lang)
         {
             const string Trigger1Changes = "Trigger1 Changes: ";
             const string Trigger2Changes = "Trigger2 Changes: ";
@@ -294,7 +302,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.SetChangeTrackingForTable("Products");
 
             string functionList = $"{nameof(MultiFunctionTrigger.MultiFunctionTrigger1)} {nameof(MultiFunctionTrigger.MultiFunctionTrigger2)}";
-            this.StartFunctionHost(functionList, SupportedLanguages.CSharp, useTestFolder: true);
+            this.StartFunctionHost(functionList, lang, useTestFolder: true);
 
             // 1. INSERT
             int firstId = 1;
@@ -412,6 +420,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.CSharpscript)]
         public async Task MultiHostTriggerTest(SupportedLanguages lang)
         {
             this.SetChangeTrackingForTable("Products");
@@ -461,12 +470,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Tests the error message when the user table is not present in the database.
         /// </summary>
-        [Fact]
-        public void TableNotPresentTriggerTest()
+        [Theory]
+        [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
+        public void TableNotPresentTriggerTest(SupportedLanguages lang)
         {
             this.StartFunctionHostAndWaitForError(
                 nameof(TableNotPresentTrigger),
-                SupportedLanguages.CSharp,
+                lang,
                 true,
                 "Could not find table: 'dbo.TableNotPresent'.");
         }
@@ -474,12 +485,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Tests the error message when the user table does not contain primary key.
         /// </summary>
-        [Fact]
-        public void PrimaryKeyNotCreatedTriggerTest()
+        [Theory]
+        [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
+        public void PrimaryKeyNotCreatedTriggerTest(SupportedLanguages lang)
         {
             this.StartFunctionHostAndWaitForError(
                 nameof(PrimaryKeyNotPresentTrigger),
-                SupportedLanguages.CSharp,
+                lang,
                 true,
                 "Could not find primary key created in table: 'dbo.ProductsWithoutPrimaryKey'.");
         }
@@ -488,12 +501,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// Tests the error message when the user table contains one or more primary keys with names conflicting with
         /// column names in the leases table.
         /// </summary>
-        [Fact]
-        public void ReservedPrimaryKeyColumnNamesTriggerTest()
+        [Theory]
+        [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
+        public void ReservedPrimaryKeyColumnNamesTriggerTest(SupportedLanguages lang)
         {
             this.StartFunctionHostAndWaitForError(
                 nameof(ReservedPrimaryKeyColumnNamesTrigger),
-                SupportedLanguages.CSharp,
+                lang,
                 true,
                 "Found reserved column name(s): '_az_func_ChangeVersion', '_az_func_AttemptCount', '_az_func_LeaseExpirationTime' in table: 'dbo.ProductsWithReservedPrimaryKeyColumnNames'." +
                 " Please rename them to be able to use trigger binding.");
@@ -502,12 +517,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Tests the error message when the user table contains columns of unsupported SQL types.
         /// </summary>
-        [Fact]
-        public void UnsupportedColumnTypesTriggerTest()
+        [Theory]
+        [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
+        public void UnsupportedColumnTypesTriggerTest(SupportedLanguages lang)
         {
             this.StartFunctionHostAndWaitForError(
                 nameof(UnsupportedColumnTypesTrigger),
-                SupportedLanguages.CSharp,
+                lang,
                 true,
                 "Found column(s) with unsupported type(s): 'Location' (type: geography), 'Geometry' (type: geometry), 'Organization' (type: hierarchyid)" +
                 " in table: 'dbo.ProductsWithUnsupportedColumnTypes'.");
@@ -518,6 +535,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.CSharpscript)]
         public void ChangeTrackingNotEnabledTriggerTest(SupportedLanguages lang)
         {
             this.StartFunctionHostAndWaitForError(
@@ -552,6 +570,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.CSharpscript)]
         public void UnsupportedDatabaseThrows(SupportedLanguages lang)
         {
             // Change database compat level to unsupported version

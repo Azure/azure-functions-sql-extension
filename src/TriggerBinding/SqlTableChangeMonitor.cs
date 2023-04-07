@@ -36,9 +36,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         /// <remarks>
         /// Leases are held for approximately (LeaseRenewalIntervalInSeconds * MaxLeaseRenewalCount) seconds. It is
-        // required to have at least one of (LeaseIntervalInSeconds / LeaseRenewalIntervalInSeconds) attempts to
-        // renew the lease succeed to prevent it from expiring.
-        // </remarks>
+        /// required to have at least one of (LeaseIntervalInSeconds / LeaseRenewalIntervalInSeconds) attempts to
+        /// renew the lease succeed to prevent it from expiring.
+        /// </remarks>
         private const int MaxLeaseRenewalCount = 10;
         public const int LeaseIntervalInSeconds = 60;
         private const int LeaseRenewalIntervalInSeconds = 15;
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         /// <param name="connectionString">SQL connection string used to connect to user database</param>
         /// <param name="userTableId">SQL object ID of the user table</param>
-        /// <param name="userTable"><see cref="SqlObject"> instance created with user table name</param>
+        /// <param name="userTable"><see cref="SqlObject" /> instance created with user table name</param>
         /// <param name="userFunctionId">Unique identifier for the user function</param>
         /// <param name="leasesTableName">Name of the leases table</param>
         /// <param name="userTableColumns">List of all column names in the user table</param>
@@ -131,12 +131,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._telemetryProps = telemetryProps ?? new Dictionary<TelemetryPropertyName, string>();
 
             // Check if there's config settings to override the default max batch size/polling interval values
-            int? configuredMaxBatchSize = configuration.GetValue<int?>(ConfigKey_SqlTrigger_MaxBatchSize);
-            // Fall back to original value for backwards compat if the new value isn't specified
-            if (configuredMaxBatchSize == null)
-            {
-                configuredMaxBatchSize = configuration.GetValue<int?>(ConfigKey_SqlTrigger_BatchSize);
-            }
+            int? configuredMaxBatchSize = configuration.GetValue<int?>(ConfigKey_SqlTrigger_MaxBatchSize) ?? configuration.GetValue<int?>(ConfigKey_SqlTrigger_BatchSize);
             int? configuredPollingInterval = configuration.GetValue<int?>(ConfigKey_SqlTrigger_PollingInterval);
             this._maxBatchSize = configuredMaxBatchSize ?? this._maxBatchSize;
             if (this._maxBatchSize <= 0)
@@ -513,7 +508,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Executed once every <see cref="LeaseTime"/> period. If the state of the change monitor is
+        /// Executed once every <see cref="LeaseRenewalIntervalInSeconds"/> seconds. If the state of the change monitor is
         /// <see cref="State.ProcessingChanges"/>, then we will renew the leases held by the change monitor on "_rows".
         /// </summary>
         private async void RunLeaseRenewalLoopAsync()
@@ -792,7 +787,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         /// <summary>
         /// Builds up the list of <see cref="SqlChange{T}"/> passed to the user's triggered function based on the data
-        /// stored in "_rows". If any of the changes correspond to a deleted row, then the <see cref="SqlChange.Item">
+        /// stored in "_rows". If any of the changes correspond to a deleted row, then the <see cref="SqlChange{T}.Item" />
         /// will be populated with only the primary key values of the deleted row.
         /// </summary>
         /// <returns>The list of changes</returns>
@@ -995,7 +990,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Builds the query to renew leases on the rows in "_rows" (<see cref="RenewLeasesAsync(CancellationToken)"/>).
+        /// Builds the query to renew leases on the rows in "_rows" (<see cref="RenewLeasesAsync(SqlConnection,CancellationToken)"/>).
         /// </summary>
         /// <param name="connection">The connection to add to the returned SqlCommand</param>
         /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
@@ -1058,7 +1053,7 @@ WHERE l.{LeasesTableChangeVersionColumnName} <= cte.{SysChangeVersionColumnName}
         /// <summary>
         /// Builds the command to update the global version number in _globalStateTable after successful invocation of
         /// the user's function. If the global version number is updated, also cleans the leases table and removes all
-        /// rows for which ChangeVersion <= newLastSyncVersion.
+        /// rows for which ChangeVersion &lt;= newLastSyncVersion.
         /// </summary>
         /// <param name="connection">The connection to add to the returned SqlCommand</param>
         /// <param name="transaction">The transaction to add to the returned SqlCommand</param>

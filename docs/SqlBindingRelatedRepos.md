@@ -56,4 +56,4 @@ End to end tests for SQL Bindings in the Python Worker.
 [Java language worker for Azure Functions](https://github.com/Azure/azure-functions-java-worker)
 
 ### NodeJS Worker 
-[NodeJS (Javascript/Typescript) worker for Azure Functions](https://github.com/Azure/azure-functions-nodejs-worker)
+[NodeJS (JavaScript/TypeScript) worker for Azure Functions](https://github.com/Azure/azure-functions-nodejs-worker)

@@ -460,6 +460,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         /// <param name="connection">The already-opened connection to use for executing the command</param>
         /// <param name="transaction">The transaction wrapping this command</param>
+        /// <param name="userTableId">The ID of the table being watched</param>
         /// <param name="cancellationToken">Cancellation token to pass to the command</param>
         /// <returns>The time taken in ms to execute the command</returns>
         private async Task<long> InsertGlobalStateTableRowAsync(SqlConnection connection, SqlTransaction transaction, int userTableId, CancellationToken cancellationToken)
