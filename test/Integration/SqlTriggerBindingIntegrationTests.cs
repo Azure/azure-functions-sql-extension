@@ -293,7 +293,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
+        [UnsupportedLanguages(SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
         public async Task MultiFunctionTriggerTest(SupportedLanguages lang)
         {
             const string Trigger1Changes = "Trigger1 Changes: ";
@@ -472,7 +472,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
+        [UnsupportedLanguages(SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
         public void TableNotPresentTriggerTest(SupportedLanguages lang)
         {
             this.StartFunctionHostAndWaitForError(
@@ -487,7 +487,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
+        [UnsupportedLanguages(SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
         public void PrimaryKeyNotCreatedTriggerTest(SupportedLanguages lang)
         {
             this.StartFunctionHostAndWaitForError(
@@ -503,7 +503,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
+        [UnsupportedLanguages(SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
         public void ReservedPrimaryKeyColumnNamesTriggerTest(SupportedLanguages lang)
         {
             this.StartFunctionHostAndWaitForError(
@@ -519,7 +519,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
+        [UnsupportedLanguages(SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
         public void UnsupportedColumnTypesTriggerTest(SupportedLanguages lang)
         {
             this.StartFunctionHostAndWaitForError(
