@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             private readonly ILogger _logger;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="SqlConverter/>"/> class.
+            /// Initializes a new instance of the <see cref="SqlConverter"/> class.
             /// </summary>
             /// <param name="configuration"></param>
             /// <param name="logger">ILogger used to log information and warnings</param>
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             private ServerProperties _serverProperties;
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="SqlGenericsConverter<typeparamref name="T"/>"/> class.
+            /// Initializes a new instance of the <see cref="SqlGenericsConverter{T}"/> class.
             /// </summary>
             /// <param name="configuration"></param>
             /// <param name="logger">ILogger used to log information and warnings</param>

@@ -1,0 +1,12 @@
+{
+    "bindings": [
+      {
+        "name": "changes",
+        "type": "sqlTrigger",
+        "direction": "in",
+        "tableName": "dbo.ProductsWithoutPrimaryKey",
+        "connectionStringSetting": "SqlConnectionString"
+      }
+    ],
+    "disabled": false
+  }

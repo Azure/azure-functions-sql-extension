@@ -3,8 +3,18 @@
 
 using Microsoft.Extensions.Hosting;
 
-IHost host = new HostBuilder()
-    .ConfigureFunctionsWorkerDefaults()
-    .Build();
+namespace DotnetIsolatedTests
+{
+    internal class Program
+    {
+        public static void Main()
+        {
+            IHost host = new HostBuilder()
+            .ConfigureFunctionsWorkerDefaults()
+            .Build();
 
-host.Run();
+            host.Run();
+        }
+    }
+}
+

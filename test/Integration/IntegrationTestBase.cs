@@ -255,7 +255,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Executes a command against the current connection.
         /// </summary>
-        /// <param name="command">Command text to execute</param>
+        /// <param name="commandText">Command text to execute</param>
         /// <param name="message">Optional message to write when this query is executed. Defaults to writing the query commandText</param>
         protected void ExecuteNonQuery(string commandText, string message = null)
         {
