@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.WebUtilities;
@@ -55,9 +54,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         protected ITestOutputHelper TestOutput { get; private set; }
 
         /// <summary>
-        /// The port the Functions Host is running on. Default is 7071.
+        /// The port the Functions Host is running on. Starting the port at 7080 in case the
+        /// function hosts started in SqlInputOutputBindingIntegrationTestFixture are not
+        /// closed properly.
         /// </summary>
-        protected int Port { get; private set; } = 7071;
+        protected int Port { get; private set; } = 7080;
 
         public IntegrationTestBase(ITestOutputHelper output = null)
         {
@@ -121,14 +122,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 throw new FileNotFoundException("Working directory not found at " + workingDirectory);
             }
 
-            // Use a different port for each new host process, starting with the default port number: 7071.
+            // Use a different port for each new host process, starting with the default port number: 7080.
             int port = this.Port + this.FunctionHostList.Count;
 
             var startInfo = new ProcessStartInfo
             {
                 // The full path to the Functions CLI is required in the ProcessStartInfo because UseShellExecute is set to false.
                 // We cannot both use shell execute and redirect output at the same time: https://docs.microsoft.com//dotnet/api/system.diagnostics.processstartinfo.redirectstandardoutput#remarks
-                FileName = GetFunctionsCoreToolsPath(),
+                FileName = TestUtils.GetFunctionsCoreToolsPath(),
                 Arguments = $"start --verbose --port {port} --functions {functionName}",
                 WorkingDirectory = workingDirectory,
                 WindowStyle = ProcessWindowStyle.Hidden,
@@ -183,49 +184,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             this.LogOutput("Azure Function host started!");
             functionHost.OutputDataReceived -= SignalStartupHandler;
-        }
-
-        private static string GetFunctionsCoreToolsPath()
-        {
-            // Determine npm install path from either env var set by pipeline or OS defaults
-            // Pipeline env var is needed as the Windows hosted agents installs to a non-traditional location
-            string nodeModulesPath = Environment.GetEnvironmentVariable("NODE_MODULES_PATH");
-            if (string.IsNullOrEmpty(nodeModulesPath))
-            {
-                nodeModulesPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
-                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\node_modules\") :
-                    @"/usr/local/lib/node_modules";
-            }
-
-            string funcExe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "func.exe" : "func";
-            string funcPath = Path.Combine(nodeModulesPath, "azure-functions-core-tools", "bin", funcExe);
-
-            if (!File.Exists(funcPath))
-            {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    // Search Program Files folder as well
-                    string programFilesFuncPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Microsoft", "Azure Functions Core Tools", funcExe);
-                    if (File.Exists(programFilesFuncPath))
-                    {
-                        return programFilesFuncPath;
-                    }
-                    throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath} or {programFilesFuncPath}");
-                }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                {
-                    // Search Mac to see if brew installed location has azure function core tools
-                    string usrBinFuncPath = Path.Combine("/usr", "local", "bin", "func");
-                    if (File.Exists(usrBinFuncPath))
-                    {
-                        return usrBinFuncPath;
-                    }
-                    throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath} or {usrBinFuncPath}");
-                }
-                throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath}");
-            }
-
-            return funcPath;
         }
 
         protected void LogOutput(string output)
@@ -343,8 +301,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     functionHost.CancelOutputRead();
                     functionHost.CancelErrorRead();
                     functionHost.Kill(true);
-                    functionHost.Dispose();
                     functionHost.WaitForExit();
+                    functionHost.Dispose();
                 }
                 catch (Exception ex)
                 {
@@ -354,16 +312,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.FunctionHostList.Clear();
         }
 
-        protected async Task<HttpResponseMessage> SendInputRequest(string functionName, string query = "")
+        protected async Task<HttpResponseMessage> SendInputRequest(string functionName, string query = "", string port = null)
         {
-            string requestUri = $"http://localhost:{this.Port}/api/{functionName}/{query}";
+            port ??= this.Port.ToString();
+            string requestUri = $"http://localhost:{port}/api/{functionName}/{query}";
 
             return await this.SendGetRequest(requestUri);
         }
 
-        protected Task<HttpResponseMessage> SendOutputGetRequest(string functionName, IDictionary<string, string> query = null)
+        protected Task<HttpResponseMessage> SendOutputGetRequest(string functionName, IDictionary<string, string> query = null, string port = null)
         {
-            string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
+            port ??= this.Port.ToString();
+            string requestUri = $"http://localhost:{port}/api/{functionName}";
 
             if (query != null)
             {
@@ -373,9 +333,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             return this.SendGetRequest(requestUri);
         }
 
-        protected Task<HttpResponseMessage> SendOutputPostRequest(string functionName, string query)
+        protected Task<HttpResponseMessage> SendOutputPostRequest(string functionName, string query, string port = null)
         {
-            string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
+            port ??= this.Port.ToString();
+            string requestUri = $"http://localhost:{port}/api/{functionName}";
 
             return this.SendPostRequest(requestUri, query);
         }

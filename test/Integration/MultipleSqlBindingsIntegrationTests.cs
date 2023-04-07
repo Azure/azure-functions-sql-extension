@@ -9,7 +9,7 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
-    [Collection(IntegrationTestsCollection.Name)]
+    [Collection(SqlInputOutputBindingIntegrationTestsCollection.Name)]
     [LogTestName]
     public class MultipleSqlBindingsIntegrationTests : IntegrationTestBase
     {
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.InsertProducts(products);
 
             // Run the function
-            await this.SendInputRequest("getandaddproducts/100");
+            await this.SendInputRequest("getandaddproducts/100", "", TestUtils.GetPort(lang));
 
             // Verify that the 10 rows in Products were upserted to ProductsWithIdentity
             Assert.Equal(10, this.ExecuteScalar("SELECT COUNT(1) FROM ProductsWithIdentity"));

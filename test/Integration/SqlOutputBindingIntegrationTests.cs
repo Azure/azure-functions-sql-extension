@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
-    [Collection(IntegrationTestsCollection.Name)]
+    [Collection(SqlInputOutputBindingIntegrationTestsCollection.Name)]
     [LogTestName]
     public class SqlOutputBindingIntegrationTests : IntegrationTestBase
     {
@@ -27,8 +27,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(-500, "ABCD", 580)]
         public void AddProductTest(int id, string name, int cost, SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProduct), lang);
-
             var query = new Dictionary<string, object>()
             {
                 { "ProductId", id },
@@ -36,7 +34,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "Cost", cost }
             };
 
-            this.SendOutputPostRequest("addproduct", Utils.JsonSerializeObject(query)).Wait();
+            this.SendOutputPostRequest("addproduct", Utils.JsonSerializeObject(query), TestUtils.GetPort(lang)).Wait();
 
             // Verify result
             Assert.Equal(name, this.ExecuteScalar($"select Name from Products where ProductId={id}"));
@@ -52,8 +50,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [UnsupportedLanguages(SupportedLanguages.Java)]
         public void AddProductParamsTest(int id, string name, int cost, SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProductParams), lang);
-
             var query = new Dictionary<string, string>()
             {
                 { "productId", id.ToString() },
@@ -61,7 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "cost", cost.ToString() }
             };
 
-            this.SendOutputGetRequest("addproduct-params", query).Wait();
+            this.SendOutputGetRequest("addproduct-params", query, TestUtils.GetPort(lang)).Wait();
 
             // Verify result
             Assert.Equal(name, this.ExecuteScalar($"select Name from Products where ProductId={id}"));
@@ -72,8 +68,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public void AddProductArrayTest(SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProductsArray), lang);
-
             // First insert some test data
             this.ExecuteNonQuery("INSERT INTO Products VALUES (1, 'test', 100)");
             this.ExecuteNonQuery("INSERT INTO Products VALUES (2, 'test', 100)");
@@ -95,7 +89,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 }
             };
 
-            this.SendOutputPostRequest("addproducts-array", Utils.JsonSerializeObject(prods)).Wait();
+            this.SendOutputPostRequest("addproducts-array", Utils.JsonSerializeObject(prods), TestUtils.GetPort(lang)).Wait();
 
             // Function call changes first 2 rows to (1, 'Cup', 2) and (2, 'Glasses', 12)
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(1) FROM Products WHERE Cost = 100"));
@@ -112,14 +106,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public void AddProductColumnTypesTest(SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProductColumnTypes), lang, true);
-
             var queryParameters = new Dictionary<string, string>()
             {
                 { "productId", "999" }
             };
 
-            this.SendOutputGetRequest("addproduct-columntypes", queryParameters).Wait();
+            this.SendOutputGetRequest("addproduct-columntypes", queryParameters, TestUtils.GetPort(lang, true)).Wait();
 
             // If we get here then the test is successful - an exception will be thrown if there were any problems
         }
@@ -172,11 +164,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public void AddProductExtraColumnsTest(SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProductExtraColumns), lang, true);
-
             // Since ProductExtraColumns has columns that does not exist in the table,
             // no rows should be added to the table.
-            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-extracolumns").Wait());
+            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-extracolumns", null, TestUtils.GetPort(lang, true)).Wait());
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM Products"));
         }
 
@@ -184,11 +174,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public void AddProductMissingColumnsTest(SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProductMissingColumns), lang, true);
-
             // Even though the ProductMissingColumns object is missing the Cost column,
             // the row should still be added successfully since Cost can be null.
-            this.SendOutputPostRequest("addproduct-missingcolumns", string.Empty).Wait();
+            this.SendOutputPostRequest("addproduct-missingcolumns", "", TestUtils.GetPort(lang, true)).Wait();
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM Products"));
         }
 
@@ -196,20 +184,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public void AddProductMissingColumnsNotNullTest(SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProductMissingColumnsExceptionFunction), lang, true);
-
             // Since the Sql table does not allow null for the Cost column,
             // inserting a row without a Cost value should throw an Exception.
-            Assert.Throws<AggregateException>(() => this.SendOutputPostRequest("addproduct-missingcolumnsexception", string.Empty).Wait());
+            Assert.Throws<AggregateException>(() => this.SendOutputPostRequest("addproduct-missingcolumnsexception", "", TestUtils.GetPort(lang, true)).Wait());
         }
 
         [Theory]
         [SqlInlineData()]
         public void AddProductNoPartialUpsertTest(SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProductsNoPartialUpsert), lang, true);
-
-            Assert.Throws<AggregateException>(() => this.SendOutputPostRequest("addproducts-nopartialupsert", string.Empty).Wait());
+            Assert.Throws<AggregateException>(() => this.SendOutputPostRequest("addproducts-nopartialupsert", "", TestUtils.GetPort(lang, true)).Wait());
             // No rows should be upserted since there was a row with an invalid value
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsNameNotNull"));
         }
@@ -221,7 +205,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public void AddProductWithIdentity(SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProductWithIdentityColumn), lang);
             // Identity column (ProductId) is left out for new items
             var query = new Dictionary<string, string>()
             {
@@ -229,7 +212,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "cost", "1" }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-            this.SendOutputGetRequest(nameof(AddProductWithIdentityColumn), query).Wait();
+            this.SendOutputGetRequest("addproductwithidentitycolumn", query, TestUtils.GetPort(lang)).Wait();
             // Product should have been inserted correctly even without an ID when there's an identity column present
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
         }
@@ -241,9 +224,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public void AddProductsWithIdentityColumnArray(SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProductsWithIdentityColumnArray), lang);
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-            this.SendOutputGetRequest(nameof(AddProductsWithIdentityColumnArray)).Wait();
+            this.SendOutputGetRequest("addproductswithidentitycolumnarray", null, TestUtils.GetPort(lang)).Wait();
             // Multiple items should have been inserted
             Assert.Equal(2, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
         }
@@ -256,7 +238,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public void AddProductWithIdentity_MultiplePrimaryColumns(SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), lang);
             var query = new Dictionary<string, string>()
             {
                 { "externalId", "101" },
@@ -264,7 +245,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "cost", "1" }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithMultiplePrimaryColumnsAndIdentity"));
-            this.SendOutputGetRequest(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), query).Wait();
+            this.SendOutputGetRequest("addproductwithmultipleprimarycolumnsandidentity", query, TestUtils.GetPort(lang)).Wait();
             // Product should have been inserted correctly even without an ID when there's an identity column present
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithMultiplePrimaryColumnsAndIdentity"));
         }
@@ -277,7 +258,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public void AddProductWithIdentity_SpecifyIdentityColumn(SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProductWithIdentityColumnIncluded), lang);
             var query = new Dictionary<string, string>()
             {
                 { "productId", "1" },
@@ -285,7 +265,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "cost", "1" }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-            this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query).Wait();
+            this.SendOutputGetRequest("addproductwithidentitycolumnincluded", query, TestUtils.GetPort(lang)).Wait();
             // New row should have been inserted
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
             query = new Dictionary<string, string>()
@@ -307,14 +287,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public void AddProductWithIdentity_NoIdentityColumn(SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProductWithIdentityColumnIncluded), lang);
             var query = new Dictionary<string, string>()
             {
                 { "name", "MyProduct" },
                 { "cost", "1" }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-            this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query).Wait();
+            this.SendOutputGetRequest("addproductwithidentitycolumnincluded", query, TestUtils.GetPort(lang)).Wait();
             // New row should have been inserted
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
             query = new Dictionary<string, string>()
@@ -335,7 +314,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public void AddProductWithIdentity_MissingPrimaryColumn(SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), lang);
             var query = new Dictionary<string, string>()
             {
                 // Missing externalId
@@ -343,7 +321,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "cost", "1" }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithMultiplePrimaryColumnsAndIdentity"));
-            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest(nameof(AddProductWithMultiplePrimaryColumnsAndIdentity), query).Wait());
+            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproductwithmultipleprimarycolumnsandidentity", query, TestUtils.GetPort(lang)).Wait());
             // Nothing should have been inserted
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithMultiplePrimaryColumnsAndIdentity"));
         }
@@ -356,15 +334,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public void AddProductWithDefaultPKTest(SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProductWithDefaultPK), lang);
             var product = new Dictionary<string, object>()
             {
                 { "Name", "MyProduct" },
                 { "Cost", 1 }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
-            this.SendOutputPostRequest("addproductwithdefaultpk", Utils.JsonSerializeObject(product)).Wait();
-            this.SendOutputPostRequest("addproductwithdefaultpk", Utils.JsonSerializeObject(product)).Wait();
+            this.SendOutputPostRequest("addproductwithdefaultpk", Utils.JsonSerializeObject(product), TestUtils.GetPort(lang, true)).Wait();
+            this.SendOutputPostRequest("addproductwithdefaultpk", Utils.JsonSerializeObject(product), TestUtils.GetPort(lang, true)).Wait();
             Assert.Equal(2, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
         }
 
@@ -396,7 +373,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             };
 
             // The upsert should fail since the database compat level is not supported
-            Exception exception = Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-params", query).Wait());
+            Exception exception = Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-params", query, "7080").Wait());
             // Verify the message contains the expected error so that other errors don't mistakenly make this test pass
             // Wait 2sec for message to get processed to account for delays reading output
             await foundExpectedMessageSource.Task.TimeoutAfter(TimeSpan.FromMilliseconds(2000), $"Timed out waiting for expected error message");
@@ -412,8 +389,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public void AddProductToCaseSensitiveDatabase(SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProduct), lang);
-
             // Change database collation to case sensitive
             this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
 
@@ -424,7 +399,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "Cost", 100 }
             };
 
-            this.SendOutputPostRequest("addproduct", Utils.JsonSerializeObject(query)).Wait();
+            this.SendOutputPostRequest("addproduct", Utils.JsonSerializeObject(query), TestUtils.GetPort(lang)).Wait();
 
             // Verify result
             Assert.Equal("test", this.ExecuteScalar($"select Name from Products where ProductId=0"));
@@ -441,9 +416,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public void AddProductIncorrectCasing(SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProductIncorrectCasing), lang);
-
-            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-incorrectcasing").Wait());
+            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-incorrectcasing", null, TestUtils.GetPort(lang, true)).Wait());
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM Products"));
         }
 
@@ -454,8 +427,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public void AddProductWithDifferentPropertiesTest(SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProduct), lang);
-
             var query1 = new Dictionary<string, object>()
             {
                 { "ProductId", 0 },
@@ -469,8 +440,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "Name", "test2" }
             };
 
-            this.SendOutputPostRequest("addproduct", Utils.JsonSerializeObject(query1)).Wait();
-            this.SendOutputPostRequest("addproduct", Utils.JsonSerializeObject(query2)).Wait();
+            this.SendOutputPostRequest("addproduct", Utils.JsonSerializeObject(query1), TestUtils.GetPort(lang)).Wait();
+            this.SendOutputPostRequest("addproduct", Utils.JsonSerializeObject(query2), TestUtils.GetPort(lang)).Wait();
 
             // Verify result
             Assert.Equal("test2", this.ExecuteScalar($"select Name from Products where ProductId=0"));
@@ -499,7 +470,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             var query = new Dictionary<string, string>() { };
 
             // The upsert should fail since no parameters were passed
-            Exception exception = Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-params", query).Wait());
+            Exception exception = Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-params", query, "7080").Wait());
             // Verify the message contains the expected error so that other errors don't mistakenly make this test pass
             // Wait 2sec for message to get processed to account for delays reading output
             await foundExpectedMessageSource.Task.TimeoutAfter(TimeSpan.FromMilliseconds(2000), $"Timed out waiting for expected error message");
@@ -534,10 +505,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public void AddProductDefaultPKAndDifferentColumnOrderTest(SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProductDefaultPKAndDifferentColumnOrder), lang, true);
-
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
-            this.SendOutputGetRequest("addproductdefaultpkanddifferentcolumnorder").Wait();
+            this.SendOutputGetRequest("addproductdefaultpkanddifferentcolumnorder", null, TestUtils.GetPort(lang, true)).Wait();
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
         }
     }
