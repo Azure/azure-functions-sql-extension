@@ -519,7 +519,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.CSharpscript, SupportedLanguages.CSharp, SupportedLanguages.JavaScript, SupportedLanguages.PowerShell, SupportedLanguages.Python)]
+        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.CSharpscript)]
         public void UnsupportedColumnTypesTriggerTest(SupportedLanguages lang)
         {
             this.StartFunctionHostAndWaitForError(
