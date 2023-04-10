@@ -274,7 +274,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "name", "MyProduct2" },
                 { "cost", "1" }
             };
-            this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query).Wait();
+            this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query, TestUtils.GetPort(lang)).Wait();
             // Existing row should have been updated
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity WHERE Name='MyProduct2'"));
@@ -301,7 +301,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "name", "MyProduct2" },
                 { "cost", "1" }
             };
-            this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query).Wait();
+            this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query, TestUtils.GetPort(lang)).Wait();
             // Another new row should have been inserted
             Assert.Equal(2, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
         }
@@ -340,8 +340,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "Cost", 1 }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
-            this.SendOutputPostRequest("addproductwithdefaultpk", Utils.JsonSerializeObject(product), TestUtils.GetPort(lang, true)).Wait();
-            this.SendOutputPostRequest("addproductwithdefaultpk", Utils.JsonSerializeObject(product), TestUtils.GetPort(lang, true)).Wait();
+            this.SendOutputPostRequest("addproductwithdefaultpk", Utils.JsonSerializeObject(product), TestUtils.GetPort(lang)).Wait();
+            this.SendOutputPostRequest("addproductwithdefaultpk", Utils.JsonSerializeObject(product), TestUtils.GetPort(lang)).Wait();
             Assert.Equal(2, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
         }
 
