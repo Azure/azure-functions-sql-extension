@@ -19,6 +19,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     {
         public SqlTriggerBindingIntegrationTestBase(ITestOutputHelper output = null) : base(output)
         {
+            this.EnableChangeTrackingForDatabase();
+        }
+
+        private void EnableChangeTrackingForDatabase()
+        {
+            this.ExecuteNonQuery($@"
+                ALTER DATABASE [{this.DatabaseName}]
+                SET CHANGE_TRACKING = ON
+                (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON);
+            ");
         }
 
         public void SetChangeTrackingForTable(string tableName, bool enable = true)
@@ -133,6 +143,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// and asserts that the logged error message matches with the supplied error message.
         /// </summary>
         /// <param name="functionName">Name of the user function that should cause error in trigger listener</param>
+        /// <param name="lang">The language of the function being started</param>
         /// <param name="useTestFolder">Whether the functions host should be launched from test folder</param>
         /// <param name="expectedErrorMessage">Expected error message string</param>
         protected void StartFunctionHostAndWaitForError(string functionName, SupportedLanguages lang, bool useTestFolder, string expectedErrorMessage)
