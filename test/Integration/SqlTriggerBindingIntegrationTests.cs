@@ -31,7 +31,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.CSharpscript)]
+        [UnsupportedLanguages(SupportedLanguages.CSharpscript)]
         public async Task SingleOperationTriggerTest(SupportedLanguages lang)
         {
             this.SetChangeTrackingForTable("Products");
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.CSharpscript)]
+        [UnsupportedLanguages(SupportedLanguages.CSharpscript)]
         public async Task BatchSizeOverrideTriggerTest(SupportedLanguages lang)
         {
             // Use enough items to require 4 batches to be processed but then
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.CSharpscript)]
+        [UnsupportedLanguages(SupportedLanguages.CSharpscript)]
         public async Task MaxBatchSizeOverrideTriggerTest(SupportedLanguages lang)
         {
             // Use enough items to require 4 batches to be processed but then
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
+        [UnsupportedLanguages(SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
         public async Task PollingIntervalOverrideTriggerTest(SupportedLanguages lang)
         {
             const int firstId = 1;
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.CSharpscript)]
+        [UnsupportedLanguages(SupportedLanguages.CSharpscript)]
         public async Task MultiOperationTriggerTest(SupportedLanguages lang)
         {
             int firstId = 1;
@@ -293,7 +293,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
+        [UnsupportedLanguages(SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
         public async Task MultiFunctionTriggerTest(SupportedLanguages lang)
         {
             const string Trigger1Changes = "Trigger1 Changes: ";
@@ -420,7 +420,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.CSharpscript)]
+        [UnsupportedLanguages(SupportedLanguages.CSharpscript)]
         public async Task MultiHostTriggerTest(SupportedLanguages lang)
         {
             this.SetChangeTrackingForTable("Products");
@@ -472,7 +472,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
+        [UnsupportedLanguages(SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
         public void TableNotPresentTriggerTest(SupportedLanguages lang)
         {
             this.StartFunctionHostAndWaitForError(
@@ -487,7 +487,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
+        [UnsupportedLanguages(SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
         public void PrimaryKeyNotCreatedTriggerTest(SupportedLanguages lang)
         {
             this.StartFunctionHostAndWaitForError(
@@ -503,7 +503,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
+        [UnsupportedLanguages(SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
         public void ReservedPrimaryKeyColumnNamesTriggerTest(SupportedLanguages lang)
         {
             this.StartFunctionHostAndWaitForError(
@@ -519,7 +519,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
+        [UnsupportedLanguages(SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
         public void UnsupportedColumnTypesTriggerTest(SupportedLanguages lang)
         {
             this.StartFunctionHostAndWaitForError(
@@ -535,7 +535,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.CSharpscript)]
+        [UnsupportedLanguages(SupportedLanguages.CSharpscript)]
         public void ChangeTrackingNotEnabledTriggerTest(SupportedLanguages lang)
         {
             this.StartFunctionHostAndWaitForError(
@@ -572,7 +572,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.CSharpscript)]
+        [UnsupportedLanguages(SupportedLanguages.CSharpscript)]
         public void UnsupportedDatabaseThrows(SupportedLanguages lang)
         {
             // Change database compat level to unsupported version
