@@ -24,8 +24,8 @@ public class ProductsTriggerWithValidation {
                 SqlChangeProduct[] changes,
             ExecutionContext context) throws Exception {
 
-        int expectedMaxBatchSize = Integer.parseInt(System.getenv("TEST_EXPECTED_MAX_BATCH_SIZE"));
-        if (expectedMaxBatchSize != changes.length) {
+        String expectedMaxBatchSize = System.getenv("TEST_EXPECTED_MAX_BATCH_SIZE");
+        if (expectedMaxBatchSize != null && !expectedMaxBatchSize.isEmpty() && Integer.parseInt(expectedMaxBatchSize) != changes.length) {
             throw new Exception("Invalid max batch size, got " + changes.length + " changes but expected " + expectedMaxBatchSize);
         }
         context.getLogger().log(Level.INFO, "SQL Changes: " + new Gson().toJson(changes));
