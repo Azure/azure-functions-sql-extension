@@ -23,13 +23,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// input and output binding tests are run. Some functions are not included because
         /// they may interfere with other tests (ex. TimerTriggerProducts).
         /// </summary>
-        private readonly List<string> SampleFunctions = new() { "GetProducts", "GetProductsStoredProcedure", "GetProductsNameEmpty", "GetProductsStoredProcedureFromAppSetting", "GetProductNamesView", "AddProduct", "AddProductParams", "AddProductsArray", "AddProductWithIdentityColumn", "AddProductsWithIdentityColumnArray", "AddProductWithIdentityColumnIncluded", "AddProductWithIdentityColumnIncluded", "AddProductWithMultiplePrimaryColumnsAndIdentity", "GetAndAddProducts" };
+        private readonly List<string> SampleFunctions = new() { "GetProducts", "GetProductsStoredProcedure", "GetProductsNameEmpty", "GetProductsStoredProcedureFromAppSetting", "GetProductNamesView", "AddProduct", "AddProductParams", "AddProductsArray", "AddProductWithIdentityColumn", "AddProductsWithIdentityColumnArray", "AddProductWithIdentityColumnIncluded", "AddProductWithMultiplePrimaryColumnsAndIdentity", "GetAndAddProducts", "AddProductWithDefaultPK" };
 
         /// <summary>
         /// List of all functions in the test folder that will be started before the
         /// input and output binding tests are run.
         /// </summary>
-        private readonly List<string> TestFunctions = new() { "GetProductsColumnTypesSerialization", "AddProductColumnTypes", "AddProductExtraColumns", "AddProductMissingColumns", "AddProductMissingColumnsExceptionFunction", "AddProductsNoPartialUpsert", "AddProductWithDefaultPK", "AddProductIncorrectCasing", "AddProductDefaultPKAndDifferentColumnOrder" };
+        private readonly List<string> TestFunctions = new() { "GetProductsColumnTypesSerialization", "AddProductColumnTypes", "AddProductExtraColumns", "AddProductMissingColumns", "AddProductMissingColumnsExceptionFunction", "AddProductsNoPartialUpsert", "AddProductIncorrectCasing", "AddProductDefaultPKAndDifferentColumnOrder" };
 
         /// <summary>
         /// Host process for Azurite local storage emulator. This is required for non-HTTP trigger functions:
