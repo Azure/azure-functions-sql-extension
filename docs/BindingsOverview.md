@@ -86,7 +86,9 @@ Azure SQL Trigger bindings utilize SQL [change tracking](https://docs.microsoft.
     (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON);
     ```
 
-    The `CHANGE_RETENTION` option specifies the duration for which the changes are retained in the change tracking table. This may affect the trigger functionality. For example, if the user application is turned off for several days and then resumed, it will only be able to catch the changes that occurred in past two days with the above query. Hence, please update the value of `CHANGE_RETENTION` to suit your requirements. The `AUTO_CLEANUP` option is used to enable or disable the clean-up task that removes the stale data. Please refer to SQL Server documentation [here](https://docs.microsoft.com/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server#enable-change-tracking-for-a-database) for more information.
+    The `CHANGE_RETENTION` option specifies the duration for which the changes are retained in the change tracking table. This may affect the trigger functionality. For example, if the user application is turned off for several days and then resumed, the database will contain the changes that occurred in past two days in the above setup example. Hence, please update the value of `CHANGE_RETENTION` to suit your requirements.
+
+    The `AUTO_CLEANUP` option is used to enable or disable the clean-up task that removes the stale data. Please refer to SQL Server documentation [here](https://docs.microsoft.com/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server#enable-change-tracking-for-a-database) for more information.
 
 1. Enabling change tracking on the SQL table:
 
@@ -95,7 +97,7 @@ Azure SQL Trigger bindings utilize SQL [change tracking](https://docs.microsoft.
     ENABLE CHANGE_TRACKING;
     ```
 
-    For more information, please refer to the documentation [here](https://docs.microsoft.com/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server#enable-change-tracking-for-a-table). The trigger needs to have read access on the table being monitored for changes as well as to the change tracking system tables. It also needs write access to an `az_func` schema within the database, where it will create additional leases tables to store the trigger states and leases. Each function trigger will thus have an associated change tracking table and leases table.
+    For more information, please refer to the documentation [here](https://docs.microsoft.com/sql/relational-databases/track-changes/enable-and-disable-change-tracking-sql-server#enable-change-tracking-for-a-table). The trigger needs to have read access on the table being monitored for changes as well as to the change tracking system tables. It also needs write access to an `az_func` schema within the database, where it will create additional leases tables to store the trigger states and leases. Each function trigger has an associated change tracking table and leases table.
 
     > **NOTE:** The leases table contains all columns corresponding to the primary key from the user table and three additional columns named `_az_func_ChangeVersion`, `_az_func_AttemptCount` and `_az_func_LeaseExpirationTime`. If any of the primary key columns happen to have the same name, that will result in an error message listing any conflicts. In this case, the listed primary key columns must be renamed for the trigger to work.
 
@@ -105,15 +107,15 @@ This section goes over some of the configuration values you can use to customize
 
 #### Sql_Trigger_MaxBatchSize
 
-This controls the maximum number of changes sent to the function during each iteration of the change processing loop.
+The maximum number of changes sent to the function during each iteration of the change processing loop.
 
 #### Sql_Trigger_PollingIntervalMs
 
-This controls the delay in milliseconds between processing each batch of changes.
+The delay in milliseconds between processing each batch of changes.
 
 #### Sql_Trigger_MaxChangesPerWorker
 
-This controls the upper limit on the number of pending changes in the user table that are allowed per application-worker. If the count of changes exceeds this limit, it may result in a scale out. The setting only applies for Azure Function Apps with runtime driven scaling enabled. See the [Scaling](#scaling-for-trigger-bindings) section for more information.
+The upper limit on the number of pending changes in the user table that are allowed per application-worker. If the count of changes exceeds this limit, it may result in a scale out. The setting only applies for Azure Function Apps with runtime driven scaling enabled. See the [Scaling](#scaling-for-trigger-bindings) section for more information.
 
 ### Scaling for Trigger Bindings
 
@@ -126,7 +128,6 @@ There are two types of scaling available:
 - Target Based Scaling - This type of scaling depends on the pending change count and the value of [dynamic concurrency](https://learn.microsoft.com/azure/azure-functions/functions-concurrency#dynamic-concurrency) which if not enabled is defaulted to [Sql_Trigger_MaxChangesPerWorker](#sql_trigger_maxchangesperworker). The target worker count is decided by dividing the pending changes by the concurrency value. The application scales out to the number of instances specified by the target worker count.
 
 For more information, check documentation on [Runtime Scaling](https://learn.microsoft.com/azure/azure-functions/event-driven-scaling#runtime-scaling). You can configure scaling parameters by going to 'Scale out (App Service plan)' setting on the function app's page. To understand various scale settings, please check the respective sections in [Azure Functions Premium plan](https://learn.microsoft.com/azure/azure-functions/functions-premium-plan?tabs=portal#eliminate-cold-starts)'s documentation.
-
 
 ### Retry support for Trigger Bindings
 
