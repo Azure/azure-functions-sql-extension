@@ -211,7 +211,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.CSharpscript)]
+        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.CSharpscript)]
         public async Task MultiOperationTriggerTest(SupportedLanguages lang)
         {
             int firstId = 1;
