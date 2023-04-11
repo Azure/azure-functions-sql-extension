@@ -2,7 +2,13 @@ trigger: none
 
 pr: none
 
-schedules: [ ]
+schedules:
+  - cron: "0 0 * * *"
+    displayName: Mon-Fri at Midnight
+    branches:
+      include:
+        - release/trigger
+    always: true
 
 variables:
   configuration: 'Release'
