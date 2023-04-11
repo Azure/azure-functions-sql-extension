@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
-using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.MultipleBindingsSamples;
 using Xunit;
 using Xunit.Abstractions;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
@@ -24,8 +23,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public async void GetAndAddProductsTest(SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(GetAndAddProducts), lang);
-
             // Insert 10 rows to Products table
             Product[] products = GetProductsWithSameCost(10, 100);
             this.InsertProducts(products);

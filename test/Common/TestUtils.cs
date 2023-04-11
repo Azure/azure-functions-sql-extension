@@ -316,33 +316,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
             {
                 return "7072";
             }
-            else if (lang == SupportedLanguages.JavaScript)
+            else if (lang == SupportedLanguages.CSharpscript)
             {
                 return "7073";
             }
-            else if (lang == SupportedLanguages.PowerShell)
+            else if (lang == SupportedLanguages.JavaScript)
             {
                 return "7074";
             }
-            else if (lang == SupportedLanguages.Java && !testFolder)
+            else if (lang == SupportedLanguages.PowerShell)
             {
                 return "7075";
             }
-            else if (lang == SupportedLanguages.Java && testFolder)
+            else if (lang == SupportedLanguages.Java && !testFolder)
             {
                 return "7076";
             }
-            else if (lang == SupportedLanguages.OutOfProc && !testFolder)
+            else if (lang == SupportedLanguages.Java && testFolder)
             {
                 return "7077";
             }
-            else if (lang == SupportedLanguages.OutOfProc && testFolder)
+            else if (lang == SupportedLanguages.OutOfProc && !testFolder)
             {
                 return "7078";
             }
-            else if (lang == SupportedLanguages.Python)
+            else if (lang == SupportedLanguages.OutOfProc && testFolder)
             {
                 return "7079";
+            }
+            else if (lang == SupportedLanguages.Python)
+            {
+                return "7080";
             }
             else
             {

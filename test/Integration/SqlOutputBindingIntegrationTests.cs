@@ -265,7 +265,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "cost", "1" }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-            this.SendOutputGetRequest("addproductwithidentitycolumnincluded", query, TestUtils.GetPort(lang)).Wait();
+            this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query, TestUtils.GetPort(lang)).Wait();
             // New row should have been inserted
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
             query = new Dictionary<string, string>()
@@ -293,7 +293,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "cost", "1" }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-            this.SendOutputGetRequest("addproductwithidentitycolumnincluded", query, TestUtils.GetPort(lang)).Wait();
+            this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query, TestUtils.GetPort(lang)).Wait();
             // New row should have been inserted
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
             query = new Dictionary<string, string>()
@@ -373,7 +373,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             };
 
             // The upsert should fail since the database compat level is not supported
-            Exception exception = Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-params", query, "7080").Wait());
+            Exception exception = Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-params", query, "7081").Wait());
             // Verify the message contains the expected error so that other errors don't mistakenly make this test pass
             // Wait 2sec for message to get processed to account for delays reading output
             await foundExpectedMessageSource.Task.TimeoutAfter(TimeSpan.FromMilliseconds(2000), $"Timed out waiting for expected error message");
@@ -470,7 +470,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             var query = new Dictionary<string, string>() { };
 
             // The upsert should fail since no parameters were passed
-            Exception exception = Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-params", query, "7080").Wait());
+            Exception exception = Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-params", query, "7081").Wait());
             // Verify the message contains the expected error so that other errors don't mistakenly make this test pass
             // Wait 2sec for message to get processed to account for delays reading output
             await foundExpectedMessageSource.Task.TimeoutAfter(TimeSpan.FromMilliseconds(2000), $"Timed out waiting for expected error message");

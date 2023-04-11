@@ -54,11 +54,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         protected ITestOutputHelper TestOutput { get; private set; }
 
         /// <summary>
-        /// The port the Functions Host is running on. Starting the port at 7080 in case the
+        /// The port the Functions Host is running on. Starting the port at 7081 in case the
         /// function hosts started in SqlInputOutputBindingIntegrationTestFixture are not
         /// closed properly.
         /// </summary>
-        protected int Port { get; private set; } = 7080;
+        protected int Port { get; private set; } = 7081;
 
         public IntegrationTestBase(ITestOutputHelper output = null)
         {
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 throw new FileNotFoundException("Working directory not found at " + workingDirectory);
             }
 
-            // Use a different port for each new host process, starting with the default port number: 7080.
+            // Use a different port for each new host process, starting with the default port number: 7081.
             int port = this.Port + this.FunctionHostList.Count;
 
             var startInfo = new ProcessStartInfo
