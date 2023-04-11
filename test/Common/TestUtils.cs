@@ -306,47 +306,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
             return funcPath;
         }
 
-        public static string GetPort(SupportedLanguages lang, bool testFolder = false)
+        public static int GetPort(SupportedLanguages lang, bool testFolder = false)
         {
             if (lang == SupportedLanguages.CSharp && !testFolder)
             {
-                return "7071";
+                return 7071;
             }
             else if (lang == SupportedLanguages.CSharp && testFolder)
             {
-                return "7072";
+                return 7072;
             }
             else if (lang == SupportedLanguages.CSharpscript)
             {
-                return "7073";
+                return 7073;
             }
             else if (lang == SupportedLanguages.JavaScript)
             {
-                return "7074";
+                return 7074;
             }
             else if (lang == SupportedLanguages.PowerShell)
             {
-                return "7075";
+                return 7075;
             }
             else if (lang == SupportedLanguages.Java && !testFolder)
             {
-                return "7076";
+                return 7076;
             }
             else if (lang == SupportedLanguages.Java && testFolder)
             {
-                return "7077";
+                return 7077;
             }
             else if (lang == SupportedLanguages.OutOfProc && !testFolder)
             {
-                return "7078";
+                return 7078;
             }
             else if (lang == SupportedLanguages.OutOfProc && testFolder)
             {
-                return "7079";
+                return 7079;
             }
             else if (lang == SupportedLanguages.Python)
             {
-                return "7080";
+                return 7080;
             }
             else
             {

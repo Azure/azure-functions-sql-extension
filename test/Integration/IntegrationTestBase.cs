@@ -312,17 +312,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.FunctionHostList.Clear();
         }
 
-        protected async Task<HttpResponseMessage> SendInputRequest(string functionName, string query = "", string port = null)
+        protected async Task<HttpResponseMessage> SendInputRequest(string functionName, string query = "", int port = 0)
         {
-            port ??= this.Port.ToString();
+            port = port == 0 ? this.Port : port;
             string requestUri = $"http://localhost:{port}/api/{functionName}/{query}";
 
             return await this.SendGetRequest(requestUri);
         }
 
-        protected Task<HttpResponseMessage> SendOutputGetRequest(string functionName, IDictionary<string, string> query = null, string port = null)
+        protected Task<HttpResponseMessage> SendOutputGetRequest(string functionName, IDictionary<string, string> query = null, int port = 0)
         {
-            port ??= this.Port.ToString();
+            port = port == 0 ? this.Port : port;
             string requestUri = $"http://localhost:{port}/api/{functionName}";
 
             if (query != null)
@@ -333,9 +333,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             return this.SendGetRequest(requestUri);
         }
 
-        protected Task<HttpResponseMessage> SendOutputPostRequest(string functionName, string query, string port = null)
+        protected Task<HttpResponseMessage> SendOutputPostRequest(string functionName, string query, int port = 0)
         {
-            port ??= this.Port.ToString();
+            port = port == 0 ? this.Port : port;
             string requestUri = $"http://localhost:{port}/api/{functionName}";
 
             return this.SendPostRequest(requestUri, query);

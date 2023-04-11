@@ -48,11 +48,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         private string DatabaseName;
 
         /// <summary>
-        /// The port the Functions Host is running on. Default is 7071.
-        /// </summary>
-        private readonly int Port = 7071;
-
-        /// <summary>
         /// Host processes for Azure Function CLI.
         /// </summary>
         private List<Process> FunctionHostList { get; } = new List<Process>();
@@ -159,32 +154,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 if (lang == SupportedLanguages.CSharp)
                 {
-                    this.StartFunctionHost(Path.Combine(binPath, "SqlExtensionSamples", "CSharp"), this.SampleFunctions);
-                    this.StartFunctionHost(Path.Combine(binPath), this.TestFunctions);
+                    this.StartFunctionHost(Path.Combine(binPath, "SqlExtensionSamples", "CSharp"), TestUtils.GetPort(lang), this.SampleFunctions);
+                    this.StartFunctionHost(Path.Combine(binPath), TestUtils.GetPort(lang, true), this.TestFunctions);
                 }
                 else if (lang == SupportedLanguages.Java)
                 {
-                    this.StartFunctionHost(Path.Combine(binPath, "SqlExtensionSamples", "Java", "target", "azure-functions", "samples-java-1665766173929"), this.SampleFunctions);
-                    this.StartFunctionHost(Path.Combine(binPath, "..", "..", "..", "Integration", "test-java", "target", "azure-functions", "test-java-1666041146813"), this.TestFunctions);
+                    this.StartFunctionHost(Path.Combine(binPath, "SqlExtensionSamples", "Java", "target", "azure-functions", "samples-java-1665766173929"), TestUtils.GetPort(lang), this.SampleFunctions);
+                    this.StartFunctionHost(Path.Combine(binPath, "..", "..", "..", "Integration", "test-java", "target", "azure-functions", "test-java-1666041146813"), TestUtils.GetPort(lang, true), this.TestFunctions);
                 }
                 else if (lang == SupportedLanguages.OutOfProc)
                 {
-                    this.StartFunctionHost(Path.Combine(binPath, "SqlExtensionSamples", "OutOfProc"), this.SampleFunctions);
-                    this.StartFunctionHost(Path.Combine(binPath, "SqlExtensionSamples", "OutOfProc", "test"), this.TestFunctions);
+                    this.StartFunctionHost(Path.Combine(binPath, "SqlExtensionSamples", "OutOfProc"), TestUtils.GetPort(lang), this.SampleFunctions);
+                    this.StartFunctionHost(Path.Combine(binPath, "SqlExtensionSamples", "OutOfProc", "test"), TestUtils.GetPort(lang, true), this.TestFunctions);
                 }
                 else
                 {
-                    this.StartFunctionHost(Path.Combine(binPath, "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), lang)));
+                    this.StartFunctionHost(Path.Combine(binPath, "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), lang)), TestUtils.GetPort(lang), null);
                 }
             }
         }
 
-        private void StartFunctionHost(string workingDirectory, List<string> functions = null)
+        private void StartFunctionHost(string workingDirectory, int port, List<string> functions = null)
         {
             string functionsArg = " --functions ";
             functionsArg += functions != null ? string.Join(" ", functions) : string.Join(" ", this.SampleFunctions) + " " + string.Join(" ", this.TestFunctions);
-            // Use a different port for each new host process, starting with the default port number: 7071.
-            int port = this.Port + this.FunctionHostList.Count;
 
             var startInfo = new ProcessStartInfo
             {
