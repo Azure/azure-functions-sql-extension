@@ -18,11 +18,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     [LogTestName]
     public class SqlOutputBindingIntegrationTests : IntegrationTestBase, IClassFixture<SqlInputOutputBindingIntegrationTestFixture>
     {
-        private readonly SqlInputOutputBindingIntegrationTestFixture fixture;
 
-        public SqlOutputBindingIntegrationTests(ITestOutputHelper output, SqlInputOutputBindingIntegrationTestFixture fixture) : base(output)
+        public SqlOutputBindingIntegrationTests(ITestOutputHelper output, SqlInputOutputBindingIntegrationTestFixture fixture) : base(output, fixture.FunctionHostList.Count)
         {
-            this.fixture = fixture;
         }
 
         [Theory]

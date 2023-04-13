@@ -5,7 +5,6 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Xunit;
 using Xunit.Abstractions;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
-using System;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -13,12 +12,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     [LogTestName]
     public class MultipleSqlBindingsIntegrationTests : IntegrationTestBase, IClassFixture<SqlInputOutputBindingIntegrationTestFixture>
     {
-        private readonly SqlInputOutputBindingIntegrationTestFixture fixture;
 
-        public MultipleSqlBindingsIntegrationTests(ITestOutputHelper output, SqlInputOutputBindingIntegrationTestFixture fixture) : base(output)
+        public MultipleSqlBindingsIntegrationTests(ITestOutputHelper output, SqlInputOutputBindingIntegrationTestFixture fixture) : base(output, fixture.FunctionHostList.Count)
         {
-            this.fixture = fixture;
-            Console.WriteLine(this.fixture.FunctionHostList.Count);
         }
 
         /// <summary>

@@ -58,12 +58,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// function hosts started in SqlInputOutputBindingIntegrationTestFixture are not
         /// closed properly.
         /// </summary>
-        protected int Port { get; private set; } = 7081;
+        protected int Port { get; private set; } = 7071;
 
-        public IntegrationTestBase(ITestOutputHelper output = null)
+        public IntegrationTestBase(ITestOutputHelper output = null, int numFunctionHostsStarted = 0)
         {
             this.TestOutput = output;
             this.SetupDatabaseObjects();
+            this.Port += numFunctionHostsStarted;
         }
 
         /// <summary>
