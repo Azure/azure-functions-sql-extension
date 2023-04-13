@@ -23,7 +23,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     {
         public SqlTriggerBindingIntegrationTests(ITestOutputHelper output = null) : base(output)
         {
-
         }
 
         /// <summary>

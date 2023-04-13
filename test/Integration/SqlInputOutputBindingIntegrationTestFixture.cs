@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 using Xunit;
-using Microsoft.Data.SqlClient;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -32,116 +31,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         private readonly List<string> TestFunctions = new() { "GetProductsColumnTypesSerialization", "AddProductColumnTypes", "AddProductExtraColumns", "AddProductMissingColumns", "AddProductMissingColumnsExceptionFunction", "AddProductsNoPartialUpsert", "AddProductIncorrectCasing", "AddProductDefaultPKAndDifferentColumnOrder" };
 
         /// <summary>
-        /// Host process for Azurite local storage emulator. This is required for non-HTTP trigger functions:
-        /// https://docs.microsoft.com/azure/azure-functions/functions-develop-local
-        /// </summary>
-        private Process AzuriteHost;
-
-        /// <summary>
-        /// Connection string to the master database on the test server, mainly used for database setup and teardown.
-        /// </summary>
-        private string MasterConnectionString;
-
-        /// <summary>
-        /// Name of the database used.
-        /// </summary>
-        private string DatabaseName;
-
-        /// <summary>
         /// Host processes for Azure Function CLI.
         /// </summary>
-        private List<Process> FunctionHostList { get; } = new List<Process>();
+        public List<Process> FunctionHostList { get; } = new List<Process>();
 
         public SqlInputOutputBindingIntegrationTestFixture()
         {
-            this.StartAzurite();
-            this.SetupDatabase();
             this.StartFunctionHosts();
-        }
-
-        /// <summary>
-        /// This starts the Azurite storage emulator.
-        /// </summary>
-        protected void StartAzurite()
-        {
-            Console.WriteLine("Starting Azurite Host...");
-            this.AzuriteHost = new Process()
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "azurite",
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    UseShellExecute = true
-                }
-            };
-
-            this.AzuriteHost.Start();
-        }
-
-        /// <summary>
-        /// Sets up a test database for the tests to use.
-        /// </summary>
-        /// <remarks>
-        /// The server the database will be created on can be set by the environment variable "TEST_SERVER", otherwise localhost will be used by default.
-        /// By default, integrated authentication will be used to connect to the server, unless the env variable "SA_PASSWORD" is set.
-        /// In this case, connection will be made using SQL login with user "SA" and the provided password.
-        /// </remarks>
-        private void SetupDatabase()
-        {
-            SqlConnectionStringBuilder connectionStringBuilder;
-            string connectionString = Environment.GetEnvironmentVariable("TEST_CONNECTION_STRING");
-            if (connectionString != null)
-            {
-                this.MasterConnectionString = connectionString;
-                connectionStringBuilder = new SqlConnectionStringBuilder(connectionString);
-            }
-            else
-            {
-                // Get the test server name from environment variable "TEST_SERVER", default to localhost if not set
-                string testServer = Environment.GetEnvironmentVariable("TEST_SERVER");
-                if (string.IsNullOrEmpty(testServer))
-                {
-                    testServer = "localhost";
-                }
-
-                // First connect to master to create the database
-                connectionStringBuilder = new SqlConnectionStringBuilder()
-                {
-                    DataSource = testServer,
-                    InitialCatalog = "master",
-                    Pooling = false,
-                    Encrypt = SqlConnectionEncryptOption.Optional
-                };
-
-                // Either use integrated auth or SQL login depending if SA_PASSWORD is set
-                string userId = "SA";
-                string password = Environment.GetEnvironmentVariable("SA_PASSWORD");
-                if (string.IsNullOrEmpty(password))
-                {
-                    connectionStringBuilder.IntegratedSecurity = true;
-                }
-                else
-                {
-                    connectionStringBuilder.UserID = userId;
-                    connectionStringBuilder.Password = password;
-                }
-                this.MasterConnectionString = connectionStringBuilder.ToString();
-            }
-
-            // Create database
-            // Retry this in case the server isn't fully initialized yet
-            this.DatabaseName = TestUtils.GetUniqueDBName("SqlBindingsTest");
-            TestUtils.Retry(() =>
-            {
-                using var masterConnection = new SqlConnection(this.MasterConnectionString);
-                masterConnection.Open();
-                TestUtils.ExecuteNonQuery(masterConnection, $"CREATE DATABASE [{this.DatabaseName}]");
-            });
-
-            connectionStringBuilder.InitialCatalog = this.DatabaseName;
-
-            // Set SqlConnectionString env var for the tests to use
-            Environment.SetEnvironmentVariable("SqlConnectionString", connectionStringBuilder.ToString());
         }
 
         /// <summary>
@@ -154,27 +50,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 if (lang == SupportedLanguages.CSharp)
                 {
-                    this.StartFunctionHost(Path.Combine(binPath, "SqlExtensionSamples", "CSharp"), TestUtils.GetPort(lang), this.SampleFunctions);
-                    this.StartFunctionHost(Path.Combine(binPath), TestUtils.GetPort(lang, true), this.TestFunctions);
+                    this.StartHost(Path.Combine(binPath, "SqlExtensionSamples", "CSharp"), TestUtils.GetPort(lang), this.SampleFunctions);
+                    this.StartHost(Path.Combine(binPath), TestUtils.GetPort(lang, true), this.TestFunctions);
                 }
                 else if (lang == SupportedLanguages.Java)
                 {
-                    this.StartFunctionHost(Path.Combine(binPath, "SqlExtensionSamples", "Java", "target", "azure-functions", "samples-java-1665766173929"), TestUtils.GetPort(lang), this.SampleFunctions);
-                    this.StartFunctionHost(Path.Combine(binPath, "..", "..", "..", "Integration", "test-java", "target", "azure-functions", "test-java-1666041146813"), TestUtils.GetPort(lang, true), this.TestFunctions);
+                    this.StartHost(Path.Combine(binPath, "SqlExtensionSamples", "Java", "target", "azure-functions", "samples-java-1665766173929"), TestUtils.GetPort(lang), this.SampleFunctions);
+                    this.StartHost(Path.Combine(binPath, "..", "..", "..", "Integration", "test-java", "target", "azure-functions", "test-java-1666041146813"), TestUtils.GetPort(lang, true), this.TestFunctions);
                 }
                 else if (lang == SupportedLanguages.OutOfProc)
                 {
-                    this.StartFunctionHost(Path.Combine(binPath, "SqlExtensionSamples", "OutOfProc"), TestUtils.GetPort(lang), this.SampleFunctions);
-                    this.StartFunctionHost(Path.Combine(binPath, "SqlExtensionSamples", "OutOfProc", "test"), TestUtils.GetPort(lang, true), this.TestFunctions);
+                    this.StartHost(Path.Combine(binPath, "SqlExtensionSamples", "OutOfProc"), TestUtils.GetPort(lang), this.SampleFunctions);
+                    this.StartHost(Path.Combine(binPath, "SqlExtensionSamples", "OutOfProc", "test"), TestUtils.GetPort(lang, true), this.TestFunctions);
                 }
                 else
                 {
-                    this.StartFunctionHost(Path.Combine(binPath, "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), lang)), TestUtils.GetPort(lang), null);
+                    this.StartHost(Path.Combine(binPath, "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), lang)), TestUtils.GetPort(lang), null);
                 }
             }
         }
 
-        private void StartFunctionHost(string workingDirectory, int port, List<string> functions = null)
+        private void StartHost(string workingDirectory, int port, List<string> functions = null)
         {
             string functionsArg = " --functions ";
             functionsArg += functions != null ? string.Join(" ", functions) : string.Join(" ", this.SampleFunctions) + " " + string.Join(" ", this.TestFunctions);
@@ -268,28 +164,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 }
             }
             this.FunctionHostList.Clear();
-
-            try
-            {
-                // Drop the test database
-                using var masterConnection = new SqlConnection(this.MasterConnectionString);
-                masterConnection.Open();
-                TestUtils.ExecuteNonQuery(masterConnection, $"DROP DATABASE IF EXISTS {this.DatabaseName}");
-            }
-            catch (Exception e4)
-            {
-                Console.WriteLine($"Failed to drop {this.DatabaseName}, Error: {e4.Message}");
-            }
-
-            try
-            {
-                this.AzuriteHost.Kill(true);
-                this.AzuriteHost.Dispose();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Failed to stop Azurite, Error: {e.Message}");
-            }
 
             GC.SuppressFinalize(this);
         }
