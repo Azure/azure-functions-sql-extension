@@ -120,7 +120,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             metrics = metrics.TakeLast(minSamplesForScaling).ToArray();
 
             string counts = string.Join(", ", metrics.Select(metric => metric.UnprocessedChangeCount));
-            this._logger.LogDebug($"Unprocessed change counts: [{counts}], worker count: {workerCount}, maximum changes per worker: {this._maxChangesPerWorker}.");
 
             // Add worker if the count of unprocessed changes per worker exceeds the maximum limit.
             long lastUnprocessedChangeCount = metrics.Last().UnprocessedChangeCount;

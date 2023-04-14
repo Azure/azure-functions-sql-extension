@@ -113,9 +113,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 using (var connection = new SqlConnection(this._connectionString))
                 {
-                    this._logger.LogDebug("BEGIN OpenListenerConnection");
                     await connection.OpenAsyncWithSqlErrorHandling(cancellationToken);
-                    this._logger.LogDebug("END OpenListenerConnection");
                     ServerProperties serverProperties = await GetServerTelemetryProperties(connection, this._logger, cancellationToken);
                     this._telemetryProps.AddConnectionProps(connection, serverProperties);
 
@@ -225,9 +223,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 WHERE c.object_id = {userTableId};
             ";
 
-            this._logger.LogDebug($"BEGIN GetUserTableColumns Query={getUserTableColumnsQuery}");
             using (var getUserTableColumnsCommand = new SqlCommand(getUserTableColumnsQuery, connection))
-            using (SqlDataReader reader = await getUserTableColumnsCommand.ExecuteReaderAsync(cancellationToken))
+            using (SqlDataReader reader = await getUserTableColumnsCommand.ExecuteReaderAsyncWithLogging(this._logger, cancellationToken))
             {
                 var userTableColumns = new List<string>();
                 var userDefinedTypeColumns = new List<(string name, string type)>();
@@ -261,7 +258,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         " Please rename them to be able to use trigger binding.");
                 }
 
-                this._logger.LogDebug($"END GetUserTableColumns ColumnNames = {string.Join(", ", userTableColumns.Select(col => $"'{col}'"))}.");
+                this._logger.LogDebug($"GetUserTableColumns ColumnNames = {string.Join(", ", userTableColumns.Select(col => $"'{col}'"))}.");
                 return userTableColumns;
             }
         }
@@ -282,14 +279,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     EXEC ('CREATE SCHEMA {SchemaName}');
             ";
 
-            this._logger.LogDebug($"BEGIN CreateSchema Query={createSchemaQuery}");
             using (var createSchemaCommand = new SqlCommand(createSchemaQuery, connection, transaction))
             {
                 var stopwatch = Stopwatch.StartNew();
 
                 try
                 {
-                    await createSchemaCommand.ExecuteNonQueryAsync(cancellationToken);
+                    await createSchemaCommand.ExecuteNonQueryAsyncWithLogging(this._logger, cancellationToken);
                 }
                 catch (Exception ex)
                 {
@@ -308,9 +304,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     }
                 }
 
-                long durationMs = stopwatch.ElapsedMilliseconds;
-                this._logger.LogDebug($"END CreateSchema Duration={durationMs}ms");
-                return durationMs;
+                return stopwatch.ElapsedMilliseconds;
             }
         }
 
@@ -335,13 +329,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     );
             ";
 
-            this._logger.LogDebug($"BEGIN CreateGlobalStateTable Query={createGlobalStateTableQuery}");
             using (var createGlobalStateTableCommand = new SqlCommand(createGlobalStateTableQuery, connection, transaction))
             {
                 var stopwatch = Stopwatch.StartNew();
                 try
                 {
-                    await createGlobalStateTableCommand.ExecuteNonQueryAsync(cancellationToken);
+                    await createGlobalStateTableCommand.ExecuteNonQueryAsyncWithLogging(this._logger, cancellationToken);
                 }
                 catch (Exception ex)
                 {
@@ -359,9 +352,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         throw;
                     }
                 }
-                long durationMs = stopwatch.ElapsedMilliseconds;
-                this._logger.LogDebug($"END CreateGlobalStateTable Duration={durationMs}ms");
-                return durationMs;
+                return stopwatch.ElapsedMilliseconds;
             }
         }
 
@@ -379,10 +370,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             string getMinValidVersionQuery = $"SELECT CHANGE_TRACKING_MIN_VALID_VERSION({userTableId});";
 
-            this._logger.LogDebug($"BEGIN InsertGlobalStateTableRow");
-            this._logger.LogDebug($"BEGIN GetMinValidVersion Query={getMinValidVersionQuery}");
             using (var getMinValidVersionCommand = new SqlCommand(getMinValidVersionQuery, connection, transaction))
-            using (SqlDataReader reader = await getMinValidVersionCommand.ExecuteReaderAsync(cancellationToken))
+            using (SqlDataReader reader = await getMinValidVersionCommand.ExecuteReaderAsyncWithLogging(this._logger, cancellationToken))
             {
                 if (!await reader.ReadAsync(cancellationToken))
                 {
@@ -396,7 +385,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new InvalidOperationException($"Could not find change tracking enabled for table: '{this._userTable.FullName}'.");
                 }
             }
-            this._logger.LogDebug($"END GetMinValidVersion MinValidVersion={minValidVersion}");
 
             string insertRowGlobalStateTableQuery = $@"
                 {AppLockStatements}
@@ -409,15 +397,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     VALUES ('{this._userFunctionId}', {userTableId}, {(long)minValidVersion});
             ";
 
-            this._logger.LogDebug($"BEGIN InsertRowGlobalStateTableQuery Query={insertRowGlobalStateTableQuery}");
             using (var insertRowGlobalStateTableCommand = new SqlCommand(insertRowGlobalStateTableQuery, connection, transaction))
             {
                 var stopwatch = Stopwatch.StartNew();
-                await insertRowGlobalStateTableCommand.ExecuteNonQueryAsync(cancellationToken);
-                long durationMs = stopwatch.ElapsedMilliseconds;
-                this._logger.LogDebug($"END InsertRowGlobalStateTableQuery Duration={durationMs}ms");
-                this._logger.LogDebug("END InsertGlobalStateTableRow");
-                return durationMs;
+                await insertRowGlobalStateTableCommand.ExecuteNonQueryAsyncWithLogging(this._logger, cancellationToken);
+                return stopwatch.ElapsedMilliseconds;
             }
         }
 
@@ -453,13 +437,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     );
             ";
 
-            this._logger.LogDebug($"BEGIN CreateLeasesTable Query={createLeasesTableQuery}");
             using (var createLeasesTableCommand = new SqlCommand(createLeasesTableQuery, connection, transaction))
             {
                 var stopwatch = Stopwatch.StartNew();
                 try
                 {
-                    await createLeasesTableCommand.ExecuteNonQueryAsync(cancellationToken);
+                    await createLeasesTableCommand.ExecuteNonQueryAsyncWithLogging(this._logger, cancellationToken);
                 }
                 catch (Exception ex)
                 {
@@ -478,7 +461,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     }
                 }
                 long durationMs = stopwatch.ElapsedMilliseconds;
-                this._logger.LogDebug($"END CreateLeasesTable Duration={durationMs}ms");
                 return durationMs;
             }
         }
