@@ -2,8 +2,6 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using Microsoft.Azure.WebJobs.Host.Scale;
-using Microsoft.Extensions.Logging;
-using Moq;
 using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
@@ -20,15 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [InlineData(100, null, 1)]
         public void SqlTriggerTargetScaler_Returns_Expected(int unprocessedChangeCount, int? concurrency, int expected)
         {
-            var targetScaler = new SqlTriggerTargetScaler(
-                "testUserFunctionId",
-                "testUserTableName",
-                "testConnectionString",
-                SqlTriggerListener<object>.DefaultMaxChangesPerWorker,
-                Mock.Of<ILogger>()
-                );
-
-            TargetScalerResult result = targetScaler.GetScaleResultInternal(concurrency ?? SqlTriggerListener<object>.DefaultMaxChangesPerWorker, unprocessedChangeCount);
+            TargetScalerResult result = SqlTriggerTargetScaler.GetScaleResultInternal(concurrency ?? SqlTriggerListener<object>.DefaultMaxChangesPerWorker, unprocessedChangeCount);
 
             Assert.Equal(result.TargetWorkerCount, expected);
         }
