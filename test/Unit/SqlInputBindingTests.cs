@@ -28,7 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         {
             Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(null, loggerFactory.Object));
             Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(config.Object, null));
-            Assert.Throws<ArgumentNullException>(() => new SqlConverter(null, logger.Object));
+            Assert.Throws<ArgumentNullException>(() => new SqlConverter(null));
             Assert.Throws<ArgumentNullException>(() => new SqlGenericsConverter<string>(null, logger.Object));
         }
 
