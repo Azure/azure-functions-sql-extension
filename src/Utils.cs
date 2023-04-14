@@ -5,7 +5,6 @@ using System;
 using System.IO;
 using System.Text;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -77,16 +76,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 default:
                     return defaultValue;
             }
-        }
-
-        public static void LogDebugWithThreadId(this ILogger logger, string message, params object[] args)
-        {
-            logger.LogDebug($"TID:{Environment.CurrentManagedThreadId} {message}", args);
-        }
-
-        public static void LogInformationWithThreadId(this ILogger logger, string message, params object[] args)
-        {
-            logger.LogInformation($"TID:{Environment.CurrentManagedThreadId} {message}", args);
         }
 
         /// <summary>

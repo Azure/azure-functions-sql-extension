@@ -14,7 +14,7 @@ using MoreLinq;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     /// <summary>
-    /// Makes the scale decision for incremental scaling(+1, 0, -1) for workers required based on unprocessed changes. 
+    /// Makes the scale decision for incremental scaling(+1, 0, -1) for workers required based on unprocessed changes.
     /// Guidance for scaling information can be found here https://learn.microsoft.com/en-us/azure/azure-functions/event-driven-scaling
     /// </summary>
     internal sealed class SqlTriggerScaleMonitor : IScaleMonitor<SqlTriggerMetrics>
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             metrics = metrics.TakeLast(minSamplesForScaling).ToArray();
 
             string counts = string.Join(", ", metrics.Select(metric => metric.UnprocessedChangeCount));
-            this._logger.LogDebugWithThreadId($"Unprocessed change counts: [{counts}], worker count: {workerCount}, maximum changes per worker: {this._maxChangesPerWorker}.");
+            this._logger.LogDebug($"Unprocessed change counts: [{counts}], worker count: {workerCount}, maximum changes per worker: {this._maxChangesPerWorker}.");
 
             // Add worker if the count of unprocessed changes per worker exceeds the maximum limit.
             long lastUnprocessedChangeCount = metrics.Last().UnprocessedChangeCount;
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 else
                 {
-                    this._logger.LogDebugWithThreadId($"Avoiding scale-out: Found the unprocessed changes: {lastUnprocessedChangeCount} for table: '{this._userTable.FullName}' to be increasing" +
+                    this._logger.LogDebug($"Avoiding scale-out: Found the unprocessed changes: {lastUnprocessedChangeCount} for table: '{this._userTable.FullName}' to be increasing" +
                         " but they may not exceed the maximum limit set for the workers.");
                 }
             }
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 else
                 {
-                    this._logger.LogDebugWithThreadId($"Avoiding scale-in: Found the unprocessed changes for table: '{this._userTable.FullName}' to be decreasing" +
+                    this._logger.LogDebug($"Avoiding scale-in: Found the unprocessed changes for table: '{this._userTable.FullName}' to be decreasing" +
                         " but they are high enough to require all existing workers for processing.");
                 }
             }
