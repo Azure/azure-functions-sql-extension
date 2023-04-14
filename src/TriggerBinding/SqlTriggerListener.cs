@@ -138,8 +138,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         transaction.Commit();
                     }
 
-                    this._logger.LogInformation($"Starting SQL trigger listener for table: '{this._userTable.FullName}' (object ID: {userTableId}), function ID: {this._userFunctionId}");
-
                     this._changeMonitor = new SqlTableChangeMonitor<T>(
                         this._connectionString,
                         userTableId,
@@ -154,8 +152,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         this._telemetryProps);
 
                     this._listenerState = ListenerStarted;
-                    this._logger.LogInformation($"Started SQL trigger listener for table: '{this._userTable.FullName}' (object ID: {userTableId}), function ID: {this._userFunctionId}");
-                    this._logger.LogInformation($"SQL trigger Leases table: {leasesTableName}");
+                    this._logger.LogDebug($"Started SQL trigger listener for table: '{this._userTable.FullName}' (object ID: {userTableId}), function ID: {this._userFunctionId}, leases table: {leasesTableName}");
 
                     var measures = new Dictionary<TelemetryMeasureName, double>
                     {
@@ -195,7 +192,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 this._changeMonitor.Dispose();
 
                 this._listenerState = ListenerStopped;
-                this._logger.LogInformation($"Stopped SQL trigger listener for table: '{this._userTable.FullName}', function ID: '{this._userFunctionId}'.");
             }
 
             var measures = new Dictionary<TelemetryMeasureName, double>
