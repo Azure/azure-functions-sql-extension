@@ -23,8 +23,9 @@ namespace DotnetIsolatedTests
         public static void Run(
             [SqlTrigger("[dbo].[Products]", "SqlConnectionString")]
             IReadOnlyList<SqlChange<Product>> changes,
-            ILogger logger)
+            FunctionContext context)
         {
+            ILogger logger = context.GetLogger("TriggerWithException");
             if (!threwException)
             {
                 threwException = true;
