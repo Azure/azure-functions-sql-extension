@@ -8,6 +8,7 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples;
 using Xunit;
 using Xunit.Abstractions;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
+using Microsoft.Data.SqlClient;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -209,31 +210,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Equal(expectedResponse, actualProductResponse);
         }
 
-        // / <summary>
-        // / Tests that querying from a case sensitive database works correctly.
-        // / </summary>
-        // [Theory]
-        // [SqlInlineData()]
-        // public async void GetProductsFromCaseSensitiveDatabase(SupportedLanguages lang)
-        // {
-        //     // Change database collation to case sensitive
-        //     this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
+        /// <summary>
+        /// Tests that querying from a case sensitive database works correctly.
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        public async void GetProductsFromCaseSensitiveDatabase(SupportedLanguages lang)
+        {
+            // Change database collation to case sensitive
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
+            // Clear connection pool to ensure new connection is created with new collation
+            // This is to prevent the following error:
+            // "Resetting the connection results in a different state than the initial login. The login fails."
+            SqlConnection.ClearAllPools();
+            // Generate T-SQL to insert 10 rows of data with cost 100
+            Product[] products = GetProductsWithSameCost(10, 100);
+            this.InsertProducts(products);
 
-        //     // Generate T-SQL to insert 10 rows of data with cost 100
-        //     Product[] products = GetProductsWithSameCost(10, 100);
-        //     this.InsertProducts(products);
+            // Run the function
+            HttpResponseMessage response = await this.SendInputRequest("getproducts", "100", TestUtils.GetPort(lang));
 
-        //     // Run the function
-        //     HttpResponseMessage response = await this.SendInputRequest("getproducts", "100", TestUtils.GetPort(lang));
+            // Verify result
+            string actualResponse = await response.Content.ReadAsStringAsync();
+            Product[] actualProductResponse = Utils.JsonDeserializeObject<Product[]>(actualResponse);
 
-        //     // Verify result
-        //     string actualResponse = await response.Content.ReadAsStringAsync();
-        //     Product[] actualProductResponse = Utils.JsonDeserializeObject<Product[]>(actualResponse);
+            Assert.Equal(products, actualProductResponse);
 
-        //     Assert.Equal(products, actualProductResponse);
-
-        //     // Change database collation back to case insensitive
-        //     this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
-        // }]
+            // Change database collation back to case insensitive
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
+            SqlConnection.ClearAllPools();
+        }
     }
 }

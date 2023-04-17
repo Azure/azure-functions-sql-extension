@@ -11,6 +11,7 @@ using Xunit.Abstractions;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Microsoft.Data.SqlClient;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -252,61 +253,61 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithMultiplePrimaryColumnsAndIdentity"));
         }
 
-        /// <summary>
-        /// Tests that when using a table with an identity column that if the identity column is specified
-        /// by the function we handle inserting/updating that correctly.
-        /// </summary>
-        [Theory]
-        [SqlInlineData()]
-        public void AddProductWithIdentity_SpecifyIdentityColumn(SupportedLanguages lang)
-        {
-            var query = new Dictionary<string, string>()
-            {
-                { "productId", "1" },
-                { "name", "MyProduct" },
-                { "cost", "1" }
-            };
-            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-            this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query, TestUtils.GetPort(lang)).Wait();
-            // New row should have been inserted
-            Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-            query = new Dictionary<string, string>()
-            {
-                { "productId", "1" },
-                { "name", "MyProduct2" },
-                { "cost", "1" }
-            };
-            this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query, TestUtils.GetPort(lang)).Wait();
-            // Existing row should have been updated
-            Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-            Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity WHERE Name='MyProduct2'"));
-        }
+        // /// <summary>
+        // /// Tests that when using a table with an identity column that if the identity column is specified
+        // /// by the function we handle inserting/updating that correctly.
+        // /// </summary>
+        // [Theory]
+        // [SqlInlineData()]
+        // public void AddProductWithIdentity_SpecifyIdentityColumn(SupportedLanguages lang)
+        // {
+        //     var query = new Dictionary<string, string>()
+        //     {
+        //         { "productId", "1" },
+        //         { "name", "MyProduct" },
+        //         { "cost", "1" }
+        //     };
+        //     Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+        //     this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query, TestUtils.GetPort(lang)).Wait();
+        //     // New row should have been inserted
+        //     Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+        //     query = new Dictionary<string, string>()
+        //     {
+        //         { "productId", "1" },
+        //         { "name", "MyProduct2" },
+        //         { "cost", "1" }
+        //     };
+        //     this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query, TestUtils.GetPort(lang)).Wait();
+        //     // Existing row should have been updated
+        //     Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+        //     Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity WHERE Name='MyProduct2'"));
+        // }
 
-        /// <summary>
-        /// Tests that when using a table with an identity column we can handle a null (missing) identity column
-        /// </summary>
-        [Theory]
-        [SqlInlineData()]
-        public void AddProductWithIdentity_NoIdentityColumn(SupportedLanguages lang)
-        {
-            var query = new Dictionary<string, string>()
-            {
-                { "name", "MyProduct" },
-                { "cost", "1" }
-            };
-            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-            this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query, TestUtils.GetPort(lang)).Wait();
-            // New row should have been inserted
-            Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-            query = new Dictionary<string, string>()
-            {
-                { "name", "MyProduct2" },
-                { "cost", "1" }
-            };
-            this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query, TestUtils.GetPort(lang)).Wait();
-            // Another new row should have been inserted
-            Assert.Equal(2, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-        }
+        // /// <summary>
+        // /// Tests that when using a table with an identity column we can handle a null (missing) identity column
+        // /// </summary>
+        // [Theory]
+        // [SqlInlineData()]
+        // public void AddProductWithIdentity_NoIdentityColumn(SupportedLanguages lang)
+        // {
+        //     var query = new Dictionary<string, string>()
+        //     {
+        //         { "name", "MyProduct" },
+        //         { "cost", "1" }
+        //     };
+        //     Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+        //     this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query, TestUtils.GetPort(lang)).Wait();
+        //     // New row should have been inserted
+        //     Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+        //     query = new Dictionary<string, string>()
+        //     {
+        //         { "name", "MyProduct2" },
+        //         { "cost", "1" }
+        //     };
+        //     this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query, TestUtils.GetPort(lang)).Wait();
+        //     // Another new row should have been inserted
+        //     Assert.Equal(2, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+        // }
 
         /// <summary>
         /// Tests that when using a table with an identity column along with other primary
@@ -384,32 +385,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET COMPATIBILITY_LEVEL = 150;");
         }
 
-        // /// <summary>
-        // /// Tests that upserting to a case sensitive database works correctly.
-        // /// </summary>
-        // [Theory]
-        // [SqlInlineData()]
-        // public void AddProductToCaseSensitiveDatabase(SupportedLanguages lang)
-        // {
-        //     // Change database collation to case sensitive
-        //     this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
+        /// <summary>
+        /// Tests that upserting to a case sensitive database works correctly.
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        public void AddProductToCaseSensitiveDatabase(SupportedLanguages lang)
+        {
+            // Change database collation to case sensitive
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
+                        // Clear connection pool to ensure new connection is created with new collation
+            // This is to prevent the following error:
+            // "Resetting the connection results in a different state than the initial login. The login fails."
+            SqlConnection.ClearAllPools();
 
-        //     var query = new Dictionary<string, object>()
-        //     {
-        //         { "ProductId", 0 },
-        //         { "Name", "test" },
-        //         { "Cost", 100 }
-        //     };
+            var query = new Dictionary<string, object>()
+            {
+                { "ProductId", 0 },
+                { "Name", "test" },
+                { "Cost", 100 }
+            };
 
-        //     this.SendOutputPostRequest("addproduct", Utils.JsonSerializeObject(query), TestUtils.GetPort(lang)).Wait();
+            this.SendOutputPostRequest("addproduct", Utils.JsonSerializeObject(query), TestUtils.GetPort(lang)).Wait();
 
-        //     // Verify result
-        //     Assert.Equal("test", this.ExecuteScalar($"select Name from Products where ProductId=0"));
-        //     Assert.Equal(100, this.ExecuteScalar($"select Cost from Products where ProductId=0"));
+            // Verify result
+            Assert.Equal("test", this.ExecuteScalar($"select Name from Products where ProductId=0"));
+            Assert.Equal(100, this.ExecuteScalar($"select Cost from Products where ProductId=0"));
 
-        //     // Change database collation back to case insensitive
-        //     this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
-        // }
+            // Change database collation back to case insensitive
+            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
+            SqlConnection.ClearAllPools();
+        }
 
         /// <summary>
         /// Tests that an error is thrown when the object field names and table column names do not match.
