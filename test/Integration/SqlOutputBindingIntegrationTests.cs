@@ -253,61 +253,63 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithMultiplePrimaryColumnsAndIdentity"));
         }
 
-        // /// <summary>
-        // /// Tests that when using a table with an identity column that if the identity column is specified
-        // /// by the function we handle inserting/updating that correctly.
-        // /// </summary>
-        // [Theory]
-        // [SqlInlineData()]
-        // public void AddProductWithIdentity_SpecifyIdentityColumn(SupportedLanguages lang)
-        // {
-        //     var query = new Dictionary<string, string>()
-        //     {
-        //         { "productId", "1" },
-        //         { "name", "MyProduct" },
-        //         { "cost", "1" }
-        //     };
-        //     Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-        //     this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query, TestUtils.GetPort(lang)).Wait();
-        //     // New row should have been inserted
-        //     Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-        //     query = new Dictionary<string, string>()
-        //     {
-        //         { "productId", "1" },
-        //         { "name", "MyProduct2" },
-        //         { "cost", "1" }
-        //     };
-        //     this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query, TestUtils.GetPort(lang)).Wait();
-        //     // Existing row should have been updated
-        //     Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-        //     Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity WHERE Name='MyProduct2'"));
-        // }
+        /// <summary>
+        /// Tests that when using a table with an identity column that if the identity column is specified
+        /// by the function we handle inserting/updating that correctly.
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        public void AddProductWithIdentity_SpecifyIdentityColumn(SupportedLanguages lang)
+        {
+            this.StartFunctionHost(nameof(AddProductWithIdentityColumnIncluded), lang);
+            var query = new Dictionary<string, string>()
+            {
+                { "productId", "1" },
+                { "name", "MyProduct" },
+                { "cost", "1" }
+            };
+            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+            this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query, 7081).Wait();
+            // New row should have been inserted
+            Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+            query = new Dictionary<string, string>()
+            {
+                { "productId", "1" },
+                { "name", "MyProduct2" },
+                { "cost", "1" }
+            };
+            this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query, 7081).Wait();
+            // Existing row should have been updated
+            Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+            Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity WHERE Name='MyProduct2'"));
+        }
 
-        // /// <summary>
-        // /// Tests that when using a table with an identity column we can handle a null (missing) identity column
-        // /// </summary>
-        // [Theory]
-        // [SqlInlineData()]
-        // public void AddProductWithIdentity_NoIdentityColumn(SupportedLanguages lang)
-        // {
-        //     var query = new Dictionary<string, string>()
-        //     {
-        //         { "name", "MyProduct" },
-        //         { "cost", "1" }
-        //     };
-        //     Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-        //     this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query, TestUtils.GetPort(lang)).Wait();
-        //     // New row should have been inserted
-        //     Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-        //     query = new Dictionary<string, string>()
-        //     {
-        //         { "name", "MyProduct2" },
-        //         { "cost", "1" }
-        //     };
-        //     this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query, TestUtils.GetPort(lang)).Wait();
-        //     // Another new row should have been inserted
-        //     Assert.Equal(2, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-        // }
+        /// <summary>
+        /// Tests that when using a table with an identity column we can handle a null (missing) identity column
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        public void AddProductWithIdentity_NoIdentityColumn(SupportedLanguages lang)
+        {
+            this.StartFunctionHost(nameof(AddProductWithIdentityColumn), lang);
+            var query = new Dictionary<string, string>()
+            {
+                { "name", "MyProduct" },
+                { "cost", "1" }
+            };
+            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+            this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query, 7081).Wait();
+            // New row should have been inserted
+            Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+            query = new Dictionary<string, string>()
+            {
+                { "name", "MyProduct2" },
+                { "cost", "1" }
+            };
+            this.SendOutputGetRequest(nameof(AddProductWithIdentityColumnIncluded), query, 7081).Wait();
+            // Another new row should have been inserted
+            Assert.Equal(2, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
+        }
 
         /// <summary>
         /// Tests that when using a table with an identity column along with other primary
