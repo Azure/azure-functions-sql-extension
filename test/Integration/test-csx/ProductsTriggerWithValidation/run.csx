@@ -1,5 +1,4 @@
 #load "../Common/Product.csx"
-#load "../Common/utils.csx"
 #r "Newtonsoft.Json"
 #r "Microsoft.Azure.WebJobs.Extensions.Sql"
 
@@ -17,5 +16,5 @@ public static void Run(IReadOnlyList<SqlChange<Product>> changes, ILogger log)
         throw new Exception($"Invalid max batch size, got {changes.Count} changes but expected {expectedMaxBatchSize}");
     }
     // The output is used to inspect the trigger binding parameter in test methods.
-    log.LogInformation("SQL Changes: " + Utils.JsonSerializeObject(changes));
+    log.LogInformation("SQL Changes: " + Microsoft.Azure.WebJobs.Extensions.Sql.Utils.JsonSerializeObject(changes));
 }

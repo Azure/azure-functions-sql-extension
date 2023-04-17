@@ -11,5 +11,5 @@ using Microsoft.Azure.WebJobs.Extensions.Sql;
 
 public static void Run(IReadOnlyList<SqlChange<Product>> changes, ILogger log)
 {
-    log.LogInformation("Trigger2 Changes: " + Utils.JsonSerializeObject(changes));
+    log.LogInformation("Trigger2 Changes: " + Microsoft.Azure.WebJobs.Extensions.Sql.Utils.JsonSerializeObject(changes));
 }
