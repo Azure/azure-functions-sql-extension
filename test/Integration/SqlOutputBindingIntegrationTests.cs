@@ -394,7 +394,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             // Change database collation to case sensitive
             this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
-                        // Clear connection pool to ensure new connection is created with new collation
+            // Clear connection pool to ensure new connection is created with new collation
             // This is to prevent the following error:
             // "Resetting the connection results in a different state than the initial login. The login fails."
             SqlConnection.ClearAllPools();
