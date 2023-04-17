@@ -13,16 +13,17 @@ using Xunit;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
     /// <summary>
-    /// Test fixture containing one-time setup code for Input Binding Integration tests. See https://xunit.net/docs/shared-context for more details
+    /// Test fixture containing one-time setup code for input and output binding integration tests. See https://xunit.net/docs/shared-context for more details
     /// </summary>
     public class SqlInputOutputBindingIntegrationTestFixture : IDisposable
     {
         /// <summary>
         /// List of all functions in the samples folder that will be started before the
         /// input and output binding tests are run. Some functions are not included because
-        /// they may interfere with other tests (ex. TimerTriggerProducts).
+        /// (1) they may interfere with other tests (ex. TimerTriggerProducts) or
+        /// (2) they don't apply to all languages (ex. AddProductsCollector)
         /// </summary>
-        private readonly List<string> SampleFunctions = new() { "GetProducts", "GetProductsStoredProcedure", "GetProductsNameEmpty", "GetProductsStoredProcedureFromAppSetting", "GetProductNamesView", "AddProduct", "AddProductParams", "AddProductsArray", "AddProductWithIdentityColumn", "AddProductsWithIdentityColumnArray", "AddProductWithIdentityColumnIncluded", "AddProductWithMultiplePrimaryColumnsAndIdentity", "GetAndAddProducts", "AddProductWithDefaultPK" };
+        private readonly List<string> SampleFunctions = new() { "GetProducts", "GetProductsStoredProcedure", "GetProductsNameEmpty", "GetProductsStoredProcedureFromAppSetting", "GetProductNamesView", "AddProduct", "AddProductParams", "AddProductsArray", "AddProductWithIdentityColumn", "AddProductsWithIdentityColumnArray", "AddProductWithMultiplePrimaryColumnsAndIdentity", "GetAndAddProducts", "AddProductWithDefaultPK" };
 
         /// <summary>
         /// List of all functions in the test folder that will be started before the
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
-        /// This starts the input binding function hosts.
+        /// This starts the function hosts for each language.
         /// </summary>
         private void StartFunctionHosts()
         {

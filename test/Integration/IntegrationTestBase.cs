@@ -54,9 +54,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         protected ITestOutputHelper TestOutput { get; private set; }
 
         /// <summary>
-        /// The port the Functions Host is running on. Starting the port at 7081 in case the
-        /// function hosts started in SqlInputOutputBindingIntegrationTestFixture are not
-        /// closed properly.
+        /// The port the Functions Host is running on.
         /// </summary>
         protected int Port { get; private set; } = 7071;
 
@@ -81,7 +79,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // Create these in a specific order since things like views require that their underlying objects have been created already
             // Ideally all the sql files would be in a sqlproj and can just be deployed
             this.ExecuteAllScriptsInFolder(Path.Combine(TestUtils.GetPathToBin(), "Database", "Tables"));
-            // Separate DROP and CREATE for views and procedures  since CREATE VIEW/PROCEDURE needs to be the first statement in the batch
+            // Separate DROP and CREATE for views and procedures since CREATE VIEW/PROCEDURE needs to be the first statement in the batch
             this.ExecuteAllScriptsInFolder(Path.Combine(TestUtils.GetPathToBin(), "Database", "Views", "Drop"));
             this.ExecuteAllScriptsInFolder(Path.Combine(TestUtils.GetPathToBin(), "Database", "Views"));
             this.ExecuteAllScriptsInFolder(Path.Combine(TestUtils.GetPathToBin(), "Database", "StoredProcedures", "Drop"));
@@ -123,7 +121,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 throw new FileNotFoundException("Working directory not found at " + workingDirectory);
             }
 
-            // Use a different port for each new host process, starting with the default port number: 7081.
+            // Use a different port for each new host process
             int port = this.Port + this.FunctionHostList.Count;
 
             var startInfo = new ProcessStartInfo
@@ -313,17 +311,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.FunctionHostList.Clear();
         }
 
-        protected async Task<HttpResponseMessage> SendInputRequest(string functionName, string query = "", int port = 0)
+        protected async Task<HttpResponseMessage> SendInputRequest(string functionName, string query = "", int? port = null)
         {
-            port = port == 0 ? this.Port : port;
+            port ??= this.Port;
             string requestUri = $"http://localhost:{port}/api/{functionName}/{query}";
 
             return await this.SendGetRequest(requestUri);
         }
 
-        protected Task<HttpResponseMessage> SendOutputGetRequest(string functionName, IDictionary<string, string> query = null, int port = 0)
+        protected Task<HttpResponseMessage> SendOutputGetRequest(string functionName, IDictionary<string, string> query = null, int? port = null)
         {
-            port = port == 0 ? this.Port : port;
+            port ??= this.Port;
             string requestUri = $"http://localhost:{port}/api/{functionName}";
 
             if (query != null)
@@ -334,9 +332,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             return this.SendGetRequest(requestUri);
         }
 
-        protected Task<HttpResponseMessage> SendOutputPostRequest(string functionName, string query, int port = 0)
+        protected Task<HttpResponseMessage> SendOutputPostRequest(string functionName, string query, int? port = null)
         {
-            port = port == 0 ? this.Port : port;
+            port ??= this.Port;
             string requestUri = $"http://localhost:{port}/api/{functionName}";
 
             return this.SendPostRequest(requestUri, query);
