@@ -291,7 +291,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public void AddProductWithIdentity_NoIdentityColumn(SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProductWithIdentityColumn), lang);
+            this.StartFunctionHost(nameof(AddProductWithIdentityColumnIncluded), lang);
             var query = new Dictionary<string, string>()
             {
                 { "name", "MyProduct" },
