@@ -1,14 +1,12 @@
 #load "../../Common/product.csx"
 #r "Newtonsoft.Json"
-#r "Microsoft.Azure.WebJobs.Extensions.Sql"
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Newtonsoft.Json;
 
-public static void Run(string queueMessage, ILogger log,
-            [Sql("[dbo].[Products]", "SqlConnectionString")] ICollector<Product> products)
+public static void Run(string queueMessage, ILogger log, ICollector<Product> products)
 {
     int totalUpserts = 100;
     log.LogInformation($"[QueueTrigger]: {DateTime.Now} starting execution {queueMessage}. Rows to generate={totalUpserts}.");

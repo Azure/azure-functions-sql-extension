@@ -3,14 +3,13 @@
 
 #load "../../Common/product.csx"
 #r "Newtonsoft.Json"
-#r "Microsoft.Azure.WebJobs.Extensions.Sql"
 
 using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 
-public static ProductWithOptionalId Run(HttpRequest req, ILogger log, [Sql("dbo.ProductsWithIdentity", "SqlConnectionString")] out ProductWithOptionalId product)
+public static ProductWithOptionalId Run(HttpRequest req, ILogger log, out ProductWithOptionalId product)
 {
     log.LogInformation("C# HTTP trigger function processed a request.");
 

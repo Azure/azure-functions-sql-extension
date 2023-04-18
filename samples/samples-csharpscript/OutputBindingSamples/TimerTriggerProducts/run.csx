@@ -8,8 +8,7 @@ using System.Diagnostics;
 using Newtonsoft.Json;
 
 private static int _executionNumber = 0;
-public static void Run(TimerInfo myTimer, ILogger log,
-            [Sql("Products", "SqlConnectionString")] ICollector<Product> products)
+public static void Run(TimerInfo myTimer, ILogger log, ICollector<Product> products)
 {
     int totalUpserts = 1000;
     log.LogInformation($"{DateTime.Now} starting execution #{_executionNumber}. Rows to generate={totalUpserts}.");

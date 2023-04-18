@@ -3,13 +3,12 @@
 
 #load "../../Common/product.csx"
 #r "Newtonsoft.Json"
-#r "Microsoft.Azure.WebJobs.Extensions.Sql"
 
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-public static ICollector<Product> Run(HttpRequest req, ILogger log, [Sql("dbo.Products", "SqlConnectionString")] ICollector<Product> products)
+public static ICollector<Product> Run(HttpRequest req, ILogger log, ICollector<Product> products)
 {
     log.LogInformation("C# HTTP trigger function processed a request.");
 
