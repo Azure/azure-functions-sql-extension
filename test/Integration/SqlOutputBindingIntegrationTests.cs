@@ -138,7 +138,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
             this.StartFunctionHost(nameof(QueueTriggerProducts), lang);
 
-            string uri = $"http://localhost:{this.Port}/admin/functions/QueueTriggerProducts";
+            string uri = $"http://localhost:{TestUtils.DefaultPort}/admin/functions/QueueTriggerProducts";
             string json = /*lang=json*/ "{ 'input': 'Test Data' }";
 
             this.SendPostRequest(uri, json).Wait();

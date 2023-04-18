@@ -53,12 +53,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         protected ITestOutputHelper TestOutput { get; private set; }
 
-        /// <summary>
-        /// The port the Functions Host is running on. Start at 7081 since the function hosts started in
-        /// IntegrationTestFixture are already running on ports 7071 - 7080.
-        /// </summary>
-        protected int Port { get; private set; } = 7081;
-
         public IntegrationTestBase(ITestOutputHelper output = null)
         {
             this.TestOutput = output;
@@ -122,7 +116,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             }
 
             // Use a different port for each new host process
-            int port = this.Port + this.FunctionHostList.Count;
+            int port = TestUtils.DefaultPort + this.FunctionHostList.Count;
 
             var startInfo = new ProcessStartInfo
             {
@@ -311,17 +305,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.FunctionHostList.Clear();
         }
 
-        protected async Task<HttpResponseMessage> SendInputRequest(string functionName, string query = "", int? port = null)
+        protected async Task<HttpResponseMessage> SendInputRequest(string functionName, string query = "", int port = TestUtils.DefaultPort)
         {
-            port ??= this.Port;
             string requestUri = $"http://localhost:{port}/api/{functionName}/{query}";
 
             return await this.SendGetRequest(requestUri);
         }
 
-        protected Task<HttpResponseMessage> SendOutputGetRequest(string functionName, IDictionary<string, string> query = null, int? port = null)
+        protected Task<HttpResponseMessage> SendOutputGetRequest(string functionName, IDictionary<string, string> query = null, int port = TestUtils.DefaultPort)
         {
-            port ??= this.Port;
             string requestUri = $"http://localhost:{port}/api/{functionName}";
 
             if (query != null)
@@ -332,9 +324,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             return this.SendGetRequest(requestUri);
         }
 
-        protected Task<HttpResponseMessage> SendOutputPostRequest(string functionName, string query, int? port = null)
+        protected Task<HttpResponseMessage> SendOutputPostRequest(string functionName, string query, int port = TestUtils.DefaultPort)
         {
-            port ??= this.Port;
             string requestUri = $"http://localhost:{port}/api/{functionName}";
 
             return this.SendPostRequest(requestUri, query);
