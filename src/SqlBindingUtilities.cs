@@ -373,6 +373,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
+        /// Calls ExecuteScalarAsync and logs an error if it fails before rethrowing.
+        /// </summary>
+        /// <param name="cmd">The SqlCommand being executed</param>
+        /// <param name="logger">The logger</param>
+        /// <param name="cancellationToken">The cancellation token to pass to the call</param>
+        /// <returns>The result of the call</returns>
+        public static async Task<object> ExecuteScalarAsyncWithLogging(this SqlCommand cmd, ILogger logger, CancellationToken cancellationToken)
+        {
+            try
+            {
+                return await cmd.ExecuteScalarAsync(cancellationToken);
+            }
+            catch (Exception e)
+            {
+                logger.LogError($"Exception executing query. Message={e.Message}\nQuery={cmd.CommandText}");
+                throw;
+            }
+        }
+
+        /// <summary>
         /// Calls ExecuteNonQueryAsync and logs an error if it fails before rethrowing.
         /// </summary>
         /// <param name="cmd">The SqlCommand being executed</param>

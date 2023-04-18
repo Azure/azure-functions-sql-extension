@@ -52,9 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 using (var connection = new SqlConnection(this._connectionString))
                 {
-                    this._logger.LogDebug("BEGIN OpenGetUnprocessedChangesConnection");
                     await connection.OpenAsync();
-                    this._logger.LogDebug("END OpenGetUnprocessedChangesConnection");
 
                     int userTableId = await GetUserTableIdAsync(connection, this._userTable.FullName, this._logger, CancellationToken.None);
                     IReadOnlyList<(string name, string type)> primaryKeyColumns = await GetPrimaryKeyColumnsAsync(connection, userTableId, this._logger, this._userTable.FullName, CancellationToken.None);
@@ -66,13 +64,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         {
                             using (SqlCommand getUnprocessedChangesCommand = this.BuildGetUnprocessedChangesCommand(connection, transaction, primaryKeyColumns, userTableId))
                             {
-                                this._logger.LogDebug($"BEGIN GetUnprocessedChangeCount Query={getUnprocessedChangesCommand.CommandText}");
                                 var commandSw = Stopwatch.StartNew();
-                                unprocessedChangeCount = (long)await getUnprocessedChangesCommand.ExecuteScalarAsync();
+                                unprocessedChangeCount = (long)await getUnprocessedChangesCommand.ExecuteScalarAsyncWithLogging(this._logger, CancellationToken.None);
                                 getUnprocessedChangesDurationMs = commandSw.ElapsedMilliseconds;
                             }
 
-                            this._logger.LogDebug($"END GetUnprocessedChangeCount Duration={getUnprocessedChangesDurationMs}ms Count={unprocessedChangeCount}");
                             transaction.Commit();
                         }
                         catch (Exception)
