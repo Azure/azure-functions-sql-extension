@@ -54,15 +54,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         protected ITestOutputHelper TestOutput { get; private set; }
 
         /// <summary>
-        /// The port the Functions Host is running on.
+        /// The port the Functions Host is running on. Start at 7081 since the function hosts started in
+        /// IntegrationTestFixture are already running on ports 7071 - 7080.
         /// </summary>
-        protected int Port { get; private set; } = 7071;
+        protected int Port { get; private set; } = 7081;
 
-        public IntegrationTestBase(ITestOutputHelper output = null, int numFunctionHostsStarted = 0)
+        public IntegrationTestBase(ITestOutputHelper output = null)
         {
             this.TestOutput = output;
             this.SetupDatabaseObjects();
-            this.Port += numFunctionHostsStarted;
         }
 
         /// <summary>

@@ -14,10 +14,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
     [Collection(IntegrationTestsCollection.Name)]
     [LogTestName]
-    public class SqlInputBindingIntegrationTests : IntegrationTestBase, IClassFixture<SqlInputOutputBindingIntegrationTestFixture>
+    public class SqlInputBindingIntegrationTests : IntegrationTestBase
     {
 
-        public SqlInputBindingIntegrationTests(ITestOutputHelper output, SqlInputOutputBindingIntegrationTestFixture fixture) : base(output, fixture.FunctionHostList.Count)
+        public SqlInputBindingIntegrationTests(ITestOutputHelper output) : base(output)
         {
         }
 

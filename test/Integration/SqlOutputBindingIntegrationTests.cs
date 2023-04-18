@@ -17,10 +17,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
     [Collection(IntegrationTestsCollection.Name)]
     [LogTestName]
-    public class SqlOutputBindingIntegrationTests : IntegrationTestBase, IClassFixture<SqlInputOutputBindingIntegrationTestFixture>
+    public class SqlOutputBindingIntegrationTests : IntegrationTestBase
     {
 
-        public SqlOutputBindingIntegrationTests(ITestOutputHelper output, SqlInputOutputBindingIntegrationTestFixture fixture) : base(output, fixture.FunctionHostList.Count)
+        public SqlOutputBindingIntegrationTests(ITestOutputHelper output) : base(output)
         {
         }
 
@@ -208,6 +208,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public void AddProductWithIdentity(SupportedLanguages lang)
         {
+            this.StartFunctionHost(nameof(AddProductWithIdentityColumn), lang);
+
             // Identity column (ProductId) is left out for new items
             var query = new Dictionary<string, string>()
             {
@@ -215,7 +217,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "cost", "1" }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-            this.SendOutputGetRequest("addproductwithidentitycolumn", query, TestUtils.GetPort(lang)).Wait();
+            this.SendOutputGetRequest("addproductwithidentitycolumn", query).Wait();
             // Product should have been inserted correctly even without an ID when there's an identity column present
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
         }
@@ -227,8 +229,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public void AddProductsWithIdentityColumnArray(SupportedLanguages lang)
         {
+            this.StartFunctionHost(nameof(AddProductsWithIdentityColumnArray), lang);
+
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
-            this.SendOutputGetRequest("addproductswithidentitycolumnarray", null, TestUtils.GetPort(lang)).Wait();
+            this.SendOutputGetRequest("addproductswithidentitycolumnarray", null).Wait();
             // Multiple items should have been inserted
             Assert.Equal(2, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithIdentity"));
         }
