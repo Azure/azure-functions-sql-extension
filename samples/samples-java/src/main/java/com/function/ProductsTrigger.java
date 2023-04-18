@@ -24,6 +24,7 @@ public class ProductsTrigger {
                 SqlChangeProduct[] changes,
             ExecutionContext context) {
 
+        context.getLogger().log(Level.INFO, "Triggered function");
         context.getLogger().log(Level.INFO, "SQL Changes: " + new Gson().toJson(changes));
     }
 }
