@@ -14,7 +14,6 @@ namespace DotnetIsolatedTests
     {
         public const string ExceptionMessage = "TriggerWithException test exception";
         private static bool threwException = false;
-        private static readonly Action<ILogger, string, Exception> _loggerMessage = LoggerMessage.Define<string>(LogLevel.Information, eventId: new EventId(0, "INFO"), formatString: "{Message}");
 
         /// <summary>
         /// Used in verification that exceptions thrown by functions cause the trigger to retry calling the function
@@ -26,12 +25,13 @@ namespace DotnetIsolatedTests
             IReadOnlyList<SqlChange<Product>> changes,
             FunctionContext context)
         {
+            ILogger logger = context.GetLogger("TriggerWithException");
             if (!threwException)
             {
                 threwException = true;
                 throw new InvalidOperationException(ExceptionMessage);
             }
-            _loggerMessage(context.GetLogger("TriggerWithException"), "SQL Changes: " + Utils.JsonSerializeObject(changes), null);
+            logger.LogInformation("SQL Changes: " + Utils.JsonSerializeObject(changes));
 
         }
     }
