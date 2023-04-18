@@ -87,7 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 try
                 {
-                    logger.LogInformation($"Using {assembly.GetName().Name} {FileVersionInfo.GetVersionInfo(assembly.Location).ProductVersion}");
+                    logger.LogDebug($"Using {assembly.GetName().Name} {FileVersionInfo.GetVersionInfo(assembly.Location).ProductVersion}");
                 }
                 catch (Exception ex)
                 {
