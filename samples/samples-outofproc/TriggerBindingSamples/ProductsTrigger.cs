@@ -20,6 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.TriggerBinding
             [SqlTrigger("[dbo].[Products]", "SqlConnectionString")]
             IReadOnlyList<SqlChange<Product>> changes, FunctionContext context)
         {
+            _loggerMessage(context.GetLogger("ProductsTrigger"), "Triggered function", null);
             // The output is used to inspect the trigger binding parameter in test methods.
             if (changes != null && changes.Count > 0)
             {
