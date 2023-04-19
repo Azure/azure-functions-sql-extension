@@ -14,7 +14,7 @@ using Xunit;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 {
-    public class SqlTriggerListenerTests
+    public class SqlTriggerScaleMonitorTests
     {
         /// <summary>
         /// Verifies that the scale monitor descriptor ID is set to expected value.
@@ -38,13 +38,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [InlineData(new int[] { 1000, 1000, 1000, 1000 })] // metrics.Length == 4.
         public void ScaleMonitorGetScaleStatus_InsufficentMetrics_ReturnsNone(int[] unprocessedChangeCounts)
         {
-            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor();
+            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> _) = GetScaleMonitor();
             ScaleStatusContext context = GetScaleStatusContext(unprocessedChangeCounts, 0);
 
             ScaleStatus scaleStatus = monitor.GetScaleStatus(context);
 
             Assert.Equal(ScaleVote.None, scaleStatus.Vote);
-            Assert.Contains("Requesting no-scaling: Insufficient metrics for making scale decision for table: 'testTableName'.", logMessages);
         }
 
         /// <summary>
@@ -81,7 +80,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
             ScaleStatus scaleStatus = monitor.GetScaleStatus(context);
 
             Assert.Equal(ScaleVote.ScaleOut, scaleStatus.Vote);
-            Assert.Contains("Requesting scale-out: Found too many unprocessed changes for table: 'testTableName' relative to the number of workers.", logMessages);
+            Assert.Contains($"Requesting scale-out: Found too many unprocessed changes: {unprocessedChangeCounts.Last()} for table: 'testTableName' relative to the number of workers.", string.Join(" ", logMessages));
         }
 
         /// <summary>
@@ -94,13 +93,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [InlineData(new int[] { 0, 0, 0, 0, 10000 }, 10)]
         public void ScaleMonitorGetScaleStatus_LastCountBelowLimit_ReturnsNone(int[] unprocessedChangeCounts, int workerCount)
         {
-            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor();
+            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> _) = GetScaleMonitor();
             ScaleStatusContext context = GetScaleStatusContext(unprocessedChangeCounts, workerCount);
 
             ScaleStatus scaleStatus = monitor.GetScaleStatus(context);
 
             Assert.Equal(ScaleVote.None, scaleStatus.Vote);
-            Assert.Contains("Requesting no-scaling: Found the number of unprocessed changes for table: 'testTableName' to not require scaling.", logMessages);
         }
 
         /// <summary>
@@ -132,13 +130,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [InlineData(new int[] { 0, 1, 5000, 5001, 7500 }, 10)]
         public void ScaleMonitorGetScaleStatus_CountIncreasingBelowLimit_ReturnsNone(int[] unprocessedChangeCounts, int workerCount)
         {
-            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor();
+            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> _) = GetScaleMonitor();
             ScaleStatusContext context = GetScaleStatusContext(unprocessedChangeCounts, workerCount);
 
             ScaleStatus scaleStatus = monitor.GetScaleStatus(context);
 
             Assert.Equal(ScaleVote.None, scaleStatus.Vote);
-            Assert.Contains("Avoiding scale-out: Found the unprocessed changes for table: 'testTableName' to be increasing but they may not exceed the maximum limit set for the workers.", logMessages);
         }
 
         /// <summary>
@@ -170,13 +167,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [InlineData(new int[] { 9005, 9004, 9003, 9002, 9001 }, 10)]
         public void ScaleMonitorGetScaleStatus_CountDecreasingAboveLimit_ReturnsNone(int[] unprocessedChangeCounts, int workerCount)
         {
-            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor();
+            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> _) = GetScaleMonitor();
             ScaleStatusContext context = GetScaleStatusContext(unprocessedChangeCounts, workerCount);
 
             ScaleStatus scaleStatus = monitor.GetScaleStatus(context);
 
             Assert.Equal(ScaleVote.None, scaleStatus.Vote);
-            Assert.Contains("Avoiding scale-in: Found the unprocessed changes for table: 'testTableName' to be decreasing but they are high enough to require all existing workers for processing.", logMessages);
         }
 
         /// <summary>
@@ -188,41 +184,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [InlineData(new int[] { 1, 1, 0, 0, 0 }, 10)]
         public void ScaleMonitorGetScaleStatus_CountNotIncreasingOrDecreasing_ReturnsNone(int[] unprocessedChangeCounts, int workerCount)
         {
-            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) = GetScaleMonitor();
+            (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> _) = GetScaleMonitor();
             ScaleStatusContext context = GetScaleStatusContext(unprocessedChangeCounts, workerCount);
 
             ScaleStatus scaleStatus = monitor.GetScaleStatus(context);
 
             Assert.Equal(ScaleVote.None, scaleStatus.Vote);
-
-            // Ensure that no-scaling was not requested because of other conditions.
-            Assert.DoesNotContain("Avoiding scale-out: Found the unprocessed changes for table: 'testTableName' to be increasing but they may not exceed the maximum limit set for the workers.", logMessages);
-            Assert.DoesNotContain("Avoiding scale-in: Found the unprocessed changes for table: 'testTableName' to be decreasing but they are high enough to require all existing workers for processing.", logMessages);
-            Assert.Contains("Requesting no-scaling: Found the number of unprocessed changes for table: 'testTableName' to not require scaling.", logMessages);
         }
 
         [Theory]
-        [InlineData("1")]
-        [InlineData("100")]
-        [InlineData("10000")]
-        public void ScaleMonitorGetScaleStatus_UserConfiguredMaxChangesPerWorker_RespectsConfiguration(string maxChangesPerWorker)
+        [InlineData(1)]
+        [InlineData(100)]
+        [InlineData(10000)]
+        public void ScaleMonitorGetScaleStatus_UserConfiguredMaxChangesPerWorker_RespectsConfiguration(int maxChangesPerWorker)
         {
             (IScaleMonitor<SqlTriggerMetrics> monitor, _) = GetScaleMonitor(maxChangesPerWorker);
 
             ScaleStatusContext context;
             ScaleStatus scaleStatus;
 
-            int max = int.Parse(maxChangesPerWorker);
-
-            context = GetScaleStatusContext(new int[] { 0, 0, 0, 0, 10 * max }, 10);
+            context = GetScaleStatusContext(new int[] { 0, 0, 0, 0, 10 * maxChangesPerWorker }, 10);
             scaleStatus = monitor.GetScaleStatus(context);
             Assert.Equal(ScaleVote.None, scaleStatus.Vote);
 
-            context = GetScaleStatusContext(new int[] { 0, 0, 0, 0, (10 * max) + 1 }, 10);
+            context = GetScaleStatusContext(new int[] { 0, 0, 0, 0, (10 * maxChangesPerWorker) + 1 }, 10);
             scaleStatus = monitor.GetScaleStatus(context);
             Assert.Equal(ScaleVote.ScaleOut, scaleStatus.Vote);
 
-            context = GetScaleStatusContext(new int[] { (9 * max) + 4, (9 * max) + 3, (9 * max) + 2, (9 * max) + 1, 9 * max }, 10);
+            context = GetScaleStatusContext(new int[] { (9 * maxChangesPerWorker) + 4, (9 * maxChangesPerWorker) + 3, (9 * maxChangesPerWorker) + 2, (9 * maxChangesPerWorker) + 1, 9 * maxChangesPerWorker }, 10);
             scaleStatus = monitor.GetScaleStatus(context);
             Assert.Equal(ScaleVote.ScaleIn, scaleStatus.Vote);
         }
@@ -242,29 +231,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 
         private static IScaleMonitor<SqlTriggerMetrics> GetScaleMonitor(string tableName, string userFunctionId)
         {
-            Mock<IConfiguration> mockConfiguration = CreateMockConfiguration();
-
-            return new SqlTriggerListener<object>(
-                "testConnectionString",
-                tableName,
+            return new SqlTriggerScaleMonitor(
                 userFunctionId,
-                Mock.Of<ITriggeredFunctionExecutor>(),
-                Mock.Of<ILogger>(),
-                mockConfiguration.Object);
+                tableName,
+                "testConnectionString",
+                SqlTriggerListener<object>.DefaultMaxChangesPerWorker,
+                Mock.Of<ILogger>());
         }
 
-        private static (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) GetScaleMonitor(string maxChangesPerWorker = null)
+        private static (IScaleMonitor<SqlTriggerMetrics> monitor, List<string> logMessages) GetScaleMonitor(int maxChangesPerWorker = SqlTriggerListener<object>.DefaultMaxChangesPerWorker)
         {
             (Mock<ILogger> mockLogger, List<string> logMessages) = CreateMockLogger();
-            Mock<IConfiguration> mockConfiguration = CreateMockConfiguration(maxChangesPerWorker);
 
-            IScaleMonitor<SqlTriggerMetrics> monitor = new SqlTriggerListener<object>(
-                "testConnectionString",
-                "testTableName",
+            IScaleMonitor<SqlTriggerMetrics> monitor = new SqlTriggerScaleMonitor(
                 "testUserFunctionId",
-                Mock.Of<ITriggeredFunctionExecutor>(),
-                mockLogger.Object,
-                mockConfiguration.Object);
+                "testTableName",
+                "testConnectionString",
+                maxChangesPerWorker,
+                mockLogger.Object);
 
             return (monitor, logMessages);
         }

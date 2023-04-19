@@ -15,22 +15,25 @@ namespace DotnetIsolatedTests
     /// </summary>
     public static class MultiFunctionTrigger
     {
+
         [Function(nameof(MultiFunctionTrigger1))]
         public static void MultiFunctionTrigger1(
             [SqlTrigger("[dbo].[Products]", "SqlConnectionString")]
             IReadOnlyList<SqlChange<Product>> products,
-            ILogger logger)
+            FunctionContext context)
         {
-            logger.LogInformation("Trigger1 Changes: " + Utils.JsonSerializeObject(products));
+            ILogger logger = context.GetLogger("MultiFunctionTrigger1");
+            logger.LogInformation("Trigger1 Changes: " + Utils.JsonSerializeObject(products), null);
         }
 
         [Function(nameof(MultiFunctionTrigger2))]
         public static void MultiFunctionTrigger2(
             [SqlTrigger("[dbo].[Products]", "SqlConnectionString")]
             IReadOnlyList<SqlChange<Product>> products,
-            ILogger logger)
+            FunctionContext context)
         {
-            logger.LogInformation("Trigger2 Changes: " + Utils.JsonSerializeObject(products));
+            ILogger logger = context.GetLogger("MultiFunctionTrigger1");
+            logger.LogInformation("Trigger2 Changes: " + Utils.JsonSerializeObject(products), null);
         }
     }
 }

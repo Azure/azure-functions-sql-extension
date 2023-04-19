@@ -30,7 +30,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.CSharpscript)]
         public async Task SingleOperationTriggerTest(SupportedLanguages lang)
         {
             this.SetChangeTrackingForTable("Products");
@@ -79,7 +78,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.CSharpscript)]
         public async Task BatchSizeOverrideTriggerTest(SupportedLanguages lang)
         {
             // Use enough items to require 4 batches to be processed but then
@@ -123,7 +121,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.CSharpscript)]
         public async Task MaxBatchSizeOverrideTriggerTest(SupportedLanguages lang)
         {
             // Use enough items to require 4 batches to be processed but then
@@ -167,7 +164,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
         public async Task PollingIntervalOverrideTriggerTest(SupportedLanguages lang)
         {
             const int firstId = 1;
@@ -210,7 +206,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.CSharpscript)]
         public async Task MultiOperationTriggerTest(SupportedLanguages lang)
         {
             int firstId = 1;
@@ -292,7 +287,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
         public async Task MultiFunctionTriggerTest(SupportedLanguages lang)
         {
             const string Trigger1Changes = "Trigger1 Changes: ";
@@ -419,7 +413,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.CSharpscript)]
         public async Task MultiHostTriggerTest(SupportedLanguages lang)
         {
             this.SetChangeTrackingForTable("Products");
@@ -471,7 +464,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
         public void TableNotPresentTriggerTest(SupportedLanguages lang)
         {
             this.StartFunctionHostAndWaitForError(
@@ -486,7 +478,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
         public void PrimaryKeyNotCreatedTriggerTest(SupportedLanguages lang)
         {
             this.StartFunctionHostAndWaitForError(
@@ -502,7 +493,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
         public void ReservedPrimaryKeyColumnNamesTriggerTest(SupportedLanguages lang)
         {
             this.StartFunctionHostAndWaitForError(
@@ -518,7 +508,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.CSharpscript)]
         public void UnsupportedColumnTypesTriggerTest(SupportedLanguages lang)
         {
             this.StartFunctionHostAndWaitForError(
@@ -534,7 +523,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.CSharpscript)]
         public void ChangeTrackingNotEnabledTriggerTest(SupportedLanguages lang)
         {
             this.StartFunctionHostAndWaitForError(
@@ -552,15 +540,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public async void GetMetricsTest()
         {
             this.SetChangeTrackingForTable("Products");
+            string userFunctionId = "func-id";
             IConfiguration configuration = new ConfigurationBuilder().Build();
-            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "func-id", Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<ILogger>(), configuration);
+            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", userFunctionId, Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<ILogger>(), configuration);
             await listener.StartAsync(CancellationToken.None);
             // Cancel immediately so the listener doesn't start processing the changes
             await listener.StopAsync(CancellationToken.None);
-            SqlTriggerMetrics metrics = await listener.GetMetricsAsync();
+            var metricsProvider = new SqlTriggerMetricsProvider(this.DbConnectionString, Mock.Of<ILogger>(), new SqlObject("dbo.Products"), userFunctionId);
+            SqlTriggerMetrics metrics = await metricsProvider.GetMetricsAsync();
             Assert.True(metrics.UnprocessedChangeCount == 0, "There should initially be 0 unprocessed changes");
             this.InsertProducts(1, 5);
-            metrics = await listener.GetMetricsAsync();
+            metrics = await metricsProvider.GetMetricsAsync();
             Assert.True(metrics.UnprocessedChangeCount == 5, $"There should be 5 unprocessed changes after insertion. Actual={metrics.UnprocessedChangeCount}");
         }
 
@@ -569,7 +559,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.CSharpscript)]
         public void UnsupportedDatabaseThrows(SupportedLanguages lang)
         {
             // Change database compat level to unsupported version
