@@ -14,7 +14,7 @@ using MoreLinq;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     /// <summary>
-    /// Makes the scale decision for incremental scaling(+1, 0, -1) for workers required based on unprocessed changes. 
+    /// Makes the scale decision for incremental scaling(+1, 0, -1) for workers required based on unprocessed changes.
     /// Guidance for scaling information can be found here https://learn.microsoft.com/en-us/azure/azure-functions/event-driven-scaling
     /// </summary>
     internal sealed class SqlTriggerScaleMonitor : IScaleMonitor<SqlTriggerMetrics>
@@ -112,7 +112,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // Do not make a scale decision unless we have enough samples.
             if (metrics is null || (metrics.Length < minSamplesForScaling))
             {
-                this._logger.LogInformation($"Requesting no-scaling: Insufficient metrics for making scale decision for table: '{this._userTable.FullName}'.");
                 return status;
             }
 
@@ -120,14 +119,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             metrics = metrics.TakeLast(minSamplesForScaling).ToArray();
 
             string counts = string.Join(", ", metrics.Select(metric => metric.UnprocessedChangeCount));
-            this._logger.LogDebugWithThreadId($"Unprocessed change counts: [{counts}], worker count: {workerCount}, maximum changes per worker: {this._maxChangesPerWorker}.");
 
             // Add worker if the count of unprocessed changes per worker exceeds the maximum limit.
             long lastUnprocessedChangeCount = metrics.Last().UnprocessedChangeCount;
             if (lastUnprocessedChangeCount > workerCount * this._maxChangesPerWorker)
             {
                 status.Vote = ScaleVote.ScaleOut;
-                this._logger.LogInformation($"Requesting scale-out: Found too many unprocessed changes: {lastUnprocessedChangeCount} for table: '{this._userTable.FullName}' relative to the number of workers.");
+                this._logger.LogDebug($"Requesting scale-out: Found too many unprocessed changes: {lastUnprocessedChangeCount} for table: '{this._userTable.FullName}' relative to the number of workers.");
                 return status;
             }
 
@@ -150,14 +148,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 if (expectedUnprocessedChangeCount > workerCount * this._maxChangesPerWorker)
                 {
                     status.Vote = ScaleVote.ScaleOut;
-                    this._logger.LogInformation($"Requesting scale-out: Found the unprocessed changes for table: '{this._userTable.FullName}' to be continuously increasing" +
+                    this._logger.LogDebug($"Requesting scale-out: Found the unprocessed changes for table: '{this._userTable.FullName}' to be continuously increasing" +
                         " and may exceed the maximum limit set for the workers.");
                     return status;
-                }
-                else
-                {
-                    this._logger.LogDebugWithThreadId($"Avoiding scale-out: Found the unprocessed changes: {lastUnprocessedChangeCount} for table: '{this._userTable.FullName}' to be increasing" +
-                        " but they may not exceed the maximum limit set for the workers.");
                 }
             }
 
@@ -167,17 +160,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 if (lastUnprocessedChangeCount <= (workerCount - 1) * this._maxChangesPerWorker)
                 {
                     status.Vote = ScaleVote.ScaleIn;
-                    this._logger.LogInformation($"Requesting scale-in: Found table: '{this._userTable.FullName}' to be either idle or the unprocessed changes to be continuously decreasing.");
+                    this._logger.LogDebug($"Requesting scale-in: Found table: '{this._userTable.FullName}' to be either idle or the unprocessed changes to be continuously decreasing.");
                     return status;
                 }
-                else
-                {
-                    this._logger.LogDebugWithThreadId($"Avoiding scale-in: Found the unprocessed changes for table: '{this._userTable.FullName}' to be decreasing" +
-                        " but they are high enough to require all existing workers for processing.");
-                }
             }
-
-            this._logger.LogInformation($"Requesting no-scaling: Found the number of unprocessed changes for table: '{this._userTable.FullName}' to not require scaling.");
             return status;
         }
     }

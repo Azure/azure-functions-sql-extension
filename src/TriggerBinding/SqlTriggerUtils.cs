@@ -29,11 +29,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             const int NameIndex = 0, TypeIndex = 1, LengthIndex = 2, PrecisionIndex = 3, ScaleIndex = 4;
             string getPrimaryKeyColumnsQuery = $@"
-                SELECT 
-                    c.name, 
-                    t.name, 
-                    c.max_length, 
-                    c.precision, 
+                SELECT
+                    c.name,
+                    t.name,
+                    c.max_length,
+                    c.precision,
                     c.scale
                 FROM sys.indexes AS i
                 INNER JOIN sys.index_columns AS ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
@@ -41,9 +41,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 INNER JOIN sys.types AS t ON c.user_type_id = t.user_type_id
                 WHERE i.is_primary_key = 1 AND i.object_id = {userTableId};
             ";
-            logger.LogDebugWithThreadId($"BEGIN GetPrimaryKeyColumns Query={getPrimaryKeyColumnsQuery}");
             using (var getPrimaryKeyColumnsCommand = new SqlCommand(getPrimaryKeyColumnsQuery, connection))
-            using (SqlDataReader reader = await getPrimaryKeyColumnsCommand.ExecuteReaderAsync(cancellationToken))
+            using (SqlDataReader reader = await getPrimaryKeyColumnsCommand.ExecuteReaderAsyncWithLogging(logger, cancellationToken))
             {
                 string[] variableLengthTypes = new[] { "varchar", "nvarchar", "nchar", "char", "binary", "varbinary" };
                 string[] variablePrecisionTypes = new[] { "numeric", "decimal" };
@@ -77,7 +76,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new InvalidOperationException($"Could not find primary key created in table: '{userTableName}'.");
                 }
 
-                logger.LogDebugWithThreadId($"END GetPrimaryKeyColumns ColumnNames(types) = {string.Join(", ", primaryKeyColumns.Select(col => $"'{col.name}({col.type})'"))}.");
+                logger.LogDebug($"GetPrimaryKeyColumns ColumnNames(types) = {string.Join(", ", primaryKeyColumns.Select(col => $"'{col.name}({col.type})'"))}.");
                 return primaryKeyColumns;
             }
         }
@@ -95,9 +94,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             var userTable = new SqlObject(userTableName);
             string getObjectIdQuery = $"SELECT OBJECT_ID(N{userTable.QuotedFullName}, 'U');";
 
-            logger.LogDebugWithThreadId($"BEGIN GetUserTableId Query={getObjectIdQuery}");
             using (var getObjectIdCommand = new SqlCommand(getObjectIdQuery, connection))
-            using (SqlDataReader reader = await getObjectIdCommand.ExecuteReaderAsync(cancellationToken))
+            using (SqlDataReader reader = await getObjectIdCommand.ExecuteReaderAsyncWithLogging(logger, cancellationToken))
             {
                 if (!await reader.ReadAsync(cancellationToken))
                 {
@@ -110,7 +108,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     throw new InvalidOperationException($"Could not find table: '{userTableName}'.");
                 }
-                logger.LogDebugWithThreadId($"END GetUserTableId TableId={userTableId}");
+                logger.LogDebug($"GetUserTableId TableId={userTableId}");
                 return (int)userTableId;
             }
         }

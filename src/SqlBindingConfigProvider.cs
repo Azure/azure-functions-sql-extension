@@ -60,7 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             LogDependentAssemblyVersions(logger);
 #pragma warning disable CS0618 // Fine to use this for our stuff
             FluentBindingRule<SqlAttribute> inputOutputRule = context.AddBindingRule<SqlAttribute>();
-            var converter = new SqlConverter(this._configuration, logger);
+            var converter = new SqlConverter(this._configuration);
             inputOutputRule.BindToInput(converter);
             inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), this._configuration, logger);
             inputOutputRule.BindToCollector<SQLObjectOpenType>(typeof(SqlAsyncCollectorBuilder<>), this._configuration, logger);
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 try
                 {
-                    logger.LogInformation($"Using {assembly.GetName().Name} {FileVersionInfo.GetVersionInfo(assembly.Location).ProductVersion}");
+                    logger.LogDebug($"Using {assembly.GetName().Name} {FileVersionInfo.GetVersionInfo(assembly.Location).ProductVersion}");
                 }
                 catch (Exception ex)
                 {

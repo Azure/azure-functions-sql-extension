@@ -69,6 +69,7 @@
     <ItemGroup>
       <_CSharpScriptCopyItems Include="..\samples\samples-csharpscript\InputBindingSamples\**\*.*" />
       <_CSharpScriptCopyItems Include="..\samples\samples-csharpscript\OutputBindingSamples\**\*.*" />
+      <_CSharpScriptCopyItems Include="..\samples\samples-csharpscript\TriggerBindingSamples\**\*.*" />
       <_CSharpScriptCopyItems Include="Integration\test-csx\**\*.*" />
     </ItemGroup>
     <Copy SourceFiles="@(_CSharpScriptCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\CSharpscript\%(RecursiveDir)" />
