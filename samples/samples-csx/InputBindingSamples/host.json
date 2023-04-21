@@ -6,10 +6,9 @@
         "isEnabled": true,
         "excludedTypes": "Request"
       }
+    },
+    "logLevel": {
+      "default": "Information"
     }
-  },
-  "extensionBundle": {
-   "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
-      "version": "[4.*, 5.0.0)"
   }
 }
