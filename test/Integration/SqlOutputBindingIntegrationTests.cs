@@ -481,7 +481,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         // Only the JavaScript function passes an empty JSON to the SQL extension.
         // C#, Java, and Python throw an error while creating the Product object in the function and in PowerShell,
         // the JSON would be passed as {"ProductId": null, "Name": null, "Cost": null}.
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.PowerShell, SupportedLanguages.Python, SupportedLanguages.CSharpscript)]
+        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.PowerShell, SupportedLanguages.Python, SupportedLanguages.Csx)]
         public async Task NoPropertiesThrows(SupportedLanguages lang)
         {
             var foundExpectedMessageSource = new TaskCompletionSource<bool>();
