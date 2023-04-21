@@ -67,16 +67,16 @@
     <Copy SourceFiles="@(_PythonCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\Python\%(RecursiveDir)" />
     <Message Text="Copied Python Samples output to $(OutDir)\SqlExtensionSamples\Python" Importance="high" />
     <ItemGroup>
-      <_CSharpScriptCopyItems Include="..\samples\samples-csharpscript\InputBindingSamples\**\*.*" />
-      <_CSharpScriptCopyItems Include="..\samples\samples-csharpscript\OutputBindingSamples\**\*.*" />
-      <_CSharpScriptCopyItems Include="..\samples\samples-csharpscript\TriggerBindingSamples\**\*.*" />
-      <_CSharpScriptCopyItems Include="Integration\test-csx\**\*.*" />
+      <_CsxCopyItems Include="..\samples\samples-csx\InputBindingSamples\**\*.*" />
+      <_CsxCopyItems Include="..\samples\samples-csx\OutputBindingSamples\**\*.*" />
+      <_CsxCopyItems Include="..\samples\samples-csx\TriggerBindingSamples\**\*.*" />
+      <_CsxCopyItems Include="Integration\test-csx\**\*.*" />
     </ItemGroup>
-    <Copy SourceFiles="@(_CSharpScriptCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\CSharpscript\%(RecursiveDir)" />
+    <Copy SourceFiles="@(_CsxCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\Csx\%(RecursiveDir)" />
     <ItemGroup>
-      <_CommonCopyItems Include="..\samples\samples-csharpscript\Common\**\*.*" />
+      <_CommonCopyItems Include="..\samples\samples-csx\Common\**\*.*" />
     </ItemGroup>
     <Copy SourceFiles="@(_CommonCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\Common\%(RecursiveDir)" />
-    <Message Text="Copied CSX Samples output to $(OutDir)\SqlExtensionSamples\CSharpscript" Importance="high" />
+    <Message Text="Copied CSX Samples output to $(OutDir)\SqlExtensionSamples\Csx" Importance="high" />
   </Target>
 </Project>
