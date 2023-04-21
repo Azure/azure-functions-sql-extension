@@ -27,6 +27,11 @@ steps:
     result: PoliCheck.xml
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
+# Use 18.15 directly due to https://github.com/Azure/azure-functions-core-tools/issues/3335
+- task: NodeTool@0
+  inputs:
+    versionSpec: '18.15'
+
 - script: npm install -g azure-functions-core-tools
   displayName: 'Install Azure Functions Core Tools'
 
@@ -34,10 +39,10 @@ steps:
   displayName: 'Install Azurite Local Storage Emulator'
 
 # This step is necessary because npm installs to a non-traditional location on Windows hosted agents
+# For non-Windows agents we still want to ensure that we always get the correct location where the tools are installed
 # This sets the path to npm global installations as a variable which then gets passed to .NET test task
 - bash: echo "##vso[task.setvariable variable=nodeModulesPath]$(npm root -g)"
-  displayName: 'Set npm installation path for Windows'
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
+  displayName: 'Set npm installation path'
 
 - bash: echo "##vso[task.setvariable variable=azureFunctionsExtensionBundlePath]$(func GetExtensionBundlePath)"
   displayName: 'Set Azure Functions extension bundle path'
@@ -205,6 +210,7 @@ steps:
   displayName: '.NET Test on Linux (both unit and integration tests)'
   env:
     SA_PASSWORD: '$(serverPassword)'
+    NODE_MODULES_PATH: '$(nodeModulesPath)'
     AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
   inputs:
     command: test
