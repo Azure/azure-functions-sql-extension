@@ -52,7 +52,7 @@ These instructions will guide you through creating your Function Project and add
     <dependency>
         <groupId>com.microsoft.azure.functions</groupId>
         <artifactId>azure-functions-java-library-sql</artifactId>
-        <version>[0.1.1,)</version>
+        <version>[2.0.0-preview,)</version>
     </dependency>
     ```
 

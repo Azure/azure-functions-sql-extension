@@ -131,19 +131,19 @@ The database scripts used for the following samples can be found [here](https://
 
 #### Query String
 
-See the [GetProducts](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-csharpscript/InputBindingSamples/GetProducts) sample
+See the [GetProducts](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-csx/InputBindingSamples/GetProducts) sample
 
 #### Empty Parameter Value
 
-See the [GetProductsNameEmpty](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/InputBindingSamples/GetProductsNameEmpty) sample
+See the [GetProductsNameEmpty](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/InputBindingSamples/GetProductsNameEmpty) sample
 
 #### Null Parameter Value
 
-See the [GetProductsNameNull](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/InputBindingSamples/GetProductsNameNull) sample
+See the [GetProductsNameNull](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/InputBindingSamples/GetProductsNameNull) sample
 
 #### Stored Procedure
 
-See the [GetProductsStoredProcedure](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/InputBindingSamples/GetProductsStoredProcedure) sample
+See the [GetProductsStoredProcedure](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/InputBindingSamples/GetProductsStoredProcedure) sample
 
 ## Output Binding
 
@@ -219,15 +219,15 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 #### Array
 
-See the [AddProductsArray](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/OutputBindingSamples/AddProductsArray) sample
+See the [AddProductsArray](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/OutputBindingSamples/AddProductsArray) sample
 
 #### Single Row
 
-See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/OutputBindingSamples/AddProduct) sample
+See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/OutputBindingSamples/AddProduct) sample
 
 ### Sample with multiple Bindings
 
-See the [GetAndAddProducts](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/InputBindingSamples/GetAndAddProducts) sample
+See the [GetAndAddProducts](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/InputBindingSamples/GetAndAddProducts) sample
 
 
 ## Trigger Binding
