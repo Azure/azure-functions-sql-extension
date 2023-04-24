@@ -316,7 +316,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
             {
                 return 7072;
             }
-            else if (lang == SupportedLanguages.CSharpscript)
+            else if (lang == SupportedLanguages.Csx)
             {
                 return 7073;
             }
