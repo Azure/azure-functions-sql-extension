@@ -7,6 +7,7 @@ using System.Data;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -256,6 +257,101 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         public static string GetPathToBin()
         {
             return Path.GetDirectoryName(Assembly.GetAssembly(typeof(Product)).Location);
+        }
+
+        public static string GetFunctionsCoreToolsPath()
+        {
+            // Determine npm install path from either env var set by pipeline or OS defaults
+            // Pipeline env var is needed as the Windows hosted agents installs to a non-traditional location
+            string nodeModulesPath = Environment.GetEnvironmentVariable("NODE_MODULES_PATH");
+            if (string.IsNullOrEmpty(nodeModulesPath))
+            {
+                nodeModulesPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\node_modules\") :
+                    @"/usr/local/lib/node_modules";
+            }
+
+            string funcExe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "func.exe" : "func";
+            string funcPath = Path.Combine(nodeModulesPath, "azure-functions-core-tools", "bin", funcExe);
+
+            if (!File.Exists(funcPath))
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // Search Program Files folder as well
+                    string programFilesFuncPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Microsoft", "Azure Functions Core Tools", funcExe);
+                    if (File.Exists(programFilesFuncPath))
+                    {
+                        return programFilesFuncPath;
+                    }
+                    throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath} or {programFilesFuncPath}");
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    // Search Mac to see if brew installed location has azure function core tools
+                    string usrBinFuncPath = Path.Combine("/usr", "local", "bin", "func");
+                    if (File.Exists(usrBinFuncPath))
+                    {
+                        return usrBinFuncPath;
+                    }
+                    throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath} or {usrBinFuncPath}");
+                }
+                throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath}");
+            }
+
+            return funcPath;
+        }
+
+        // Set the default port to 7081 since the function hosts started in
+        // IntegrationTestFixture are already running on ports 7071 - 7080.
+        public const int DefaultPort = 7081;
+
+        public static int GetPort(SupportedLanguages lang, bool testFolder = false)
+        {
+            if (lang == SupportedLanguages.CSharp && !testFolder)
+            {
+                return 7071;
+            }
+            else if (lang == SupportedLanguages.CSharp && testFolder)
+            {
+                return 7072;
+            }
+            else if (lang == SupportedLanguages.Csx)
+            {
+                return 7073;
+            }
+            else if (lang == SupportedLanguages.JavaScript)
+            {
+                return 7074;
+            }
+            else if (lang == SupportedLanguages.PowerShell)
+            {
+                return 7075;
+            }
+            else if (lang == SupportedLanguages.Java && !testFolder)
+            {
+                return 7076;
+            }
+            else if (lang == SupportedLanguages.Java && testFolder)
+            {
+                return 7077;
+            }
+            else if (lang == SupportedLanguages.OutOfProc && !testFolder)
+            {
+                return 7078;
+            }
+            else if (lang == SupportedLanguages.OutOfProc && testFolder)
+            {
+                return 7079;
+            }
+            else if (lang == SupportedLanguages.Python)
+            {
+                return 7080;
+            }
+            else
+            {
+                throw new Exception($"Failed to get port for language: {lang}");
+            }
         }
     }
 }

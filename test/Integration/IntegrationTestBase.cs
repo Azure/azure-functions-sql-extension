@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.WebUtilities;
@@ -39,11 +38,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         private DbConnection Connection;
 
         /// <summary>
-        /// Connection string to the master database on the test server, mainly used for database setup and teardown.
-        /// </summary>
-        private string MasterConnectionString;
-
-        /// <summary>
         /// Connection string to the database created for the test
         /// </summary>
         protected string DbConnectionString { get; private set; }
@@ -59,92 +53,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         protected ITestOutputHelper TestOutput { get; private set; }
 
-        /// <summary>
-        /// The port the Functions Host is running on. Default is 7071.
-        /// </summary>
-        protected int Port { get; private set; } = 7071;
-
         public IntegrationTestBase(ITestOutputHelper output = null)
         {
             this.TestOutput = output;
-            this.SetupDatabase();
+            this.SetupDatabaseObjects();
         }
 
         /// <summary>
-        /// Sets up a test database for the current test to use.
+        /// Sets up the tables, views, and stored procedures needed for tests in the database created
+        /// in IntegrationTestFixture.
         /// </summary>
-        /// <remarks>
-        /// The server the database will be created on can be set by the environment variable "TEST_SERVER", otherwise localhost will be used by default.
-        /// By default, integrated authentication will be used to connect to the server, unless the env variable "SA_PASSWORD" is set.
-        /// In this case, connection will be made using SQL login with user "SA" and the provided password.
-        /// </remarks>
-        private void SetupDatabase()
+        private void SetupDatabaseObjects()
         {
-            SqlConnectionStringBuilder connectionStringBuilder;
-            string connectionString = Environment.GetEnvironmentVariable("TEST_CONNECTION_STRING");
-            if (connectionString != null)
-            {
-                this.MasterConnectionString = connectionString;
-                connectionStringBuilder = new SqlConnectionStringBuilder(connectionString);
-            }
-            else
-            {
-                // Get the test server name from environment variable "TEST_SERVER", default to localhost if not set
-                string testServer = Environment.GetEnvironmentVariable("TEST_SERVER");
-                if (string.IsNullOrEmpty(testServer))
-                {
-                    testServer = "localhost";
-                }
-
-                // First connect to master to create the database
-                connectionStringBuilder = new SqlConnectionStringBuilder()
-                {
-                    DataSource = testServer,
-                    InitialCatalog = "master",
-                    Pooling = false,
-                    Encrypt = SqlConnectionEncryptOption.Optional
-                };
-
-                // Either use integrated auth or SQL login depending if SA_PASSWORD is set
-                string userId = "SA";
-                string password = Environment.GetEnvironmentVariable("SA_PASSWORD");
-                if (string.IsNullOrEmpty(password))
-                {
-                    connectionStringBuilder.IntegratedSecurity = true;
-                }
-                else
-                {
-                    connectionStringBuilder.UserID = userId;
-                    connectionStringBuilder.Password = password;
-                }
-                this.MasterConnectionString = connectionStringBuilder.ToString();
-            }
-
-            // Create database
-            // Retry this in case the server isn't fully initialized yet
-            this.DatabaseName = TestUtils.GetUniqueDBName("SqlBindingsTest");
-            TestUtils.Retry(() =>
-            {
-                using var masterConnection = new SqlConnection(this.MasterConnectionString);
-                masterConnection.Open();
-                TestUtils.ExecuteNonQuery(masterConnection, $"CREATE DATABASE [{this.DatabaseName}]", this.LogOutput);
-            }, this.LogOutput);
-
-            // Setup connection
-            connectionStringBuilder.InitialCatalog = this.DatabaseName;
-            this.DbConnectionString = connectionStringBuilder.ToString();
+            // Get the connection string from the environment variable set in IntegrationTestFixture
+            this.DbConnectionString = Environment.GetEnvironmentVariable("SqlConnectionString");
             this.Connection = new SqlConnection(this.DbConnectionString);
             this.Connection.Open();
-
-            // Create the database definition
+            this.DatabaseName = this.Connection.Database;
             // Create these in a specific order since things like views require that their underlying objects have been created already
             // Ideally all the sql files would be in a sqlproj and can just be deployed
             this.ExecuteAllScriptsInFolder(Path.Combine(TestUtils.GetPathToBin(), "Database", "Tables"));
+            // Separate DROP and CREATE for views and procedures since CREATE VIEW/PROCEDURE needs to be the first statement in the batch
+            this.ExecuteAllScriptsInFolder(Path.Combine(TestUtils.GetPathToBin(), "Database", "Views", "Drop"));
             this.ExecuteAllScriptsInFolder(Path.Combine(TestUtils.GetPathToBin(), "Database", "Views"));
+            this.ExecuteAllScriptsInFolder(Path.Combine(TestUtils.GetPathToBin(), "Database", "StoredProcedures", "Drop"));
             this.ExecuteAllScriptsInFolder(Path.Combine(TestUtils.GetPathToBin(), "Database", "StoredProcedures"));
-
-            // Set SqlConnectionString env var for the Function to use
-            Environment.SetEnvironmentVariable("SqlConnectionString", connectionStringBuilder.ToString());
         }
 
         private void ExecuteAllScriptsInFolder(string folder)
@@ -182,14 +115,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 throw new FileNotFoundException("Working directory not found at " + workingDirectory);
             }
 
-            // Use a different port for each new host process, starting with the default port number: 7071.
-            int port = this.Port + this.FunctionHostList.Count;
+            // Use a different port for each new host process
+            int port = TestUtils.DefaultPort + this.FunctionHostList.Count;
 
             var startInfo = new ProcessStartInfo
             {
                 // The full path to the Functions CLI is required in the ProcessStartInfo because UseShellExecute is set to false.
                 // We cannot both use shell execute and redirect output at the same time: https://docs.microsoft.com//dotnet/api/system.diagnostics.processstartinfo.redirectstandardoutput#remarks
-                FileName = GetFunctionsCoreToolsPath(),
+                FileName = TestUtils.GetFunctionsCoreToolsPath(),
                 Arguments = $"start --verbose --port {port} --functions {functionName}",
                 WorkingDirectory = workingDirectory,
                 WindowStyle = ProcessWindowStyle.Hidden,
@@ -244,49 +177,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             this.LogOutput("Azure Function host started!");
             functionHost.OutputDataReceived -= SignalStartupHandler;
-        }
-
-        private static string GetFunctionsCoreToolsPath()
-        {
-            // Determine npm install path from either env var set by pipeline or OS defaults
-            // Pipeline env var is needed as the Windows hosted agents installs to a non-traditional location
-            string nodeModulesPath = Environment.GetEnvironmentVariable("NODE_MODULES_PATH");
-            if (string.IsNullOrEmpty(nodeModulesPath))
-            {
-                nodeModulesPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
-                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"npm\node_modules\") :
-                    @"/usr/local/lib/node_modules";
-            }
-
-            string funcExe = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "func.exe" : "func";
-            string funcPath = Path.Combine(nodeModulesPath, "azure-functions-core-tools", "bin", funcExe);
-
-            if (!File.Exists(funcPath))
-            {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    // Search Program Files folder as well
-                    string programFilesFuncPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Microsoft", "Azure Functions Core Tools", funcExe);
-                    if (File.Exists(programFilesFuncPath))
-                    {
-                        return programFilesFuncPath;
-                    }
-                    throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath} or {programFilesFuncPath}");
-                }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                {
-                    // Search Mac to see if brew installed location has azure function core tools
-                    string usrBinFuncPath = Path.Combine("/usr", "local", "bin", "func");
-                    if (File.Exists(usrBinFuncPath))
-                    {
-                        return usrBinFuncPath;
-                    }
-                    throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath} or {usrBinFuncPath}");
-                }
-                throw new FileNotFoundException($"Azure Function Core Tools not found at {funcPath}");
-            }
-
-            return funcPath;
         }
 
         protected void LogOutput(string output)
@@ -389,18 +279,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             this.DisposeFunctionHosts();
 
-            try
-            {
-                // Drop the test database
-                using var masterConnection = new SqlConnection(this.MasterConnectionString);
-                masterConnection.Open();
-                TestUtils.ExecuteNonQuery(masterConnection, $"DROP DATABASE IF EXISTS {this.DatabaseName}", this.LogOutput);
-            }
-            catch (Exception e4)
-            {
-                this.LogOutput($"Failed to drop {this.DatabaseName}, Error: {e4.Message}");
-            }
-
             GC.SuppressFinalize(this);
         }
 
@@ -416,8 +294,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     functionHost.CancelOutputRead();
                     functionHost.CancelErrorRead();
                     functionHost.Kill(true);
-                    functionHost.Dispose();
                     functionHost.WaitForExit();
+                    functionHost.Dispose();
                 }
                 catch (Exception ex)
                 {
@@ -427,16 +305,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.FunctionHostList.Clear();
         }
 
-        protected async Task<HttpResponseMessage> SendInputRequest(string functionName, string query = "")
+        protected async Task<HttpResponseMessage> SendInputRequest(string functionName, string query = "", int port = TestUtils.DefaultPort)
         {
-            string requestUri = $"http://localhost:{this.Port}/api/{functionName}/{query}";
+            string requestUri = $"http://localhost:{port}/api/{functionName}/{query}";
 
             return await this.SendGetRequest(requestUri);
         }
 
-        protected Task<HttpResponseMessage> SendOutputGetRequest(string functionName, IDictionary<string, string> query = null)
+        protected Task<HttpResponseMessage> SendOutputGetRequest(string functionName, IDictionary<string, string> query = null, int port = TestUtils.DefaultPort)
         {
-            string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
+            string requestUri = $"http://localhost:{port}/api/{functionName}";
 
             if (query != null)
             {
@@ -446,9 +324,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             return this.SendGetRequest(requestUri);
         }
 
-        protected Task<HttpResponseMessage> SendOutputPostRequest(string functionName, string query)
+        protected Task<HttpResponseMessage> SendOutputPostRequest(string functionName, string query, int port = TestUtils.DefaultPort)
         {
-            string requestUri = $"http://localhost:{this.Port}/api/{functionName}";
+            string requestUri = $"http://localhost:{port}/api/{functionName}";
 
             return this.SendPostRequest(requestUri, query);
         }
