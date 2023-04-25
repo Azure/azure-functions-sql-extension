@@ -12,6 +12,5 @@ using System.Collections.Generic;
 
 public static IActionResult Run(HttpRequest req, ILogger log, IEnumerable<Product> products)
 {
-    log.LogInformation("C# HTTP trigger function processed a request.");
     return new OkObjectResult(products);
 }

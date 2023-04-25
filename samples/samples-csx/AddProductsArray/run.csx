@@ -11,15 +11,8 @@ using Newtonsoft.Json;
 
 public static Product[] Run(HttpRequest req, ILogger log, out Product[] products)
 {
-    log.LogInformation("C# HTTP trigger function processed a request.");
-
-
     string requestBody = new StreamReader(req.Body).ReadToEnd();
     products = JsonConvert.DeserializeObject<Product[]>(requestBody);
-
-    string responseMessage = products.Length > 0
-        ? "This HTTP triggered function executed successfully."
-                : "No data passed, Please pass the objects to upsert in the request body.";
 
     return products;
 }

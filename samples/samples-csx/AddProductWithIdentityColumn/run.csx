@@ -11,17 +11,11 @@ using Newtonsoft.Json;
 
 public static ProductWithoutId Run(HttpRequest req, ILogger log, out ProductWithoutId product)
 {
-    log.LogInformation("C# HTTP trigger function processed a request.");
-
     product = new ProductWithoutId
             {
                 Name = req.Query["name"],
                 Cost = int.Parse(req.Query["cost"])
             };
-
-    string responseMessage = string.IsNullOrEmpty(product.Name)
-        ? "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response."
-                : $"Hello, {product.Name}. This HTTP triggered function executed successfully.";
 
     return product;
 }

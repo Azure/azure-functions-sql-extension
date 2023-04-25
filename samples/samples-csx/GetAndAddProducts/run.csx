@@ -12,7 +12,6 @@ using System.Collections.Generic;
 
 public static Product[] Run(HttpRequest req, ILogger log, IEnumerable<Product> products, out Product[] productsWithIdentity)
 {
-    log.LogInformation("C# HTTP trigger function processed a request.");
     productsWithIdentity = products.ToArray<Product>();
     return productsWithIdentity;
 }

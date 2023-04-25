@@ -11,15 +11,8 @@ using Newtonsoft.Json;
 
 public static ProductWithDefaultPK Run(HttpRequest req, ILogger log, out ProductWithDefaultPK product)
 {
-    log.LogInformation("C# HTTP trigger function processed a request.");
-
-
     string requestBody = new StreamReader(req.Body).ReadToEnd();
     product = JsonConvert.DeserializeObject<ProductWithDefaultPK>(requestBody);
-
-    string responseMessage = string.IsNullOrEmpty(product.Name)
-        ? "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response."
-                : $"Hello, {product.Name}. This HTTP triggered function executed successfully.";
 
     return product;
 }

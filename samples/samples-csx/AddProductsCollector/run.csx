@@ -10,8 +10,6 @@ using Microsoft.AspNetCore.Mvc;
 
 public static ICollector<Product> Run(HttpRequest req, ILogger log, ICollector<Product> products)
 {
-    log.LogInformation("C# HTTP trigger function processed a request.");
-
     List<Product> newProducts = ProductUtilities.GetNewProducts(5000);
     foreach (Product product in newProducts)
     {

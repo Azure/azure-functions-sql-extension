@@ -11,8 +11,6 @@ using Newtonsoft.Json;
 
 public static ProductWithoutId[] Run(HttpRequest req, ILogger log, out ProductWithoutId[] products)
 {
-    log.LogInformation("C# HTTP trigger function processed a request.");
-
     products = new[]
             {
                 new ProductWithoutId
@@ -26,10 +24,6 @@ public static ProductWithoutId[] Run(HttpRequest req, ILogger log, out ProductWi
                     Cost = 12
                 }
             };
-
-    string responseMessage = products.Length > 0
-        ? "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response."
-                : "No data passed, Please pass the objects to upsert in the request body.";
 
     return products;
 }
