@@ -198,7 +198,7 @@ steps:
     TEST_SERVER: '$(testServer)'
     NODE_MODULES_PATH: '$(nodeModulesPath)'
     AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
-    LANGUAGES_TO_TEST: 'Java,JavaScript,OutOfProc,PowerShell,Python,CSharpscript'
+    LANGUAGES_TO_TEST: 'Java,JavaScript,OutOfProc,PowerShell,Python,Csx'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
