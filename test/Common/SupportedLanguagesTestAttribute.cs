@@ -13,9 +13,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
     /// tests to be run against all the supported languages list that are specified in the SupportedLanguages
     /// list of this class
     /// </summary>
+    [XunitTestCaseDiscoverer("Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common.RetryFactDiscoverer", "Microsoft.Azure.WebJobs.Extensions.Sql.Tests")]
     public class SqlInlineDataAttribute : DataAttribute
     {
         private readonly List<object[]> testData = new();
+
+        /// <summary>
+        /// Number of retries allowed for a failed test. If unset (or set less than 1), will
+        /// default to 3 attempts.
+        /// </summary>
+        public int MaxRetries { get; set; }
 
         /// <summary>
         /// Adds a language parameter to the test data which will contain the language
