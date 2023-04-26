@@ -19,6 +19,7 @@
     - [Samples for Output Bindings](#samples-for-output-bindings)
       - [Array](#array)
       - [Single Row](#single-row)
+  - [Node V4 Model](#node-v4-model)
 
 ## Setup Function Project
 
@@ -201,3 +202,7 @@ See the [AddProductsArray](https://github.com/Azure/azure-functions-sql-extensio
 #### Single Row
 
 See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js/AddProduct) sample
+
+## Node V4 Model
+
+See the Node V4 Model samples [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js-v4/). More information about the Node V4 Model can be found [here](https://learn.microsoft.com/azure/azure-functions/functions-node-upgrade-v4?tabs=azure-cli-set-indexing-flag%2Cv4).
