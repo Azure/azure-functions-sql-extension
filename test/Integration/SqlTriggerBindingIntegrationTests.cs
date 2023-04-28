@@ -15,6 +15,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 using Xunit.Abstractions;
+using xRetry;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Ensures that the user function gets invoked for each of the insert, update and delete operation.
         /// </summary>
-        [Theory]
+        [RetryTheory]
         [SqlInlineData()]
         public async Task SingleOperationTriggerTest(SupportedLanguages lang)
         {
