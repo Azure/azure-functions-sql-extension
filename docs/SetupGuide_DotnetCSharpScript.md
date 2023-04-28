@@ -22,6 +22,8 @@
       - [Single Row](#single-row)
     - [Sample with multiple Bindings](#sample-with-multiple-bindings)
   - [Trigger Binding](#trigger-binding)
+    - [function.json Properties for Trigger Bindings](#functionjson-properties-for-trigger-bindings)
+    - [Setup for Trigger Bindings](#setup-for-trigger-bindings)
 
 ## CSharp Scripting
 
@@ -131,19 +133,19 @@ The database scripts used for the following samples can be found [here](https://
 
 #### Query String
 
-See the [GetProducts](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-csx/InputBindingSamples/GetProducts) sample
+See the [GetProducts](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-csx/GetProducts) sample
 
 #### Empty Parameter Value
 
-See the [GetProductsNameEmpty](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/InputBindingSamples/GetProductsNameEmpty) sample
+See the [GetProductsNameEmpty](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/GetProductsNameEmpty) sample
 
 #### Null Parameter Value
 
-See the [GetProductsNameNull](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/InputBindingSamples/GetProductsNameNull) sample
+See the [GetProductsNameNull](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/GetProductsNameNull) sample
 
 #### Stored Procedure
 
-See the [GetProductsStoredProcedure](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/InputBindingSamples/GetProductsStoredProcedure) sample
+See the [GetProductsStoredProcedure](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/GetProductsStoredProcedure) sample
 
 ## Output Binding
 
@@ -173,14 +175,13 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
     ```csharp
     #load "employee.csx"
     #r "Newtonsoft.Json"
-    #r "Microsoft.Azure.WebJobs.Extensions.Sql"
 
     using System.Net;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Extensions.Primitives;
     using Newtonsoft.Json;
 
-    public static Product Run(HttpRequest req, ILogger log, [Sql("dbo.Employees", "SqlConnectionString")] out Employee employee)
+    public static Product Run(HttpRequest req, ILogger log, out Employee employee)
     {
         log.LogInformation("CSX HTTP trigger function processed a request.");
 
@@ -219,17 +220,76 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 #### Array
 
-See the [AddProductsArray](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/OutputBindingSamples/AddProductsArray) sample
+See the [AddProductsArray](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/AddProductsArray) sample
 
 #### Single Row
 
-See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/OutputBindingSamples/AddProduct) sample
+See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/AddProduct) sample
 
 ### Sample with multiple Bindings
 
-See the [GetAndAddProducts](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/InputBindingSamples/GetAndAddProducts) sample
+See the [GetAndAddProducts](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/GetAndAddProducts) sample
 
 
 ## Trigger Binding
 
-> Trigger binding support is only available for in-proc C# functions at present.
+See [Trigger Binding Overview](./BindingsOverview.md#trigger-binding) for general information about the Azure SQL Trigger binding.
+
+### function.json Properties for Trigger Bindings
+
+The following table explains the binding configuration properties that you set in the *function.json* file.
+
+|function.json property | Description|
+|---------|----------------------|
+|**type** | Required. Must be set to `sqlTrigger`.|
+|**direction** | Required. Must be set to `in`. |
+|**name** | Required. The name of the variable that represents the set of changes that triggered the function code. Must be set to `changes`. |
+| **tableName** | Required. The name of the table to be monitored for changes.  |
+| **connectionStringSetting** | Required. The name of an app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0). |
+
+### Setup for Trigger Bindings
+
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server).
+
+- Open your app in VS Code
+- Press 'F1' and search for 'Azure Functions: Create Function'
+- Choose HttpTrigger ->  (Provide a function name) -> anonymous
+- In the folder that is created with the provided function name, open the file (`run.csx`), replace its contents block with the below code. Note that the casing of the Object field names and the table column names must match.
+
+    ```csharp
+    #load "Product.csx"
+    #r "Newtonsoft.Json"
+    #r "Microsoft.Azure.WebJobs.Extensions.Sql"
+
+    using System.Net;
+    using Microsoft.AspNetCore.Mvc;
+    using Microsoft.Extensions.Primitives;
+    using Newtonsoft.Json;
+    using Microsoft.Azure.WebJobs.Extensions.Sql;
+
+    public static void Run(IReadOnlyList<SqlChange<Product>> changes, ILogger log)
+    {
+        log.LogInformation("SQL Changes: " + JsonConvert.SerializeObject(changes));
+    }
+    ```
+
+- We also need to add the SQL trigger binding for the Products table by defining `bindings.changes` property. Open the function.json file.
+- Paste the below in the file as an additional entry to the "bindings": [] array.
+
+    ```json
+    {
+      "name": "changes",
+      "type": "sqlTrigger",
+      "direction": "in",
+      "tableName": "dbo.Products",
+      "connectionStringSetting": "SqlConnectionString"
+    }
+    ```
+
+    *In the above, "dbo.Products" is the name of the table our trigger binding is triggered on. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [function.json Properties for Trigger Bindings](#functionjson-properties-for-trigger-bindings) section*
+
+- Open the local.settings.json file, and in the brackets for "Values," verify there is a 'SqlConnectionString.' If not, add it.
+- Hit 'F5' to run your code.
+- Update, insert, or delete rows in your SQL table while the function app is running and observe the function logs.
+- You should see the new log messages in the Visual Studio Code terminal containing the values of row-columns after the update operation.
+- Congratulations! You have successfully created your first SQL trigger binding!
