@@ -19,8 +19,11 @@
 
   <ItemGroup>
     <None Update="Database\**\*.sql">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="xunit.runner.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <Target Name="CopySamples" AfterTargets="Build">
