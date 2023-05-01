@@ -54,11 +54,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         public List<Process> FunctionHostList { get; } = new List<Process>();
 
-        public IntegrationTestFixture()
+        public IntegrationTestFixture(bool startFunctionHosts = true)
         {
             this.StartAzurite();
             this.SetupDatabase();
-            this.StartFunctionHosts();
+            if (startFunctionHosts)
+            {
+                this.StartFunctionHosts();
+            }
         }
 
         /// <summary>
