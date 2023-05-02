@@ -15,6 +15,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 using Xunit.Abstractions;
+using xRetry;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Ensures that the user function gets invoked for each of the insert, update and delete operation.
         /// </summary>
-        [Theory]
+        [RetryTheory]
         [SqlInlineData()]
         public async Task SingleOperationTriggerTest(SupportedLanguages lang)
         {
@@ -76,7 +77,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// Verifies that manually setting the batch size using the original config var correctly changes the
         /// number of changes processed at once.
         /// </summary>
-        [Theory]
+        [RetryTheory]
         [SqlInlineData()]
         public async Task BatchSizeOverrideTriggerTest(SupportedLanguages lang)
         {
@@ -119,7 +120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Verifies that manually setting the max batch size correctly changes the number of changes processed at once
         /// </summary>
-        [Theory]
+        [RetryTheory]
         [SqlInlineData()]
         public async Task MaxBatchSizeOverrideTriggerTest(SupportedLanguages lang)
         {
@@ -162,7 +163,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Verifies that manually setting the polling interval correctly changes the delay between processing each batch of changes
         /// </summary>
-        [Theory]
+        [RetryTheory]
         [SqlInlineData()]
         public async Task PollingIntervalOverrideTriggerTest(SupportedLanguages lang)
         {
@@ -204,7 +205,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// Verifies that if several changes have happened to the table row since last invocation, then a single net
         /// change for that row is passed to the user function.
         /// </summary>
-        [Theory]
+        [RetryTheory]
         [SqlInlineData()]
         public async Task MultiOperationTriggerTest(SupportedLanguages lang)
         {
@@ -285,7 +286,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Ensures correct functionality with multiple user functions tracking the same table.
         /// </summary>
-        [Theory]
+        [RetryTheory]
         [SqlInlineData()]
         public async Task MultiFunctionTriggerTest(SupportedLanguages lang)
         {
@@ -411,7 +412,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Ensures correct functionality with user functions running across multiple functions host processes.
         /// </summary>
-        [Theory]
+        [RetryTheory]
         [SqlInlineData()]
         public async Task MultiHostTriggerTest(SupportedLanguages lang)
         {
@@ -462,7 +463,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Tests the error message when the user table is not present in the database.
         /// </summary>
-        [Theory]
+        [RetryTheory]
         [SqlInlineData()]
         public void TableNotPresentTriggerTest(SupportedLanguages lang)
         {
@@ -476,7 +477,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Tests the error message when the user table does not contain primary key.
         /// </summary>
-        [Theory]
+        [RetryTheory]
         [SqlInlineData()]
         public void PrimaryKeyNotCreatedTriggerTest(SupportedLanguages lang)
         {
@@ -491,7 +492,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// Tests the error message when the user table contains one or more primary keys with names conflicting with
         /// column names in the leases table.
         /// </summary>
-        [Theory]
+        [RetryTheory]
         [SqlInlineData()]
         public void ReservedPrimaryKeyColumnNamesTriggerTest(SupportedLanguages lang)
         {
@@ -506,7 +507,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Tests the error message when the user table contains columns of unsupported SQL types.
         /// </summary>
-        [Theory]
+        [RetryTheory]
         [SqlInlineData()]
         public void UnsupportedColumnTypesTriggerTest(SupportedLanguages lang)
         {
@@ -521,7 +522,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Tests the error message when change tracking is not enabled on the user table.
         /// </summary>
-        [Theory]
+        [RetryTheory]
         [SqlInlineData()]
         public void ChangeTrackingNotEnabledTriggerTest(SupportedLanguages lang)
         {
@@ -557,7 +558,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Tests that when using an unsupported database the expected error is thrown
         /// </summary>
-        [Theory]
+        [RetryTheory]
         [SqlInlineData()]
         public void UnsupportedDatabaseThrows(SupportedLanguages lang)
         {
