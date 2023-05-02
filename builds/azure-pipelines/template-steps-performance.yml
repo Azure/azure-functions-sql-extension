@@ -16,11 +16,6 @@ steps:
   inputs:
     useGlobalJson: true
 
-# Use 18.15 directly due to https://github.com/Azure/azure-functions-core-tools/issues/3335
-- task: NodeTool@0
-  inputs:
-    versionSpec: '18.15'
-
 - script: npm install -g azure-functions-core-tools
   displayName: 'Install Azure Functions Core Tools'
 
