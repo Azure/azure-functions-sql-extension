@@ -20,6 +20,8 @@
       - [Array](#array)
       - [Single Row](#single-row)
   - [Trigger Binding](#trigger-binding)
+    - [function.json Properties for Trigger Bindings](#functionjson-properties-for-trigger-bindings)
+    - [Setup for Trigger Bindings](#setup-for-trigger-bindings)
   - [Node V4 Model](#node-v4-model)
 
 ## Setup Function Project
@@ -207,6 +209,8 @@ See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree
 ## Trigger Binding
 
 See [Trigger Binding Overview](./BindingsOverview.md#trigger-binding) for general information about the Azure SQL Trigger binding.
+
+### function.json Properties for Trigger Bindings
 
 The following table explains the binding configuration properties that you set in the *function.json* file.
 
