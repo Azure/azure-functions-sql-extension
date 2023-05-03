@@ -230,7 +230,6 @@ See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree
 
 See the [GetAndAddProducts](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/GetAndAddProducts) sample
 
-
 ## Trigger Binding
 
 See [Trigger Binding Overview](./BindingsOverview.md#trigger-binding) for general information about the Azure SQL Trigger binding.
