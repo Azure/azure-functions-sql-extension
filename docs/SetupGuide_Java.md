@@ -5,7 +5,7 @@
   - [Table of Contents](#table-of-contents)
   - [Setup Function Project](#setup-function-project)
   - [Input Binding](#input-binding)
-    - [SQLInput Attribute](#sqlinput-attribute)
+    - [SQLInput Annotation](#sqlinput-annotation)
     - [Setup for Input Bindings](#setup-for-input-bindings)
     - [Samples for Input Bindings](#samples-for-input-bindings)
       - [Query String](#query-string)
@@ -13,12 +13,14 @@
       - [Null Parameter Value](#null-parameter-value)
       - [Stored Procedure](#stored-procedure)
   - [Output Binding](#output-binding)
-    - [SQLOutput Attribute](#sqloutput-attribute)
+    - [SQLOutput Annotation](#sqloutput-annotation)
     - [Setup for Output Bindings](#setup-for-output-bindings)
     - [Samples for Output Bindings](#samples-for-output-bindings)
       - [Array](#array)
       - [Single Row](#single-row)
   - [Trigger Binding](#trigger-binding)
+    - [SqlTrigger Annotation](#sqltriggerbinding-annotation)
+    - [Setup for Trigger Binding](#setup-for-trigger-bindings)
   - [Known Issues](#known-issues)
 
 ## Setup Function Project
@@ -60,7 +62,7 @@ These instructions will guide you through creating your Function Project and add
 
 See [Input Binding Overview](./BindingsOverview.md#input-binding) for general information about the Azure SQL Input binding.
 
-### SQLInput Attribute
+### SQLInput Annotation
 
 In the Java functions runtime library, use the @SQLInput annotation (com.microsoft.azure.functions.sql.annotation.SQLInput) on parameters whose value comes from the query specified by commandText. This annotation supports the following elements:
 
@@ -101,7 +103,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
     }
     ```
 
-    *In the above, `select * from Employees` is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [SQLInput Attribute](#sqlinput-attribute) section*
+    *In the above, `select * from Employees` is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [SQLInput Annotation](#sqlinput-annotation) section*
 
 - Add `import com.microsoft.azure.functions.sql.annotation.SQLInput;`
 - Create a new file and call it `Employee.java`
@@ -321,7 +323,7 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
 
 See [Output Binding Overview](./BindingsOverview.md#output-binding) for general information about the Azure SQL Output binding.
 
-### SQLOutput Attribute
+### SQLOutput Annotation
 
 In the Java functions runtime library, use the @SQLOutput annotation (com.microsoft.azure.functions.sql.annotation.SQLOutput) on parameters whose values you want to upsert into the target table. This annotation supports the following elements:
 
@@ -365,7 +367,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
     }
     ```
 
-    *In the above, "dbo.Employees" is the name of the table our output binding is upserting into. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [SQLOutput Attribute](#sqloutput-attribute) section*
+    *In the above, "dbo.Employees" is the name of the table our output binding is upserting into. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [SQLOutput Annotation](#sqloutput-annotation) section*
 
 - Hit 'F5' to run your code. Click the link to upsert the output array values in your SQL table. Your upserted values should launch in the browser.
 - Congratulations! You have successfully created your first SQL output binding!
@@ -428,7 +430,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 See [Trigger Binding Overview](./BindingsOverview.md#trigger-binding) for general information about the Azure SQL Trigger binding.
 
-### SqlTrigger Attribute
+### SqlTrigger Annotation
 
 In the Java functions runtime library, use the @SQLTrigger annotation (com.microsoft.azure.functions.sql.annotation.SQLTrigger) on parameters whose values would come from Azure SQL. This annotation supports the following elements:
 
