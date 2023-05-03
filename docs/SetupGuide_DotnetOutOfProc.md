@@ -23,6 +23,8 @@
       - [Array](#array)
       - [Single Row](#single-row)
   - [Trigger Binding](#trigger-binding)
+    - [SqlTriggerAttribute](#sqltriggerattribute)
+    - [Setup for Trigger Bindings](#setup-for-trigger-bindings)
 
 ## Binding Model
 
@@ -387,7 +389,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
         {
             private static readonly Action<ILogger, string, Exception> _loggerMessage = LoggerMessage.Define<string>(LogLevel.Information, eventId: new EventId(0, "INFO"), formatString: "{Message}");
             
-            [FunctionName("EmployeeTrigger")]
+            [Function("EmployeeTrigger")]
             public static void Run(
                 [SqlTrigger("[dbo].[Employees]", "SqlConnectionString")]
                 IReadOnlyList<SqlChange<Employee>> changes, FunctionContext context)
