@@ -1,4 +1,4 @@
-#load "../../Common/product.csx"
+#load "../Common/product.csx"
 #r "Newtonsoft.Json"
 #r "Microsoft.Azure.WebJobs.Extensions.Sql"
 

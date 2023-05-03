@@ -20,6 +20,7 @@
       - [Array](#array)
       - [Single Row](#single-row)
   - [Trigger Binding](#trigger-binding)
+  - [Node V4 Model](#node-v4-model)
 
 ## Setup Function Project
 
@@ -206,3 +207,7 @@ See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree
 ## Trigger Binding
 
 > Trigger binding support is only available for in-proc C# functions at present.
+
+## Node V4 Model
+
+See the Node V4 Model samples [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js-v4/). More information about the Node V4 Model can be found [here](https://learn.microsoft.com/azure/azure-functions/functions-node-upgrade-v4?tabs=azure-cli-set-indexing-flag%2Cv4).
