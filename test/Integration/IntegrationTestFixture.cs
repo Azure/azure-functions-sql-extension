@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
-using Microsoft.Data.SqlClient;
 using Xunit;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 
@@ -22,17 +21,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// Host process for Azurite local storage emulator. This is required for non-HTTP trigger functions:
         /// https://docs.microsoft.com/azure/azure-functions/functions-develop-local
         /// </summary>
-        private Process AzuriteHost;
+        private readonly Process AzuriteHost;
 
         /// <summary>
         /// Connection string to the master database on the test server, mainly used for database setup and teardown.
         /// </summary>
-        private string MasterConnectionString;
+        private readonly string MasterConnectionString;
 
         /// <summary>
         /// Name of the database used.
         /// </summary>
-        private string DatabaseName;
+        private readonly string DatabaseName;
 
         /// <summary>
         /// List of all functions in the samples folder that will be started before the
@@ -54,101 +53,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         public List<Process> FunctionHostList { get; } = new List<Process>();
 
-        public IntegrationTestFixture(bool startFunctionHosts = true)
+        public IntegrationTestFixture()
         {
-            this.StartAzurite();
-            this.SetupDatabase();
-            if (startFunctionHosts)
-            {
-                this.StartFunctionHosts();
-            }
-        }
-
-        /// <summary>
-        /// This starts the Azurite storage emulator.
-        /// </summary>
-        protected void StartAzurite()
-        {
-            Console.WriteLine("Starting Azurite Host...");
-            this.AzuriteHost = new Process()
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "azurite",
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    UseShellExecute = true
-                }
-            };
-
-            this.AzuriteHost.Start();
-        }
-
-        /// <summary>
-        /// Sets up a test database for the tests to use.
-        /// </summary>
-        /// <remarks>
-        /// The server the database will be created on can be set by the environment variable "TEST_SERVER", otherwise localhost will be used by default.
-        /// By default, integrated authentication will be used to connect to the server, unless the env variable "SA_PASSWORD" is set.
-        /// In this case, connection will be made using SQL login with user "SA" and the provided password.
-        /// </remarks>
-        private void SetupDatabase()
-        {
-            SqlConnectionStringBuilder connectionStringBuilder;
-            string connectionString = Environment.GetEnvironmentVariable("TEST_CONNECTION_STRING");
-            if (connectionString != null)
-            {
-                this.MasterConnectionString = connectionString;
-                connectionStringBuilder = new SqlConnectionStringBuilder(connectionString);
-            }
-            else
-            {
-                // Get the test server name from environment variable "TEST_SERVER", default to localhost if not set
-                string testServer = Environment.GetEnvironmentVariable("TEST_SERVER");
-                if (string.IsNullOrEmpty(testServer))
-                {
-                    testServer = "localhost";
-                }
-
-                // First connect to master to create the database
-                connectionStringBuilder = new SqlConnectionStringBuilder()
-                {
-                    DataSource = testServer,
-                    InitialCatalog = "master",
-                    Pooling = false,
-                    Encrypt = SqlConnectionEncryptOption.Optional
-                };
-
-                // Either use integrated auth or SQL login depending if SA_PASSWORD is set
-                string userId = "SA";
-                string password = Environment.GetEnvironmentVariable("SA_PASSWORD");
-                if (string.IsNullOrEmpty(password))
-                {
-                    connectionStringBuilder.IntegratedSecurity = true;
-                }
-                else
-                {
-                    connectionStringBuilder.UserID = userId;
-                    connectionStringBuilder.Password = password;
-                }
-                this.MasterConnectionString = connectionStringBuilder.ToString();
-            }
-
-            // Create database
-            // Retry this in case the server isn't fully initialized yet
-            this.DatabaseName = TestUtils.GetUniqueDBName("SqlBindingsTest");
-            TestUtils.Retry(() =>
-            {
-                using var masterConnection = new SqlConnection(this.MasterConnectionString);
-                masterConnection.Open();
-                TestUtils.ExecuteNonQuery(masterConnection, $"CREATE DATABASE [{this.DatabaseName}]", Console.WriteLine);
-                // Enable change tracking for trigger tests
-                TestUtils.ExecuteNonQuery(masterConnection, $"ALTER DATABASE [{this.DatabaseName}] SET CHANGE_TRACKING = ON (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON);", Console.WriteLine);
-            }, Console.WriteLine);
-
-            connectionStringBuilder.InitialCatalog = this.DatabaseName;
-
-            // Set SqlConnectionString env var for the tests to use
-            Environment.SetEnvironmentVariable("SqlConnectionString", connectionStringBuilder.ToString());
+            this.AzuriteHost = TestUtils.StartAzurite();
+            TestUtils.SetupDatabase(out this.MasterConnectionString, out this.DatabaseName);
+            this.StartFunctionHosts();
         }
 
         /// <summary>
@@ -260,28 +169,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public void Dispose()
         {
             this.DisposeFunctionHosts();
-
-            try
-            {
-                this.AzuriteHost.Kill(true);
-                this.AzuriteHost.Dispose();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Failed to stop Azurite, Error: {e.Message}");
-            }
-
-            try
-            {
-                // Drop the test database
-                using var masterConnection = new SqlConnection(this.MasterConnectionString);
-                masterConnection.Open();
-                TestUtils.ExecuteNonQuery(masterConnection, $"DROP DATABASE IF EXISTS {this.DatabaseName}", Console.WriteLine);
-            }
-            catch (Exception e4)
-            {
-                Console.WriteLine($"Failed to drop {this.DatabaseName}, Error: {e4.Message}");
-            }
+            TestUtils.StopAzurite(this.AzuriteHost);
+            TestUtils.DropDatabase(this.MasterConnectionString, this.DatabaseName);
 
             GC.SuppressFinalize(this);
         }

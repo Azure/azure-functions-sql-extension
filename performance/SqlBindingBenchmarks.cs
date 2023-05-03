@@ -1,9 +1,10 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using System.Diagnostics;
 using System.Linq;
 using BenchmarkDotNet.Running;
-using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
 {
@@ -13,7 +14,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
         {
             bool runAll = args.Length == 0;
 
-            using var testFixture = new IntegrationTestFixture(false);
+            Process azuriteHost = TestUtils.StartAzurite();
+            TestUtils.SetupDatabase(out string masterConnectionString, out string connectionString);
 
             // **IMPORTANT** If changing these make sure to update template-steps-performance.yml as well
             if (runAll || args.Contains("input"))
@@ -48,6 +50,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
             {
                 BenchmarkRunner.Run<SqlTriggerBindingPerformance_ChangeRate>();
             }
+
+            TestUtils.StopAzurite(azuriteHost);
+            TestUtils.DropDatabase(masterConnectionString, connectionString);
         }
     }
 }
