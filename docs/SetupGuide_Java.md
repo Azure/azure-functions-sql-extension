@@ -426,7 +426,91 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 ## Trigger Binding
 
-> Trigger binding support is only available for in-proc C# functions at present.
+See [Trigger Binding Overview](./BindingsOverview.md#trigger-binding) for general information about the Azure SQL Trigger binding.
+
+### SqlTrigger Attribute
+
+In the Java functions runtime library, use the @SQLTrigger annotation (com.microsoft.azure.functions.sql.annotation.SQLTrigger) on parameters whose values would come from Azure SQL. This annotation supports the following elements:
+
+| Element |Description|
+|---------|---------|
+| **name** |  Required. The name of the parameter that the trigger binds to. |
+| **tableName** | Required. The name of the table monitored by the trigger. |
+| **connectionStringSetting** | Required. The name of an app setting that contains the connection string for the database containing the table monitored for changes. This isn't the actual connection string and must instead resolve to an environment variable. Optional keywords in the connection string value are [available to refine SQL bindings connectivity](https://aka.ms/sqlbindings#sql-connection-string). |
+
+When you're developing locally, add your application settings in the local.settings.json file in the Values collection.
+### Setup for Trigger Bindings
+
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server), and that you have the 'Employee.java' file from the [Setup for Input Bindings](#setup-for-input-bindings) section.
+
+- Create a new file `SqlChangeOperation.java` with the following content:
+    ```java
+    package com.function;
+
+    import com.google.gson.annotations.SerializedName;
+
+    public enum SqlChangeOperation {
+        @SerializedName("0")
+        Insert,
+        @SerializedName("1")
+        Update,
+        @SerializedName("2")
+        Delete;
+    }
+    ```
+
+- Create a new file `SqlChangeEmployee.java` with the following content:
+    ```java
+    package com.function;
+
+  public class SqlChangeEmployee {
+      public Employee employee;
+      public SqlChangeOperation operation;
+
+      public SqlChangeEmployee() {
+      }
+
+      public SqlChangeEmployee(Employee employee, SqlChangeOperation operation) {
+          this.employee = employee;
+          this.operation = operation;
+      }
+  }
+  ```
+    
+- Create a new file `EmployeeTrigger.java` with the following content:
+
+    ```java
+    package com.function;
+
+    import com.microsoft.azure.functions.ExecutionContext;
+    import com.microsoft.azure.functions.annotation.FunctionName;
+    import com.microsoft.azure.functions.sql.annotation.SQLTrigger;
+    import com.function.SqlChangeEmployee;
+    import com.google.gson.Gson;
+
+    import java.util.logging.Level;
+
+    public class EmployeeTrigger {
+        @FunctionName("EmployeeTrigger")
+        public void run(
+                @SQLTrigger(
+                    name = "changes",
+                    tableName = "[dbo].[Employees]",
+                    connectionStringSetting = "SqlConnectionString")
+                    SqlChangeEmployee[] changes,
+                ExecutionContext context) {
+
+            context.getLogger().log(Level.INFO, "SQL Changes: " + new Gson().toJson(changes));
+        }
+    }
+    ```
+
+- *Skip these steps if you have not completed the output binding tutorial.*
+  - Open your output binding file and modify some of the values. For example, change the value of Team column from 'Functions' to 'Azure SQL'.
+  - Hit 'F5' to run your code. Click the link of the HTTP trigger from the output binding tutorial.
+- Update, insert, or delete rows in your SQL table while the function app is running and observe the function logs.
+- You should see the new log messages in the Visual Studio Code terminal containing the values of row-columns after the update operation.
+- Congratulations! You have successfully created your first SQL trigger binding!
 
 ## Known Issues
 
