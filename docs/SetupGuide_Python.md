@@ -19,8 +19,10 @@
     - [Samples for Output Bindings](#samples-for-output-bindings)
       - [Array](#array)
       - [Single Row](#single-row)
-  - [Python V2 Model](#python-v2-model)
   - [Trigger Binding](#trigger-binding)
+    - [function.json Properties for Trigger Bindings](#functionjson-properties-for-trigger-bindings)
+    - [Setup for Trigger Bindings](#setup-for-trigger-bindings)
+  - [Python V2 Model](#python-v2-model)
 
 ## Setup Function Project
 
@@ -201,10 +203,61 @@ See the [AddProductsArray](https://github.com/Azure/azure-functions-sql-extensio
 
 See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-python/AddProduct) sample
 
+## Trigger Binding
+
+See [Trigger Binding Overview](./BindingsOverview.md#trigger-binding) for general information about the Azure SQL Trigger binding.
+
+### function.json Properties for Trigger Bindings
+
+The following table explains the binding configuration properties that you set in the *function.json* file.
+
+|function.json property | Description|
+|---------|----------------------|
+| **name** | Required. The name of the parameter that the trigger binds to. |
+| **type** | Required. Must be set to `sqlTrigger`.|
+| **direction** | Required. Must be set to `in`. |
+| **commandText** | Required. The name of the table being monitored by the trigger.  |
+| **connectionStringSetting** | Required. The name of an app setting that contains the connection string for the database containing the table monitored for changes. This isn't the actual connection string and must instead resolve to an environment variable. Optional keywords in the connection string value are [available to refine SQL bindings connectivity](https://aka.ms/sqlbindings#sql-connection-string). |
+
+### Setup for Trigger Bindings
+
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server).
+
+- Create a new folder `EmployeeTrigger`
+- Inside `EmployeeTrigger` create a new file `function.json`
+
+    ```json
+    {
+      "bindings": [
+        {
+          "name": "changes",
+          "type": "sqlTrigger",
+          "direction": "in",
+          "tableName": "dbo.Employees",
+          "connectionStringSetting": "SqlConnectionString"
+        }
+      ],
+      "disabled": false
+    }
+    ```
+    
+- Inside `EmployeeTrigger` create a new file `__init__.py`
+
+    ```python
+    import json
+    import logging
+
+    def main(changes):
+        logging.info("SQL Changes: %s", json.loads(changes))
+    ```
+    
+- *Skip these steps if you have not completed the output binding tutorial.*
+  - Open your output binding file and modify some of the values. For example, change the value of Team column from 'Functions' to 'Azure SQL'.
+  - Hit 'F5' to run your code. Click the link of the HTTP trigger from the output binding tutorial.
+- Update, insert, or delete rows in your SQL table while the function app is running and observe the function logs.
+- You should see the new log messages in the Visual Studio Code terminal containing the values of row-columns after the update operation.
+- Congratulations! You have successfully created your first SQL trigger binding!
+
 ## Python V2 Model
 
 See the Python V2 Model samples [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-python-v2/). More information about the Python V2 Model can be found [here](https://learn.microsoft.com/azure/azure-functions/functions-reference-python?tabs=asgi%2Capplication-level&pivots=python-mode-decorators).
-
-## Trigger Binding
-
-> Trigger binding support is only available for in-proc C# functions at present.
