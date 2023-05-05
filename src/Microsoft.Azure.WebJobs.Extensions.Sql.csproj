@@ -39,7 +39,7 @@
     <None Include="..\lib\Microsoft.SqlServer.TransactSql.ScriptDom.dll" Pack="true" PackagePath="lib/$(TargetFramework)" />
     <None Include="..\README.md" Pack="true" PackagePath="" />
   </ItemGroup>
-  <Target Name="CopyNupkg" AfterTargets="Pack">
+  <Target Name="CopyNupkg" BeforeTargets="Build">
     <ItemGroup>
       <_Packages Include=".\bin\$(Configuration)\*.nupkg" />
     </ItemGroup>
