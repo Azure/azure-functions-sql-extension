@@ -40,6 +40,7 @@
     <None Include="..\README.md" Pack="true" PackagePath="" />
   </ItemGroup>
   <Target Name="CopyNupkg" AfterTargets="Build">
+    <Exec Command="dotnet pack &quot;$(MSBuildProjectDirectory)\$(PackageId).csproj&quot; --no-build --include-symbols"/>
     <ItemGroup>
       <_Packages Include=".\bin\$(Configuration)\*.nupkg" />
     </ItemGroup>
