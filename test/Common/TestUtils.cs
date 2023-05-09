@@ -12,6 +12,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
+using Microsoft.Data.SqlClient;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 {
@@ -21,6 +22,125 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
     public static class TestUtils
     {
         internal static int ThreadId;
+
+        /// <summary>
+        /// This returns a running Azurite storage emulator.
+        /// </summary>
+        public static Process StartAzurite()
+        {
+            Console.WriteLine("Starting Azurite Host...");
+            var azuriteHost = new Process()
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "azurite",
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    UseShellExecute = true
+                }
+            };
+
+            azuriteHost.Start();
+            return azuriteHost;
+        }
+
+        public static void StopAzurite(Process azuriteHost)
+        {
+            Console.WriteLine("Stopping Azurite Host...");
+            try
+            {
+                azuriteHost.Kill(true);
+                azuriteHost.Dispose();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Failed to stop Azurite, Error: {e.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Sets up a test database for the tests to use.
+        /// </summary>
+        /// <remarks>
+        /// The server the database will be created on can be set by the environment variable "TEST_SERVER", otherwise localhost will be used by default.
+        /// By default, integrated authentication will be used to connect to the server, unless the env variable "SA_PASSWORD" is set.
+        /// In this case, connection will be made using SQL login with user "SA" and the provided password.
+        /// </remarks>
+        public static void SetupDatabase(out string MasterConnectionString, out string DatabaseName)
+        {
+            SqlConnectionStringBuilder connectionStringBuilder;
+            string connectionString = Environment.GetEnvironmentVariable("TEST_CONNECTION_STRING");
+            string masterConnectionString;
+            if (connectionString != null)
+            {
+                masterConnectionString = connectionString;
+                connectionStringBuilder = new SqlConnectionStringBuilder(connectionString);
+            }
+            else
+            {
+                // Get the test server name from environment variable "TEST_SERVER", default to localhost if not set
+                string testServer = Environment.GetEnvironmentVariable("TEST_SERVER");
+                if (string.IsNullOrEmpty(testServer))
+                {
+                    testServer = "localhost";
+                }
+
+                // First connect to master to create the database
+                connectionStringBuilder = new SqlConnectionStringBuilder()
+                {
+                    DataSource = testServer,
+                    InitialCatalog = "master",
+                    Pooling = false,
+                    Encrypt = SqlConnectionEncryptOption.Optional
+                };
+
+                // Either use integrated auth or SQL login depending if SA_PASSWORD is set
+                string userId = "SA";
+                string password = Environment.GetEnvironmentVariable("SA_PASSWORD");
+                if (string.IsNullOrEmpty(password))
+                {
+                    connectionStringBuilder.IntegratedSecurity = true;
+                }
+                else
+                {
+                    connectionStringBuilder.UserID = userId;
+                    connectionStringBuilder.Password = password;
+                }
+                masterConnectionString = connectionStringBuilder.ToString();
+            }
+
+            // Create database
+            // Retry this in case the server isn't fully initialized yet
+            string databaseName = GetUniqueDBName("SqlBindingsTest");
+            Retry(() =>
+            {
+                using var masterConnection = new SqlConnection(masterConnectionString);
+                masterConnection.Open();
+                ExecuteNonQuery(masterConnection, $"CREATE DATABASE [{databaseName}]", Console.WriteLine);
+                // Enable change tracking for trigger tests
+                ExecuteNonQuery(masterConnection, $"ALTER DATABASE [{databaseName}] SET CHANGE_TRACKING = ON (CHANGE_RETENTION = 2 DAYS, AUTO_CLEANUP = ON);", Console.WriteLine);
+            }, Console.WriteLine);
+
+            connectionStringBuilder.InitialCatalog = databaseName;
+
+            // Set SqlConnectionString env var for the tests to use
+            Environment.SetEnvironmentVariable("SqlConnectionString", connectionStringBuilder.ToString());
+            MasterConnectionString = masterConnectionString;
+            DatabaseName = databaseName;
+        }
+
+        public static void DropDatabase(string masterConnectionString, string databaseName)
+        {
+            try
+            {
+                using var masterConnection = new SqlConnection(masterConnectionString);
+                masterConnection.Open();
+                ExecuteNonQuery(masterConnection, $"DROP DATABASE IF EXISTS {databaseName}", Console.WriteLine);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Failed to drop {databaseName}, Error: {e.Message}");
+            }
+        }
 
         /// <summary>
         /// Returns a mangled name that unique based on Prefix + Machine + Process
