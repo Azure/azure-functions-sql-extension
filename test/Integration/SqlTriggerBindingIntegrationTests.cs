@@ -578,13 +578,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Tests that when a user function throws an exception we'll retry executing that function once the lease timeout expires
         /// </summary>
-        [Theory]
+        [RetryTheory]
         [SqlInlineData()]
         [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.Python, SupportedLanguages.PowerShell, SupportedLanguages.Csx)] // Keeping static state for threwException across calls is only valid for C# and Java.
         public async Task FunctionExceptionsCauseRetry(SupportedLanguages lang)
         {
             this.SetChangeTrackingForTable("Products");
-            this.StartFunctionHost(nameof(TriggerWithException), lang, true);
+            this.StartFunctionHost(nameof(TriggerWithException), lang, useTestFolder: true);
             TaskCompletionSource taskCompletionSource = new();
             void TestExceptionMessageSeen(object sender, DataReceivedEventArgs e)
             {
@@ -607,7 +607,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 (SqlTableChangeMonitor<object>.LeaseIntervalInSeconds * 1000) + batchProcessingTimeout);
 
             // First wait for the exception message to show up
-            await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromMilliseconds(this.GetBatchProcessingTimeout(1, 30)), "Timed out waiting for exception message");
+            await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromMilliseconds(batchProcessingTimeout), "Timed out waiting for exception message");
             // Now wait for the retry to occur and successfully pass
             await changesTask;
 
