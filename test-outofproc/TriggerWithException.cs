@@ -32,6 +32,7 @@ namespace DotnetIsolatedTests
                 throw new InvalidOperationException(ExceptionMessage);
             }
             logger.LogInformation("SQL Changes: " + Utils.JsonSerializeObject(changes));
+
         }
     }
 }
