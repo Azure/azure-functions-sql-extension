@@ -9,7 +9,6 @@
     <!-- Default Version for dev -->
     <Version>99.99.99</Version>
     <IsPackable>true</IsPackable>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Microsoft.Azure.WebJobs.Extensions.Sql</PackageId>
     <PackageTags>Microsoft Azure WebJobs AzureFunctions SQL AzureSQL</PackageTags>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
@@ -24,22 +23,31 @@
     <PackageReference Include="System.Runtime.Caching" />
     <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="Microsoft.AspNetCore.Http" />
-    <InternalsVisibleTo Include="Microsoft.Azure.WebJobs.Extensions.Sql.Tests" Key="0024000004800000940000000602000000240000525341310004000001000100272736ad6e5f9586bac2d531eabc3acc666c2f8ec879fa94f8f7b0327d2ff2ed523448f83c3d5c5dd2dfc7bc99c5286b2c125117bf5cbe242b9d41750732b2bdffe649c6efb8e5526d526fdd130095ecdb7bf210809c6cdad8824faa9ac0310ac3cba2aa0523567b2dfa7fe250b30facbd62d4ec99b94ac47c7d3b28f1f6e4c8" />
-    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" Key="0024000004800000940000000602000000240000525341310004000001000100c547cac37abd99c8db225ef2f6c8a3602f3b3606cc9891605d02baa56104f4cfc0734aa39b93bf7852f7d9266654753cc297e7d2edfe0bac1cdcf9f717241550e0a7b191195b7667bb4f64bcb8e2121380fd1d9d46ad2d92d2d15605093924cceaf74c4861eff62abf69b9291ed0a340e113be11e6a7d3113e92484cf7045cc7" />
-    <InternalsVisibleTo Include="Microsoft.Azure.WebJobs.Extensions.Sql.Performance" Key="0024000004800000940000000602000000240000525341310004000001000100272736ad6e5f9586bac2d531eabc3acc666c2f8ec879fa94f8f7b0327d2ff2ed523448f83c3d5c5dd2dfc7bc99c5286b2c125117bf5cbe242b9d41750732b2bdffe649c6efb8e5526d526fdd130095ecdb7bf210809c6cdad8824faa9ac0310ac3cba2aa0523567b2dfa7fe250b30facbd62d4ec99b94ac47c7d3b28f1f6e4c8" />
+    <InternalsVisibleTo Include="Microsoft.Azure.WebJobs.Extensions.Sql.Tests"
+      Key="0024000004800000940000000602000000240000525341310004000001000100272736ad6e5f9586bac2d531eabc3acc666c2f8ec879fa94f8f7b0327d2ff2ed523448f83c3d5c5dd2dfc7bc99c5286b2c125117bf5cbe242b9d41750732b2bdffe649c6efb8e5526d526fdd130095ecdb7bf210809c6cdad8824faa9ac0310ac3cba2aa0523567b2dfa7fe250b30facbd62d4ec99b94ac47c7d3b28f1f6e4c8" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2"
+      Key="0024000004800000940000000602000000240000525341310004000001000100c547cac37abd99c8db225ef2f6c8a3602f3b3606cc9891605d02baa56104f4cfc0734aa39b93bf7852f7d9266654753cc297e7d2edfe0bac1cdcf9f717241550e0a7b191195b7667bb4f64bcb8e2121380fd1d9d46ad2d92d2d15605093924cceaf74c4861eff62abf69b9291ed0a340e113be11e6a7d3113e92484cf7045cc7" />
+    <InternalsVisibleTo Include="Microsoft.Azure.WebJobs.Extensions.Sql.Performance"
+      Key="0024000004800000940000000602000000240000525341310004000001000100272736ad6e5f9586bac2d531eabc3acc666c2f8ec879fa94f8f7b0327d2ff2ed523448f83c3d5c5dd2dfc7bc99c5286b2c125117bf5cbe242b9d41750732b2bdffe649c6efb8e5526d526fdd130095ecdb7bf210809c6cdad8824faa9ac0310ac3cba2aa0523567b2dfa7fe250b30facbd62d4ec99b94ac47c7d3b28f1f6e4c8" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- ScriptDom is currently only available officially through the DacFx NuGet package. Rather than referencing DacFx
+    <!-- ScriptDom is currently only available officially through the DacFx NuGet package. Rather
+    than referencing DacFx
     for one ScriptDom API, we are getting the ScriptDom dll from the latest DacFx NuGet package. -->
     <Reference Include="Microsoft.SqlServer.TransactSql.ScriptDom">
       <HintPath>..\lib\Microsoft.SqlServer.TransactSql.ScriptDom.dll</HintPath>
     </Reference>
     <None Include="..\Images\pkgicon.png" Pack="true" PackagePath="" />
-    <None Include="..\lib\Microsoft.SqlServer.TransactSql.ScriptDom.dll" Pack="true" PackagePath="lib/$(TargetFramework)" />
+    <None Include="..\lib\Microsoft.SqlServer.TransactSql.ScriptDom.dll" Pack="true"
+      PackagePath="lib/$(TargetFramework)" />
     <None Include="..\README.md" Pack="true" PackagePath="" />
   </ItemGroup>
-  <Target Name="CopyNupkg" AfterTargets="Pack">
+  <Target Name="PackAndCopyNupkg" AfterTargets="Build">
+    <!-- Removed the GeneratePackageOnBuild and adding this explicit Pack command to run post build
+    and also adding the copy package to local-packages to be available for the worker extension project. -->
+    <Exec
+      Command="dotnet pack &quot;$(MSBuildProjectDirectory)\$(PackageId).csproj&quot; --no-build --include-symbols" />
     <ItemGroup>
       <_Packages Include=".\bin\$(Configuration)\*.nupkg" />
     </ItemGroup>
