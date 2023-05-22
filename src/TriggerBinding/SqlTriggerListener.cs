@@ -323,6 +323,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         LastSyncVersion bigint NOT NULL,
                         PRIMARY KEY (UserFunctionID, UserTableID)
                     );
+                ELSE IF NOT EXISTS(SELECT 1 FROM sys.columns WHERE Name = N'LastAccessTime'
+                    AND Object_ID = Object_ID(N'{GlobalStateTableName}'))
+                        ALTER TABLE {GlobalStateTableName} ADD LastAccessTime Datetime NULL;
             ";
 
             using (var createGlobalStateTableCommand = new SqlCommand(createGlobalStateTableQuery, connection, transaction))

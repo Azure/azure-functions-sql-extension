@@ -955,7 +955,7 @@ WHERE l.{LeasesTableChangeVersionColumnName} <= cte.{SysChangeVersionColumnName}
                 IF @unprocessed_changes = 0 AND @current_last_sync_version < {newLastSyncVersion}
                 BEGIN
                     UPDATE {GlobalStateTableName}
-                    SET LastSyncVersion = {newLastSyncVersion}
+                    SET LastSyncVersion = {newLastSyncVersion}, LastAccessTime = GETDATE()
                     WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
 
                     DELETE FROM {this._leasesTableName} WHERE {LeasesTableChangeVersionColumnName} <= {newLastSyncVersion};
