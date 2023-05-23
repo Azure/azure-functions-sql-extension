@@ -28,7 +28,7 @@ variables:
   versionPatch: $[counter(variables['versionMajorMinor'], 0)] # This will reset when we bump minor version
   binariesVersion: '$(versionMajor).$(versionMinor).$(versionPatch)'
   nugetVersion: $[replace(replace('True', eq('${{ parameters.ReleaseType }}', 'full'), '$(binariesVersion)'),'True','$(binariesVersion)-preview')] # This will set the preview tag to the version based on the ReleaseType parameter.
-  supportedVersion: '$(versionMajor).*-*'
+  supportedVersion: $[replace(replace('True', eq('${{ parameters.ReleaseType }}', 'full'), '$(versionMajor).*'),'True','$(versionMajor).*-*')] # This will set the expression to pull the preview vs full version based on the ReleaseType parameter.
   LGTM.UploadSnapshot: true
   Semmle.SkipAnalysis: true
 
@@ -58,7 +58,7 @@ stages:
     workspace:
       clean: all
 
-    timeoutInMinutes: '90'
+    timeoutInMinutes: '120'
 
     steps:
       - template: 'template-steps-build-test.yml'
@@ -78,7 +78,7 @@ stages:
     workspace:
       clean: all
 
-    timeoutInMinutes: '90'
+    timeoutInMinutes: '120'
 
     steps:
       - template: 'template-steps-build-test.yml'

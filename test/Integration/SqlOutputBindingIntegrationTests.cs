@@ -144,7 +144,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.StartFunctionHost(nameof(QueueTriggerProducts), lang);
 
             string uri = $"http://localhost:{this.Port}/admin/functions/QueueTriggerProducts";
-            string json = "{ 'input': 'Test Data' }";
+            string json = /*lang=json*/ "{ 'input': 'Test Data' }";
 
             this.SendPostRequest(uri, json).Wait();
 
@@ -446,7 +446,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         /// <summary>
         /// Tests that subsequent upserts work correctly when the object properties are different from the first upsert.
-        ///
+        /// </summary>
         [Theory]
         [SqlInlineData()]
         public void AddProductWithDifferentPropertiesTest(SupportedLanguages lang)
@@ -481,7 +481,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         // Only the JavaScript function passes an empty JSON to the SQL extension.
         // C#, Java, and Python throw an error while creating the Product object in the function and in PowerShell,
         // the JSON would be passed as {"ProductId": null, "Name": null, "Cost": null}.
-        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.PowerShell, SupportedLanguages.Python)]
+        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.Java, SupportedLanguages.OutOfProc, SupportedLanguages.PowerShell, SupportedLanguages.Python, SupportedLanguages.Csx)]
         public async Task NoPropertiesThrows(SupportedLanguages lang)
         {
             var foundExpectedMessageSource = new TaskCompletionSource<bool>();

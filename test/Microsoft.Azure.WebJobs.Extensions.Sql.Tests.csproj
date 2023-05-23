@@ -24,6 +24,11 @@
 
   <Target Name="CopySamples" AfterTargets="Build">
     <ItemGroup>
+      <_DatabaseItems Include="..\samples\Database\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_DatabaseItems)" DestinationFolder="$(OutDir)\Database\%(RecursiveDir)" />
+    <Message Text="Copied SQL Scripts to $(OutDir)\Database" Importance="high" />
+    <ItemGroup>
       <_CSharpCopyItems Include="..\samples\samples-csharp\bin\$(Configuration)\$(TargetFramework)\**\*.*" />
     </ItemGroup>
     <Copy SourceFiles="@(_CSharpCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\CSharp\%(RecursiveDir)" />
@@ -61,5 +66,11 @@
     </ItemGroup>
     <Copy SourceFiles="@(_PythonCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\Python\%(RecursiveDir)" />
     <Message Text="Copied Python Samples output to $(OutDir)\SqlExtensionSamples\Python" Importance="high" />
+    <ItemGroup>
+      <_CsxCopyItems Include="..\samples\samples-csx\**\*.*" />
+      <_CsxCopyItems Include="Integration\test-csx\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_CsxCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\Csx\%(RecursiveDir)" />
+    <Message Text="Copied CSX Samples to $(OutDir)\SqlExtensionSamples\Csx" Importance="high" />
   </Target>
 </Project>

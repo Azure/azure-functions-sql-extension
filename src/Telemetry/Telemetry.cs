@@ -11,6 +11,7 @@ using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Extensions.Configuration;
 using System.Globalization;
 using Microsoft.Data.SqlClient;
+using Microsoft.ApplicationInsights.Extensibility.Implementation;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
 {
@@ -37,10 +38,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry
         public const string TelemetryOptoutSetting = "AzureFunctionsSqlBindingsTelemetryOptOut";
 
         public const string WelcomeMessage = @"Azure SQL binding for Azure Functions
----------------------
-Telemetry
----------
-This extension collect usage data in order to help us improve your experience. The data is anonymous and doesn't include any personal information. You can opt-out of telemetry by setting the " + TelemetryOptoutEnvVar + " environment variable or the " + TelemetryOptoutSetting + @" + app setting to '1', 'true' or 'yes';
+-----------------------------------------------
+Azure Functions SQL Binding Extension Telemetry
+-----------------------------------------------
+This extension collects usage data in order to help us improve your experience. The data is anonymous and doesn't include any personal information. You can opt-out of telemetry by setting the " + TelemetryOptoutEnvVar + " environment variable or the " + TelemetryOptoutSetting + @" app setting to '1', 'true' or 'yes'.
+
+To learn more about our Privacy Statement visit this link: https://go.microsoft.com/fwlink/?LinkID=824704
 ";
 
         public void Initialize(IConfiguration config, ILogger logger)
@@ -70,10 +73,16 @@ This extension collect usage data in order to help us improve your experience. T
                 {
                     ConnectionString = $"InstrumentationKey={InstrumentationKey};"
                 };
-                telemetryConfig.TelemetryInitializers.Add(new TelemetryInitializer());
                 this._client = new TelemetryClient(telemetryConfig);
                 this._client.Context.Session.Id = CurrentSessionId;
                 this._client.Context.Device.OperatingSystem = RuntimeInformation.OSDescription;
+                // Filter out sensitive information that we don't need. Empty values are ignored so just set some default string for each.
+                //   RoleInstance - It can contain information such as the machine and domain name of the client
+                //   NodeName - It can contain information such as the machine and domain name of the client
+                //   Ip - We don't need any location info
+                this._client.Context.Cloud.RoleInstance = "-";
+                this._client.Context.GetInternalContext().NodeName = "-";
+                this._client.Context.Location.Ip = "0.0.0.0";
 
                 this._commonProperties = new TelemetryCommonProperties(productVersion, this._client, config).GetTelemetryCommonProperties();
                 this._commonMeasurements = new Dictionary<string, double>();

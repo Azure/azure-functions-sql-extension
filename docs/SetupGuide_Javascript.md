@@ -1,8 +1,8 @@
-# Azure SQL bindings for Azure Functions - Javascript
+# Azure SQL bindings for Azure Functions - JavaScript
 
 ## Table of Contents
 
-- [Azure SQL bindings for Azure Functions - Javascript](#azure-sql-bindings-for-azure-functions---javascript)
+- [Azure SQL bindings for Azure Functions - JavaScript](#azure-sql-bindings-for-azure-functions---javascript)
   - [Table of Contents](#table-of-contents)
   - [Setup Function Project](#setup-function-project)
   - [Input Binding](#input-binding)
@@ -19,6 +19,7 @@
     - [Samples for Output Bindings](#samples-for-output-bindings)
       - [Array](#array)
       - [Single Row](#single-row)
+  - [Node V4 Model](#node-v4-model)
 
 ## Setup Function Project
 
@@ -26,7 +27,7 @@ These instructions will guide you through creating your Function Project and add
 
 1. Install [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local)
 
-2. Create a Function Project for Javascript:
+2. Create a Function Project for JavaScript:
 
     ```bash
     mkdir MyApp
@@ -104,6 +105,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Congratulations! You have successfully created your first SQL input binding!
 
 ### Samples for Input Bindings
+The database scripts used for the following samples can be found [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/Database).
 
 #### Query String
 
@@ -200,3 +202,7 @@ See the [AddProductsArray](https://github.com/Azure/azure-functions-sql-extensio
 #### Single Row
 
 See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js/AddProduct) sample
+
+## Node V4 Model
+
+See the Node V4 Model samples [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-js-v4/). More information about the Node V4 Model can be found [here](https://learn.microsoft.com/azure/azure-functions/functions-node-upgrade-v4?tabs=azure-cli-set-indexing-flag%2Cv4).

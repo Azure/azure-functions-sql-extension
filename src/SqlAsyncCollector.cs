@@ -77,16 +77,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private ServerProperties _serverProperties;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SqlAsyncCollector<typeparamref name="T"/>"/> class.
+        /// Initializes a new instance of the <see cref="SqlAsyncCollector{T}"/> class.
         /// </summary>
-        /// <param name="connection">
-        /// Contains the SQL connection that will be used by the collector when it inserts SQL rows
-        /// into the user's table
+        /// <param name="configuration">
+        /// Contains the function's configuration properties
         /// </param>
         /// <param name="attribute">
         /// Contains as one of its attributes the SQL table that rows will be inserted into
         /// </param>
-        /// <param name="loggerFactory">
+        /// <param name="logger">
         /// Logger Factory for creating an ILogger
         /// </param>
         /// <exception cref="ArgumentNullException">
@@ -100,9 +99,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             TelemetryInstance.TrackCreate(CreateType.SqlAsyncCollector);
             using (SqlConnection connection = BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
-                this._logger.LogDebugWithThreadId("BEGIN OpenSqlAsyncCollectorVerifyDatabaseSupportedConnection");
                 connection.OpenAsyncWithSqlErrorHandling(CancellationToken.None).Wait();
-                this._logger.LogDebugWithThreadId("END OpenSqlAsyncCollectorVerifyDatabaseSupportedConnection");
                 VerifyDatabaseSupported(connection, logger, CancellationToken.None).Wait();
             }
         }
@@ -173,13 +170,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="configuration"> Used to build up the connection </param>
         private async Task UpsertRowsAsync(IList<T> rows, SqlAttribute attribute, IConfiguration configuration)
         {
-            this._logger.LogDebugWithThreadId("BEGIN UpsertRowsAsync");
             var upsertRowsAsyncSw = Stopwatch.StartNew();
             using (SqlConnection connection = BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
-                this._logger.LogDebugWithThreadId("BEGIN OpenUpsertRowsAsyncConnection");
                 await connection.OpenAsync();
-                this._logger.LogDebugWithThreadId("END OpenUpsertRowsAsyncConnection");
                 this._serverProperties = await GetServerTelemetryProperties(connection, this._logger, CancellationToken.None);
                 Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps(this._serverProperties);
 
@@ -197,7 +191,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     if (int.TryParse(timeoutEnvVar, NumberStyles.Integer, CultureInfo.InvariantCulture, out timeout))
                     {
-                        this._logger.LogDebugWithThreadId($"Overriding default table info cache timeout with new value {timeout}");
+                        this._logger.LogDebug($"Overriding default table info cache timeout with new value {timeout}");
                     }
                     else
                     {
@@ -254,7 +248,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 string mergeOrInsertQuery = tableInfo.QueryType == QueryType.Insert ? TableInformation.GetInsertQuery(table, bracketedColumnNamesFromItem) :
                     TableInformation.GetMergeQuery(tableInfo.PrimaryKeys, table, bracketedColumnNamesFromItem);
 
-                this._logger.LogDebugWithThreadId("BEGIN UpsertRowsTransaction");
                 var transactionSw = Stopwatch.StartNew();
                 int batchSize = 1000;
                 SqlTransaction transaction = connection.BeginTransaction();
@@ -271,9 +264,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         batchCount++;
                         GenerateDataQueryForMerge(tableInfo, batch, out string newDataQuery, out string rowData);
                         command.CommandText = $"{newDataQuery} {mergeOrInsertQuery};";
-                        this._logger.LogDebugWithThreadId($"UpsertRowsTransactionBatch - Query={command.CommandText}");
                         par.Value = rowData;
-                        await command.ExecuteNonQueryAsync();
+                        await command.ExecuteNonQueryAsyncWithLogging(this._logger, CancellationToken.None);
                     }
                     transaction.Commit();
                     transactionSw.Stop();
@@ -287,8 +279,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     { TelemetryMeasureName.NumRows, rows.Count }
                 };
                     TelemetryInstance.TrackEvent(TelemetryEventName.Upsert, props, measures);
-                    this._logger.LogDebugWithThreadId($"END UpsertRowsTransaction Duration={transactionSw.ElapsedMilliseconds}ms Upserted {rows.Count} row(s) into database: {connection.Database} and table: {fullTableName}.");
-                    this._logger.LogDebugWithThreadId($"END UpsertRowsAsync Duration={upsertRowsAsyncSw.ElapsedMilliseconds}ms");
                 }
                 catch (Exception ex)
                 {
@@ -350,6 +340,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         /// <param name="table">Information about the table we will be upserting into</param>
         /// <param name="rows">Rows to be upserted</param>
+        /// <param name="newDataQuery">Generated T-SQL data query</param>
+        /// <param name="rowData">Serialized rows to be upserted represented as JSON string</param>
         /// <returns>T-SQL containing data for merge</returns>
         private static void GenerateDataQueryForMerge(TableInformation table, IEnumerable<T> rows, out string newDataQuery, out string rowData)
         {
@@ -486,7 +478,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             /// <summary>
-            /// Generates SQL query that can be used to retrieve column names & types of a table
+            /// Generates SQL query that can be used to retrieve column names and types of a table
             /// </summary>
             public static string GetColumnDefinitionsQuery(SqlObject table)
             {
@@ -556,11 +548,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <param name="fullName">Full name of table, including schema (if exists).</param>
             /// <param name="logger">ILogger used to log any errors or warnings.</param>
             /// <param name="objectColumnNames">Column names from the object</param>
+            /// <param name="serverProperties">EngineEdition and Edition of the target Sql Server.</param>
             /// <returns>TableInformation object containing primary keys, column types, etc.</returns>
             public static async Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName, ILogger logger, IEnumerable<string> objectColumnNames, ServerProperties serverProperties)
             {
                 Dictionary<TelemetryPropertyName, string> sqlConnProps = sqlConnection.AsConnectionProps(serverProperties);
-                logger.LogDebugWithThreadId("BEGIN RetrieveTableInformationAsync");
                 var table = new SqlObject(fullName);
 
                 var tableInfoSw = Stopwatch.StartNew();
@@ -571,9 +563,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 try
                 {
                     string getColumnDefinitionsQuery = GetColumnDefinitionsQuery(table);
-                    logger.LogDebugWithThreadId($"BEGIN GetColumnDefinitions Query=\"{getColumnDefinitionsQuery}\"");
                     var cmdColDef = new SqlCommand(getColumnDefinitionsQuery, sqlConnection);
-                    using (SqlDataReader rdr = await cmdColDef.ExecuteReaderAsync())
+                    using (SqlDataReader rdr = await cmdColDef.ExecuteReaderAsyncWithLogging(logger, CancellationToken.None))
                     {
                         while (await rdr.ReadAsync())
                         {
@@ -582,7 +573,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         }
                         columnDefinitionsSw.Stop();
                         TelemetryInstance.TrackDuration(TelemetryEventName.GetColumnDefinitions, columnDefinitionsSw.ElapsedMilliseconds, sqlConnProps);
-                        logger.LogDebugWithThreadId($"END GetColumnDefinitions Duration={columnDefinitionsSw.ElapsedMilliseconds}ms");
                     }
 
                 }
@@ -608,9 +598,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 try
                 {
                     string getPrimaryKeysQuery = GetPrimaryKeysQuery(table);
-                    logger.LogDebugWithThreadId($"BEGIN GetPrimaryKeys Query=\"{getPrimaryKeysQuery}\"");
                     var cmd = new SqlCommand(getPrimaryKeysQuery, sqlConnection);
-                    using (SqlDataReader rdr = await cmd.ExecuteReaderAsync())
+                    using (SqlDataReader rdr = await cmd.ExecuteReaderAsyncWithLogging(logger, CancellationToken.None))
                     {
                         while (await rdr.ReadAsync())
                         {
@@ -619,7 +608,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         }
                         primaryKeysSw.Stop();
                         TelemetryInstance.TrackDuration(TelemetryEventName.GetPrimaryKeys, primaryKeysSw.ElapsedMilliseconds, sqlConnProps);
-                        logger.LogDebugWithThreadId($"END GetPrimaryKeys Duration={primaryKeysSw.ElapsedMilliseconds}ms");
                     }
                 }
                 catch (Exception ex)
@@ -668,7 +656,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 sqlConnProps.Add(TelemetryPropertyName.QueryType, queryType.ToString());
                 sqlConnProps.Add(TelemetryPropertyName.HasIdentityColumn, hasIdentityColumnPrimaryKeys.ToString());
                 TelemetryInstance.TrackDuration(TelemetryEventName.GetTableInfo, tableInfoSw.ElapsedMilliseconds, sqlConnProps, durations);
-                logger.LogDebugWithThreadId($"END RetrieveTableInformationAsync Duration={tableInfoSw.ElapsedMilliseconds}ms DB and Table: {sqlConnection.Database}.{fullName}. Primary keys: [{string.Join(",", primaryKeys.Select(pk => pk.Name))}]. SQL Column and Definitions:  [{string.Join(",", columnDefinitionsFromSQL)}] Object columns: [{string.Join(",", objectColumnNames)}]");
+                logger.LogDebug($"RetrieveTableInformationAsync DB and Table: {sqlConnection.Database}.{fullName}. Primary keys: [{string.Join(",", primaryKeys.Select(pk => pk.Name))}].\nSQL Column and Definitions:  [{string.Join(",", columnDefinitionsFromSQL)}]\nObject columns: [{string.Join(",", objectColumnNames)}]");
                 return new TableInformation(primaryKeys, primaryKeyProperties, columnDefinitionsFromSQL, queryType, hasIdentityColumnPrimaryKeys);
             }
         }

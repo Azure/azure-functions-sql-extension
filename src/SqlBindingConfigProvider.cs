@@ -19,7 +19,7 @@ using Newtonsoft.Json;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     /// <summary>
-    /// Exposes SQL input, output, and trigger bindings
+    /// Exposes SQL input and output bindings
     /// </summary>
     [Extension("sql")]
     internal class SqlBindingConfigProvider : IExtensionConfigProvider
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly ILoggerFactory _loggerFactory;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SqlBindingConfigProvider/>"/> class.
+        /// Initializes a new instance of the <see cref="SqlBindingConfigProvider"/> class.
         /// </summary>
         /// <exception cref="ArgumentNullException">
         /// Thrown if either parameter is null
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             LogDependentAssemblyVersions(logger);
 #pragma warning disable CS0618 // Fine to use this for our stuff
             FluentBindingRule<SqlAttribute> inputOutputRule = context.AddBindingRule<SqlAttribute>();
-            var converter = new SqlConverter(this._configuration, logger);
+            var converter = new SqlConverter(this._configuration);
             inputOutputRule.BindToInput(converter);
             inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), this._configuration, logger);
             inputOutputRule.BindToCollector<SQLObjectOpenType>(typeof(SqlAsyncCollectorBuilder<>), this._configuration, logger);
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
     /// <summary>
     /// Wrapper around OpenType to receive data correctly from output bindings (not as byte[])
-    /// This can be used for general "T --> JObject" bindings. 
+    /// This can be used for general "T --> JObject" bindings.
     /// The exact definition here comes from the WebJobs v1.0 Queue binding.
     /// refer https://github.com/Azure/azure-webjobs-sdk/blob/dev/src/Microsoft.Azure.WebJobs.Host/Bindings/OpenType.cs#L390
     /// </summary>

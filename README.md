@@ -1,8 +1,8 @@
-# Azure SQL bindings for Azure Functions - Preview
+# Azure SQL bindings for Azure Functions
 
 ## Table of Contents
 
-- [Azure SQL bindings for Azure Functions - Preview](#azure-sql-bindings-for-azure-functions---preview)
+- [Azure SQL bindings for Azure Functions](#azure-sql-bindings-for-azure-functions)
   - [Table of Contents](#table-of-contents)
   - [Introduction](#introduction)
   - [Supported SQL Server Versions](#supported-sql-server-versions)
@@ -65,7 +65,11 @@ Databases on SQL Server, Azure SQL Database, or Azure SQL Managed Instance which
 
 ## Telemetry
 
-This extension collect usage data in order to help us improve your experience. The data is anonymous and doesn't include any personal information. You can opt-out of telemetry by setting the `AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT` environment variable or the `AzureFunctionsSqlBindingsTelemetryOptOut` app setting (in your `*.settings.json` file) to '1', 'true' or 'yes';
+This extension collects usage data in order to help us improve your experience. The data is anonymous and doesn't include any personal information. You can opt-out of telemetry by setting the `AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT` environment variable or the `AzureFunctionsSqlBindingsTelemetryOptOut` app setting (in your `*.settings.json` file) to '1', 'true' or 'yes';
+
+## Privacy Statement
+
+To learn more about our Privacy Statement visit [this link](https://go.microsoft.com/fwlink/?LinkID=824704).
 
 ## Trademarks
 

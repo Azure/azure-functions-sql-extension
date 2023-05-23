@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Builds a connection using the connection string attached to the app setting with name ConnectionStringSetting
         /// </summary>
-        /// <param name="attribute">The name of the app setting that stores the SQL connection string</param>
+        /// <param name="connectionStringSetting">The name of the app setting that stores the SQL connection string</param>
         /// <param name="configuration">Used to obtain the value of the app setting</param>
         /// <exception cref="ArgumentException">
         /// Thrown if ConnectionStringSetting is empty or null
@@ -45,7 +45,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
-            return configuration.GetConnectionStringOrSetting(connectionStringSetting);
+            string connectionString = configuration.GetConnectionStringOrSetting(connectionStringSetting);
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                throw new ArgumentException(connectionString == null ? $"ConnectionStringSetting '{connectionStringSetting}' is missing in your function app settings, please add the setting with a valid SQL connection string." :
+                $"ConnectionStringSetting '{connectionStringSetting}' is empty in your function app settings, please update the setting with a valid SQL connection string.");
+            }
+            return connectionString;
         }
 
         /// <summary>
@@ -187,9 +193,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             string verifyDatabaseSupportedQuery = $"SELECT compatibility_level FROM sys.databases WHERE Name = DB_NAME()";
 
-            logger.LogDebugWithThreadId($"BEGIN VerifyDatabaseSupported Query={verifyDatabaseSupportedQuery}");
             using (var verifyDatabaseSupportedCommand = new SqlCommand(verifyDatabaseSupportedQuery, connection))
-            using (SqlDataReader reader = await verifyDatabaseSupportedCommand.ExecuteReaderAsync(cancellationToken))
+            using (SqlDataReader reader = await verifyDatabaseSupportedCommand.ExecuteReaderAsyncWithLogging(logger, cancellationToken))
             {
                 if (!await reader.ReadAsync(cancellationToken))
                 {
@@ -198,7 +203,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 int compatLevel = reader.GetByte(0);
 
-                logger.LogDebugWithThreadId($"END GetUserTableId CompatLevel={compatLevel}");
                 if (compatLevel < MIN_SUPPORTED_COMPAT_LEVEL)
                 {
                     throw new InvalidOperationException($"SQL bindings require a database compatibility level of 130 or higher to function. Current compatibility level = {compatLevel}");
@@ -269,7 +273,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             if (forceReconnect || conn.State.HasFlag(ConnectionState.Broken | ConnectionState.Closed))
             {
                 logger.LogWarning($"{connectionName} is broken, attempting to reconnect...");
-                logger.LogDebugWithThreadId($"BEGIN RetryOpen{connectionName}");
                 try
                 {
                     // Sometimes the connection state is listed as open even if a fatal exception occurred, see
@@ -281,7 +284,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     }
                     await conn.OpenAsync(token);
                     logger.LogInformation($"Successfully re-established {connectionName}!");
-                    logger.LogDebugWithThreadId($"END RetryOpen{connectionName}");
                     return true;
                 }
                 catch (Exception e)
@@ -305,9 +307,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     string serverPropertiesQuery = $"SELECT SERVERPROPERTY('EngineEdition'), SERVERPROPERTY('Edition')";
 
-                    logger.LogDebugWithThreadId($"BEGIN GetServerTelemetryProperties Query={serverPropertiesQuery}");
                     using (var selectServerEditionCommand = new SqlCommand(serverPropertiesQuery, connection))
-                    using (SqlDataReader reader = await selectServerEditionCommand.ExecuteReaderAsync(cancellationToken))
+                    using (SqlDataReader reader = await selectServerEditionCommand.ExecuteReaderAsyncWithLogging(logger, cancellationToken))
                     {
                         if (await reader.ReadAsync(cancellationToken))
                         {
@@ -359,6 +360,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// Calls ExecuteNonQueryAsync and logs an error if it fails before rethrowing.
+        /// </summary>
+        /// <param name="cmd">The SqlCommand being executed</param>
+        /// <param name="logger">The logger</param>
+        /// <param name="cancellationToken">The cancellation token to pass to the call</param>
+        /// <returns>The result of the call</returns>
+        public static async Task<int> ExecuteNonQueryAsyncWithLogging(this SqlCommand cmd, ILogger logger, CancellationToken cancellationToken)
+        {
+            try
+            {
+                return await cmd.ExecuteNonQueryAsync(cancellationToken);
+            }
+            catch (Exception e)
+            {
+                logger.LogError($"Exception executing query. Message={e.Message}\nQuery={cmd.CommandText}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Calls ExecuteReaderAsync and logs an error if it fails before rethrowing.
+        /// </summary>
+        /// <param name="cmd">The SqlCommand being executed</param>
+        /// <param name="logger">The logger</param>
+        /// <param name="cancellationToken">The cancellation token to pass to the call</param>
+        /// <returns>The result of the call</returns>
+        public static async Task<SqlDataReader> ExecuteReaderAsyncWithLogging(this SqlCommand cmd, ILogger logger, CancellationToken cancellationToken)
+        {
+            try
+            {
+                return await cmd.ExecuteReaderAsync(cancellationToken);
+            }
+            catch (Exception e)
+            {
+                logger.LogError($"Exception executing query. Message={e.Message}\nQuery={cmd.CommandText}");
+                throw;
+            }
         }
     }
 }

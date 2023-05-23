@@ -57,7 +57,7 @@ These instructions will guide you through creating your Function Project and add
         "version": "[4.*, 5.0.0)"
     }
     ```
-    Once your have these set up, your project folder should resemble [Folder Structure](https://learn.microsoft.com/azure/azure-functions/functions-reference-csharp?tabs=functionsv2#folder-structure)
+    Once you have these set up, your project folder should resemble [Folder Structure](https://learn.microsoft.com/azure/azure-functions/functions-reference-csharp?tabs=functionsv2#folder-structure)
 
 ## Input Binding
 
@@ -126,22 +126,23 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 - Congratulations! You have successfully created your first SQL input binding!
 
 ### Samples for Input Bindings
+The database scripts used for the following samples can be found [here](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/Database).
 
 #### Query String
 
-See the [GetProducts](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-csharpscript/InputBindingSamples/GetProducts) sample
+See the [GetProducts](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-csx/GetProducts) sample
 
 #### Empty Parameter Value
 
-See the [GetProductsNameEmpty](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/InputBindingSamples/GetProductsNameEmpty) sample
+See the [GetProductsNameEmpty](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/GetProductsNameEmpty) sample
 
 #### Null Parameter Value
 
-See the [GetProductsNameNull](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/InputBindingSamples/GetProductsNameNull) sample
+See the [GetProductsNameNull](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/GetProductsNameNull) sample
 
 #### Stored Procedure
 
-See the [GetProductsStoredProcedure](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/InputBindingSamples/GetProductsStoredProcedure) sample
+See the [GetProductsStoredProcedure](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/GetProductsStoredProcedure) sample
 
 ## Output Binding
 
@@ -171,14 +172,13 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
     ```csharp
     #load "employee.csx"
     #r "Newtonsoft.Json"
-    #r "Microsoft.Azure.WebJobs.Extensions.Sql"
 
     using System.Net;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Extensions.Primitives;
     using Newtonsoft.Json;
 
-    public static Product Run(HttpRequest req, ILogger log, [Sql("dbo.Employees", "SqlConnectionString")] out Employee employee)
+    public static Product Run(HttpRequest req, ILogger log, out Employee employee)
     {
         log.LogInformation("CSX HTTP trigger function processed a request.");
 
@@ -217,12 +217,12 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
 
 #### Array
 
-See the [AddProductsArray](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/OutputBindingSamples/AddProductsArray) sample
+See the [AddProductsArray](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/AddProductsArray) sample
 
 #### Single Row
 
-See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/OutputBindingSamples/AddProduct) sample
+See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/AddProduct) sample
 
 ### Sample with multiple Bindings
 
-See the [GetAndAddProducts](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csharpscript/InputBindingSamples/GetAndAddProducts) sample
+See the [GetAndAddProducts](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/GetAndAddProducts) sample
