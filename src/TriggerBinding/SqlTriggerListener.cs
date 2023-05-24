@@ -321,6 +321,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         UserFunctionID char(16) NOT NULL,
                         UserTableID int NOT NULL,
                         LastSyncVersion bigint NOT NULL,
+                        LastAccessTime Datetime NULL,
                         PRIMARY KEY (UserFunctionID, UserTableID)
                     );
                 ELSE IF NOT EXISTS(SELECT 1 FROM sys.columns WHERE Name = N'LastAccessTime'
