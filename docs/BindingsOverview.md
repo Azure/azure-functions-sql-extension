@@ -22,6 +22,7 @@
       - [Startup retries](#startup-retries)
       - [Broken connection retries](#broken-connection-retries)
       - [Function exception retries](#function-exception-retries)
+      - [Lease Tables clean up](#lease-tables-clean-up)
 
 ## Input Binding
 
@@ -147,7 +148,7 @@ If an exception occurs in the user function when processing changes then the bat
 
 If the function execution fails 5 times in a row for a given row then that row is completely ignored for all future changes. Because the rows in a batch are not deterministic, rows in a failed batch may end up in different batches in subsequent invocations. This means that not all rows in the failed batch will necessarily be ignored. If other rows in the batch were the ones causing the exception, the "good" rows may end up in a different batch that doesn't fail in future invocations.
 
-You can run this query to see what rows have failed 5 times and are currently ignored, see [Leases table](#az_funcleases_) documentation for how to get the correct Leases table to query for your function.
+You can run this query to see what rows have failed 5 times and are currently ignored, see [Leases table](./TriggerBinding.md#az_funcleases_) documentation for how to get the correct Leases table to query for your function.
 
 ```sql
 SELECT * FROM [az_func].[Leases_<FunctionId>_<TableId>] WHERE _az_func_AttemptCount = 5
@@ -167,4 +168,81 @@ e.g.
 
 ```sql
 UPDATE [Products].[az_func].[Leases_<FunctionId>_<TableId>] SET _az_func_AttemptCount = 0 WHERE ProductId = 123
+```
+
+#### Lease Tables clean up
+
+Before clean up, please see [Leases table](./TriggerBinding.md#az_funcleases_) documentation for how to get the correct Leases table.
+
+- Clean up all the tables not accessed more than N number of days, Please initialize N according to your use case:
+
+```sql
+DECLARE @table_name NVARCHAR(MAX);
+DECLARE @UserFunctionId char(16);
+DECLARE @UserTableId int;
+DECLARE @N int;
+DECLARE leasetable_cursor CURSOR FOR
+
+SELECT 'az_func.Leases_'+UserFunctionId+'_'+convert(varchar(100),UserTableID) as TABLE_NAME, UserFunctionID, UserTableID
+FROM az_func.GlobalState
+WHERE DATEDIFF(day, LastAccessTime, GETDATE()) > N
+
+OPEN leasetable_cursor;
+
+FETCH NEXT FROM leasetable_cursor INTO @table_name, @UserFunctionId, @UserTableId;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    EXEC ('DROP TABLE IF EXISTS ' + @table_name);
+    DELETE FROM az_func.GlobalState WHERE UserFunctionID = @UserFunctionId and UserTableID = @UserTableId
+    FETCH NEXT FROM leasetable_cursor INTO @table_name, @UserFunctionId, @UserTableId;
+END;
+
+CLOSE leasetable_cursor;
+
+DEALLOCATE leasetable_cursor;
+```
+
+- Clean up a specific lease table concerning a specific function:
+
+To find the name of the leases table associated with your function, look in the log output for a line such as this which is emitted when the trigger is started.
+
+`SQL trigger Leases table: [az_func].[Leases_84d975fca0f7441a_901578250]`
+
+This log message is at the `Information` level, so make sure your log level is set correctly.
+
+```sql
+DECLARE @table_name NVARCHAR(MAX); --@table_name would be [az_func].[Leases_84d975fca0f7441a_901578250]
+DECLARE @UserFunctionId char(16); -- @UserFunctionId would be 84d975fca0f7441a
+DECLARE @UserTableId int; -- @UserTableId would be 901578250
+
+DROP TABLE IF EXISTS @table_name
+DELETE FROM az_func.GlobalState WHERE UserFunctionID = @UserFunctionId and UserTableID = @UserTableId
+```
+
+- Clear all trigger related data for a reset:
+
+```sql
+DECLARE @table_name NVARCHAR(MAX);
+DECLARE @UserFunctionId char(16);
+DECLARE @UserTableId int;
+DECLARE leasetable_cursor CURSOR FOR
+
+SELECT 'az_func.Leases_'+UserFunctionId+'_'+convert(varchar(100),UserTableID) as TABLE_NAME, UserFunctionID, UserTableID
+FROM az_func.GlobalState
+
+OPEN leasetable_cursor;
+
+FETCH NEXT FROM leasetable_cursor INTO @table_name, @UserFunctionId, @UserTableId;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    EXEC ('DROP TABLE IF EXISTS ' + @table_name);
+    DELETE FROM az_func.GlobalState WHERE UserFunctionID = @UserFunctionId and UserTableID = @UserTableId
+    FETCH NEXT FROM leasetable_cursor INTO @table_name, @UserFunctionId, @UserTableId;
+END;
+
+CLOSE leasetable_cursor;
+
+DEALLOCATE leasetable_cursor;
 ```
