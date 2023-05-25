@@ -175,16 +175,16 @@ UPDATE [Products].[az_func].[Leases_<FunctionId>_<TableId>] SET _az_func_Attempt
 Before clean up, please see [Leases table](./TriggerBinding.md#az_funcleases_) documentation for understanding how they are created and used.
 
 Why clean up?
-1. You renamed your function/class/method name and a new lease table is created making the old one obsolete for clean up.
-2. You have created multiple trigger functions that are obsolete which have associated tables that require cleaning up.
-3. You want to reset your environment and start afresh.
-There are many a reason that require cleaning to maintain our databases and since we currently don't handle that within the extension, below are some scripts that guide you through cleaning the leases table without them filling up the database.
+1. You renamed your function/class/method name, which causes a new lease table to be created and the old one to be obsolete.
+2. You created a trigger function that you no longer need and wish to clean up its associated data.
+3. You want to reset your environment.
+The Azure SQL Trigger does not currently handle cleaning up any leftover objects, and so to assist you with that we have provided the below scripts to help guide you through doing that.
 
-- Deletes all the lease tables that haven't been accessed in N days:
+- Delete all the lease tables that haven't been accessed in `@CleanupAgeDays` days:
 
 ```sql
--- Deletes all the lease tables that haven't been accesses in ? days(represented by @CleanupAgeDays variable and needs to defined before running the query).
--- And removes them from the GlobalState table.
+-- Deletes all the lease tables that haven't been accessed in @CleanupAgeDays days (set below)
+-- and removes them from the GlobalState table.
 USE <Insert DATABASE name here>;
 DECLARE @TableName NVARCHAR(MAX);
 DECLARE @UserFunctionId char(16);
@@ -212,9 +212,9 @@ CLOSE LeaseTable_Cursor;
 DEALLOCATE LeaseTable_Cursor;
 ```
 
-- Clean up a specific lease table concerning a specific function:
+- Clean up a specific lease table:
 
-To find the name of the leases table associated with your function, look in the log output for a line such as this which is emitted when the trigger is started.
+To find the name of the lease table associated with your function, look in the log output for a line such as this which is emitted when the trigger is started.
 
 `SQL trigger Leases table: [az_func].[Leases_84d975fca0f7441a_901578250]`
 
@@ -224,8 +224,8 @@ This log message is at the `Information` level, so make sure your log level is s
 -- Deletes the specified lease table and removes it from GlobalState table.
 USE <Insert DATABASE name here>;
 DECLARE @TableName NVARCHAR(MAX) = <Insert lease table name here>; -- e.g. '[az_func].[Leases_84d975fca0f7441a_901578250]
-DECLARE @UserFunctionId char(16) = <Insert function ID here>; -- e.g. '84d975fca0f7441a'
-DECLARE @UserTableId int = <Insert table ID here>; -- e.g. '901578250'
+DECLARE @UserFunctionId char(16) = <Insert function ID here>; -- e.g. '84d975fca0f7441a' the first section of the lease table name [Leases_84d975fca0f7441a_901578250].
+DECLARE @UserTableId int = <Insert table ID here>; -- e.g. '901578250' the second section of the lease table name [Leases_84d975fca0f7441a_901578250].
 
 DROP TABLE IF EXISTS @TableName
 DELETE FROM az_func.GlobalState WHERE UserFunctionID = @UserFunctionId and UserTableID = @UserTableId
