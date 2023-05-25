@@ -172,35 +172,44 @@ UPDATE [Products].[az_func].[Leases_<FunctionId>_<TableId>] SET _az_func_Attempt
 
 #### Lease Tables clean up
 
-Before clean up, please see [Leases table](./TriggerBinding.md#az_funcleases_) documentation for how to get the correct Leases table.
+Before clean up, please see [Leases table](./TriggerBinding.md#az_funcleases_) documentation for understanding how they are created and used.
 
-- Clean up all the tables not accessed more than N number of days, Please initialize N according to your use case:
+Why clean up?
+1. You renamed your function/class/method name and a new lease table is created making the old one obsolete for clean up.
+2. You have created multiple trigger functions that are obsolete which have associated tables that require cleaning up.
+3. You want to reset your environment and start afresh.
+There are many a reason that require cleaning to maintain our databases and since we currently don't handle that within the extension, below are some scripts that guide you through cleaning the leases table without them filling up the database.
+
+- Deletes all the lease tables that haven't been accessed in N days:
 
 ```sql
-DECLARE @table_name NVARCHAR(MAX);
+-- Deletes all the lease tables that haven't been accesses in ? days(represented by @CleanupAgeDays variable and needs to defined before running the query).
+-- And removes them from the GlobalState table.
+USE <Insert DATABASE name here>;
+DECLARE @TableName NVARCHAR(MAX);
 DECLARE @UserFunctionId char(16);
 DECLARE @UserTableId int;
-DECLARE @N int;
-DECLARE leasetable_cursor CURSOR FOR
+DECLARE @CleanupAgeDays int = <Insert desired cleanup age in days here>;
+DECLARE LeaseTable_Cursor CURSOR FOR
 
 SELECT 'az_func.Leases_'+UserFunctionId+'_'+convert(varchar(100),UserTableID) as TABLE_NAME, UserFunctionID, UserTableID
 FROM az_func.GlobalState
-WHERE DATEDIFF(day, LastAccessTime, GETDATE()) > N
+WHERE DATEDIFF(day, LastAccessTime, GETDATE()) > @CleanupAgeDays
 
-OPEN leasetable_cursor;
+OPEN LeaseTable_Cursor;
 
-FETCH NEXT FROM leasetable_cursor INTO @table_name, @UserFunctionId, @UserTableId;
+FETCH NEXT FROM LeaseTable_Cursor INTO @TableName, @UserFunctionId, @UserTableId;
 
 WHILE @@FETCH_STATUS = 0
 BEGIN
-    EXEC ('DROP TABLE IF EXISTS ' + @table_name);
+    EXEC ('DROP TABLE IF EXISTS ' + @TableName);
     DELETE FROM az_func.GlobalState WHERE UserFunctionID = @UserFunctionId and UserTableID = @UserTableId
-    FETCH NEXT FROM leasetable_cursor INTO @table_name, @UserFunctionId, @UserTableId;
+    FETCH NEXT FROM LeaseTable_Cursor INTO @TableName, @UserFunctionId, @UserTableId;
 END;
 
-CLOSE leasetable_cursor;
+CLOSE LeaseTable_Cursor;
 
-DEALLOCATE leasetable_cursor;
+DEALLOCATE LeaseTable_Cursor;
 ```
 
 - Clean up a specific lease table concerning a specific function:
@@ -212,37 +221,41 @@ To find the name of the leases table associated with your function, look in the 
 This log message is at the `Information` level, so make sure your log level is set correctly.
 
 ```sql
-DECLARE @table_name NVARCHAR(MAX); --@table_name would be [az_func].[Leases_84d975fca0f7441a_901578250]
-DECLARE @UserFunctionId char(16); -- @UserFunctionId would be 84d975fca0f7441a
-DECLARE @UserTableId int; -- @UserTableId would be 901578250
+-- Deletes the specified lease table and removes it from GlobalState table.
+USE <Insert DATABASE name here>;
+DECLARE @TableName NVARCHAR(MAX) = <Insert lease table name here>; -- e.g. '[az_func].[Leases_84d975fca0f7441a_901578250]
+DECLARE @UserFunctionId char(16) = <Insert function ID here>; -- e.g. '84d975fca0f7441a'
+DECLARE @UserTableId int = <Insert table ID here>; -- e.g. '901578250'
 
-DROP TABLE IF EXISTS @table_name
+DROP TABLE IF EXISTS @TableName
 DELETE FROM az_func.GlobalState WHERE UserFunctionID = @UserFunctionId and UserTableID = @UserTableId
 ```
 
 - Clear all trigger related data for a reset:
 
 ```sql
-DECLARE @table_name NVARCHAR(MAX);
+-- Deletes all the lease tables and clears them from the GlobalState table.
+USE <Insert DATABASE name here>;
+DECLARE @TableName NVARCHAR(MAX);
 DECLARE @UserFunctionId char(16);
 DECLARE @UserTableId int;
-DECLARE leasetable_cursor CURSOR FOR
+DECLARE LeaseTable_Cursor CURSOR FOR
 
 SELECT 'az_func.Leases_'+UserFunctionId+'_'+convert(varchar(100),UserTableID) as TABLE_NAME, UserFunctionID, UserTableID
 FROM az_func.GlobalState
 
-OPEN leasetable_cursor;
+OPEN LeaseTable_Cursor;
 
-FETCH NEXT FROM leasetable_cursor INTO @table_name, @UserFunctionId, @UserTableId;
+FETCH NEXT FROM LeaseTable_Cursor INTO @TableName, @UserFunctionId, @UserTableId;
 
 WHILE @@FETCH_STATUS = 0
 BEGIN
-    EXEC ('DROP TABLE IF EXISTS ' + @table_name);
+    EXEC ('DROP TABLE IF EXISTS ' + @TableName);
     DELETE FROM az_func.GlobalState WHERE UserFunctionID = @UserFunctionId and UserTableID = @UserTableId
-    FETCH NEXT FROM leasetable_cursor INTO @table_name, @UserFunctionId, @UserTableId;
+    FETCH NEXT FROM LeaseTable_Cursor INTO @TableName, @UserFunctionId, @UserTableId;
 END;
 
-CLOSE leasetable_cursor;
+CLOSE LeaseTable_Cursor;
 
-DEALLOCATE leasetable_cursor;
+DEALLOCATE LeaseTable_Cursor;
 ```
