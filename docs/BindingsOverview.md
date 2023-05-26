@@ -185,7 +185,8 @@ The Azure SQL Trigger does not currently handle automatically cleaning up any le
 ```sql
 -- Deletes all the lease tables that haven't been accessed in @CleanupAgeDays days (set below)
 -- and removes them from the GlobalState table.
-USE <Insert DATABASE name here>;
+USE [<Insert DATABASE name here>]
+GO
 DECLARE @TableName NVARCHAR(MAX);
 DECLARE @UserFunctionId char(16);
 DECLARE @UserTableId int;
@@ -204,7 +205,7 @@ WHILE @@FETCH_STATUS = 0
 BEGIN
     PRINT N'Dropping table ' + @TableName;
     EXEC ('DROP TABLE IF EXISTS ' + @TableName);
-    PRINT N'Removing row from GlobalState for UserFunctionID = ' + @UserFunctionId + ' and UserTableID = ' + @UserTableId;
+    PRINT 'Removing row from GlobalState for UserFunctionID = ' + RTRIM(CAST(@UserFunctionId AS NVARCHAR(30))) + ' and UserTableID = ' + RTRIM(CAST(@UserTableId AS NVARCHAR(30)));
     DELETE FROM az_func.GlobalState WHERE UserFunctionID = @UserFunctionId and UserTableID = @UserTableId
     FETCH NEXT FROM LeaseTable_Cursor INTO @TableName, @UserFunctionId, @UserTableId;
 END;
@@ -224,13 +225,14 @@ This log message is at the `Information` level, so make sure your log level is s
 
 ```sql
 -- Deletes the specified lease table and removes it from GlobalState table.
-USE <Insert DATABASE name here>;
+USE [<Insert DATABASE name here>]
+GO
 DECLARE @TableName NVARCHAR(MAX) = <Insert lease table name here>; -- e.g. '[az_func].[Leases_84d975fca0f7441a_901578250]
 DECLARE @UserFunctionId char(16) = <Insert function ID here>; -- e.g. '84d975fca0f7441a' the first section of the lease table name [Leases_84d975fca0f7441a_901578250].
 DECLARE @UserTableId int = <Insert table ID here>; -- e.g. '901578250' the second section of the lease table name [Leases_84d975fca0f7441a_901578250].
 PRINT N'Dropping table ' + @TableName;
 EXEC ('DROP TABLE IF EXISTS ' + @TableName);
-PRINT N'Removing row from GlobalState for UserFunctionID = ' + @UserFunctionId + ' and UserTableID = ' + @UserTableId;
+PRINT 'Removing row from GlobalState for UserFunctionID = ' + RTRIM(CAST(@UserFunctionId AS NVARCHAR(30))) + ' and UserTableID = ' + RTRIM(CAST(@UserTableId AS NVARCHAR(30)));
 DELETE FROM az_func.GlobalState WHERE UserFunctionID = @UserFunctionId and UserTableID = @UserTableId
 ```
 
@@ -238,7 +240,8 @@ DELETE FROM az_func.GlobalState WHERE UserFunctionID = @UserFunctionId and UserT
 
 ```sql
 -- Deletes all the lease tables and clears them from the GlobalState table.
-USE <Insert DATABASE name here>;
+USE [<Insert DATABASE name here>]
+GO
 DECLARE @TableName NVARCHAR(MAX);
 DECLARE @UserFunctionId char(16);
 DECLARE @UserTableId int;
@@ -255,7 +258,7 @@ WHILE @@FETCH_STATUS = 0
 BEGIN
     PRINT N'Dropping table ' + @TableName;
     EXEC ('DROP TABLE IF EXISTS ' + @TableName);
-    PRINT N'Removing row from GlobalState for UserFunctionID = ' + @UserFunctionId + ' and UserTableID = ' + @UserTableId;
+    PRINT 'Removing row from GlobalState for UserFunctionID = ' + RTRIM(CAST(@UserFunctionId AS NVARCHAR(30))) + ' and UserTableID = ' + RTRIM(CAST(@UserTableId AS NVARCHAR(30)));
     DELETE FROM az_func.GlobalState WHERE UserFunctionID = @UserFunctionId and UserTableID = @UserTableId
     FETCH NEXT FROM LeaseTable_Cursor INTO @TableName, @UserFunctionId, @UserTableId;
 END;
