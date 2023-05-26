@@ -178,7 +178,7 @@ Why clean up?
 1. You renamed your function/class/method name, which causes a new lease table to be created and the old one to be obsolete.
 2. You created a trigger function that you no longer need and wish to clean up its associated data.
 3. You want to reset your environment.
-The Azure SQL Trigger does not currently handle cleaning up any leftover objects, and so to assist you with that we have provided the below scripts to help guide you through doing that.
+The Azure SQL Trigger does not currently handle automatically cleaning up any leftover objects, and so we have provided the below scripts to help guide you through doing that.
 
 - Delete all the lease tables that haven't been accessed in `@CleanupAgeDays` days:
 
@@ -202,7 +202,9 @@ FETCH NEXT FROM LeaseTable_Cursor INTO @TableName, @UserFunctionId, @UserTableId
 
 WHILE @@FETCH_STATUS = 0
 BEGIN
+    PRINT N'Dropping table ' + @TableName;
     EXEC ('DROP TABLE IF EXISTS ' + @TableName);
+    PRINT N'Removing row from GlobalState for UserFunctionID = ' + @UserFunctionId + ' and UserTableID = ' + @UserTableId;
     DELETE FROM az_func.GlobalState WHERE UserFunctionID = @UserFunctionId and UserTableID = @UserTableId
     FETCH NEXT FROM LeaseTable_Cursor INTO @TableName, @UserFunctionId, @UserTableId;
 END;
@@ -226,8 +228,9 @@ USE <Insert DATABASE name here>;
 DECLARE @TableName NVARCHAR(MAX) = <Insert lease table name here>; -- e.g. '[az_func].[Leases_84d975fca0f7441a_901578250]
 DECLARE @UserFunctionId char(16) = <Insert function ID here>; -- e.g. '84d975fca0f7441a' the first section of the lease table name [Leases_84d975fca0f7441a_901578250].
 DECLARE @UserTableId int = <Insert table ID here>; -- e.g. '901578250' the second section of the lease table name [Leases_84d975fca0f7441a_901578250].
-
-DROP TABLE IF EXISTS @TableName
+PRINT N'Dropping table ' + @TableName;
+EXEC ('DROP TABLE IF EXISTS ' + @TableName);
+PRINT N'Removing row from GlobalState for UserFunctionID = ' + @UserFunctionId + ' and UserTableID = ' + @UserTableId;
 DELETE FROM az_func.GlobalState WHERE UserFunctionID = @UserFunctionId and UserTableID = @UserTableId
 ```
 
@@ -250,7 +253,9 @@ FETCH NEXT FROM LeaseTable_Cursor INTO @TableName, @UserFunctionId, @UserTableId
 
 WHILE @@FETCH_STATUS = 0
 BEGIN
+    PRINT N'Dropping table ' + @TableName;
     EXEC ('DROP TABLE IF EXISTS ' + @TableName);
+    PRINT N'Removing row from GlobalState for UserFunctionID = ' + @UserFunctionId + ' and UserTableID = ' + @UserTableId;
     DELETE FROM az_func.GlobalState WHERE UserFunctionID = @UserFunctionId and UserTableID = @UserTableId
     FETCH NEXT FROM LeaseTable_Cursor INTO @TableName, @UserFunctionId, @UserTableId;
 END;
