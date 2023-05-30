@@ -1722,6 +1722,7 @@
           "Microsoft.AspNetCore.Http": "[2.2.2, )",
           "Microsoft.Azure.WebJobs": "[3.0.33, )",
           "Microsoft.Data.SqlClient": "[5.0.1, )",
+          "Microsoft.SqlServer.TransactSql.ScriptDom": "[161.8817.2, )",
           "Newtonsoft.Json": "[13.0.2, )",
           "System.Runtime.Caching": "[5.0.0, )",
           "morelinq": "[3.3.2, )"
@@ -1821,6 +1822,12 @@
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "2.2.0"
         }
+      },
+      "Microsoft.SqlServer.TransactSql.ScriptDom": {
+        "type": "CentralTransitive",
+        "requested": "[161.8817.2, )",
+        "resolved": "161.8817.2",
+        "contentHash": "3j5dQjTPLw51AvXwJTL9sXiTMTY5Y2lvdzjtV7yOEsPUSIl+P2IsxLn7KFhGGHtwr4MOsUdAWnQ3xcrpG8tTXA=="
       },
       "morelinq": {
         "type": "CentralTransitive",
