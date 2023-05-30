@@ -630,7 +630,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             await listener.StopAsync(CancellationToken.None);
             //Check if LastAccessTime column exists in the GlobalState table
             Assert.Equal(1, this.ExecuteScalar("SELECT 1 FROM sys.columns WHERE Name = N'LastAccessTime' AND Object_ID = Object_ID(N'[az_func].[GlobalState]')"));
-
+            // Delete default constraint(s) on LastAccessTime column before dropping it
+            string deleteDefaultContraint = @"DECLARE @sql NVARCHAR(MAX)
+                                            WHILE 1=1
+                                            BEGIN
+                                                SELECT TOP 1 @sql = N'ALTER TABLE [az_func].[GlobalState] DROP CONSTRAINT ['+dc.NAME+N']'
+                                                FROM sys.default_constraints dc
+                                                JOIN sys.columns c
+                                                    ON c.default_object_id = dc.object_id
+                                                WHERE dc.parent_object_id = OBJECT_ID('[az_func].[GlobalState]')
+                                                AND c.name = N'LastAccessTime'
+                                                IF @@ROWCOUNT = 0 BREAK
+                                                EXEC (@sql)
+                                            END";
+            this.ExecuteNonQuery(deleteDefaultContraint);
             // Delete the LastAccessTime column from GlobalState table.
             this.ExecuteNonQuery($"ALTER TABLE [az_func].[GlobalState] DROP COLUMN LastAccessTime");
 
