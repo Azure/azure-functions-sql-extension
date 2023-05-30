@@ -612,5 +612,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             await changesTask;
 
         }
+
+        /// <summary>
+        /// Tests that the GlobalState table has LastAccessTime column.
+        /// </summary>
+        /// <remarks>We call StartAsync which initializes the GlobalState and then drop the LastAccessTime column from the table and recall the StartAsync to check if the GlobalState has the column.</remarks>
+        [Fact]
+        public async void LastAccessTimeColumnTest()
+        {
+
+            this.SetChangeTrackingForTable("Products");
+            string userFunctionId = "func-id";
+            IConfiguration configuration = new ConfigurationBuilder().Build();
+            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", userFunctionId, Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<ILogger>(), configuration);
+            await listener.StartAsync(CancellationToken.None);
+            // Cancel immediately so the listener doesn't start processing the changes
+            await listener.StopAsync(CancellationToken.None);
+            //Check if LastAccessTime column exists in the GlobalState table
+            Assert.Equal(1, this.ExecuteScalar("SELECT 1 FROM sys.columns WHERE Name = N'LastAccessTime' AND Object_ID = Object_ID(N'[az_func].[GlobalState]')"));
+
+            // Delete the LastAccessTime column from GlobalState table.
+            this.ExecuteNonQuery($"ALTER TABLE [az_func].[GlobalState] DROP COLUMN LastAccessTime");
+
+            await listener.StartAsync(CancellationToken.None);
+            // Cancel immediately so the listener doesn't start processing the changes
+            await listener.StopAsync(CancellationToken.None);
+
+            //Check if LastAccessTime column exists in the GlobalState table
+            Assert.Equal(1, this.ExecuteScalar("SELECT 1 FROM sys.columns WHERE Name = N'LastAccessTime' AND Object_ID = Object_ID(N'[az_func].[GlobalState]')"));
+
+        }
     }
 }
