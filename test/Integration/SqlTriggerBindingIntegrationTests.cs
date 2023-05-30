@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.TriggerBindingSamples;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlTriggerConstants;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -618,7 +619,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         /// <remarks>We call StartAsync which initializes the GlobalState and then drop the LastAccessTime column from the table and recall the StartAsync to check if the GlobalState has the column.</remarks>
         [Fact]
-        public async void LastAccessTimeColumnTest()
+        public async void LastAccessTimeColumn_Created_OnStartup()
         {
 
             this.SetChangeTrackingForTable("Products");
@@ -629,30 +630,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // Cancel immediately so the listener doesn't start processing the changes
             await listener.StopAsync(CancellationToken.None);
             //Check if LastAccessTime column exists in the GlobalState table
-            Assert.Equal(1, this.ExecuteScalar("SELECT 1 FROM sys.columns WHERE Name = N'LastAccessTime' AND Object_ID = Object_ID(N'[az_func].[GlobalState]')"));
+            Assert.True(1 == (int)this.ExecuteScalar($@"SELECT 1 FROM sys.columns WHERE Name = N'{LastAccessTimeColumnName}' AND Object_ID = Object_ID(N'{GlobalStateTableName}')"), $"{GlobalStateTableName} should have {LastAccessTimeColumnName} column on creation");
             // Delete default constraint(s) on LastAccessTime column before dropping it
-            string deleteDefaultContraint = @"DECLARE @sql NVARCHAR(MAX)
+            string deleteDefaultContraint = $@"DECLARE @sql NVARCHAR(MAX)
                                             WHILE 1=1
                                             BEGIN
-                                                SELECT TOP 1 @sql = N'ALTER TABLE [az_func].[GlobalState] DROP CONSTRAINT ['+dc.NAME+N']'
+                                                SELECT TOP 1 @sql = N'ALTER TABLE {GlobalStateTableName} DROP CONSTRAINT ['+dc.NAME+N']'
                                                 FROM sys.default_constraints dc
                                                 JOIN sys.columns c
                                                     ON c.default_object_id = dc.object_id
-                                                WHERE dc.parent_object_id = OBJECT_ID('[az_func].[GlobalState]')
-                                                AND c.name = N'LastAccessTime'
+                                                WHERE dc.parent_object_id = OBJECT_ID('{GlobalStateTableName}')
+                                                AND c.name = N'{LastAccessTimeColumnName}'
                                                 IF @@ROWCOUNT = 0 BREAK
                                                 EXEC (@sql)
                                             END";
             this.ExecuteNonQuery(deleteDefaultContraint);
             // Delete the LastAccessTime column from GlobalState table.
-            this.ExecuteNonQuery($"ALTER TABLE [az_func].[GlobalState] DROP COLUMN LastAccessTime");
+            this.ExecuteNonQuery($"ALTER TABLE {GlobalStateTableName} DROP COLUMN {LastAccessTimeColumnName}");
 
             await listener.StartAsync(CancellationToken.None);
             // Cancel immediately so the listener doesn't start processing the changes
             await listener.StopAsync(CancellationToken.None);
 
             //Check if LastAccessTime column exists in the GlobalState table
-            Assert.Equal(1, this.ExecuteScalar("SELECT 1 FROM sys.columns WHERE Name = N'LastAccessTime' AND Object_ID = Object_ID(N'[az_func].[GlobalState]')"));
+            Assert.True(1 == (int)this.ExecuteScalar("SELECT 1 FROM sys.columns WHERE Name = N'LastAccessTime' AND Object_ID = Object_ID(N'[az_func].[GlobalState]')"), $"{GlobalStateTableName} should have {LastAccessTimeColumnName} column after restarting the listener.");
 
         }
     }
