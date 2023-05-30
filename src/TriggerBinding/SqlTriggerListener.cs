@@ -321,8 +321,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         UserFunctionID char(16) NOT NULL,
                         UserTableID int NOT NULL,
                         LastSyncVersion bigint NOT NULL,
+                        LastAccessTime Datetime NOT NULL DEFAULT GETUTCDATE(),
                         PRIMARY KEY (UserFunctionID, UserTableID)
                     );
+                ELSE IF NOT EXISTS(SELECT 1 FROM sys.columns WHERE Name = N'LastAccessTime'
+                    AND Object_ID = Object_ID(N'{GlobalStateTableName}'))
+                        ALTER TABLE {GlobalStateTableName} ADD LastAccessTime Datetime NOT NULL DEFAULT GETUTCDATE();
             ";
 
             using (var createGlobalStateTableCommand = new SqlCommand(createGlobalStateTableQuery, connection, transaction))
@@ -390,7 +394,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {userTableId}
                 )
                     INSERT INTO {GlobalStateTableName}
-                    VALUES ('{this._userFunctionId}', {userTableId}, {(long)minValidVersion});
+                    VALUES ('{this._userFunctionId}', {userTableId}, {(long)minValidVersion}, GETUTCDATE());
             ";
 
             using (var insertRowGlobalStateTableCommand = new SqlCommand(insertRowGlobalStateTableQuery, connection, transaction))
