@@ -44,6 +44,6 @@ stages:
       parameters:
         solution: '$(solution)'
         configuration: '$(configuration)'
-        nugetVersion: '1.0.0-test'
-        binariesVersion: '1.0.0'
-        supportedVersion: '1.*-*'
+        nugetVersion: '99.99.99-test'
+        binariesVersion: '99.99.99'
+        supportedVersion: '99.99.99'
