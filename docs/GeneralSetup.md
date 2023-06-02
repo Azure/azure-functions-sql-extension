@@ -184,21 +184,21 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql --prerelease
     ```
 
-    **JavaScript, TypeScript, Python, PowerShell:** Update the `host.json` file to the v4 version of the extension bundle.
+    **JavaScript, TypeScript, Python, PowerShell:** Update the `host.json` file to the preview extension bundle.
 
     ```json
     "extensionBundle": {
-        "id": "Microsoft.Azure.Functions.ExtensionBundle",
+        "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
         "version": "[4.*, 5.0.0)"
     }
     ```
 
     **Java:**
-    Update the `host.json` file to the v4 version of the extension bundle.
+    Update the `host.json` file to the preview extension bundle.
 
     ```json
     "extensionBundle": {
-        "id": "Microsoft.Azure.Functions.ExtensionBundle",
+        "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
         "version": "[4.*, 5.0.0)"
     }
     ```
