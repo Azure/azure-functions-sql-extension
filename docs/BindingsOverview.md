@@ -23,6 +23,7 @@
       - [Broken connection retries](#broken-connection-retries)
       - [Function exception retries](#function-exception-retries)
       - [Lease Tables clean up](#lease-tables-clean-up)
+  - [Troubleshooting](#troubleshooting)
 
 ## Input Binding
 
@@ -267,3 +268,9 @@ CLOSE LeaseTable_Cursor;
 
 DEALLOCATE LeaseTable_Cursor;
 ```
+
+## Troubleshooting
+
+When you’re running a function app, you want to be prepared for any issues that may arise, from 4xx errors to trigger failures. Following information is available for troubleshooting those issues [Diagnostics](https://learn.microsoft.com/en-us/azure/azure-functions/functions-diagnostics).
+
+If you run into any performance related issues, please follow [Troubleshooting high CPU usage issues](https://learn.microsoft.com/troubleshoot/sql/database-engine/performance/troubleshoot-high-cpu-usage-issues).
