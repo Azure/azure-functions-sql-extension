@@ -23,6 +23,7 @@
       - [Broken connection retries](#broken-connection-retries)
       - [Function exception retries](#function-exception-retries)
       - [Lease Tables clean up](#lease-tables-clean-up)
+  - [Troubleshooting](#troubleshooting)
 
 ## Input Binding
 
@@ -267,3 +268,9 @@ CLOSE LeaseTable_Cursor;
 
 DEALLOCATE LeaseTable_Cursor;
 ```
+
+## Troubleshooting
+
+- When you’re running a function app, you want to be prepared for any issues that may arise, from 4xx errors to trigger failures. Azure Functions diagnostics is an intelligent and interactive experience to help you troubleshoot your function app with no configuration or extra cost. Follow the link for information on how to enable and use these [diagnostic capabilities](https://learn.microsoft.com/azure/azure-functions/functions-diagnostics).
+
+- If you run into any performance related issues on your SQL Server, you can use the steps described in [Troubleshooting high CPU usage issues](https://learn.microsoft.com/troubleshoot/sql/database-engine/performance/troubleshoot-high-cpu-usage-issues) to troubleshoot.
