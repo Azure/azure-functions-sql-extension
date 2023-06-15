@@ -661,6 +661,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.Python, SupportedLanguages.PowerShell, SupportedLanguages.Csx, SupportedLanguages.Java, SupportedLanguages.OutOfProc)]
         public async Task ProductsColumnTypesTriggerTest(SupportedLanguages lang)
         {
             this.SetChangeTrackingForTable("ProductsColumnTypes");
