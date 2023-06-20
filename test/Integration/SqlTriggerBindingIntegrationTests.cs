@@ -693,7 +693,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     Assert.Equal(SqlChangeOperation.Insert, changes[0].Operation); // Expected change operation
                     ProductColumnTypes product = changes[0].Item;
                     Assert.NotNull(product); // Product deserialized correctly
-                    // Assert.Equal(expectedResponse, product); // The product has the expected values
+                    Assert.Equal(expectedResponse, product); // The product has the expected values
                     taskCompletion.SetResult(true);
                 }
             };
