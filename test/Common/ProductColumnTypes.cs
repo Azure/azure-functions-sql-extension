@@ -62,7 +62,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
                 return this.ProductId == that.ProductId && this.BigInt == that.BigInt && this.Bit == that.Bit &&
                     this.DecimalType == that.DecimalType && this.Money == that.Money && this.Numeric == that.Numeric &&
                     this.SmallInt == that.SmallInt && this.SmallMoney == that.SmallMoney && this.TinyInt == that.TinyInt &&
-                    this.FloatType == that.FloatType && this.Real == that.Real && this.Date == that.Date;
+                    this.FloatType == that.FloatType && this.Real == that.Real && this.Date == that.Date &&
+                    this.Datetime == that.Datetime && this.Datetime2 == that.Datetime2 && this.DatetimeOffset == that.DatetimeOffset &&
+                    this.SmallDatetime == that.SmallDatetime && this.Time == that.Time && this.CharType == that.CharType &&
+                    this.Varchar == that.Varchar && this.Nchar == that.Nchar && this.Nvarchar == that.Nvarchar;
             }
             return false;
         }
