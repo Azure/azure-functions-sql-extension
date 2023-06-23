@@ -2,7 +2,7 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
-using System.Linq;
+// using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 {
@@ -64,7 +64,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
                     this.SmallInt == that.SmallInt && this.SmallMoney == that.SmallMoney && this.TinyInt == that.TinyInt &&
                     this.FloatType == that.FloatType && this.Real == that.Real && this.CharType == that.CharType &&
                     this.Varchar == that.Varchar && this.Nchar == that.Nchar && this.Nvarchar == that.Nvarchar &&
-                    this.Binary.SequenceEqual(that.Binary) && this.Varbinary.SequenceEqual(that.Varbinary);
+                    this.Date == that.Date && this.Datetime == that.Datetime && this.Datetime2 == that.Datetime2 &&
+                    this.DatetimeOffset == that.DatetimeOffset && this.SmallDatetime == that.SmallDatetime &&
+                    this.Time == that.Time;
             }
             return false;
         }
