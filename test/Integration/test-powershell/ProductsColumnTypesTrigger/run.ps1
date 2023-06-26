@@ -5,5 +5,5 @@ using namespace System.Net
 
 param($changes)
 
-$changesJson = $changes | ConvertTo-Json -Compress
+$changesJson = $changes | ConvertTo-Json -Compress -AsArray
 Write-Host "SQL Changes: $changesJson"

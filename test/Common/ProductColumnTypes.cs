@@ -65,7 +65,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
                     this.FloatType == that.FloatType && this.Real == that.Real && this.Date == that.Date &&
                     this.Datetime == that.Datetime && this.Datetime2 == that.Datetime2 && this.DatetimeOffset == that.DatetimeOffset &&
                     this.SmallDatetime == that.SmallDatetime && this.Time == that.Time && this.CharType == that.CharType &&
-                    this.Varchar == that.Varchar &&
+                    this.Varchar == that.Varchar && this.Nchar == that.Nchar && this.Nvarchar == that.Nvarchar &&
                     this.Binary.SequenceEqual(that.Binary) && this.Varbinary.SequenceEqual(that.Varbinary);
             }
             return false;

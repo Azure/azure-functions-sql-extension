@@ -6,7 +6,7 @@
 
 package com.function;
 
-import com.function.Common.SqlChangeProduct;
+import com.function.Common.SqlChangeProductColumnTypes;
 import com.google.gson.Gson;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.annotation.FunctionName;
@@ -21,7 +21,7 @@ public class ProductsColumnTypesTrigger {
                 name = "changes",
                 tableName = "[dbo].[ProductsColumnTypes]",
                 connectionStringSetting = "SqlConnectionString")
-                SqlChangeProduct[] changes,
+                SqlChangeProductColumnTypes[] changes,
             ExecutionContext context) throws Exception {
 
         context.getLogger().log(Level.INFO, "SQL Changes: " + new Gson().toJson(changes));
