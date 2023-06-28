@@ -654,7 +654,91 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             //Check if LastAccessTime column exists in the GlobalState table
             Assert.True(1 == (int)this.ExecuteScalar("SELECT 1 FROM sys.columns WHERE Name = N'LastAccessTime' AND Object_ID = Object_ID(N'[az_func].[GlobalState]')"), $"{GlobalStateTableName} should have {LastAccessTimeColumnName} column after restarting the listener.");
+        }
 
+        /// <summary>
+        /// Ensures that all column types are serialized correctly.
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        public async Task ProductsColumnTypesTriggerTest(SupportedLanguages lang)
+        {
+            this.SetChangeTrackingForTable("ProductsColumnTypes");
+            this.StartFunctionHost(nameof(ProductsColumnTypesTrigger), lang, true);
+            ProductColumnTypes expectedResponse = Utils.JsonDeserializeObject<ProductColumnTypes>(/*lang=json,strict*/ "{\"ProductId\":999,\"BigInt\":999,\"Bit\":true,\"DecimalType\":1.2345,\"Money\":1.2345,\"Numeric\":1.2345,\"SmallInt\":1,\"SmallMoney\":1.2345,\"TinyInt\":1,\"FloatType\":0.1,\"Real\":0.1,\"Date\":\"2022-10-20T00:00:00.000Z\",\"Datetime\":\"2022-10-20T12:39:13.123Z\",\"Datetime2\":\"2022-10-20T12:39:13.123Z\",\"DatetimeOffset\":\"2022-10-20T12:39:13.123Z\",\"SmallDatetime\":\"2022-10-20T12:39:00.000Z\",\"Time\":\"12:39:13.1230000\",\"CharType\":\"test\",\"Varchar\":\"test\",\"Nchar\":\"test\",\"Nvarchar\":\"test\",\"Binary\":\"dGVzdA==\",\"Varbinary\":\"dGVzdA==\"}");
+            int index = 0;
+            string messagePrefix = "SQL Changes: ";
+
+            var taskCompletion = new TaskCompletionSource<bool>();
+
+            void MonitorOutputData(object sender, DataReceivedEventArgs e)
+            {
+                if (e.Data != null && (index = e.Data.IndexOf(messagePrefix, StringComparison.Ordinal)) >= 0)
+                {
+                    string json = e.Data[(index + messagePrefix.Length)..];
+                    // Sometimes we'll get messages that have extra logging content on the same line - so to prevent that from breaking
+                    // the deserialization we look for the end of the changes array and only use that.
+                    // (This is fine since we control what content is in the array so know that none of the items have a ] in them)
+                    json = json[..(json.IndexOf(']') + 1)];
+                    IReadOnlyList<SqlChange<ProductColumnTypes>> changes;
+                    try
+                    {
+                        changes = Utils.JsonDeserializeObject<IReadOnlyList<SqlChange<ProductColumnTypes>>>(json);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidOperationException($"Exception deserializing JSON content. Error={ex.Message} Json=\"{json}\"", ex);
+                    }
+                    Assert.Equal(SqlChangeOperation.Insert, changes[0].Operation); // Expected change operation
+                    ProductColumnTypes product = changes[0].Item;
+                    Assert.NotNull(product); // Product deserialized correctly
+                    Assert.Equal(expectedResponse, product); // The product has the expected values
+                    taskCompletion.SetResult(true);
+                }
+            };
+
+            // Set up listener for the changes coming in
+            foreach (Process functionHost in this.FunctionHostList)
+            {
+                functionHost.OutputDataReceived += MonitorOutputData;
+            }
+
+            // Now that we've set up our listener trigger the actions to monitor
+            string datetime = "2022-10-20 12:39:13.123";
+            this.ExecuteNonQuery("INSERT INTO [dbo].[ProductsColumnTypes] VALUES (" +
+                "999, " + // ProductId,
+                "999, " + // BigInt
+                "1, " + // Bit
+                "1.2345, " + // DecimalType
+                "1.2345, " + // Money
+                "1.2345, " + // Numeric
+                "1, " + // SmallInt
+                "1.2345, " + // SmallMoney
+                "1, " + // TinyInt
+                ".1, " + // FloatType
+                ".1, " + // Real
+                $"CONVERT(DATE, '{datetime}'), " + // Date
+                $"CONVERT(DATETIME, '{datetime}'), " + // Datetime
+                $"CONVERT(DATETIME2, '{datetime}'), " + // Datetime2
+                $"CONVERT(DATETIMEOFFSET, '{datetime}'), " + // DatetimeOffset
+                $"CONVERT(SMALLDATETIME, '{datetime}'), " + // SmallDatetime
+                $"CONVERT(TIME, '{datetime}'), " + // Time
+                "'test', " + // CharType
+                "'test', " + // Varchar
+                "'test', " + // Nchar
+                "'test', " +  // Nvarchar
+                "CONVERT(BINARY, 'test'), " + // Binary
+                "CONVERT(VARBINARY, 'test'))"); // Varbinary
+
+            // Now wait until either we timeout or we've gotten all the expected changes, whichever comes first
+            this.LogOutput($"[{DateTime.UtcNow:u}] Waiting for Insert changes (10000ms)");
+            await taskCompletion.Task.TimeoutAfter(TimeSpan.FromMilliseconds(10000), $"Timed out waiting for Insert changes.");
+
+            // Unhook handler since we're done monitoring these changes so we aren't checking other changes done later
+            foreach (Process functionHost in this.FunctionHostList)
+            {
+                functionHost.OutputDataReceived -= MonitorOutputData;
+            }
         }
     }
 }
