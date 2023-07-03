@@ -27,13 +27,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(100, 500)]
         public async void GetProductsTest(int n, int cost, SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(GetProducts), lang);
             // Generate T-SQL to insert n rows of data with cost
             Product[] products = GetProductsWithSameCost(n, cost);
             this.InsertProducts(products);
 
             // Run the function
-            HttpResponseMessage response = await this.SendInputRequest("getproducts", cost.ToString(), 7081);
+            HttpResponseMessage response = await this.SendInputRequest("getproducts", cost.ToString(), TestUtils.GetPort(lang));
 
             // Verify result
             string actualResponse = await response.Content.ReadAsStringAsync();

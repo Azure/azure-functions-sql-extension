@@ -4,7 +4,7 @@
 // using System;
 using System.Collections.Generic;
 // using System.Threading;
-using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples;
+// using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples;
 // using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Xunit;
 using Xunit.Abstractions;
@@ -30,7 +30,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(-500, "ABCD", 580)]
         public void AddProductTest(int id, string name, int cost, SupportedLanguages lang)
         {
-            this.StartFunctionHost(nameof(AddProduct), lang);
 
             var query = new Dictionary<string, object>()
             {
@@ -39,7 +38,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "Cost", cost }
             };
 
-            this.SendOutputPostRequest("addproduct", Utils.JsonSerializeObject(query), 7081).Wait();
+            this.SendOutputPostRequest("addproduct", Utils.JsonSerializeObject(query), TestUtils.GetPort(lang)).Wait();
 
             // Verify result
             Assert.Equal(name, this.ExecuteScalar($"select Name from Products where ProductId={id}"));
