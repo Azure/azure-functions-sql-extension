@@ -24,12 +24,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public async void GetAndAddProductsTest(SupportedLanguages lang)
         {
+            this.StartFunctionHost("GetAndAddProducts", lang);
             // Insert 10 rows to Products table
             Product[] products = GetProductsWithSameCost(10, 100);
             this.InsertProducts(products);
 
             // Run the function
-            await this.SendInputRequest("getandaddproducts/100", "", TestUtils.GetPort(lang));
+            await this.SendInputRequest("getandaddproducts/100", "", 7081);
 
             // Verify that the 10 rows in Products were upserted to ProductsWithIdentity
             Assert.Equal(10, this.ExecuteScalar("SELECT COUNT(1) FROM ProductsWithIdentity"));
