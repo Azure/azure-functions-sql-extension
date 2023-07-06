@@ -11,7 +11,7 @@
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Timer" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Storage.Queues" />
     <PackageReference Include="Microsoft.AspNetCore.Http" />
-    <PackageReference Include="Grpc.Net.Client" VersionOverride="2.52.0" />
+    <PackageReference Include="Grpc.Net.Client" VersionOverride="2.55.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference
