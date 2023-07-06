@@ -167,8 +167,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         public void DisposeFunctionHosts()
         {
+            Console.WriteLine($"Stopping {this.FunctionHostList.Count} function hosts...");
             foreach (Process functionHost in this.FunctionHostList)
             {
+                Console.WriteLine($"Stopping function host {functionHost.Id}...");
                 try
                 {
                     functionHost.CancelOutputRead();
@@ -183,6 +185,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 }
             }
             this.FunctionHostList.Clear();
+            Console.WriteLine("Function hosts  stopped!");
         }
     }
 }
