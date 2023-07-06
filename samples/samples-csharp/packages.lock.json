@@ -1718,14 +1718,14 @@
       "microsoft.azure.webjobs.extensions.sql": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.ApplicationInsights": "[2.21.0, )",
-          "Microsoft.AspNetCore.Http": "[2.2.2, )",
-          "Microsoft.Azure.WebJobs": "[3.0.33, )",
-          "Microsoft.Data.SqlClient": "[5.0.1, )",
-          "Microsoft.SqlServer.TransactSql.ScriptDom": "[161.8817.2, )",
-          "Newtonsoft.Json": "[13.0.2, )",
-          "System.Runtime.Caching": "[5.0.0, )",
-          "morelinq": "[3.3.2, )"
+          "Microsoft.ApplicationInsights": "2.21.0",
+          "Microsoft.AspNetCore.Http": "2.2.2",
+          "Microsoft.Azure.WebJobs": "3.0.33",
+          "Microsoft.Data.SqlClient": "5.0.1",
+          "Microsoft.SqlServer.TransactSql.ScriptDom": "161.8817.2",
+          "Newtonsoft.Json": "13.0.2",
+          "System.Runtime.Caching": "5.0.0",
+          "morelinq": "3.3.2"
         }
       },
       "Microsoft.ApplicationInsights": {
