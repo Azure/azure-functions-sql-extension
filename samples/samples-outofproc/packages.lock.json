@@ -106,15 +106,6 @@
           "System.Memory": "4.5.3"
         }
       },
-      "Grpc.Net.Client": {
-        "type": "Transitive",
-        "resolved": "2.49.0",
-        "contentHash": "mLXxEJzqnRHseVzRCzSQznA7y8pcSStVbstLTUuQRulN7kREovh82ctNkGpkfwONi/DHoWscX9mJLiAmh0gjOQ==",
-        "dependencies": {
-          "Grpc.Net.Common": "2.49.0",
-          "Microsoft.Extensions.Logging.Abstractions": "3.0.3"
-        }
-      },
       "Grpc.Net.ClientFactory": {
         "type": "Transitive",
         "resolved": "2.49.0",
@@ -840,9 +831,19 @@
       "microsoft.azure.functions.worker.extensions.sql": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.Azure.Functions.Worker.Extensions.Abstractions": "[1.1.0, )",
-          "Microsoft.Data.SqlClient": "[5.0.1, )",
-          "System.Drawing.Common": "[5.0.3, )"
+          "Microsoft.Azure.Functions.Worker.Extensions.Abstractions": "1.1.0",
+          "Microsoft.Data.SqlClient": "5.0.1",
+          "System.Drawing.Common": "5.0.3"
+        }
+      },
+      "Grpc.Net.Client": {
+        "type": "CentralTransitive",
+        "requested": "[2.55.0, )",
+        "resolved": "2.49.0",
+        "contentHash": "mLXxEJzqnRHseVzRCzSQznA7y8pcSStVbstLTUuQRulN7kREovh82ctNkGpkfwONi/DHoWscX9mJLiAmh0gjOQ==",
+        "dependencies": {
+          "Grpc.Net.Common": "2.49.0",
+          "Microsoft.Extensions.Logging.Abstractions": "3.0.3"
         }
       },
       "Microsoft.Azure.Functions.Worker.Extensions.Abstractions": {

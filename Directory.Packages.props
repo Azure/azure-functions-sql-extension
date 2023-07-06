@@ -28,5 +28,6 @@
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="6.0.1" />
     <PackageVersion Include="Microsoft.SqlServer.TransactSql.ScriptDom" Version="161.8817.2" />
+    <PackageVersion Include="Grpc.Net.Client" Version="2.55.0" />
   </ItemGroup>
 </Project>
