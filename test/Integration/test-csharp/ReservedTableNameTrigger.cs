@@ -9,7 +9,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     public static class ReservedTableNameTrigger
     {
         /// <summary>
-        /// Used in verification of the error message when the user table contains columns of unsupported SQL types.
+        /// Used in verification of the trigger function execution on table with reserved keys as name.
         /// </summary>
         [FunctionName(nameof(ReservedTableNameTrigger))]
         public static void Run(
