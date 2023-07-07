@@ -187,31 +187,31 @@ steps:
     arguments: '--configuration ${{ parameters.configuration }} --filter FullyQualifiedName!~NoPropertiesThrows --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings'
   condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
 
-# - task: DotNetCoreCLI@2
-#   displayName: '.NET Test on Windows (Non .NET In-Proc)'
-#   env:
-#     TEST_SERVER: '$(testServer)'
-#     NODE_MODULES_PATH: '$(nodeModulesPath)'
-#     AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
-#     LANGUAGES_TO_TEST: 'Java,JavaScript,OutOfProc,PowerShell,Python,Csx'
-#   inputs:
-#     command: test
-#     projects: '${{ parameters.solution }}'
-#     # Skip any CSharp only integration tests
-#     arguments: '--configuration ${{ parameters.configuration }} --filter "FullyQualifiedName~Integration & FullyQualifiedName!~AddProductsCollectorTest"'
-#   condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
+- task: DotNetCoreCLI@2
+  displayName: '.NET Test on Windows (Non .NET In-Proc)'
+  env:
+    TEST_SERVER: '$(testServer)'
+    NODE_MODULES_PATH: '$(nodeModulesPath)'
+    AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
+    LANGUAGES_TO_TEST: 'Java,JavaScript,OutOfProc,PowerShell,Python,Csx'
+  inputs:
+    command: test
+    projects: '${{ parameters.solution }}'
+    # Skip any CSharp only integration tests
+    arguments: '--configuration ${{ parameters.configuration }} --filter "FullyQualifiedName~Integration & FullyQualifiedName!~AddProductsCollectorTest"'
+  condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
 
-# - task: DotNetCoreCLI@2
-#   displayName: '.NET Test on Linux (both unit and integration tests)'
-#   env:
-#     SA_PASSWORD: '$(serverPassword)'
-#     NODE_MODULES_PATH: '$(nodeModulesPath)'
-#     AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
-#   inputs:
-#     command: test
-#     projects: '${{ parameters.solution }}'
-#     arguments: '--configuration ${{ parameters.configuration }}'
-#   condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'linux'))
+- task: DotNetCoreCLI@2
+  displayName: '.NET Test on Linux (both unit and integration tests)'
+  env:
+    SA_PASSWORD: '$(serverPassword)'
+    NODE_MODULES_PATH: '$(nodeModulesPath)'
+    AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
+  inputs:
+    command: test
+    projects: '${{ parameters.solution }}'
+    arguments: '--configuration ${{ parameters.configuration }}'
+  condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'linux'))
 
 - script: |
     docker stop sql1

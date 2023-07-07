@@ -40,8 +40,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// (1) they may interfere with other tests (ex. TimerTriggerProducts) or
         /// (2) they don't apply to all languages (ex. AddProductsCollector)
         /// </summary>
-        private readonly List<string> SampleFunctions = new() { "GetProducts", "AddProduct", "GetAndAddProducts" };
+        private readonly List<string> SampleFunctions = new() { "GetProducts", "GetProductsStoredProcedure", "GetProductsNameEmpty", "GetProductsStoredProcedureFromAppSetting", "GetProductNamesView", "AddProduct", "AddProductParams", "AddProductsArray", "AddProductWithMultiplePrimaryColumnsAndIdentity", "GetAndAddProducts", "AddProductWithDefaultPK" };
 
+        /// <summary>
+        /// List of all functions in the test folder that will be started before the
+        /// input and output binding tests are run.
+        /// </summary>
+        private readonly List<string> TestFunctions = new() { "GetProductsColumnTypesSerialization", "AddProductColumnTypes", "AddProductExtraColumns", "AddProductMissingColumns", "AddProductMissingColumnsExceptionFunction", "AddProductsNoPartialUpsert", "AddProductIncorrectCasing", "AddProductDefaultPKAndDifferentColumnOrder" };
+
+        /// <summary>
+        /// Host processes for Azure Function CLI.
+        /// </summary>
         public List<Process> FunctionHostList { get; } = new List<Process>();
 
         public IntegrationTestFixture()
@@ -65,17 +74,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 if (lang == SupportedLanguages.CSharp)
                 {
                     this.StartHost(Path.Combine(binPath, "SqlExtensionSamples", "CSharp"), TestUtils.GetPort(lang), this.SampleFunctions);
-                    // this.StartHost(Path.Combine(binPath), TestUtils.GetPort(lang, true), this.TestFunctions);
+                    this.StartHost(Path.Combine(binPath), TestUtils.GetPort(lang, true), this.TestFunctions);
                 }
                 else if (lang == SupportedLanguages.Java)
                 {
                     this.StartHost(Path.Combine(binPath, "SqlExtensionSamples", "Java", "target", "azure-functions", "samples-java-1665766173929"), TestUtils.GetPort(lang), this.SampleFunctions);
-                    // this.StartHost(Path.Combine(binPath, "..", "..", "..", "Integration", "test-java", "target", "azure-functions", "test-java-1666041146813"), TestUtils.GetPort(lang, true), this.TestFunctions);
+                    this.StartHost(Path.Combine(binPath, "..", "..", "..", "Integration", "test-java", "target", "azure-functions", "test-java-1666041146813"), TestUtils.GetPort(lang, true), this.TestFunctions);
                 }
                 else if (lang == SupportedLanguages.OutOfProc)
                 {
                     this.StartHost(Path.Combine(binPath, "SqlExtensionSamples", "OutOfProc"), TestUtils.GetPort(lang), this.SampleFunctions);
-                    // this.StartHost(Path.Combine(binPath, "SqlExtensionSamples", "OutOfProc", "test"), TestUtils.GetPort(lang, true), this.TestFunctions);
+                    this.StartHost(Path.Combine(binPath, "SqlExtensionSamples", "OutOfProc", "test"), TestUtils.GetPort(lang, true), this.TestFunctions);
                 }
                 else
                 {
@@ -87,7 +96,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         private void StartHost(string workingDirectory, int port, List<string> functions = null)
         {
             string functionsArg = " --functions ";
-            functionsArg += functions != null ? string.Join(" ", functions) : string.Join(" ", this.SampleFunctions);// + " " + string.Join(" ", this.TestFunctions);
+            functionsArg += functions != null ? string.Join(" ", functions) : string.Join(" ", this.SampleFunctions) + " " + string.Join(" ", this.TestFunctions);
 
             var startInfo = new ProcessStartInfo
             {
@@ -171,10 +180,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         public void DisposeFunctionHosts()
         {
-            Console.WriteLine($"Stopping {this.FunctionHostList.Count} function hosts...");
             foreach (Process functionHost in this.FunctionHostList)
             {
-                Console.WriteLine($"Stopping function host {functionHost.Id}...");
                 try
                 {
                     functionHost.CancelOutputRead();
@@ -189,7 +196,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 }
             }
             this.FunctionHostList.Clear();
-            Console.WriteLine("Function hosts  stopped!");
         }
     }
 }
