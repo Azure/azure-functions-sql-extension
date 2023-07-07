@@ -2,6 +2,16 @@
   "version": 2,
   "dependencies": {
     "net6.0": {
+      "Grpc.Net.Client": {
+        "type": "Direct",
+        "requested": "[2.55.0, )",
+        "resolved": "2.55.0",
+        "contentHash": "cQyNEAIVs/5npjSHuCKCT5kQJm3AyOnUw7h7s2lXt9rSWC/bhCGPbNAtiFGNvKiQAYgIt4zV13BS983viZP9pg==",
+        "dependencies": {
+          "Grpc.Net.Common": "2.55.0",
+          "Microsoft.Extensions.Logging.Abstractions": "3.0.3"
+        }
+      },
       "Microsoft.AspNetCore.Http": {
         "type": "Direct",
         "requested": "[2.2.2, )",
@@ -106,19 +116,10 @@
       },
       "Grpc.Core.Api": {
         "type": "Transitive",
-        "resolved": "2.49.0",
-        "contentHash": "6OTcSQ8iML+xzmELhH4anUZlNM3dHDKPFBsMLSdiT80LJaaZKxwZml/K9ZdfLIjSR/EzdMZzzU2Avbedz4N7BA==",
+        "resolved": "2.55.0",
+        "contentHash": "qtJauqAZ4jAM6A2TQyenhpZWPfJBow7/HV/KiRbxJvYHo9jVtUL7SBIs3cjvBh5DXIUaNFIFfBQ3QGyv3nLKCw==",
         "dependencies": {
           "System.Memory": "4.5.3"
-        }
-      },
-      "Grpc.Net.Client": {
-        "type": "Transitive",
-        "resolved": "2.49.0",
-        "contentHash": "mLXxEJzqnRHseVzRCzSQznA7y8pcSStVbstLTUuQRulN7kREovh82ctNkGpkfwONi/DHoWscX9mJLiAmh0gjOQ==",
-        "dependencies": {
-          "Grpc.Net.Common": "2.49.0",
-          "Microsoft.Extensions.Logging.Abstractions": "3.0.3"
         }
       },
       "Grpc.Net.ClientFactory": {
@@ -132,10 +133,10 @@
       },
       "Grpc.Net.Common": {
         "type": "Transitive",
-        "resolved": "2.49.0",
-        "contentHash": "G0TVTS8fjCk8b7td/E7C8/ssJPm3JnGVBKsveoj/89PIwIee72qkXG+tVn5c1gwTanEFPdyPoydna/bmU/NAaw==",
+        "resolved": "2.55.0",
+        "contentHash": "s1tzY9Z3jKq+mcYGSkZSTTs8Gwi9M5zfXltSDIx7XvFIdSbh+QtfWiV/4n+vP8yDvFDQASaW+6BzkGUbHEftRA==",
         "dependencies": {
-          "Grpc.Core.Api": "2.49.0"
+          "Grpc.Core.Api": "2.55.0"
         }
       },
       "Microsoft.AspNetCore.Http.Abstractions": {
@@ -846,9 +847,9 @@
       "microsoft.azure.functions.worker.extensions.sql": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.Azure.Functions.Worker.Extensions.Abstractions": "[1.1.0, )",
-          "Microsoft.Data.SqlClient": "[5.0.1, )",
-          "System.Drawing.Common": "[5.0.3, )"
+          "Microsoft.Azure.Functions.Worker.Extensions.Abstractions": "1.1.0",
+          "Microsoft.Data.SqlClient": "5.0.1",
+          "System.Drawing.Common": "5.0.3"
         }
       },
       "Microsoft.Azure.Functions.Worker.Extensions.Abstractions": {
