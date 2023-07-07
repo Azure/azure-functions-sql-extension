@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 using Xunit;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
+using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -56,27 +57,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         private void StartFunctionHosts()
         {
             string binPath = TestUtils.GetPathToBin();
-            foreach (SupportedLanguages lang in Enum.GetValues(typeof(SupportedLanguages)))
+            string languages = Environment.GetEnvironmentVariable("LANGUAGES_TO_TEST");
+            SupportedLanguages[] supportedLanguages = languages == null ? (SupportedLanguages[])Enum.GetValues(typeof(SupportedLanguages))
+                : languages.Split(',').Select(l => (SupportedLanguages)Enum.Parse(typeof(SupportedLanguages), l)).ToArray();
+            foreach (SupportedLanguages lang in supportedLanguages)
             {
                 if (lang == SupportedLanguages.CSharp)
                 {
                     this.StartHost(Path.Combine(binPath, "SqlExtensionSamples", "CSharp"), TestUtils.GetPort(lang), this.SampleFunctions);
                     // this.StartHost(Path.Combine(binPath), TestUtils.GetPort(lang, true), this.TestFunctions);
                 }
-                // else if (lang == SupportedLanguages.Java)
-                // {
-                //     this.StartHost(Path.Combine(binPath, "SqlExtensionSamples", "Java", "target", "azure-functions", "samples-java-1665766173929"), TestUtils.GetPort(lang), this.SampleFunctions);
-                //     // this.StartHost(Path.Combine(binPath, "..", "..", "..", "Integration", "test-java", "target", "azure-functions", "test-java-1666041146813"), TestUtils.GetPort(lang, true), this.TestFunctions);
-                // }
+                else if (lang == SupportedLanguages.Java)
+                {
+                    this.StartHost(Path.Combine(binPath, "SqlExtensionSamples", "Java", "target", "azure-functions", "samples-java-1665766173929"), TestUtils.GetPort(lang), this.SampleFunctions);
+                    // this.StartHost(Path.Combine(binPath, "..", "..", "..", "Integration", "test-java", "target", "azure-functions", "test-java-1666041146813"), TestUtils.GetPort(lang, true), this.TestFunctions);
+                }
                 else if (lang == SupportedLanguages.OutOfProc)
                 {
                     this.StartHost(Path.Combine(binPath, "SqlExtensionSamples", "OutOfProc"), TestUtils.GetPort(lang), this.SampleFunctions);
                     // this.StartHost(Path.Combine(binPath, "SqlExtensionSamples", "OutOfProc", "test"), TestUtils.GetPort(lang, true), this.TestFunctions);
                 }
-                // else
-                // {
-                //     this.StartHost(Path.Combine(binPath, "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), lang)), TestUtils.GetPort(lang), null);
-                // }
+                else
+                {
+                    this.StartHost(Path.Combine(binPath, "SqlExtensionSamples", Enum.GetName(typeof(SupportedLanguages), lang)), TestUtils.GetPort(lang), null);
+                }
             }
         }
 
