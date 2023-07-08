@@ -85,13 +85,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Returns the object ID of the user table.
         /// </summary>
         /// <param name="connection">SQL connection used to connect to user database</param>
-        /// <param name="userTableName">Name of the user table</param>
+        /// <param name="userTable">SqlObject user table</param>
         /// <param name="logger">Facilitates logging of messages</param>
         /// <param name="cancellationToken">Cancellation token to pass to the command</param>
         /// <exception cref="InvalidOperationException">Thrown in case of error when querying the object ID for the user table</exception>
-        public static async Task<int> GetUserTableIdAsync(SqlConnection connection, string userTableName, ILogger logger, CancellationToken cancellationToken)
+        internal static async Task<int> GetUserTableIdAsync(SqlConnection connection, SqlObject userTable, ILogger logger, CancellationToken cancellationToken)
         {
-            var userTable = new SqlObject(userTableName);
             string getObjectIdQuery = $"SELECT OBJECT_ID(N{userTable.QuotedFullName}, 'U');";
 
             using (var getObjectIdCommand = new SqlCommand(getObjectIdQuery, connection))
@@ -99,14 +98,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 if (!await reader.ReadAsync(cancellationToken))
                 {
-                    throw new InvalidOperationException($"Received empty response when querying the object ID for table: '{userTableName}'.");
+                    throw new InvalidOperationException($"Received empty response when querying the object ID for table: '{userTable.FullName}'.");
                 }
 
                 object userTableId = reader.GetValue(0);
 
                 if (userTableId is DBNull)
                 {
-                    throw new InvalidOperationException($"Could not find table: '{userTableName}'.");
+                    throw new InvalidOperationException($"Could not find table: '{userTable.FullName}'.");
                 }
                 logger.LogDebug($"GetUserTableId TableId={userTableId}");
                 return (int)userTableId;
