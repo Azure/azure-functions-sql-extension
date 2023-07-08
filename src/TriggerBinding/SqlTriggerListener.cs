@@ -119,7 +119,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                     await VerifyDatabaseSupported(connection, this._logger, cancellationToken);
 
-                    int userTableId = await GetUserTableIdAsync(connection, this._userTable.FullName, this._logger, cancellationToken);
+                    int userTableId = await GetUserTableIdAsync(connection, this._userTable, this._logger, cancellationToken);
                     IReadOnlyList<(string name, string type)> primaryKeyColumns = await GetPrimaryKeyColumnsAsync(connection, userTableId, this._logger, this._userTable.FullName, cancellationToken);
                     IReadOnlyList<string> userTableColumns = await this.GetUserTableColumnsAsync(connection, userTableId, cancellationToken);
 
