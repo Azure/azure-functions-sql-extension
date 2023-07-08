@@ -472,7 +472,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 nameof(TableNotPresentTrigger),
                 lang,
                 true,
-                "Could not find table: '[dbo].[TableNotPresent]'.");
+                "Could not find table: 'dbo.TableNotPresent'.");
         }
 
         /// <summary>
