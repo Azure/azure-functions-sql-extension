@@ -66,6 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         private void StartFunctionHosts()
         {
             string binPath = TestUtils.GetPathToBin();
+            // Only start CSharp host for CSharp only tests task to ensure code coverage shows in pipeline.
             string languages = Environment.GetEnvironmentVariable("LANGUAGES_TO_TEST");
             SupportedLanguages[] supportedLanguages = languages == null ? (SupportedLanguages[])Enum.GetValues(typeof(SupportedLanguages))
                 : languages.Split(',').Select(l => (SupportedLanguages)Enum.Parse(typeof(SupportedLanguages), l)).ToArray();
