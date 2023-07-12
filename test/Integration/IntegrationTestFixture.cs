@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 using Xunit;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
+using System.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -47,7 +48,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         private readonly List<string> TestFunctions = new() { "GetProductsColumnTypesSerialization", "AddProductColumnTypes", "AddProductExtraColumns", "AddProductMissingColumns", "AddProductMissingColumnsExceptionFunction", "AddProductsNoPartialUpsert", "AddProductIncorrectCasing", "AddProductDefaultPKAndDifferentColumnOrder" };
 
-
         /// <summary>
         /// Host processes for Azure Function CLI.
         /// </summary>
@@ -66,7 +66,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         private void StartFunctionHosts()
         {
             string binPath = TestUtils.GetPathToBin();
-            foreach (SupportedLanguages lang in Enum.GetValues(typeof(SupportedLanguages)))
+            // Only start CSharp host for CSharp only tests task to ensure code coverage shows in pipeline.
+            string languages = Environment.GetEnvironmentVariable("LANGUAGES_TO_TEST");
+            SupportedLanguages[] supportedLanguages = languages == null ? (SupportedLanguages[])Enum.GetValues(typeof(SupportedLanguages))
+                : languages.Split(',').Select(l => (SupportedLanguages)Enum.Parse(typeof(SupportedLanguages), l)).ToArray();
+            foreach (SupportedLanguages lang in supportedLanguages)
             {
                 if (lang == SupportedLanguages.CSharp)
                 {
