@@ -233,7 +233,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         {
             return new SqlTriggerScaleMonitor(
                 userFunctionId,
-                tableName,
+                new SqlObject(tableName),
                 "testConnectionString",
                 SqlTriggerListener<object>.DefaultMaxChangesPerWorker,
                 Mock.Of<ILogger>());
@@ -245,7 +245,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 
             IScaleMonitor<SqlTriggerMetrics> monitor = new SqlTriggerScaleMonitor(
                 "testUserFunctionId",
-                "testTableName",
+                new SqlObject("testTableName"),
                 "testConnectionString",
                 maxChangesPerWorker,
                 mockLogger.Object);
