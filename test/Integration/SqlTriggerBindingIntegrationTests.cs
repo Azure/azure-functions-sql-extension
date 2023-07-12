@@ -662,7 +662,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Theory]
         [SqlInlineData()]
         [UnsupportedLanguages(SupportedLanguages.Java)] // test timing out for Java
-
         public async void ReservedTableNameTest(SupportedLanguages lang)
         {
             this.SetChangeTrackingForTable("User");

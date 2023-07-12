@@ -82,8 +82,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             this._hasConfiguredMaxChangesPerWorker = configuredMaxChangesPerWorker != null;
 
-            this._scaleMonitor = new SqlTriggerScaleMonitor(this._userFunctionId, this._userTable.BracketQuotedFullName, this._connectionString, this._maxChangesPerWorker, this._logger);
-            this._targetScaler = new SqlTriggerTargetScaler(this._userFunctionId, this._userTable.BracketQuotedFullName, this._connectionString, this._maxChangesPerWorker, this._logger);
+            this._scaleMonitor = new SqlTriggerScaleMonitor(this._userFunctionId, this._userTable, this._connectionString, this._maxChangesPerWorker, this._logger);
+            this._targetScaler = new SqlTriggerTargetScaler(this._userFunctionId, this._userTable, this._connectionString, this._maxChangesPerWorker, this._logger);
         }
 
         public void Cancel()
