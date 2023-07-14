@@ -82,8 +82,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             this._hasConfiguredMaxChangesPerWorker = configuredMaxChangesPerWorker != null;
 
-            this._scaleMonitor = new SqlTriggerScaleMonitor(this._userFunctionId, this._userTable.BracketQuotedFullName, this._connectionString, this._maxChangesPerWorker, this._logger);
-            this._targetScaler = new SqlTriggerTargetScaler(this._userFunctionId, this._userTable.BracketQuotedFullName, this._connectionString, this._maxChangesPerWorker, this._logger);
+            this._scaleMonitor = new SqlTriggerScaleMonitor(this._userFunctionId, this._userTable, this._connectionString, this._maxChangesPerWorker, this._logger);
+            this._targetScaler = new SqlTriggerTargetScaler(this._userFunctionId, this._userTable, this._connectionString, this._maxChangesPerWorker, this._logger);
         }
 
         public void Cancel()
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                     await VerifyDatabaseSupported(connection, this._logger, cancellationToken);
 
-                    int userTableId = await GetUserTableIdAsync(connection, this._userTable.BracketQuotedFullName, this._logger, cancellationToken);
+                    int userTableId = await GetUserTableIdAsync(connection, this._userTable, this._logger, cancellationToken);
                     IReadOnlyList<(string name, string type)> primaryKeyColumns = await GetPrimaryKeyColumnsAsync(connection, userTableId, this._logger, this._userTable.FullName, cancellationToken);
                     IReadOnlyList<string> userTableColumns = await this.GetUserTableColumnsAsync(connection, userTableId, cancellationToken);
 
