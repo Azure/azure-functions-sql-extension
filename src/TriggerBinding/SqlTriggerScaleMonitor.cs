@@ -25,11 +25,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps = new Dictionary<TelemetryPropertyName, string>();
         private readonly int _maxChangesPerWorker;
 
-        public SqlTriggerScaleMonitor(string userFunctionId, string userTableName, string connectionString, int maxChangesPerWorker, ILogger logger)
+        public SqlTriggerScaleMonitor(string userFunctionId, SqlObject userTable, string connectionString, int maxChangesPerWorker, ILogger logger)
         {
             _ = !string.IsNullOrEmpty(userFunctionId) ? true : throw new ArgumentNullException(userFunctionId);
-            _ = !string.IsNullOrEmpty(userTableName) ? true : throw new ArgumentNullException(userTableName);
-            this._userTable = new SqlObject(userTableName);
+            _ = userTable != null ? true : throw new ArgumentNullException(nameof(userTable));
+            this._userTable = userTable;
             // Do not convert the scale-monitor ID to lower-case string since SQL table names can be case-sensitive
             // depending on the collation of the current database.
             this.Descriptor = new ScaleMonitorDescriptor($"{userFunctionId}-SqlTrigger-{this._userTable.FullName}", userFunctionId);

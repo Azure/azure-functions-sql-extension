@@ -15,9 +15,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly SqlTriggerMetricsProvider _metricsProvider;
         private readonly int _maxChangesPerWorker;
 
-        public SqlTriggerTargetScaler(string userFunctionId, string userTableName, string connectionString, int maxChangesPerWorker, ILogger logger)
+        public SqlTriggerTargetScaler(string userFunctionId, SqlObject userTable, string connectionString, int maxChangesPerWorker, ILogger logger)
         {
-            this._metricsProvider = new SqlTriggerMetricsProvider(connectionString, logger, new SqlObject(userTableName), userFunctionId);
+            this._metricsProvider = new SqlTriggerMetricsProvider(connectionString, logger, userTable, userFunctionId);
             this.TargetScalerDescriptor = new TargetScalerDescriptor(userFunctionId);
             this._maxChangesPerWorker = maxChangesPerWorker;
         }
