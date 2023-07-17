@@ -657,6 +657,71 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
+        /// Tests that trigger function executes on table whose name is a reserved word (User).
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Java)] // test timing out for Java
+        public async void ReservedTableNameTest(SupportedLanguages lang)
+        {
+            this.SetChangeTrackingForTable("User");
+            this.StartFunctionHost(nameof(ReservedTableNameTrigger), lang, true);
+            User expectedResponse = Utils.JsonDeserializeObject<User>(/*lang=json,strict*/ "{\"UserId\":999,\"UserName\":\"test\",\"FullName\":\"Testy Test\"}");
+            int index = 0;
+            string messagePrefix = "SQL Changes: ";
+
+            var taskCompletion = new TaskCompletionSource<bool>();
+
+            void MonitorOutputData(object sender, DataReceivedEventArgs e)
+            {
+                if (e.Data != null && (index = e.Data.IndexOf(messagePrefix, StringComparison.Ordinal)) >= 0)
+                {
+                    string json = e.Data[(index + messagePrefix.Length)..];
+                    // Sometimes we'll get messages that have extra logging content on the same line - so to prevent that from breaking
+                    // the deserialization we look for the end of the changes array and only use that.
+                    // (This is fine since we control what content is in the array so know that none of the items have a ] in them)
+                    json = json[..(json.IndexOf(']') + 1)];
+                    IReadOnlyList<SqlChange<User>> changes;
+                    try
+                    {
+                        changes = Utils.JsonDeserializeObject<IReadOnlyList<SqlChange<User>>>(json);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidOperationException($"Exception deserializing JSON content. Error={ex.Message} Json=\"{json}\"", ex);
+                    }
+                    Assert.Equal(SqlChangeOperation.Insert, changes[0].Operation); // Expected change operation
+                    User user = changes[0].Item;
+                    Assert.NotNull(user); // user deserialized correctly
+                    Assert.Equal(expectedResponse, user); // user has the expected values
+                    taskCompletion.SetResult(true);
+                }
+            };
+
+            // Set up listener for the changes coming in
+            foreach (Process functionHost in this.FunctionHostList)
+            {
+                functionHost.OutputDataReceived += MonitorOutputData;
+            }
+
+            // Now that we've set up our listener trigger the actions to monitor
+            this.ExecuteNonQuery("INSERT INTO [dbo].[User] VALUES (" +
+                "999, " + // UserId,
+                "'test', " + // UserName
+                "'Testy Test')"); // FullName
+
+            // Now wait until either we timeout or we've gotten all the expected changes, whichever comes first
+            this.LogOutput($"[{DateTime.UtcNow:u}] Waiting for Insert changes (10000ms)");
+            await taskCompletion.Task.TimeoutAfter(TimeSpan.FromMilliseconds(10000), $"Timed out waiting for Insert changes.");
+
+            // Unhook handler since we're done monitoring these changes so we aren't checking other changes done later
+            foreach (Process functionHost in this.FunctionHostList)
+            {
+                functionHost.OutputDataReceived -= MonitorOutputData;
+            }
+        }
+
+        /// <summary>
         /// Ensures that all column types are serialized correctly.
         /// </summary>
         [Theory]
