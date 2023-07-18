@@ -69,6 +69,7 @@ steps:
   inputs:
     command: restore
     restoreArguments: --force-evaluate
+    noCache: true
     projects: '${{ parameters.solution }}'
 
 - powershell: $(System.DefaultWorkingDirectory)/builds/scripts/UpdateLogLevel.ps1
