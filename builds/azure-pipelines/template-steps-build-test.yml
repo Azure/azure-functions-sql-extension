@@ -68,7 +68,7 @@ steps:
   displayName: '.NET Restore'
   inputs:
     command: restore
-    restoreArguments: -f --no-restore
+    restoreArguments: --force-evaluate
     projects: '${{ parameters.solution }}'
 
 - powershell: $(System.DefaultWorkingDirectory)/builds/scripts/UpdateLogLevel.ps1
