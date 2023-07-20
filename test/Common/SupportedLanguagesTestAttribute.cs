@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         public override IEnumerable<object[]> GetData(MethodInfo testMethod)
         {
             if (testMethod == null) { throw new ArgumentNullException(nameof(testMethod)); }
-            if (this.testData.Count == 0) { throw new ArgumentNullException(nameof(testMethod)); }
+            if (this.testData.Count == 0) { throw new EmptyException(nameof(testMethod)); }
 
             UnsupportedLanguagesAttribute unsupportedLangAttr = testMethod.GetCustomAttribute<UnsupportedLanguagesAttribute>();
             if (unsupportedLangAttr != null)
