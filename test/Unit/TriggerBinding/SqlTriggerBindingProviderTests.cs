@@ -78,10 +78,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
             Assert.IsType<SqlTriggerBinding<object>>(binding);
         }
 
+        /// <summary>
+        /// Verifies that <see cref="SqlTriggerBinding{T}"/> is returned if the <see cref="SqlTriggerAttribute"/> has all
+        /// required and optional properties set and it is applied on the trigger parameter of supported type.
+        /// </summary>
+        [Fact]
+        public async Task TryCreateAsync_TableName_ReturnsTriggerBinding()
+        {
+            Type parameterType = typeof(IReadOnlyList<SqlChange<object>>);
+            ITriggerBinding binding = await CreateTriggerBindingAsync(parameterType, nameof(UserFunctionWithTableName));
+            Assert.IsType<SqlTriggerBinding<object>>(binding);
+        }
+
         private static async Task<ITriggerBinding> CreateTriggerBindingAsync(Type parameterType, string methodName)
         {
             var provider = new SqlTriggerBindingProvider(
-                Mock.Of<IConfiguration>(c => c["testConnectionStringSetting"] == "testConnectionString"),
+                Mock.Of<IConfiguration>(c => c["testConnectionStringSetting"] == "testConnectionString" && c["testLeasesTableNameSetting"] == "testLeasesTableName"),
                 Mock.Of<IHostIdProvider>(),
                 Mock.Of<ILoggerFactory>(f => f.CreateLogger(It.IsAny<string>()) == Mock.Of<ILogger>()));
 
@@ -99,5 +111,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         private static void UserFunctionWithoutConnectionString<T>([SqlTrigger("testTableName", null)] T _) { }
 
         private static void UserFunctionWithAttribute<T>([SqlTrigger("testTableName", "testConnectionStringSetting")] T _) { }
+
+        private static void UserFunctionWithTableName<T>([SqlTrigger("testTableName", "testConnectionStringSetting", "testLeasesTableNameSetting")] T _) { }
     }
 }
