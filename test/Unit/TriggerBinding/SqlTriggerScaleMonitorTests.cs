@@ -226,7 +226,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
             (Mock<ILogger> mockLogger, List<string> logMessages) = CreateMockLogger();
             Mock<IConfiguration> mockConfiguration = CreateMockConfiguration(maxChangesPerWorker);
 
-            Assert.Throws<InvalidOperationException>(() => new SqlTriggerListener<object>("testConnectionString", "testTableName", "testUserFunctionId", Mock.Of<ITriggeredFunctionExecutor>(), mockLogger.Object, mockConfiguration.Object));
+            Assert.Throws<InvalidOperationException>(() => new SqlTriggerListener<object>("testConnectionString", "testTableName", "", "testUserFunctionId", Mock.Of<ITriggeredFunctionExecutor>(), mockLogger.Object, mockConfiguration.Object));
         }
 
         private static IScaleMonitor<SqlTriggerMetrics> GetScaleMonitor(string tableName, string userFunctionId)
