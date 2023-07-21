@@ -1,0 +1,13 @@
+{
+    "bindings": [
+      {
+        "name": "changes",
+        "type": "sqlTrigger",
+        "direction": "in",
+        "tableName": "dbo.Products",
+        "connectionStringSetting": "SqlConnectionString",
+        "leasesTableNameSetting": "LeasesTableName"
+      }
+    ],
+    "disabled": false
+  }

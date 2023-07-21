@@ -5,6 +5,7 @@
     "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
     "SqlConnectionString": "",
     "Sp_SelectCost": "SelectProductsCost",
-    "ProductCost": 100
+    "ProductCost": 100,
+    "LeasesTableName": ":eases"
   }
 }
