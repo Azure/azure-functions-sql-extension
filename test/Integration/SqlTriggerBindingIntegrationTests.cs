@@ -814,6 +814,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [UnsupportedLanguages(SupportedLanguages.Java)]
         public void LeasesTableNameTest(SupportedLanguages lang)
         {
+            this.ExecuteNonQuery("DROP TABLE IF EXISTS [az_func].[Leases]");
             this.SetChangeTrackingForTable("Products");
             int count = (int)this.ExecuteScalar("SELECT COUNT(*) FROM sys.tables WHERE [name] = 'Leases'");
             Assert.Equal(0, count);
