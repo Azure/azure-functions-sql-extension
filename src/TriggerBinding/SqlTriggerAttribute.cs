@@ -33,7 +33,6 @@ namespace Microsoft.Azure.WebJobs
         /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored</param>
         public SqlTriggerAttribute(string tableName, string connectionStringSetting) : this(tableName, connectionStringSetting, null) { }
 
-
         /// <summary>
         /// Name of the app setting containing the SQL connection string.
         /// </summary>
