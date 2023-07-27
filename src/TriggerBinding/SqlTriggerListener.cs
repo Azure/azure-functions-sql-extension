@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -126,8 +125,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     IReadOnlyList<(string name, string type)> primaryKeyColumns = await GetPrimaryKeyColumnsAsync(connection, userTableId, this._logger, this._userTable.FullName, cancellationToken);
                     IReadOnlyList<string> userTableColumns = await this.GetUserTableColumnsAsync(connection, userTableId, cancellationToken);
 
-                    string leasesTableName = String.IsNullOrEmpty(this._userDefinedLeasesTableName) ? string.Format(CultureInfo.InvariantCulture, LeasesTableNameFormat, $"{this._userFunctionId}_{userTableId}") :
-                        string.Format(CultureInfo.InvariantCulture, UserDefinedLeasesTableNameFormat, $"{this._userDefinedLeasesTableName}");
+                    string leasesTableName = GetLeasesTableName(this._userDefinedLeasesTableName, this._userFunctionId, userTableId);
                     this._telemetryProps[TelemetryPropertyName.LeasesTableName] = leasesTableName;
 
                     var transactionSw = Stopwatch.StartNew();

@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -101,8 +100,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private SqlCommand BuildGetUnprocessedChangesCommand(SqlConnection connection, SqlTransaction transaction, IReadOnlyList<(string name, string type)> primaryKeyColumns, int userTableId)
         {
             string leasesTableJoinCondition = string.Join(" AND ", primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
-            string leasesTableName = String.IsNullOrEmpty(this._userDefinedLeasesTableName) ? string.Format(CultureInfo.InvariantCulture, LeasesTableNameFormat, $"{this._userFunctionId}_{userTableId}") :
-                string.Format(CultureInfo.InvariantCulture, UserDefinedLeasesTableNameFormat, $"{this._userDefinedLeasesTableName}");
+            string leasesTableName = GetLeasesTableName(this._userDefinedLeasesTableName, this._userFunctionId, userTableId);
             string getUnprocessedChangesQuery = $@"
                 {AppLockStatements}
 

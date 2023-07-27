@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.TriggerBinding
         {
             if (changes != null && changes.Count > 0)
             {
-                _loggerMessage(context.GetLogger("ProductsTrigger"), "SQL Changes: " + JsonConvert.SerializeObject(changes), null);
+                _loggerMessage(context.GetLogger("ProductsTriggerLeasesTableName"), "SQL Changes: " + JsonConvert.SerializeObject(changes), null);
             }
         }
     }
