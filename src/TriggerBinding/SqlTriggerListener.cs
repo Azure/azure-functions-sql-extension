@@ -40,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         private readonly SqlObject _userTable;
         private readonly string _connectionString;
-        private readonly string _leasesTableName;
+        private readonly string _userDefinedLeasesTableName;
         private readonly string _userFunctionId;
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly ILogger _logger;
@@ -62,16 +62,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         /// <param name="connectionString">SQL connection string used to connect to user database</param>
         /// <param name="tableName">Name of the user table</param>
-        /// <param name="leasesTableName">Optional - Name of the leases table</param>
+        /// <param name="userDefinedLeasesTableName">Optional - Name of the leases table</param>
         /// <param name="userFunctionId">Unique identifier for the user function</param>
         /// <param name="executor">Defines contract for triggering user function</param>
         /// <param name="logger">Facilitates logging of messages</param>
         /// <param name="configuration">Provides configuration values</param>
-        public SqlTriggerListener(string connectionString, string tableName, string leasesTableName, string userFunctionId, ITriggeredFunctionExecutor executor, ILogger logger, IConfiguration configuration)
+        public SqlTriggerListener(string connectionString, string tableName, string userDefinedLeasesTableName, string userFunctionId, ITriggeredFunctionExecutor executor, ILogger logger, IConfiguration configuration)
         {
             this._connectionString = !string.IsNullOrEmpty(connectionString) ? connectionString : throw new ArgumentNullException(nameof(connectionString));
             this._userTable = !string.IsNullOrEmpty(tableName) ? new SqlObject(tableName) : throw new ArgumentNullException(nameof(tableName));
-            this._leasesTableName = leasesTableName;
+            this._userDefinedLeasesTableName = userDefinedLeasesTableName;
             this._userFunctionId = !string.IsNullOrEmpty(userFunctionId) ? userFunctionId : throw new ArgumentNullException(nameof(userFunctionId));
             this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -85,8 +85,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             this._hasConfiguredMaxChangesPerWorker = configuredMaxChangesPerWorker != null;
 
-            this._scaleMonitor = new SqlTriggerScaleMonitor(this._userFunctionId, this._userTable, this._connectionString, this._maxChangesPerWorker, this._logger);
-            this._targetScaler = new SqlTriggerTargetScaler(this._userFunctionId, this._userTable, this._connectionString, this._maxChangesPerWorker, this._logger);
+            this._scaleMonitor = new SqlTriggerScaleMonitor(this._userFunctionId, this._userTable, this._userDefinedLeasesTableName, this._connectionString, this._maxChangesPerWorker, this._logger);
+            this._targetScaler = new SqlTriggerTargetScaler(this._userFunctionId, this._userTable, this._userDefinedLeasesTableName, this._connectionString, this._maxChangesPerWorker, this._logger);
         }
 
         public void Cancel()
@@ -126,8 +126,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     IReadOnlyList<(string name, string type)> primaryKeyColumns = await GetPrimaryKeyColumnsAsync(connection, userTableId, this._logger, this._userTable.FullName, cancellationToken);
                     IReadOnlyList<string> userTableColumns = await this.GetUserTableColumnsAsync(connection, userTableId, cancellationToken);
 
-                    string leasesTableName = String.IsNullOrEmpty(this._leasesTableName) ? string.Format(CultureInfo.InvariantCulture, LeasesTableNameFormat, $"{this._userFunctionId}_{userTableId}") :
-                        string.Format(CultureInfo.InvariantCulture, UserDefinedLeasesTableNameFormat, $"{this._leasesTableName}");
+                    string leasesTableName = String.IsNullOrEmpty(this._userDefinedLeasesTableName) ? string.Format(CultureInfo.InvariantCulture, LeasesTableNameFormat, $"{this._userFunctionId}_{userTableId}") :
+                        string.Format(CultureInfo.InvariantCulture, UserDefinedLeasesTableNameFormat, $"{this._userDefinedLeasesTableName}");
                     this._telemetryProps[TelemetryPropertyName.LeasesTableName] = leasesTableName;
 
                     var transactionSw = Stopwatch.StartNew();
