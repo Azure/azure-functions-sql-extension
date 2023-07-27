@@ -123,7 +123,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         internal static string GetLeasesTableName(string userDefinedLeasesTableName, string userFunctionId, int userTableId)
         {
             return string.IsNullOrEmpty(userDefinedLeasesTableName) ? string.Format(CultureInfo.InvariantCulture, LeasesTableNameFormat, $"{userFunctionId}_{userTableId}") :
-                string.Format(CultureInfo.InvariantCulture, UserDefinedLeasesTableNameFormat, $"{userDefinedLeasesTableName}");
+                string.Format(CultureInfo.InvariantCulture, UserDefinedLeasesTableNameFormat, $"{userDefinedLeasesTableName.AsBracketQuotedString()}");
         }
     }
 }
