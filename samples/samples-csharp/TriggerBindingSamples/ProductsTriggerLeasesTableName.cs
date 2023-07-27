@@ -8,9 +8,9 @@ using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.TriggerBindingSamples
 {
-    public static class ProductsTriggerWithLeasesTableName
+    public static class ProductsTriggerLeasesTableName
     {
-        [FunctionName(nameof(ProductsTriggerWithLeasesTableName))]
+        [FunctionName(nameof(ProductsTriggerLeasesTableName))]
         public static void Run(
             [SqlTrigger("[dbo].[Products]", "SqlConnectionString", "Leases")]
             IReadOnlyList<SqlChange<Product>> changes,

@@ -805,5 +805,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 functionHost.OutputDataReceived -= MonitorOutputData;
             }
         }
+
+        /// <summary>
+        /// Ensures that the user defined leasesTableName is used to create the leases table.
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Java)]
+        public void LeasesTableNameTest(SupportedLanguages lang)
+        {
+            this.SetChangeTrackingForTable("Products");
+            int count = (int)this.ExecuteScalar("SELECT COUNT(*) FROM sys.tables WHERE [name] = 'Leases'");
+            Assert.Equal(0, count);
+            this.StartFunctionHost(nameof(ProductsTriggerLeasesTableName), lang);
+            Thread.Sleep(5000);
+            Assert.Equal(1, (int)this.ExecuteScalar("SELECT COUNT(*) FROM sys.tables WHERE [name] = 'Leases'"));
+        }
     }
 }

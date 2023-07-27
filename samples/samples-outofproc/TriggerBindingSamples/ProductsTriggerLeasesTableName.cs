@@ -11,11 +11,11 @@ using System;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.TriggerBindingSamples
 {
-    public class ProductsTriggerWithLeasesTableName
+    public class ProductsTriggerLeasesTableName
     {
         private static readonly Action<ILogger, string, Exception> _loggerMessage = LoggerMessage.Define<string>(LogLevel.Information, eventId: new EventId(0, "INFO"), formatString: "{Message}");
 
-        [Function("ProductsTriggerWithLeasesTableName")]
+        [Function("ProductsTriggerLeasesTableName")]
         public static void Run(
             [SqlTrigger("[dbo].[Products]", "SqlConnectionString", "Leases")]
             IReadOnlyList<SqlChange<Product>> changes, FunctionContext context)
