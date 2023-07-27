@@ -5,7 +5,6 @@
     "FUNCTIONS_WORKER_RUNTIME": "node",
     "SqlConnectionString": "",
     "Sp_SelectCost": "SelectProductsCost",
-    "ProductCost": 100,
-    "LeasesTableName": "Leases"
+    "ProductCost": 100
   }
 }

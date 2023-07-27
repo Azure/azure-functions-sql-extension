@@ -73,7 +73,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             string connectionString = SqlBindingUtilities.GetConnectionString(attribute.ConnectionStringSetting, this._configuration);
-            string leasesTableName = SqlBindingUtilities.GetLeasesTableName(attribute.LeasesTableNameSetting, this._configuration);
 
             Type bindingType;
             // Instantiate class 'SqlTriggerBinding<JObject>' for non .NET In-Proc functions.
@@ -91,7 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             var constructorParameterTypes = new Type[] { typeof(string), typeof(string), typeof(string), typeof(ParameterInfo), typeof(IHostIdProvider), typeof(ILogger), typeof(IConfiguration) };
             ConstructorInfo bindingConstructor = bindingType.GetConstructor(constructorParameterTypes);
 
-            object[] constructorParameterValues = new object[] { connectionString, attribute.TableName, leasesTableName, parameter, this._hostIdProvider, this._logger, this._configuration };
+            object[] constructorParameterValues = new object[] { connectionString, attribute.TableName, attribute.LeasesTableName, parameter, this._hostIdProvider, this._logger, this._configuration };
             var triggerBinding = (ITriggerBinding)bindingConstructor.Invoke(constructorParameterValues);
 
             return Task.FromResult(triggerBinding);

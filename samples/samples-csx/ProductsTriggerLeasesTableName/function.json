@@ -6,7 +6,7 @@
       "direction": "in",
       "tableName": "dbo.Products",
       "connectionStringSetting": "SqlConnectionString",
-      "leasesTableNameSetting": "LeasesTableName"
+      "leasesTableName": "Leases"
     }
   ],
   "disabled": false

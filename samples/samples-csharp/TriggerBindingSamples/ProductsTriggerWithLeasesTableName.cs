@@ -12,11 +12,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.TriggerBindingSamples
     {
         [FunctionName(nameof(ProductsTriggerWithLeasesTableName))]
         public static void Run(
-            [SqlTrigger("[dbo].[Products]", "SqlConnectionString", "LeasesTableName")]
+            [SqlTrigger("[dbo].[Products]", "SqlConnectionString", "Leases")]
             IReadOnlyList<SqlChange<Product>> changes,
             ILogger logger)
         {
-            // The output is used to inspect the trigger binding parameter in test methods.
             logger.LogInformation("SQL Changes: " + JsonConvert.SerializeObject(changes));
         }
     }

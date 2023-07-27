@@ -40,7 +40,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         private readonly SqlObject _userTable;
         private readonly string _connectionString;
-        private readonly string _userDefinedLeasesTableName;
+        private readonly string _leasesTableName;
         private readonly string _userFunctionId;
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly ILogger _logger;
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             this._connectionString = !string.IsNullOrEmpty(connectionString) ? connectionString : throw new ArgumentNullException(nameof(connectionString));
             this._userTable = !string.IsNullOrEmpty(tableName) ? new SqlObject(tableName) : throw new ArgumentNullException(nameof(tableName));
-            this._userDefinedLeasesTableName = leasesTableName;
+            this._leasesTableName = leasesTableName;
             this._userFunctionId = !string.IsNullOrEmpty(userFunctionId) ? userFunctionId : throw new ArgumentNullException(nameof(userFunctionId));
             this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -126,7 +126,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     IReadOnlyList<(string name, string type)> primaryKeyColumns = await GetPrimaryKeyColumnsAsync(connection, userTableId, this._logger, this._userTable.FullName, cancellationToken);
                     IReadOnlyList<string> userTableColumns = await this.GetUserTableColumnsAsync(connection, userTableId, cancellationToken);
 
-                    string leasesTableName = this._userDefinedLeasesTableName ?? string.Format(CultureInfo.InvariantCulture, LeasesTableNameFormat, $"{this._userFunctionId}_{userTableId}");
+                    string leasesTableName = String.IsNullOrEmpty(this._leasesTableName) ? string.Format(CultureInfo.InvariantCulture, LeasesTableNameFormat, $"{this._userFunctionId}_{userTableId}") :
+                        string.Format(CultureInfo.InvariantCulture, UserDefinedLeasesTableNameFormat, $"{this._leasesTableName}");
                     this._telemetryProps[TelemetryPropertyName.LeasesTableName] = leasesTableName;
 
                     var transactionSw = Stopwatch.StartNew();

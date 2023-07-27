@@ -18,12 +18,12 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <param name="tableName">Name of the table to watch for changes.</param>
         /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored</param>
-        /// <param name="leasesTableNameSetting">The name of the app setting where the leases table name is stored</param>
-        public SqlTriggerAttribute(string tableName, string connectionStringSetting, string leasesTableNameSetting = null)
+        /// <param name="leasesTableName">Optional - The name of the table used to store leases</param>
+        public SqlTriggerAttribute(string tableName, string connectionStringSetting, string leasesTableName = null)
         {
             this.TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
             this.ConnectionStringSetting = connectionStringSetting ?? throw new ArgumentNullException(nameof(connectionStringSetting));
-            this.LeasesTableNameSetting = leasesTableNameSetting;
+            this.LeasesTableName = leasesTableName;
         }
 
         /// <summary>
@@ -38,11 +38,11 @@ namespace Microsoft.Azure.WebJobs
         public string TableName { get; }
 
         /// <summary>
-        /// Name of the app setting containing the leases table name.
+        /// Name of the table used to store leases.
         /// If not specified, the leases table name will be Leases_{FunctionId}_{TableId}
         /// More information on how this is generated can be found here
         /// https://github.com/Azure/azure-functions-sql-extension/blob/release/trigger/docs/TriggerBinding.md#az_funcleases_
         /// </summary>
-        public string LeasesTableNameSetting { get; }
+        public string LeasesTableName { get; }
     }
 }

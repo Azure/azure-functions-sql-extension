@@ -4,14 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlTriggerConstants;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
 
@@ -54,25 +52,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 $"ConnectionStringSetting '{connectionStringSetting}' is empty in your function app settings, please update the setting with a valid SQL connection string.");
             }
             return connectionString;
-        }
-
-        public static string GetLeasesTableName(string leasesTableNameSetting, IConfiguration configuration)
-        {
-            if (string.IsNullOrEmpty(leasesTableNameSetting))
-            {
-                return "";
-            }
-            if (configuration == null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-            string leasesTableName = configuration.GetConnectionStringOrSetting(leasesTableNameSetting);
-            if (string.IsNullOrEmpty(leasesTableName))
-            {
-                throw new ArgumentException(leasesTableName == null ? $"LeasesTableNameSetting '{leasesTableNameSetting}' is missing in your function app settings, please add the setting with a leases table name." :
-                $"LeasesTableNameSetting '{leasesTableNameSetting}' is empty in your function app settings, please update the setting with a leases table name.");
-            }
-            return string.Format(CultureInfo.InvariantCulture, UserDefinedLeasesTableNameFormat, $"{leasesTableName}");
         }
 
         /// <summary>
