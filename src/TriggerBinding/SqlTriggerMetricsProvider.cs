@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,13 +26,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly ILogger _logger;
         private readonly SqlObject _userTable;
         private readonly string _userFunctionId;
+        private readonly string _userDefinedLeasesTableName;
 
-        public SqlTriggerMetricsProvider(string connectionString, ILogger logger, SqlObject userTable, string userFunctionId)
+        public SqlTriggerMetricsProvider(string connectionString, ILogger logger, SqlObject userTable, string userFunctionId, string userDefinedLeasesTableName)
         {
             this._connectionString = !string.IsNullOrEmpty(connectionString) ? connectionString : throw new ArgumentNullException(nameof(connectionString));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this._userTable = userTable ?? throw new ArgumentNullException(nameof(userTable));
             this._userFunctionId = !string.IsNullOrEmpty(userFunctionId) ? userFunctionId : throw new ArgumentNullException(nameof(userFunctionId));
+            this._userDefinedLeasesTableName = userDefinedLeasesTableName;
         }
         public async Task<SqlTriggerMetrics> GetMetricsAsync()
         {
@@ -99,7 +100,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private SqlCommand BuildGetUnprocessedChangesCommand(SqlConnection connection, SqlTransaction transaction, IReadOnlyList<(string name, string type)> primaryKeyColumns, int userTableId)
         {
             string leasesTableJoinCondition = string.Join(" AND ", primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
-            string leasesTableName = string.Format(CultureInfo.InvariantCulture, LeasesTableNameFormat, $"{this._userFunctionId}_{userTableId}");
+            string leasesTableName = GetLeasesTableName(this._userDefinedLeasesTableName, this._userFunctionId, userTableId);
             string getUnprocessedChangesQuery = $@"
                 {AppLockStatements}
 

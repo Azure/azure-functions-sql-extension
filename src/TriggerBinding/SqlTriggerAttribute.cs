@@ -18,11 +18,20 @@ namespace Microsoft.Azure.WebJobs
         /// </summary>
         /// <param name="tableName">Name of the table to watch for changes.</param>
         /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored</param>
-        public SqlTriggerAttribute(string tableName, string connectionStringSetting)
+        /// <param name="leasesTableName">Optional - The name of the table used to store leases. If not specified, the leases table name will be Leases_{FunctionId}_{TableId}</param>
+        public SqlTriggerAttribute(string tableName, string connectionStringSetting, string leasesTableName = null)
         {
             this.TableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
             this.ConnectionStringSetting = connectionStringSetting ?? throw new ArgumentNullException(nameof(connectionStringSetting));
+            this.LeasesTableName = leasesTableName;
         }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SqlTriggerAttribute"/> class with null value for LeasesTableName.
+        /// </summary>
+        /// <param name="tableName">Name of the table to watch for changes.</param>
+        /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored</param>
+        public SqlTriggerAttribute(string tableName, string connectionStringSetting) : this(tableName, connectionStringSetting, null) { }
 
         /// <summary>
         /// Name of the app setting containing the SQL connection string.
@@ -34,5 +43,13 @@ namespace Microsoft.Azure.WebJobs
         /// Name of the table to watch for changes.
         /// </summary>
         public string TableName { get; }
+
+        /// <summary>
+        /// Name of the table used to store leases.
+        /// If not specified, the leases table name will be Leases_{FunctionId}_{TableId}
+        /// More information on how this is generated can be found here
+        /// https://github.com/Azure/azure-functions-sql-extension/blob/release/trigger/docs/TriggerBinding.md#az_funcleases_
+        /// </summary>
+        public string LeasesTableName { get; }
     }
 }
