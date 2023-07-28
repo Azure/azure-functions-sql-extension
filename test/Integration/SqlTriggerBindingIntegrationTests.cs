@@ -544,11 +544,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.SetChangeTrackingForTable("Products");
             string userFunctionId = "func-id";
             IConfiguration configuration = new ConfigurationBuilder().Build();
-            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", userFunctionId, Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<ILogger>(), configuration);
+            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", userFunctionId, Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<ILogger>(), configuration);
             await listener.StartAsync(CancellationToken.None);
             // Cancel immediately so the listener doesn't start processing the changes
             await listener.StopAsync(CancellationToken.None);
-            var metricsProvider = new SqlTriggerMetricsProvider(this.DbConnectionString, Mock.Of<ILogger>(), new SqlObject("dbo.Products"), userFunctionId);
+            var metricsProvider = new SqlTriggerMetricsProvider(this.DbConnectionString, Mock.Of<ILogger>(), new SqlObject("dbo.Products"), userFunctionId, "");
             SqlTriggerMetrics metrics = await metricsProvider.GetMetricsAsync();
             Assert.True(metrics.UnprocessedChangeCount == 0, "There should initially be 0 unprocessed changes");
             this.InsertProducts(1, 5);
@@ -625,7 +625,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.SetChangeTrackingForTable("Products");
             string userFunctionId = "func-id";
             IConfiguration configuration = new ConfigurationBuilder().Build();
-            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", userFunctionId, Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<ILogger>(), configuration);
+            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", userFunctionId, Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<ILogger>(), configuration);
             await listener.StartAsync(CancellationToken.None);
             // Cancel immediately so the listener doesn't start processing the changes
             await listener.StopAsync(CancellationToken.None);
@@ -804,6 +804,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 functionHost.OutputDataReceived -= MonitorOutputData;
             }
+        }
+
+        /// <summary>
+        /// Ensures that the user defined leasesTableName is used to create the leases table.
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Java)]
+        public void LeasesTableNameTest(SupportedLanguages lang)
+        {
+            this.ExecuteNonQuery("DROP TABLE IF EXISTS [az_func].[Leases]");
+            this.SetChangeTrackingForTable("Products");
+            int count = (int)this.ExecuteScalar("SELECT COUNT(*) FROM sys.tables WHERE [name] = 'Leases'");
+            Assert.Equal(0, count);
+            this.StartFunctionHost(nameof(ProductsTriggerLeasesTableName), lang);
+            Thread.Sleep(5000);
+            Assert.Equal(1, (int)this.ExecuteScalar("SELECT COUNT(*) FROM sys.tables WHERE [name] = 'Leases'"));
         }
     }
 }

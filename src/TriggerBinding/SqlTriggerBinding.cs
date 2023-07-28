@@ -27,6 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     {
         private readonly string _connectionString;
         private readonly string _tableName;
+        private readonly string _leasesTableName;
         private readonly ParameterInfo _parameter;
         private readonly IHostIdProvider _hostIdProvider;
         private readonly ILogger _logger;
@@ -40,14 +41,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         /// <param name="connectionString">SQL connection string used to connect to user database</param>
         /// <param name="tableName">Name of the user table</param>
+        /// <param name="leasesTableName">Optional - Name of the leases table</param>
         /// <param name="parameter">Trigger binding parameter information</param>
         /// <param name="hostIdProvider">Provider of unique host identifier</param>
         /// <param name="logger">Facilitates logging of messages</param>
         /// <param name="configuration">Provides configuration values</param>
-        public SqlTriggerBinding(string connectionString, string tableName, ParameterInfo parameter, IHostIdProvider hostIdProvider, ILogger logger, IConfiguration configuration)
+        public SqlTriggerBinding(string connectionString, string tableName, string leasesTableName, ParameterInfo parameter, IHostIdProvider hostIdProvider, ILogger logger, IConfiguration configuration)
         {
             this._connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
             this._tableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
+            this._leasesTableName = leasesTableName;
             this._parameter = parameter ?? throw new ArgumentNullException(nameof(parameter));
             this._hostIdProvider = hostIdProvider ?? throw new ArgumentNullException(nameof(hostIdProvider));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -72,7 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             _ = context ?? throw new ArgumentNullException(nameof(context), "Missing listener context");
 
             string userFunctionId = await this.GetUserFunctionIdAsync();
-            return new SqlTriggerListener<T>(this._connectionString, this._tableName, userFunctionId, context.Executor, this._logger, this._configuration);
+            return new SqlTriggerListener<T>(this._connectionString, this._tableName, this._leasesTableName, userFunctionId, context.Executor, this._logger, this._configuration);
         }
 
         public ParameterDescriptor ToParameterDescriptor()

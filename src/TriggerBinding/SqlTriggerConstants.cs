@@ -11,6 +11,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         public const string LeasesTableNameFormat = "[" + SchemaName + "].[Leases_{0}]";
 
+        public const string UserDefinedLeasesTableNameFormat = "[" + SchemaName + "].{0}";
+
         public const string LeasesTableChangeVersionColumnName = "_az_func_ChangeVersion";
         public const string LeasesTableAttemptCountColumnName = "_az_func_AttemptCount";
         public const string LeasesTableLeaseExpirationTimeColumnName = "_az_func_LeaseExpirationTime";
