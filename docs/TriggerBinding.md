@@ -86,9 +86,9 @@ If the tables are deleted or modified, then unexpected behavior may occur. To re
 
 This table stores information about each function being executed, what table that function is watching and what the [last sync state](https://learn.microsoft.com/sql/relational-databases/track-changes/work-with-change-tracking-sql-server) that has been processed.
 
-### az_func.Leases_*
+### az_func.<LeasesTableName>
 
-A `Leases_*` table is created for every unique instance of a function and table. The full name will be in the format `Leases_<FunctionId>_<TableId>` where `<FunctionId>` is generated from the function ID and `<TableId>` is the object ID of the table being tracked. Such as `Leases_7d12c06c6ddff24c_1845581613`.
+If the [LeasesTableName](https://github.com/Azure/azure-functions-sql-extension/blob/30d361021c6760938db659cbe535a9b4f00fc942/docs/SetupGuide_Dotnet.md#L411) property is defined, az_func.<LeasesTableName> is created. If LeasesTableName is not defined, a `Leases_*` table is created for every unique instance of a function and table. The full name will be in the format `Leases_<FunctionId>_<TableId>` where `<FunctionId>` is generated from the function ID and `<TableId>` is the object ID of the table being tracked. Such as `Leases_7d12c06c6ddff24c_1845581613`.
 
 To find the name of the leases table associated with your function, look in the log output for a line such as this which is emitted when the trigger is started.
 

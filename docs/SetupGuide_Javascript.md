@@ -219,8 +219,9 @@ The following table explains the binding configuration properties that you set i
 | **name** | Required. The name of the parameter that the trigger binds to. |
 | **type** | Required. Must be set to `sqlTrigger`.|
 | **direction** | Required. Must be set to `in`. |
-| **commandText** | Required. The name of the table being monitored by the trigger.  |
+| **tableName** | Required. The name of the table being monitored by the trigger.  |
 | **connectionStringSetting** | Required. The name of an app setting that contains the connection string for the database containing the table monitored for changes. This isn't the actual connection string and must instead resolve to an environment variable. Optional keywords in the connection string value are [available to refine SQL bindings connectivity](https://aka.ms/sqlbindings#sql-connection-string). |
+| **leasesTableName** | Optional. The name of the table used to store leases. If not specified, the leases table name will be Leases_{FunctionId}_{TableId}. More information on how this is generated can be found [here](https://github.com/Azure/azure-functions-sql-extension/blob/release/trigger/docs/TriggerBinding.md#az_funcleases_).|
 
 ### Setup for Trigger Bindings
 
