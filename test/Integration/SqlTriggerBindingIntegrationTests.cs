@@ -811,7 +811,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java)]
         public void LeasesTableNameTest(SupportedLanguages lang)
         {
             this.ExecuteNonQuery("DROP TABLE IF EXISTS [az_func].[Leases]");
