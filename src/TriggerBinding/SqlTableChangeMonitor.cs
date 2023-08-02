@@ -305,6 +305,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                             getChangesDurationMs = commandSw.ElapsedMilliseconds;
                         }
+                        // Log the number of rows
+                        //this._logger.LogDebug($"Executed GetChanges in GetTableChanges. Total changes: {rows.Count} Locked rows: {rows.FindAll(x => from n in x where (n.Value.isLeaseLocked = 1 select n.Value)}");
 
                         // If changes were found, acquire leases on them.
                         if (rows.Count > 0)
@@ -795,14 +797,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     c.SYS_CHANGE_OPERATION,
                     l.{LeasesTableChangeVersionColumnName},
                     l.{LeasesTableAttemptCountColumnName},
-                    l.{LeasesTableLeaseExpirationTimeColumnName}
+                    l.{LeasesTableLeaseExpirationTimeColumnName},
+                    CASE WHEN (l._az_func_LeaseExpirationTime < SYSDATETIME()) THEN 0 else 1 END AS IsLeaseLocked
                 FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @last_sync_version) AS c
                 LEFT OUTER JOIN {this._leasesTableName} AS l ON {leasesTableJoinCondition}
                 LEFT OUTER JOIN {this._userTable.BracketQuotedFullName} AS u ON {userTableJoinCondition}
                 WHERE
                     (l.{LeasesTableLeaseExpirationTimeColumnName} IS NULL AND
                        (l.{LeasesTableChangeVersionColumnName} IS NULL OR l.{LeasesTableChangeVersionColumnName} < c.{SysChangeVersionColumnName}) OR
-                        l.{LeasesTableLeaseExpirationTimeColumnName} < SYSDATETIME()
+                        l.{LeasesTableLeaseExpirationTimeColumnName} IS NOT NULL
                     ) AND
                     (l.{LeasesTableAttemptCountColumnName} IS NULL OR l.{LeasesTableAttemptCountColumnName} < {MaxChangeProcessAttemptCount})
                 ORDER BY c.{SysChangeVersionColumnName} ASC;";
@@ -836,7 +839,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string query = $@"
                     {AppLockStatements}
 
-                    WITH {acquireLeasesCte} AS ( SELECT * FROM OPENJSON(@rowData) WITH ({string.Join(",", cteColumnDefinitions)}) )
+                    WITH {acquireLeasesCte} AS ( SELECT * FROM OPENJSON(@rowData) WHERE IsLeaseLocked = 0 WITH ({string.Join(",", cteColumnDefinitions)}) )
                     MERGE INTO {this._leasesTableName}
                         AS ExistingData
                     USING {acquireLeasesCte}
