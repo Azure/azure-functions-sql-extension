@@ -306,7 +306,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             getChangesDurationMs = commandSw.ElapsedMilliseconds;
                         }
                         // Log the number of rows
-                        //this._logger.LogDebug($"Executed GetChanges in GetTableChanges. Total changes: {rows.Count} Locked rows: {rows.FindAll(x => from n in x where (n.Value.isLeaseLocked = 1 select n.Value)}");
+                        this._logger.LogDebug($"Executed GetChanges in GetTableChanges. Total changes: {rows.Count} Locked rows: {rows.FindAll(dict => dict.ContainsKey("IsLeaseLocked") && (int)dict["IsLeaseLocked"] == 1).Count}");
 
                         // If changes were found, acquire leases on them.
                         if (rows.Count > 0)
