@@ -289,7 +289,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         }
 
                         var rows = new List<IReadOnlyDictionary<string, object>>();
-                        int leaseLockedRowCount = 0;
 
                         // Use the version number to query for new changes.
                         using (SqlCommand getChangesCommand = this.BuildGetChangesCommand(connection, transaction))
@@ -300,21 +299,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             {
                                 while (await reader.ReadAsync(token))
                                 {
-                                    if ((int)reader["IsLeaseLocked"] == 1)
-                                    {
-                                        leaseLockedRowCount++;
-                                    }
-                                    else
-                                    {
-                                        rows.Add(SqlBindingUtilities.BuildDictionaryFromSqlRow(reader));
-                                    }
+                                    rows.Add(SqlBindingUtilities.BuildDictionaryFromSqlRow(reader));
                                 }
                             }
 
                             getChangesDurationMs = commandSw.ElapsedMilliseconds;
                         }
                         // Log the number of rows
-                        this._logger.LogDebug($"Executed GetChangesCommand in GetTableChangesAsync. {rows.Count + leaseLockedRowCount} available changed rows ({leaseLockedRowCount} found with lease locks).");
+                        int leaseLockedRowCount = await this.GetLeaseLockedRowCount(connection, transaction);
+                        this._logger.LogDebug($"Executed GetChangesCommand in GetTableChangesAsync. {rows.Count} available changed rows ({leaseLockedRowCount} found with lease locks).");
 
                         // If changes were found, acquire leases on them.
                         if (rows.Count > 0)
@@ -805,20 +798,67 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     c.SYS_CHANGE_OPERATION,
                     l.{LeasesTableChangeVersionColumnName},
                     l.{LeasesTableAttemptCountColumnName},
-                    l.{LeasesTableLeaseExpirationTimeColumnName},
-                    CASE WHEN (l.{LeasesTableLeaseExpirationTimeColumnName} IS NULL OR l.{LeasesTableLeaseExpirationTimeColumnName} < SYSDATETIME()) THEN 0 else 1 END AS IsLeaseLocked
+                    l.{LeasesTableLeaseExpirationTimeColumnName}
                 FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @last_sync_version) AS c
                 LEFT OUTER JOIN {this._leasesTableName} AS l ON {leasesTableJoinCondition}
                 LEFT OUTER JOIN {this._userTable.BracketQuotedFullName} AS u ON {userTableJoinCondition}
                 WHERE
                     (l.{LeasesTableLeaseExpirationTimeColumnName} IS NULL AND
                        (l.{LeasesTableChangeVersionColumnName} IS NULL OR l.{LeasesTableChangeVersionColumnName} < c.{SysChangeVersionColumnName}) OR
-                        l.{LeasesTableLeaseExpirationTimeColumnName} IS NOT NULL
+                        l.{LeasesTableLeaseExpirationTimeColumnName} < SYSDATETIME()
                     ) AND
                     (l.{LeasesTableAttemptCountColumnName} IS NULL OR l.{LeasesTableAttemptCountColumnName} < {MaxChangeProcessAttemptCount})
                 ORDER BY c.{SysChangeVersionColumnName} ASC;";
 
             return new SqlCommand(getChangesQuery, connection, transaction);
+        }
+
+        /// <summary>
+        /// Builds the query to check for changes on the user's table (<see cref="RunChangeConsumptionLoopAsync()"/>).
+        /// </summary>
+        /// <param name="connection">The connection to add to the returned SqlCommand</param>
+        /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
+        /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
+        private async Task<int> GetLeaseLockedRowCount(SqlConnection connection, SqlTransaction transaction)
+        {
+            string userTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = u.{col.name.AsBracketQuotedString()}"));
+            string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
+            int leaseLockedRows = 0;
+            long getLockedRowCountDurationMs = 0L;
+            // Get the list of changes from CHANGETABLE that meet the following criteria:
+            // * Null LeaseExpirationTime AND (Null ChangeVersion OR ChangeVersion < Current change version for that row from CHANGETABLE)
+            //   OR
+            // * LeaseExpirationTime < Current Time
+            //
+            // The LeaseExpirationTime is only used for rows currently being processed - so if we see a
+            // row whose lease has expired that means that something must have happened to the function
+            // processing it before it was able to complete successfully. In that case we want to pick it
+            // up regardless since we know it should be processed - no need to check the change version.
+            // Once a row is successfully processed the LeaseExpirationTime column is set to NULL.
+            string getChangesQuery = $@"
+                {AppLockStatements}
+
+                DECLARE @last_sync_version bigint;
+                SELECT @last_sync_version = LastSyncVersion
+                FROM {GlobalStateTableName}
+                WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
+
+                SELECT COUNT(*)
+                FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @last_sync_version) AS c
+                LEFT OUTER JOIN {this._leasesTableName} AS l ON {leasesTableJoinCondition}
+                LEFT OUTER JOIN {this._userTable.BracketQuotedFullName} AS u ON {userTableJoinCondition}
+                WHERE
+                    l.{LeasesTableLeaseExpirationTimeColumnName} IS NOT NULL AND
+                        l.{LeasesTableLeaseExpirationTimeColumnName} > SYSDATETIME()";
+
+            using (var getLeaseLockedRowCountCommand = new SqlCommand(getChangesQuery, connection, transaction))
+            {
+                var commandSw = Stopwatch.StartNew();
+                leaseLockedRows = (int)await getLeaseLockedRowCountCommand.ExecuteScalarAsyncWithLogging(this._logger, CancellationToken.None);
+                getLockedRowCountDurationMs = commandSw.ElapsedMilliseconds;
+            }
+            return leaseLockedRows;
+
         }
 
         /// <summary>
