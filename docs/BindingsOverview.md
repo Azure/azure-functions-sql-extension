@@ -149,7 +149,7 @@ If an exception occurs in the user function when processing changes then the bat
 
 If the function execution fails 5 times in a row for a given row then that row is completely ignored for all future changes. Because the rows in a batch are not deterministic, rows in a failed batch may end up in different batches in subsequent invocations. This means that not all rows in the failed batch will necessarily be ignored. If other rows in the batch were the ones causing the exception, the "good" rows may end up in a different batch that doesn't fail in future invocations.
 
-You can run this query to see what rows have failed 5 times and are currently ignored, see [Leases table](./TriggerBinding.md#az_funcleases_) documentation for how to get the correct Leases table to query for your function.
+You can run this query to see what rows have failed 5 times and are currently ignored, see [Leases table](./TriggerBinding.md#az_funcleasestablename) documentation for how to get the correct Leases table to query for your function.
 
 ```sql
 SELECT * FROM [az_func].[Leases_<FunctionId>_<TableId>] WHERE _az_func_AttemptCount = 5
@@ -173,7 +173,7 @@ UPDATE [Products].[az_func].[Leases_<FunctionId>_<TableId>] SET _az_func_Attempt
 
 #### Lease Tables clean up
 
-Before clean up, please see [Leases table](./TriggerBinding.md#az_funcleases_) documentation for understanding how they are created and used.
+Before clean up, please see [Leases table](./TriggerBinding.md#az_funcleasestablename) documentation for understanding how they are created and used.
 
 Why clean up?
 1. You renamed your function/class/method name, which causes a new lease table to be created and the old one to be obsolete.
