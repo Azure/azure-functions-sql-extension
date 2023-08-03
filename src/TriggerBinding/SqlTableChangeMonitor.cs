@@ -814,11 +814,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Builds the query to check for changes on the user's table (<see cref="RunChangeConsumptionLoopAsync()"/>).
+        /// Returns the query to get for number of changes(rows) on the user's table that are actively locked by other leases.
         /// </summary>
         /// <param name="connection">The connection to add to the returned SqlCommand</param>
         /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
-        /// <returns>The SqlCommand populated with the query and appropriate parameters</returns>
+        /// <returns>The number of rows locked by leases</returns>
         private async Task<int> GetLeaseLockedRowCount(SqlConnection connection, SqlTransaction transaction)
         {
             string userTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = u.{col.name.AsBracketQuotedString()}"));
@@ -858,7 +858,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 getLockedRowCountDurationMs = commandSw.ElapsedMilliseconds;
             }
             return leaseLockedRows;
-
         }
 
         /// <summary>
