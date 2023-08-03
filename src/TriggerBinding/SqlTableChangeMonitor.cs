@@ -305,7 +305,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                             getChangesDurationMs = commandSw.ElapsedMilliseconds;
                         }
-                        // Log the number of rows
+                        // Get the Lease Locked rows and log the number of rows.
                         int leaseLockedRowCount = await this.GetLeaseLockedRowCount(connection, transaction);
                         this._logger.LogDebug($"Executed GetChangesCommand in GetTableChangesAsync. {rows.Count} available changed rows ({leaseLockedRowCount} found with lease locks).");
 
@@ -835,7 +835,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // processing it before it was able to complete successfully. In that case we want to pick it
             // up regardless since we know it should be processed - no need to check the change version.
             // Once a row is successfully processed the LeaseExpirationTime column is set to NULL.
-            string getChangesQuery = $@"
+            string getLeaseLockedrowCountQuery = $@"
                 {AppLockStatements}
 
                 DECLARE @last_sync_version bigint;
@@ -851,7 +851,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     l.{LeasesTableLeaseExpirationTimeColumnName} IS NOT NULL AND
                         l.{LeasesTableLeaseExpirationTimeColumnName} > SYSDATETIME()";
 
-            using (var getLeaseLockedRowCountCommand = new SqlCommand(getChangesQuery, connection, transaction))
+            using (var getLeaseLockedRowCountCommand = new SqlCommand(getLeaseLockedrowCountQuery, connection, transaction))
             {
                 var commandSw = Stopwatch.StartNew();
                 leaseLockedRows = (int)await getLeaseLockedRowCountCommand.ExecuteScalarAsyncWithLogging(this._logger, CancellationToken.None);
