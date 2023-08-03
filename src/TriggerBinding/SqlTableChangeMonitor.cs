@@ -289,6 +289,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         }
 
                         var rows = new List<IReadOnlyDictionary<string, object>>();
+                        int leaseLockedRowCount = 0;
 
                         // Use the version number to query for new changes.
                         using (SqlCommand getChangesCommand = this.BuildGetChangesCommand(connection, transaction))
@@ -299,14 +300,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             {
                                 while (await reader.ReadAsync(token))
                                 {
-                                    rows.Add(SqlBindingUtilities.BuildDictionaryFromSqlRow(reader));
+                                    if ((bool)reader["IsLeaseLocked"])
+                                    {
+                                        leaseLockedRowCount++;
+                                    }
+                                    else
+                                    {
+                                        rows.Add(SqlBindingUtilities.BuildDictionaryFromSqlRow(reader));
+                                    }
                                 }
                             }
 
                             getChangesDurationMs = commandSw.ElapsedMilliseconds;
                         }
                         // Log the number of rows
-                        this._logger.LogDebug($"Executed GetChanges in GetTableChanges. Total changes: {rows.Count} Locked rows: {rows.FindAll(dict => dict.ContainsKey("IsLeaseLocked") && (int)dict["IsLeaseLocked"] == 1).Count}");
+                        this._logger.LogDebug($"Executed GetChangesCommand in GetTableChangesAsync. Total changes: {rows.Count + leaseLockedRowCount} Locked rows: {leaseLockedRowCount}");
 
                         // If changes were found, acquire leases on them.
                         if (rows.Count > 0)
@@ -798,7 +806,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     l.{LeasesTableChangeVersionColumnName},
                     l.{LeasesTableAttemptCountColumnName},
                     l.{LeasesTableLeaseExpirationTimeColumnName},
-                    CASE WHEN (l._az_func_LeaseExpirationTime < SYSDATETIME()) THEN 0 else 1 END AS IsLeaseLocked
+                    CASE WHEN (l.{LeasesTableLeaseExpirationTimeColumnName} IS NULL OR l.{LeasesTableLeaseExpirationTimeColumnName} < SYSDATETIME()) THEN 0 else 1 END AS IsLeaseLocked
                 FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @last_sync_version) AS c
                 LEFT OUTER JOIN {this._leasesTableName} AS l ON {leasesTableJoinCondition}
                 LEFT OUTER JOIN {this._userTable.BracketQuotedFullName} AS u ON {userTableJoinCondition}
@@ -839,7 +847,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string query = $@"
                     {AppLockStatements}
 
-                    WITH {acquireLeasesCte} AS ( SELECT * FROM OPENJSON(@rowData) WHERE IsLeaseLocked = 0 WITH ({string.Join(",", cteColumnDefinitions)}) )
+                    WITH {acquireLeasesCte} AS ( SELECT * FROM OPENJSON(@rowData) WITH ({string.Join(",", cteColumnDefinitions)}) )
                     MERGE INTO {this._leasesTableName}
                         AS ExistingData
                     USING {acquireLeasesCte}
