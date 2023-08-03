@@ -300,7 +300,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             {
                                 while (await reader.ReadAsync(token))
                                 {
-                                    if ((bool)reader["IsLeaseLocked"])
+                                    if ((int)reader["IsLeaseLocked"] == 1)
                                     {
                                         leaseLockedRowCount++;
                                     }
@@ -314,7 +314,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             getChangesDurationMs = commandSw.ElapsedMilliseconds;
                         }
                         // Log the number of rows
-                        this._logger.LogDebug($"Executed GetChangesCommand in GetTableChangesAsync. Total changes: {rows.Count + leaseLockedRowCount} Locked rows: {leaseLockedRowCount}");
+                        this._logger.LogDebug($"Executed GetChangesCommand in GetTableChangesAsync. {rows.Count + leaseLockedRowCount} available changed rows ({leaseLockedRowCount} found with lease locks).");
 
                         // If changes were found, acquire leases on them.
                         if (rows.Count > 0)
