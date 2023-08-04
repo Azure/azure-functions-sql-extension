@@ -816,8 +816,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Returns the query to get for number of changes(rows) on the user's table that are actively locked by other leases.
         /// </summary>
-        /// <param name="connection">The connection to add to the returned SqlCommand</param>
-        /// <param name="transaction">The transaction to add to the returned SqlCommand</param>
+        /// <param name="connection">The connection to add to the SqlCommand</param>
+        /// <param name="transaction">The transaction to add to the SqlCommand</param>
         /// <returns>The number of rows locked by leases</returns>
         private async Task<int> GetLeaseLockedRowCount(SqlConnection connection, SqlTransaction transaction)
         {
@@ -846,10 +846,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 SELECT COUNT(*)
                 FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @last_sync_version) AS c
                 LEFT OUTER JOIN {this._leasesTableName} AS l ON {leasesTableJoinCondition}
-                LEFT OUTER JOIN {this._userTable.BracketQuotedFullName} AS u ON {userTableJoinCondition}
-                WHERE
-                    l.{LeasesTableLeaseExpirationTimeColumnName} IS NOT NULL AND
-                        l.{LeasesTableLeaseExpirationTimeColumnName} > SYSDATETIME()";
+                WHERE l.{LeasesTableLeaseExpirationTimeColumnName} IS NOT NULL AND l.{LeasesTableLeaseExpirationTimeColumnName} > SYSDATETIME()";
 
             using (var getLeaseLockedRowCountCommand = new SqlCommand(getLeaseLockedrowCountQuery, connection, transaction))
             {
