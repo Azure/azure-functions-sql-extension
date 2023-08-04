@@ -829,7 +829,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // Get the count of changes from CHANGETABLE that meet the following criteria:
             // * Not Null LeaseExpirationTime AND
             // * LeaseExpirationTime > Current Time
-            //
             string getLeaseLockedrowCountQuery = $@"
                 {AppLockStatements}
 
