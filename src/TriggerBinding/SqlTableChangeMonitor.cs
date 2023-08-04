@@ -821,7 +821,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>The number of rows locked by leases</returns>
         private async Task<int> GetLeaseLockedRowCount(SqlConnection connection, SqlTransaction transaction)
         {
-            string userTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = u.{col.name.AsBracketQuotedString()}"));
             string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
             int leaseLockedRows = 0;
             long getLockedRowCountDurationMs = 0L;
