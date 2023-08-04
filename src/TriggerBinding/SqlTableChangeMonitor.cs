@@ -52,7 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly int _userTableId;
         private readonly SqlObject _userTable;
         private readonly string _userFunctionId;
-        private readonly string _leasesTableName;
+        private readonly string _bracketedLeasesTableName;
         private readonly IReadOnlyList<string> _userTableColumns;
         private readonly IReadOnlyList<(string name, string type)> _primaryKeyColumns;
         private readonly IReadOnlyList<string> _rowMatchConditions;
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="userTableId">SQL object ID of the user table</param>
         /// <param name="userTable"><see cref="SqlObject" /> instance created with user table name</param>
         /// <param name="userFunctionId">Unique identifier for the user function</param>
-        /// <param name="leasesTableName">Name of the leases table</param>
+        /// <param name="bracketedLeasesTableName">Name of the leases table</param>
         /// <param name="userTableColumns">List of all column names in the user table</param>
         /// <param name="primaryKeyColumns">List of primary key column names in the user table</param>
         /// <param name="executor">Defines contract for triggering user function</param>
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             int userTableId,
             SqlObject userTable,
             string userFunctionId,
-            string leasesTableName,
+            string bracketedLeasesTableName,
             IReadOnlyList<string> userTableColumns,
             IReadOnlyList<(string name, string type)> primaryKeyColumns,
             ITriggeredFunctionExecutor executor,
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._connectionString = !string.IsNullOrEmpty(connectionString) ? connectionString : throw new ArgumentNullException(nameof(connectionString));
             this._userTable = !string.IsNullOrEmpty(userTable?.FullName) ? userTable : throw new ArgumentNullException(nameof(userTable));
             this._userFunctionId = !string.IsNullOrEmpty(userFunctionId) ? userFunctionId : throw new ArgumentNullException(nameof(userFunctionId));
-            this._leasesTableName = !string.IsNullOrEmpty(leasesTableName) ? leasesTableName : throw new ArgumentNullException(nameof(leasesTableName));
+            this._bracketedLeasesTableName = !string.IsNullOrEmpty(bracketedLeasesTableName) ? bracketedLeasesTableName : throw new ArgumentNullException(nameof(bracketedLeasesTableName));
             this._userTableColumns = userTableColumns ?? throw new ArgumentNullException(nameof(userTableColumns));
             this._primaryKeyColumns = primaryKeyColumns ?? throw new ArgumentNullException(nameof(primaryKeyColumns));
             this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
@@ -797,7 +797,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     l.{LeasesTableAttemptCountColumnName},
                     l.{LeasesTableLeaseExpirationTimeColumnName}
                 FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @last_sync_version) AS c
-                LEFT OUTER JOIN {this._leasesTableName} AS l ON {leasesTableJoinCondition}
+                LEFT OUTER JOIN {this._bracketedLeasesTableName} AS l ON {leasesTableJoinCondition}
                 LEFT OUTER JOIN {this._userTable.BracketQuotedFullName} AS u ON {userTableJoinCondition}
                 WHERE
                     (l.{LeasesTableLeaseExpirationTimeColumnName} IS NULL AND
@@ -837,7 +837,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {AppLockStatements}
 
                     WITH {acquireLeasesCte} AS ( SELECT * FROM OPENJSON(@rowData) WITH ({string.Join(",", cteColumnDefinitions)}) )
-                    MERGE INTO {this._leasesTableName}
+                    MERGE INTO {this._bracketedLeasesTableName}
                         AS ExistingData
                     USING {acquireLeasesCte}
                         AS NewData
@@ -871,7 +871,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string renewLeasesQuery = $@"
                 {AppLockStatements}
 
-                UPDATE {this._leasesTableName}
+                UPDATE {this._bracketedLeasesTableName}
                 SET {LeasesTableLeaseExpirationTimeColumnName} = DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME())
                 WHERE {matchCondition};
             ";
@@ -904,12 +904,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 $@"{AppLockStatements}
 
 WITH {releaseLeasesCte} AS ( SELECT * FROM OPENJSON(@rowData) WITH ({string.Join(",", cteColumnDefinitions)}) )
-UPDATE {this._leasesTableName}
+UPDATE {this._bracketedLeasesTableName}
 SET
     {LeasesTableChangeVersionColumnName} = cte.{SysChangeVersionColumnName},
     {LeasesTableAttemptCountColumnName} = 0,
     {LeasesTableLeaseExpirationTimeColumnName} = NULL
-FROM {this._leasesTableName} l INNER JOIN releaseLeasesCte cte ON {primaryKeyMatchingQuery}
+FROM {this._bracketedLeasesTableName} l INNER JOIN releaseLeasesCte cte ON {primaryKeyMatchingQuery}
 WHERE l.{LeasesTableChangeVersionColumnName} <= cte.{SysChangeVersionColumnName};";
 
             var command = new SqlCommand(releaseLeasesQuery, connection, transaction);
@@ -944,7 +944,7 @@ WHERE l.{LeasesTableChangeVersionColumnName} <= cte.{SysChangeVersionColumnName}
                 SELECT @unprocessed_changes = COUNT(*) FROM (
                     SELECT c.{SysChangeVersionColumnName}
                     FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @current_last_sync_version) AS c
-                    LEFT OUTER JOIN {this._leasesTableName} AS l ON {leasesTableJoinCondition}
+                    LEFT OUTER JOIN {this._bracketedLeasesTableName} AS l ON {leasesTableJoinCondition}
                     WHERE
                         c.{SysChangeVersionColumnName} <= {newLastSyncVersion} AND
                         ((l.{LeasesTableChangeVersionColumnName} IS NULL OR
@@ -958,7 +958,7 @@ WHERE l.{LeasesTableChangeVersionColumnName} <= cte.{SysChangeVersionColumnName}
                     SET LastSyncVersion = {newLastSyncVersion}, LastAccessTime = GETUTCDATE()
                     WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
 
-                    DELETE FROM {this._leasesTableName} WHERE {LeasesTableChangeVersionColumnName} <= {newLastSyncVersion};
+                    DELETE FROM {this._bracketedLeasesTableName} WHERE {LeasesTableChangeVersionColumnName} <= {newLastSyncVersion};
                 END
             ";
 

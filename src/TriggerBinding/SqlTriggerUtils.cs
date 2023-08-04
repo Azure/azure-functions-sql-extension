@@ -120,7 +120,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="userDefinedLeasesTableName">Leases table name defined by the user</param>
         /// <param name="userTableId">SQL object ID of the user table</param>
         /// <param name="userFunctionId">Unique identifier for the user function</param>
-        internal static string GetLeasesTableName(string userDefinedLeasesTableName, string userFunctionId, int userTableId)
+        internal static string GetBracketedLeasesTableName(string userDefinedLeasesTableName, string userFunctionId, int userTableId)
         {
             return string.IsNullOrEmpty(userDefinedLeasesTableName) ? string.Format(CultureInfo.InvariantCulture, LeasesTableNameFormat, $"{userFunctionId}_{userTableId}") :
                 string.Format(CultureInfo.InvariantCulture, UserDefinedLeasesTableNameFormat, $"{userDefinedLeasesTableName.AsBracketQuotedString()}");
