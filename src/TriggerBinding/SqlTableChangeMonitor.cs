@@ -305,7 +305,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                             getChangesDurationMs = commandSw.ElapsedMilliseconds;
                         }
-                        // Get the number of lease locked rows and log them if > 0.
+                        // Also get the number of rows that currently have lease locks on them
+                        // This can help with supportability by allowing a customer to see when a
+                        // trigger was processed successfully but returned fewer rows than expected
+                        // because of the rows being locked.
                         int leaseLockedRowCount = await this.GetLeaseLockedRowCount(connection, transaction);
                         if (rows.Count > 0 || leaseLockedRowCount > 0)
                         {
@@ -816,11 +819,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Returns the number of changes(rows) on the user's table that are actively locked by other leases.
+        /// Returns the number of changes(rows) on the user's table that are actively locked by other leases OR returns -1 on exception.
         /// </summary>
         /// <param name="connection">The connection to add to the SqlCommand</param>
         /// <param name="transaction">The transaction to add to the SqlCommand</param>
-        /// <returns>The number of rows locked by leases</returns>
+        /// <returns>The number of rows locked by leases or -1 on exception</returns>
         private async Task<int> GetLeaseLockedRowCount(SqlConnection connection, SqlTransaction transaction)
         {
             string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
@@ -854,7 +857,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 this._logger.LogError($"Failed to query count of lease locked changes for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
                 TelemetryInstance.TrackException(TelemetryErrorName.GetLeaseLockedRowCount, ex, null, new Dictionary<TelemetryMeasureName, double>() { { TelemetryMeasureName.GetLockedRowCountDurationMs, getLockedRowCountDurationMs } });
-                throw;
+                leaseLockedRowsCount = -1;
             }
             return leaseLockedRowsCount;
         }
