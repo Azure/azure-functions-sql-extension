@@ -305,10 +305,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                             getChangesDurationMs = commandSw.ElapsedMilliseconds;
                         }
-                        // Get the Lease Locked rows and log the number of rows.
+                        // Get the number of lease locked rows and log them if > 0.
                         int leaseLockedRowCount = await this.GetLeaseLockedRowCount(connection, transaction);
-                        this._logger.LogDebug($"Executed GetChangesCommand in GetTableChangesAsync. {rows.Count} available changed rows ({leaseLockedRowCount} found with lease locks).");
-
+                        if (rows.Count > 0 || leaseLockedRowCount > 0)
+                        {
+                            this._logger.LogDebug($"Executed GetChangesCommand in GetTableChangesAsync. {rows.Count} available changed rows ({leaseLockedRowCount} found with lease locks).");
+                        }
                         // If changes were found, acquire leases on them.
                         if (rows.Count > 0)
                         {
@@ -822,18 +824,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private async Task<int> GetLeaseLockedRowCount(SqlConnection connection, SqlTransaction transaction)
         {
             string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
-            int leaseLockedRows = 0;
+            int leaseLockedRowsCount = 0;
             long getLockedRowCountDurationMs = 0L;
-            // Get the list of changes from CHANGETABLE that meet the following criteria:
-            // * Null LeaseExpirationTime AND (Null ChangeVersion OR ChangeVersion < Current change version for that row from CHANGETABLE)
-            //   OR
-            // * LeaseExpirationTime < Current Time
+            // Get the count of changes from CHANGETABLE that meet the following criteria:
+            // * Not Null LeaseExpirationTime AND
+            // * LeaseExpirationTime > Current Time
             //
-            // The LeaseExpirationTime is only used for rows currently being processed - so if we see a
-            // row whose lease has expired that means that something must have happened to the function
-            // processing it before it was able to complete successfully. In that case we want to pick it
-            // up regardless since we know it should be processed - no need to check the change version.
-            // Once a row is successfully processed the LeaseExpirationTime column is set to NULL.
             string getLeaseLockedrowCountQuery = $@"
                 {AppLockStatements}
 
@@ -846,14 +842,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @last_sync_version) AS c
                 LEFT OUTER JOIN {this._leasesTableName} AS l ON {leasesTableJoinCondition}
                 WHERE l.{LeasesTableLeaseExpirationTimeColumnName} IS NOT NULL AND l.{LeasesTableLeaseExpirationTimeColumnName} > SYSDATETIME()";
-
-            using (var getLeaseLockedRowCountCommand = new SqlCommand(getLeaseLockedrowCountQuery, connection, transaction))
+            try
             {
-                var commandSw = Stopwatch.StartNew();
-                leaseLockedRows = (int)await getLeaseLockedRowCountCommand.ExecuteScalarAsyncWithLogging(this._logger, CancellationToken.None);
-                getLockedRowCountDurationMs = commandSw.ElapsedMilliseconds;
+                using (var getLeaseLockedRowCountCommand = new SqlCommand(getLeaseLockedrowCountQuery, connection, transaction))
+                {
+                    var commandSw = Stopwatch.StartNew();
+                    leaseLockedRowsCount = (int)await getLeaseLockedRowCountCommand.ExecuteScalarAsyncWithLogging(this._logger, CancellationToken.None);
+                    getLockedRowCountDurationMs = commandSw.ElapsedMilliseconds;
+                }
             }
-            return leaseLockedRows;
+            catch (Exception ex)
+            {
+                this._logger.LogError($"Failed to query count of lease locked changes for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
+                TelemetryInstance.TrackException(TelemetryErrorName.GetLeaseLockedRowCount, ex, null, new Dictionary<TelemetryMeasureName, double>() { { TelemetryMeasureName.GetLockedRowCountDurationMs, getLockedRowCountDurationMs } });
+                throw;
+            }
+            return leaseLockedRowsCount;
         }
 
         /// <summary>
