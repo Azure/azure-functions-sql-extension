@@ -814,7 +814,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Returns the query to get for number of changes(rows) on the user's table that are actively locked by other leases.
+        /// Returns the number of changes(rows) on the user's table that are actively locked by other leases.
         /// </summary>
         /// <param name="connection">The connection to add to the SqlCommand</param>
         /// <param name="transaction">The transaction to add to the SqlCommand</param>
