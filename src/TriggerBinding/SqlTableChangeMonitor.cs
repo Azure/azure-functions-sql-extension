@@ -305,7 +305,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                             getChangesDurationMs = commandSw.ElapsedMilliseconds;
                         }
-
+                        // Also get the number of rows that currently have lease locks on them
+                        // This can help with supportability by allowing a customer to see when a
+                        // trigger was processed successfully but returned fewer rows than expected
+                        // because of the rows being locked.
+                        int leaseLockedRowCount = await this.GetLeaseLockedRowCount(connection, transaction);
+                        if (rows.Count > 0 || leaseLockedRowCount > 0)
+                        {
+                            this._logger.LogDebug($"Executed GetChangesCommand in GetTableChangesAsync. {rows.Count} available changed rows ({leaseLockedRowCount} found with lease locks).");
+                        }
                         // If changes were found, acquire leases on them.
                         if (rows.Count > 0)
                         {
@@ -808,6 +816,51 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 ORDER BY c.{SysChangeVersionColumnName} ASC;";
 
             return new SqlCommand(getChangesQuery, connection, transaction);
+        }
+
+        /// <summary>
+        /// Returns the number of changes(rows) on the user's table that are actively locked by other leases OR returns -1 on exception.
+        /// </summary>
+        /// <param name="connection">The connection to add to the SqlCommand</param>
+        /// <param name="transaction">The transaction to add to the SqlCommand</param>
+        /// <returns>The number of rows locked by leases or -1 on exception</returns>
+        private async Task<int> GetLeaseLockedRowCount(SqlConnection connection, SqlTransaction transaction)
+        {
+            string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
+            int leaseLockedRowsCount = 0;
+            long getLockedRowCountDurationMs = 0L;
+            // Get the count of changes from CHANGETABLE that meet the following criteria:
+            // * Not Null LeaseExpirationTime AND
+            // * LeaseExpirationTime > Current Time
+            string getLeaseLockedrowCountQuery = $@"
+                {AppLockStatements}
+
+                DECLARE @last_sync_version bigint;
+                SELECT @last_sync_version = LastSyncVersion
+                FROM {GlobalStateTableName}
+                WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
+
+                SELECT COUNT(*)
+                FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @last_sync_version) AS c
+                LEFT OUTER JOIN {this._leasesTableName} AS l ON {leasesTableJoinCondition}
+                WHERE l.{LeasesTableLeaseExpirationTimeColumnName} IS NOT NULL AND l.{LeasesTableLeaseExpirationTimeColumnName} > SYSDATETIME()";
+            try
+            {
+                using (var getLeaseLockedRowCountCommand = new SqlCommand(getLeaseLockedrowCountQuery, connection, transaction))
+                {
+                    var commandSw = Stopwatch.StartNew();
+                    leaseLockedRowsCount = (int)await getLeaseLockedRowCountCommand.ExecuteScalarAsyncWithLogging(this._logger, CancellationToken.None);
+                    getLockedRowCountDurationMs = commandSw.ElapsedMilliseconds;
+                }
+            }
+            catch (Exception ex)
+            {
+                this._logger.LogError($"Failed to query count of lease locked changes for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
+                TelemetryInstance.TrackException(TelemetryErrorName.GetLeaseLockedRowCount, ex, null, new Dictionary<TelemetryMeasureName, double>() { { TelemetryMeasureName.GetLockedRowCountDurationMs, getLockedRowCountDurationMs } });
+                // This is currently only used for debugging, so return a -1 instead of throwing since it isn't necessary to get the value
+                leaseLockedRowsCount = -1;
+            }
+            return leaseLockedRowsCount;
         }
 
         /// <summary>
