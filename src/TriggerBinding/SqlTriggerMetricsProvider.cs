@@ -100,7 +100,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private SqlCommand BuildGetUnprocessedChangesCommand(SqlConnection connection, SqlTransaction transaction, IReadOnlyList<(string name, string type)> primaryKeyColumns, int userTableId)
         {
             string leasesTableJoinCondition = string.Join(" AND ", primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
-            string leasesTableName = GetLeasesTableName(this._userDefinedLeasesTableName, this._userFunctionId, userTableId);
+            string bracketedLeasesTableName = GetBracketedLeasesTableName(this._userDefinedLeasesTableName, this._userFunctionId, userTableId);
             string getUnprocessedChangesQuery = $@"
                 {AppLockStatements}
 
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 SELECT COUNT_BIG(*)
                 FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @last_sync_version) AS c
-                LEFT OUTER JOIN {leasesTableName} AS l ON {leasesTableJoinCondition}
+                LEFT OUTER JOIN {bracketedLeasesTableName} AS l ON {leasesTableJoinCondition}
                 WHERE
                     (l.{LeasesTableLeaseExpirationTimeColumnName} IS NULL AND
                        (l.{LeasesTableChangeVersionColumnName} IS NULL OR l.{LeasesTableChangeVersionColumnName} < c.{SysChangeVersionColumnName}) OR

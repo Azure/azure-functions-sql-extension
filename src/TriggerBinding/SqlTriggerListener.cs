@@ -125,8 +125,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     IReadOnlyList<(string name, string type)> primaryKeyColumns = await GetPrimaryKeyColumnsAsync(connection, userTableId, this._logger, this._userTable.FullName, cancellationToken);
                     IReadOnlyList<string> userTableColumns = await this.GetUserTableColumnsAsync(connection, userTableId, cancellationToken);
 
-                    string leasesTableName = GetLeasesTableName(this._userDefinedLeasesTableName, this._userFunctionId, userTableId);
-                    this._telemetryProps[TelemetryPropertyName.LeasesTableName] = leasesTableName;
+                    string bracketedLeasesTableName = GetBracketedLeasesTableName(this._userDefinedLeasesTableName, this._userFunctionId, userTableId);
+                    this._telemetryProps[TelemetryPropertyName.LeasesTableName] = bracketedLeasesTableName;
 
                     var transactionSw = Stopwatch.StartNew();
                     long createdSchemaDurationMs = 0L, createGlobalStateTableDurationMs = 0L, insertGlobalStateTableRowDurationMs = 0L, createLeasesTableDurationMs = 0L;
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         createdSchemaDurationMs = await this.CreateSchemaAsync(connection, transaction, cancellationToken);
                         createGlobalStateTableDurationMs = await this.CreateGlobalStateTableAsync(connection, transaction, cancellationToken);
                         insertGlobalStateTableRowDurationMs = await this.InsertGlobalStateTableRowAsync(connection, transaction, userTableId, cancellationToken);
-                        createLeasesTableDurationMs = await this.CreateLeasesTableAsync(connection, transaction, leasesTableName, primaryKeyColumns, cancellationToken);
+                        createLeasesTableDurationMs = await this.CreateLeasesTableAsync(connection, transaction, bracketedLeasesTableName, primaryKeyColumns, cancellationToken);
                         transaction.Commit();
                     }
 
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         userTableId,
                         this._userTable,
                         this._userFunctionId,
-                        leasesTableName,
+                        bracketedLeasesTableName,
                         userTableColumns,
                         primaryKeyColumns,
                         this._executor,
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         this._telemetryProps);
 
                     this._listenerState = ListenerStarted;
-                    this._logger.LogDebug($"Started SQL trigger listener for table: '{this._userTable.FullName}' (object ID: {userTableId}), function ID: {this._userFunctionId}, leases table: {leasesTableName}");
+                    this._logger.LogDebug($"Started SQL trigger listener for table: '{this._userTable.FullName}' (object ID: {userTableId}), function ID: {this._userFunctionId}, leases table: {bracketedLeasesTableName}");
 
                     var measures = new Dictionary<TelemetryMeasureName, double>
                     {
