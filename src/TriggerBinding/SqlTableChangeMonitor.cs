@@ -842,7 +842,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 SELECT COUNT(*)
                 FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @last_sync_version) AS c
-                LEFT OUTER JOIN {this._leasesTableName} AS l ON {leasesTableJoinCondition}
+                LEFT OUTER JOIN {this._bracketedLeasesTableName} AS l ON {leasesTableJoinCondition}
                 WHERE l.{LeasesTableLeaseExpirationTimeColumnName} IS NOT NULL AND l.{LeasesTableLeaseExpirationTimeColumnName} > SYSDATETIME()";
             try
             {
