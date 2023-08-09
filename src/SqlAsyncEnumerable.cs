@@ -112,7 +112,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             this._reader = await command.ExecuteReaderAsync();
                         }
                     }
-                    if (await this._reader.ReadAsync())
+                    if (this._reader.Read())
                     {
                         this.Current = Utils.JsonDeserializeObject<T>(this.SerializeRow());
                         return true;

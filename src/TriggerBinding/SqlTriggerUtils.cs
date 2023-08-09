@@ -51,8 +51,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 var primaryKeyColumns = new List<(string name, string type)>();
 
-                while (await reader.ReadAsync(cancellationToken))
+                while (reader.Read())
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     string name = reader.GetString(NameIndex);
                     string type = reader.GetString(TypeIndex);
 

@@ -227,8 +227,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var userTableColumns = new List<string>();
                 var userDefinedTypeColumns = new List<(string name, string type)>();
 
-                while (await reader.ReadAsync(cancellationToken))
+                while (reader.Read())
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     string columnName = reader.GetString(NameIndex);
                     string columnType = reader.GetString(TypeIndex);
                     bool isAssemblyType = reader.GetBoolean(IsAssemblyTypeIndex);

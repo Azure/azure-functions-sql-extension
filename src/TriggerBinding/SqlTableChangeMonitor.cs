@@ -297,8 +297,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                             using (SqlDataReader reader = await getChangesCommand.ExecuteReaderAsync(token))
                             {
-                                while (await reader.ReadAsync(token))
+                                while (reader.Read())
                                 {
+                                    token.ThrowIfCancellationRequested();
                                     rows.Add(SqlBindingUtilities.BuildDictionaryFromSqlRow(reader));
                                 }
                             }
