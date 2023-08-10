@@ -564,7 +564,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     string getColumnDefinitionsQuery = GetColumnDefinitionsQuery(table);
                     var cmdColDef = new SqlCommand(getColumnDefinitionsQuery, sqlConnection);
-                    using (SqlDataReader rdr = await cmdColDef.ExecuteReaderAsyncWithLogging(logger, CancellationToken.None))
+                    using (SqlDataReader rdr = cmdColDef.ExecuteReaderWithLogging(logger))
                     {
                         while (await rdr.ReadAsync())
                         {
@@ -599,7 +599,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     string getPrimaryKeysQuery = GetPrimaryKeysQuery(table);
                     var cmd = new SqlCommand(getPrimaryKeysQuery, sqlConnection);
-                    using (SqlDataReader rdr = await cmd.ExecuteReaderAsyncWithLogging(logger, CancellationToken.None))
+                    using (SqlDataReader rdr = cmd.ExecuteReaderWithLogging(logger))
                     {
                         while (await rdr.ReadAsync())
                         {

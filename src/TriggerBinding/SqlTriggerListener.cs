@@ -122,8 +122,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     await VerifyDatabaseSupported(connection, this._logger, cancellationToken);
 
                     int userTableId = await GetUserTableIdAsync(connection, this._userTable, this._logger, cancellationToken);
-                    IReadOnlyList<(string name, string type)> primaryKeyColumns = await GetPrimaryKeyColumnsAsync(connection, userTableId, this._logger, this._userTable.FullName, cancellationToken);
-                    IReadOnlyList<string> userTableColumns = await this.GetUserTableColumnsAsync(connection, userTableId, cancellationToken);
+                    IReadOnlyList<(string name, string type)> primaryKeyColumns = GetPrimaryKeyColumnsAsync(connection, userTableId, this._logger, this._userTable.FullName, cancellationToken);
+                    IReadOnlyList<string> userTableColumns = this.GetUserTableColumnsAsync(connection, userTableId, cancellationToken);
 
                     string bracketedLeasesTableName = GetBracketedLeasesTableName(this._userDefinedLeasesTableName, this._userFunctionId, userTableId);
                     this._telemetryProps[TelemetryPropertyName.LeasesTableName] = bracketedLeasesTableName;
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Gets the column names of the user table.
         /// </summary>
-        private async Task<IReadOnlyList<string>> GetUserTableColumnsAsync(SqlConnection connection, int userTableId, CancellationToken cancellationToken)
+        private IReadOnlyList<string> GetUserTableColumnsAsync(SqlConnection connection, int userTableId, CancellationToken cancellationToken)
         {
             const int NameIndex = 0, TypeIndex = 1, IsAssemblyTypeIndex = 2;
             string getUserTableColumnsQuery = $@"
@@ -222,7 +222,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             ";
 
             using (var getUserTableColumnsCommand = new SqlCommand(getUserTableColumnsQuery, connection))
-            using (SqlDataReader reader = await getUserTableColumnsCommand.ExecuteReaderAsyncWithLogging(this._logger, cancellationToken))
+            using (SqlDataReader reader = getUserTableColumnsCommand.ExecuteReaderWithLogging(this._logger))
             {
                 var userTableColumns = new List<string>();
                 var userDefinedTypeColumns = new List<(string name, string type)>();
@@ -374,7 +374,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string getMinValidVersionQuery = $"SELECT CHANGE_TRACKING_MIN_VALID_VERSION({userTableId});";
 
             using (var getMinValidVersionCommand = new SqlCommand(getMinValidVersionQuery, connection, transaction))
-            using (SqlDataReader reader = await getMinValidVersionCommand.ExecuteReaderAsyncWithLogging(this._logger, cancellationToken))
+            using (SqlDataReader reader = getMinValidVersionCommand.ExecuteReaderWithLogging(this._logger))
             {
                 if (!await reader.ReadAsync(cancellationToken))
                 {

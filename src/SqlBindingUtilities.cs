@@ -194,7 +194,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string verifyDatabaseSupportedQuery = $"SELECT compatibility_level FROM sys.databases WHERE Name = DB_NAME()";
 
             using (var verifyDatabaseSupportedCommand = new SqlCommand(verifyDatabaseSupportedQuery, connection))
-            using (SqlDataReader reader = await verifyDatabaseSupportedCommand.ExecuteReaderAsyncWithLogging(logger, cancellationToken))
+            using (SqlDataReader reader = verifyDatabaseSupportedCommand.ExecuteReaderWithLogging(logger))
             {
                 if (!await reader.ReadAsync(cancellationToken))
                 {
@@ -326,7 +326,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     string serverPropertiesQuery = $"SELECT SERVERPROPERTY('EngineEdition'), SERVERPROPERTY('Edition')";
 
                     using (var selectServerEditionCommand = new SqlCommand(serverPropertiesQuery, connection))
-                    using (SqlDataReader reader = await selectServerEditionCommand.ExecuteReaderAsyncWithLogging(logger, cancellationToken))
+                    using (SqlDataReader reader = selectServerEditionCommand.ExecuteReaderWithLogging(logger))
                     {
                         if (await reader.ReadAsync(cancellationToken))
                         {
@@ -421,17 +421,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Calls ExecuteReaderAsync and logs an error if it fails before rethrowing.
+        /// Calls ExecuteReader and logs an error if it fails before rethrowing.
         /// </summary>
         /// <param name="cmd">The SqlCommand being executed</param>
         /// <param name="logger">The logger</param>
-        /// <param name="cancellationToken">The cancellation token to pass to the call</param>
         /// <returns>The result of the call</returns>
-        public static async Task<SqlDataReader> ExecuteReaderAsyncWithLogging(this SqlCommand cmd, ILogger logger, CancellationToken cancellationToken)
+        public static SqlDataReader ExecuteReaderWithLogging(this SqlCommand cmd, ILogger logger)
         {
             try
             {
-                return await cmd.ExecuteReaderAsync(cancellationToken);
+                return cmd.ExecuteReader();
             }
             catch (Exception e)
             {
