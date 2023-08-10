@@ -295,7 +295,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         {
                             var commandSw = Stopwatch.StartNew();
 
-                            using (SqlDataReader reader = await getChangesCommand.ExecuteReaderAsync(token))
+                            using (SqlDataReader reader = getChangesCommand.ExecuteReader())
                             {
                                 while (reader.Read())
                                 {
