@@ -123,7 +123,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                     int userTableId = await GetUserTableIdAsync(connection, this._userTable, this._logger, cancellationToken);
                     IReadOnlyList<(string name, string type)> primaryKeyColumns = GetPrimaryKeyColumnsAsync(connection, userTableId, this._logger, this._userTable.FullName, cancellationToken);
-                    IReadOnlyList<string> userTableColumns = this.GetUserTableColumnsAsync(connection, userTableId, cancellationToken);
+                    IReadOnlyList<string> userTableColumns = this.GetUserTableColumns(connection, userTableId, cancellationToken);
 
                     string bracketedLeasesTableName = GetBracketedLeasesTableName(this._userDefinedLeasesTableName, this._userFunctionId, userTableId);
                     this._telemetryProps[TelemetryPropertyName.LeasesTableName] = bracketedLeasesTableName;
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Gets the column names of the user table.
         /// </summary>
-        private IReadOnlyList<string> GetUserTableColumnsAsync(SqlConnection connection, int userTableId, CancellationToken cancellationToken)
+        private IReadOnlyList<string> GetUserTableColumns(SqlConnection connection, int userTableId, CancellationToken cancellationToken)
         {
             const int NameIndex = 0, TypeIndex = 1, IsAssemblyTypeIndex = 2;
             string getUserTableColumnsQuery = $@"
