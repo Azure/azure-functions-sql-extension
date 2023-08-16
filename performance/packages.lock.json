@@ -1893,6 +1893,7 @@
           "Microsoft.NET.Test.Sdk": "[17.6.3, )",
           "Moq": "[4.18.4, )",
           "Newtonsoft.Json": "[13.0.3, )",
+          "xRetry": "(, )",
           "xunit": "[2.5.0, )",
           "xunit.runner.visualstudio": "[2.5.0, )"
         }
@@ -2088,15 +2089,6 @@
         "contentHash": "M0riW7Zgxca3Elp1iZVhzH7PWWT5bPSrdMFGCAGoH1n9YLuXOYE78ryui051Icf3swWWa8feBRoSxOCYwgMy8w==",
         "dependencies": {
           "System.Configuration.ConfigurationManager": "7.0.0"
-        }
-      },
-      "xRetry": {
-        "type": "CentralTransitive",
-        "requested": "[1.9.0, )",
-        "resolved": "1.9.0",
-        "contentHash": "NeIbJrwpc5EUPagx/mdd/7KzpR36BO8IWrsbgtvOVjxD2xtmNfUHieZ24PeZ4oCYiLBcTviCy+og/bE/OvPchw==",
-        "dependencies": {
-          "xunit.core": "[2.4.0, 3.0.0)"
         }
       },
       "xunit": {
