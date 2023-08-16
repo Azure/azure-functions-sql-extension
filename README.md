@@ -9,6 +9,7 @@
   - [Known Issues](#known-issues)
     - [Output Bindings](#output-bindings)
   - [Telemetry](#telemetry)
+  - [Privacy Statement](#privacy-statement)
   - [Trademarks](#trademarks)
 
 ## Introduction
@@ -57,6 +58,7 @@ Databases on SQL Server, Azure SQL Database, or Azure SQL Managed Instance which
   - Have multiple functions, with dependent functions being triggered by the initial functions (through a trigger binding or other such method)
   - Use [dynamic (imperative)](https://learn.microsoft.com/azure/azure-functions/functions-bindings-expressions-patterns#binding-at-runtime) bindings (.NET only)
   - Use [IAsyncCollector](https://learn.microsoft.com/azure/azure-functions/functions-dotnet-class-library?tabs=v2%2Ccmd#writing-multiple-output-values) and call `FlushAsync` in the order desired (.NET only)
+- **By Design:** Output bindings require that their payloads contain ALL columns defined in every execution, even optional ones. See [BindingsOverview.md#output-binding-columns](https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/BindingsOverview.md#output-binding-columns) for more details
 - **Planned for Future Support:** For PowerShell Functions that use hashtables must use the `[ordered]@` for the request query or request body assertion in order to upsert the data to the SQL table properly. An example can be found [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-powershell/AddProductsWithIdentityColumnArray/run.ps1).
 - **Planned for Future Support:** Java, PowerShell, and Python Functions using Output bindings cannot pass in null or empty values via the query string.
   - Java: Issue is tracked [here](https://github.com/Azure/azure-functions-java-worker/issues/683).

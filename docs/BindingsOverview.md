@@ -33,6 +33,8 @@ When generating the queries used to upsert values into the database, the binding
 
 The result is that the binding expects all objects to have every column defined - even optional columns. If this is not the case then it will likely result in some column values being ignored if they aren't included in the first item in the row. Optional columns should pass a null value (or the language equivalent) in rows that don't have a value for that column.
 
+Failure to do this may result in unexpected behavior, such as columns in requests being ignored or Exceptions being thrown.
+
 ### Primary Key Special Cases
 
 Typically Output Bindings require two things :
