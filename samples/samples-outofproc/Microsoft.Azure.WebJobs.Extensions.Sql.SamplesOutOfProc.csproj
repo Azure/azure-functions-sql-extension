@@ -11,7 +11,6 @@
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Timer" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Storage.Queues" />
     <PackageReference Include="Microsoft.AspNetCore.Http" />
-    <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="Grpc.Net.Client" />
   </ItemGroup>
   <ItemGroup>
