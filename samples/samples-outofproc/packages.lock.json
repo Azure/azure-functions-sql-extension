@@ -2,16 +2,6 @@
   "version": 2,
   "dependencies": {
     "net6.0": {
-      "Grpc.Net.Client": {
-        "type": "Direct",
-        "requested": "[2.55.0, )",
-        "resolved": "2.55.0",
-        "contentHash": "cQyNEAIVs/5npjSHuCKCT5kQJm3AyOnUw7h7s2lXt9rSWC/bhCGPbNAtiFGNvKiQAYgIt4zV13BS983viZP9pg==",
-        "dependencies": {
-          "Grpc.Net.Common": "2.55.0",
-          "Microsoft.Extensions.Logging.Abstractions": "3.0.3"
-        }
-      },
       "Microsoft.AspNetCore.Http": {
         "type": "Direct",
         "requested": "[2.2.2, )",
@@ -74,6 +64,12 @@
           "Microsoft.Azure.Functions.Worker.Sdk.Analyzers": "1.1.2",
           "Microsoft.Azure.Functions.Worker.Sdk.Generators": "1.1.0-preview4"
         }
+      },
+      "Newtonsoft.Json": {
+        "type": "Direct",
+        "requested": "[13.0.3, )",
+        "resolved": "13.0.3",
+        "contentHash": "HrC5BXdl00IP9zeV+0Z848QWPAoCr9P3bDEZguI+gkLcBKAOxix/tLEAAHC+UvDNPv4a2d18lOReHMOagPa+zQ=="
       },
       "Azure.Core": {
         "type": "Transitive",
@@ -745,6 +741,16 @@
           "Microsoft.Azure.Functions.Worker.Extensions.Abstractions": "[1.2.0, )",
           "Microsoft.Data.SqlClient": "[5.1.1, )",
           "System.Drawing.Common": "[7.0.0, )"
+        }
+      },
+      "Grpc.Net.Client": {
+        "type": "CentralTransitive",
+        "requested": "[2.55.0, )",
+        "resolved": "2.55.0",
+        "contentHash": "cQyNEAIVs/5npjSHuCKCT5kQJm3AyOnUw7h7s2lXt9rSWC/bhCGPbNAtiFGNvKiQAYgIt4zV13BS983viZP9pg==",
+        "dependencies": {
+          "Grpc.Net.Common": "2.55.0",
+          "Microsoft.Extensions.Logging.Abstractions": "3.0.3"
         }
       },
       "Microsoft.Azure.Functions.Worker.Extensions.Abstractions": {
