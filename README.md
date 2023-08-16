@@ -6,7 +6,7 @@
   - [Table of Contents](#table-of-contents)
   - [Introduction](#introduction)
   - [Supported SQL Server Versions](#supported-sql-server-versions)
-  - [Known Issues](#known-issues)
+  - [Known/By Design Issues](#knownby-design-issues)
     - [Output Bindings](#output-bindings)
   - [Telemetry](#telemetry)
   - [Privacy Statement](#privacy-statement)
@@ -39,9 +39,11 @@ This extension uses the [OPENJSON](https://learn.microsoft.com/sql/t-sql/functio
 
 Databases on SQL Server, Azure SQL Database, or Azure SQL Managed Instance which meet the compatibility level requirement above are supported.
 
-## Known Issues
+## Known/By Design Issues
 
-> **Note:** While we are actively working on resolving these issues, some may not be supported at this time. We appreciate your patience as we work to improve the Azure Functions SQL Extension.
+Below is a list of common issues that users may run into when using the SQL Bindings extension.
+
+> **Note:** While we are actively working on resolving the known issues, some may not be supported at this time. We appreciate your patience as we work to improve the Azure Functions SQL Extension.
 
 - **By Design:** The table used by a SQL binding cannot contain two columns that only differ by casing (Ex. 'Name' and 'name').
 - **By Design:** Non-CSharp functions using SQL bindings against tables with columns of data types `BINARY` or `VARBINARY` need to map those columns to a string type. Input bindings will return the binary value as a base64 encoded string. Output bindings require the value upserted to binary columns to be a base64 encoded string.
