@@ -8,7 +8,7 @@ steps:
     version: '5.0.x'
   condition: succeededOrFailed()
 
-- task: EsrpCodeSigning@1
+- task: EsrpCodeSigning@3
   displayName: 'ESRP Code Signing - Nuget Package'
   inputs:
     ConnectedServiceName: 'Code Signing'
