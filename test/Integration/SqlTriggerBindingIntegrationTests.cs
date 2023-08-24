@@ -579,11 +579,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Tests that when a user function throws an exception we'll retry executing that function once the lease timeout expires
         /// </summary>
-        [Fact]
-        public async Task FunctionExceptionsCauseRetry()
+        [Theory]
+        [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.Csx, SupportedLanguages.JavaScript, SupportedLanguages.PowerShell, SupportedLanguages.Python)]
+        public async void FunctionExceptionsCauseRetry(SupportedLanguages lang)
         {
             this.SetChangeTrackingForTable("Products");
-            this.StartFunctionHost(nameof(TriggerWithException), SupportedLanguages.CSharp, useTestFolder: true);
+            this.StartFunctionHost(nameof(TriggerWithException), lang, useTestFolder: true);
             TaskCompletionSource taskCompletionSource = new();
             void TestExceptionMessageSeen(object sender, DataReceivedEventArgs e)
             {
