@@ -41,9 +41,9 @@
       },
       "Newtonsoft.Json": {
         "type": "Direct",
-        "requested": "[13.0.3, )",
-        "resolved": "13.0.3",
-        "contentHash": "HrC5BXdl00IP9zeV+0Z848QWPAoCr9P3bDEZguI+gkLcBKAOxix/tLEAAHC+UvDNPv4a2d18lOReHMOagPa+zQ=="
+        "requested": "[13.0.2, )",
+        "resolved": "13.0.2",
+        "contentHash": "R2pZ3B0UjeyHShm9vG+Tu0EBb2lC8b0dFzV9gVn50ofHXh9Smjk6kTn7A/FdAsC8B5cKib1OnGYOXxRBz5XQDg=="
       },
       "Azure.Core": {
         "type": "Transitive",
@@ -1709,8 +1709,8 @@
           "Microsoft.AspNetCore.Http": "[2.2.2, )",
           "Microsoft.Azure.WebJobs": "[3.0.37, )",
           "Microsoft.Data.SqlClient": "[5.1.1, )",
-          "Microsoft.SqlServer.TransactSql.ScriptDom": "[161.8901.0, )",
-          "Newtonsoft.Json": "[13.0.3, )",
+          "Microsoft.SqlServer.TransactSql.ScriptDom": "[161.8817.2, )",
+          "Newtonsoft.Json": "[13.0.2, )",
           "System.Runtime.Caching": "[7.0.0, )",
           "morelinq": "[3.4.2, )"
         }
@@ -1799,7 +1799,7 @@
       },
       "Microsoft.Extensions.DependencyInjection": {
         "type": "CentralTransitive",
-        "requested": "[7.0.0, )",
+        "requested": "[6.0.1, )",
         "resolved": "2.2.0",
         "contentHash": "MZtBIwfDFork5vfjpJdG5g8wuJFt7d/y3LOSVVtDK/76wlbtz6cjltfKHqLx2TKVqTj5/c41t77m1+h20zqtPA==",
         "dependencies": {
@@ -1808,9 +1808,9 @@
       },
       "Microsoft.SqlServer.TransactSql.ScriptDom": {
         "type": "CentralTransitive",
-        "requested": "[161.8901.0, )",
-        "resolved": "161.8901.0",
-        "contentHash": "G+7zPBkrq+7SJ4vAXXZbphBYD9IItI8Kj02Rs19mIhxu2RX1fOjrvngZCs7oHc0hq8TGxKb7eJbFbDMnwuzubw=="
+        "requested": "[161.8817.2, )",
+        "resolved": "161.8817.2",
+        "contentHash": "3j5dQjTPLw51AvXwJTL9sXiTMTY5Y2lvdzjtV7yOEsPUSIl+P2IsxLn7KFhGGHtwr4MOsUdAWnQ3xcrpG8tTXA=="
       },
       "morelinq": {
         "type": "CentralTransitive",
