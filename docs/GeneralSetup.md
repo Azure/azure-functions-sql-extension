@@ -106,6 +106,7 @@ These are required to retrieve the data about the changes occurring in the table
 ```sql
 USE <DatabaseName>
 GRANT SELECT ON <TableName> TO <UserName>
+GRANT VIEW CHANGE TRACKING ON <TableName> TO <UserName>
 ```
 
 - `SELECT`, `INSERT`, `UPDATE` and `DELETE` permissions on `az_func` schema
