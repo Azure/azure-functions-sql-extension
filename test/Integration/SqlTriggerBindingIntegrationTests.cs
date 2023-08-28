@@ -581,7 +581,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        [UnsupportedLanguages(SupportedLanguages.Java, SupportedLanguages.Csx, SupportedLanguages.JavaScript, SupportedLanguages.PowerShell, SupportedLanguages.Python)]
+        [UnsupportedLanguages(SupportedLanguages.Csx, SupportedLanguages.JavaScript, SupportedLanguages.PowerShell, SupportedLanguages.Python)]
         public async void FunctionExceptionsCauseRetry(SupportedLanguages lang)
         {
             this.SetChangeTrackingForTable("Products");
