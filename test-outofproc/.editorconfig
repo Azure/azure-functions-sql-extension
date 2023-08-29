@@ -3,3 +3,7 @@
 [*.cs]
 
 dotnet_diagnostic.CS0659.severity = silent # overrides Object.Equals but does not override Object.GetHashCode() - not necessary for our samples
+dotnet_diagnostic.CA1711.severity = silent # Identifiers should not have incorrect suffix - Fine for tests
+dotnet_diagnostic.CA1848.severity = silent # For improved performance, use the LoggerMessage delegates instead of calling - Fine for tests
+dotnet_diagnostic.CA2254.severity = silent # The logging message template should not vary between calls to 'LoggerExtensions.LogInformation - Fine for tests
+
