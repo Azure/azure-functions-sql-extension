@@ -579,7 +579,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Tests that when a user function throws an exception we'll retry executing that function once the lease timeout expires
         /// </summary>
-        [Theory]
+        [RetryTheory]
         [SqlInlineData()]
         [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.Python, SupportedLanguages.PowerShell, SupportedLanguages.Csx, SupportedLanguages.Java)] // Keeping static state for threwException across calls is only valid for C# and Java.
         public async Task FunctionExceptionsCauseRetry(SupportedLanguages lang)
