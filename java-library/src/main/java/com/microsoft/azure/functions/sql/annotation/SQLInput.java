@@ -25,12 +25,12 @@ public @interface SQLInput {
     /**
      * Query string or name of stored procedure to be run.
      */
-    String commandText() default "";
+    String commandText();
 
     /**
      * Text or Stored Procedure.
      */
-    String commandType() default "";
+    CommandType commandType() default CommandType.Text;
 
     /**
      * Parameters to the query or stored procedure. This string must follow the format
@@ -42,5 +42,5 @@ public @interface SQLInput {
     /**
      * Setting name for SQL connection string.
      */
-    String connectionStringSetting() default "";
+    String connectionStringSetting();
 }

@@ -4,7 +4,7 @@ parameters: # parameters are shown up in ADO UI in a build queue time
 - name: 'ReleaseType'
   displayName: 'Type of release'
   type: string
-  default: full
+  default: preview
   values:
     - full
     - preview
@@ -22,7 +22,7 @@ schedules:
 variables:
   solution: '**/*.sln'
   configuration: 'Release'
-  versionMajor: 2
+  versionMajor: 3
   versionMinor: 0
   versionMajorMinor: '$(versionMajor).$(versionMinor)'  # This variable is only used for the counter so we reset properly when either major or minor is bumped
   versionPatch: $[counter(variables['versionMajorMinor'], 0)] # This will reset when we bump minor version

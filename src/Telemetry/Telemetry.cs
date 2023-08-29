@@ -52,7 +52,6 @@ To learn more about our Privacy Statement visit this link: https://go.microsoft.
             this.Enabled = !(Utils.GetEnvironmentVariableAsBool(TelemetryOptoutEnvVar) || Utils.GetConfigSettingAsBool(TelemetryOptoutSetting, config));
             if (!this.Enabled)
             {
-                this._logger.LogInformation("Telemetry disabled");
                 return;
             }
             this._logger.LogInformation(WelcomeMessage);
@@ -391,6 +390,7 @@ To learn more about our Privacy Statement visit this link: https://go.microsoft.
         GetColumnDefinitionsDurationMs,
         GetPrimaryKeysDurationMs,
         GetUnprocessedChangesDurationMs,
+        GetLockedRowCountDurationMs,
         InsertGlobalStateTableRowDurationMs,
         MaxBatchSize,
         MaxChangesPerWorker,
@@ -438,6 +438,7 @@ To learn more about our Privacy Statement visit this link: https://go.microsoft.
         Upsert,
         UpsertRollback,
         GetServerTelemetryProperties,
+        GetLeaseLockedRowCount,
     }
 
     internal class ServerProperties

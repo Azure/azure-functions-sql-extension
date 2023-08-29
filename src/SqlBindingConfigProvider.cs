@@ -8,6 +8,7 @@ using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlConverters;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Config;
+using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Azure.WebJobs.Logging;
@@ -19,12 +20,13 @@ using Newtonsoft.Json;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     /// <summary>
-    /// Exposes SQL input and output bindings
+    /// Exposes SQL input, output and trigger bindings
     /// </summary>
     [Extension("sql")]
     internal class SqlBindingConfigProvider : IExtensionConfigProvider
     {
         private readonly IConfiguration _configuration;
+        private readonly IHostIdProvider _hostIdProvider;
         private readonly ILoggerFactory _loggerFactory;
 
         /// <summary>
@@ -33,9 +35,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <exception cref="ArgumentNullException">
         /// Thrown if either parameter is null
         /// </exception>
-        public SqlBindingConfigProvider(IConfiguration configuration, ILoggerFactory loggerFactory)
+        public SqlBindingConfigProvider(IConfiguration configuration, IHostIdProvider hostIdProvider, ILoggerFactory loggerFactory)
         {
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            this._hostIdProvider = hostIdProvider ?? throw new ArgumentNullException(nameof(hostIdProvider));
             this._loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
@@ -62,6 +65,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), this._configuration, logger);
             inputOutputRule.BindToCollector<SQLObjectOpenType>(typeof(SqlAsyncCollectorBuilder<>), this._configuration, logger);
             inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), this._configuration, logger);
+
+            FluentBindingRule<SqlTriggerAttribute> triggerRule = context.AddBindingRule<SqlTriggerAttribute>();
+            triggerRule.BindToTrigger(new SqlTriggerBindingProvider(this._configuration, this._hostIdProvider, this._loggerFactory));
         }
 
         private static readonly Assembly[] _dependentAssemblies = {
@@ -81,7 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 try
                 {
-                    logger.LogInformation($"Using {assembly.GetName().Name} {FileVersionInfo.GetVersionInfo(assembly.Location).ProductVersion}");
+                    logger.LogDebug($"Using {assembly.GetName().Name} {FileVersionInfo.GetVersionInfo(assembly.Location).ProductVersion}");
                 }
                 catch (Exception ex)
                 {
