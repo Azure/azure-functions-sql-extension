@@ -52,6 +52,7 @@ To learn more about our Privacy Statement visit this link: https://go.microsoft.
             this.Enabled = !(Utils.GetEnvironmentVariableAsBool(TelemetryOptoutEnvVar) || Utils.GetConfigSettingAsBool(TelemetryOptoutSetting, config));
             if (!this.Enabled)
             {
+                this._logger.LogInformation("Telemetry disabled");
                 return;
             }
             this._logger.LogInformation(WelcomeMessage);
