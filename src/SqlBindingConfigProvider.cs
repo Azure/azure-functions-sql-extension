@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly IConfiguration _configuration;
         private readonly ILoggerFactory _loggerFactory;
         private SqlClientListener sqlClientListener;
-        public const string VerboseLogging = "VerboseLogging";
+        public const string VerboseLoggingSettingName = "AzureFunctions_SqlBindings_VerboseLogging";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlBindingConfigProvider"/> class.
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             TelemetryInstance.Initialize(this._configuration, logger);
             // Only enable SQL Client logging when VerboseLogging is set in the config to avoid extra overhead when the
             // detailed logging it provides isn't needed
-            if (this.sqlClientListener == null && Utils.GetConfigSettingAsBool(VerboseLogging, this._configuration))
+            if (this.sqlClientListener == null && Utils.GetConfigSettingAsBool(VerboseLoggingSettingName, this._configuration))
             {
                 this.sqlClientListener = new SqlClientListener();
             }
