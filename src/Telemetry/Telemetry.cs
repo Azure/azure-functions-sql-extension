@@ -122,6 +122,26 @@ To learn more about our Privacy Statement visit this link: https://go.microsoft.
             }
         }
 
+        public void TrackSQLClientEvent(string eventName, IDictionary<string, string> properties = null)
+        {
+            try
+            {
+                if (!this._initialized || !this.Enabled || this._client is null)
+                {
+                    return;
+                }
+                this._logger.LogTrace($"Sending event {eventName}");
+
+                this._client.TrackEvent($"{EventsNamespace}/{eventName}", properties, null);
+                this._client.Flush();
+            }
+            catch (Exception ex)
+            {
+                // We don't want errors sending telemetry to break the app, so just log and move on
+                this._logger.LogError($"Error sending event {eventName}. Message={ex.Message}");
+            }
+        }
+
         public void TrackException(TelemetryErrorName errorName, Exception exception, IDictionary<TelemetryPropertyName, string> properties = null,
             IDictionary<TelemetryMeasureName, double> measurements = null)
         {
@@ -438,6 +458,8 @@ To learn more about our Privacy Statement visit this link: https://go.microsoft.
         Upsert,
         UpsertRollback,
         GetServerTelemetryProperties,
+        SqlClientListenerOnEventWritten,
+
     }
 
     internal class ServerProperties
