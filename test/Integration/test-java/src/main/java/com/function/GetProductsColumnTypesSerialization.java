@@ -17,6 +17,7 @@ import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
+import com.microsoft.azure.functions.sql.annotation.CommandType;
 import com.microsoft.azure.functions.sql.annotation.SQLInput;
 
 import java.text.ParseException;
@@ -38,7 +39,7 @@ public class GetProductsColumnTypesSerialization {
             @SQLInput(
                 name = "products",
                 commandText = "SELECT * FROM [dbo].[ProductsColumnTypes]",
-                commandType = "Text",
+                commandType = CommandType.Text,
                 connectionStringSetting = "SqlConnectionString")
                 ProductColumnTypes[] products,
             ExecutionContext context) throws JsonProcessingException, ParseException {

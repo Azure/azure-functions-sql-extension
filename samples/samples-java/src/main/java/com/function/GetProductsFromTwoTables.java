@@ -14,6 +14,7 @@ import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
+import com.microsoft.azure.functions.sql.annotation.CommandType;
 import com.microsoft.azure.functions.sql.annotation.SQLInput;
 
 import java.util.Optional;
@@ -34,14 +35,14 @@ public class GetProductsFromTwoTables {
             @SQLInput(
                 name = "products",
                 commandText = "SELECT * FROM Products WHERE Cost = @Cost",
-                commandType = "Text",
+                commandType = CommandType.Text,
                 parameters = "@Cost={cost}",
                 connectionStringSetting = "SqlConnectionString")
                 Product[] products,
             @SQLInput(
                 name = "productsWithIdentity",
                 commandText = "SELECT * FROM ProductsWithIdentity WHERE Cost = @Cost",
-                commandType = "Text",
+                commandType = CommandType.Text,
                 parameters = "@Cost={cost}",
                 connectionStringSetting = "SqlConnectionString")
                 Product[] productsWithIdentity) {

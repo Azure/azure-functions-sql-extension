@@ -16,6 +16,7 @@ import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
 import com.microsoft.azure.functions.sql.annotation.SQLInput;
+import com.microsoft.azure.functions.sql.annotation.CommandType;
 import com.microsoft.azure.functions.sql.annotation.SQLOutput;
 
 import java.util.Optional;
@@ -36,7 +37,7 @@ public class GetAndAddProducts {
             @SQLInput(
                 name = "products",
                 commandText = "SELECT * FROM Products WHERE Cost = @Cost",
-                commandType = "Text",
+                commandType = CommandType.Text,
                 parameters = "@Cost={cost}",
                 connectionStringSetting = "SqlConnectionString")
                 Product[] products,
