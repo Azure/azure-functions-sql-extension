@@ -3,9 +3,8 @@
 
 using System.Linq;
 using System.Diagnostics.Tracing;
-using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 using System;
-
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -16,6 +15,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// </summary>
     public class SqlClientListener : EventListener
     {
+        private readonly ILogger _logger;
+
+        public SqlClientListener(ILogger logger)
+        {
+            this._logger = logger;
+        }
+
         protected override void OnEventSourceCreated(EventSource eventSource)
         {
             // Only enable events from SqlClientEventSource.
@@ -51,13 +57,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     if (payload != null)
                     {
-                        TelemetryInstance.TrackSQLClientEvent(eventData.EventName, payloadDictionary);
+                        this._logger.LogTrace($"Sending event {eventData.EventName}. Properties: {Utils.JsonSerializeObject(payloadDictionary)}");
                     }
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                TelemetryInstance.TrackException(Telemetry.TelemetryErrorName.SqlClientListenerOnEventWritten, e);
+                this._logger.LogError($"Error sending event {eventData.EventName}. Message={ex.Message}");
+
             }
         }
     }

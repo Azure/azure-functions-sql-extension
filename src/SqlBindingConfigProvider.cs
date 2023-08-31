@@ -60,7 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // detailed logging it provides isn't needed
             if (this.sqlClientListener == null && Utils.GetConfigSettingAsBool(VerboseLoggingSettingName, this._configuration))
             {
-                this.sqlClientListener = new SqlClientListener();
+                this.sqlClientListener = new SqlClientListener(logger);
             }
             LogDependentAssemblyVersions(logger);
 #pragma warning disable CS0618 // Fine to use this for our stuff
