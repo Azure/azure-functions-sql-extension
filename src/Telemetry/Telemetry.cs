@@ -130,10 +130,7 @@ To learn more about our Privacy Statement visit this link: https://go.microsoft.
                 {
                     return;
                 }
-                this._logger.LogTrace($"Sending event {eventName}");
-
-                this._client.TrackEvent($"{EventsNamespace}/{eventName}", properties, null);
-                this._client.Flush();
+                this._logger.LogTrace($"Sending event {eventName}. Properties: {Utils.JsonSerializeObject(properties)}");
             }
             catch (Exception ex)
             {
