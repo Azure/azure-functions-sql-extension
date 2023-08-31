@@ -21,6 +21,9 @@
       - [Array](#array)
       - [Single Row](#single-row)
     - [Sample with multiple Bindings](#sample-with-multiple-bindings)
+  - [Trigger Binding](#trigger-binding)
+    - [function.json Properties for Trigger Bindings](#functionjson-properties-for-trigger-bindings)
+    - [Setup for Trigger Bindings](#setup-for-trigger-bindings)
 
 ## CSharp Scripting
 
@@ -49,11 +52,11 @@ These instructions will guide you through creating your Function Project and add
 
 4. Enable SQL bindings on the csx function created above. More information can be found in the [Azure SQL bindings for Azure Functions docs](https://aka.ms/sqlbindings).
 
-    Update the `host.json` file inside **MyApp/MyCSXFunction/** to the v4 version of the extension bundle.
+    Update the `host.json` file inside **MyApp/MyCSXFunction/** to the preview extension bundle.
 
     ```json
     "extensionBundle": {
-        "id": "Microsoft.Azure.Functions.ExtensionBundle",
+        "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
         "version": "[4.*, 5.0.0)"
     }
     ```
@@ -226,3 +229,67 @@ See the [AddProduct](https://github.com/Azure/azure-functions-sql-extension/tree
 ### Sample with multiple Bindings
 
 See the [GetAndAddProducts](https://github.com/Azure/azure-functions-sql-extension/tree/main/samples/samples-csx/GetAndAddProducts) sample
+
+## Trigger Binding
+
+See [Trigger Binding Overview](./BindingsOverview.md#trigger-binding) for general information about the Azure SQL Trigger binding.
+
+### function.json Properties for Trigger Bindings
+
+The following table explains the binding configuration properties that you set in the *function.json* file.
+
+|function.json property | Description|
+|---------|----------------------|
+|**type** | Required. Must be set to `sqlTrigger`.|
+|**direction** | Required. Must be set to `in`. |
+|**name** | Required. The name of the variable that represents the set of changes that triggered the function code. Must be set to `changes`. |
+| **tableName** | Required. The name of the table to be monitored for changes.  |
+| **connectionStringSetting** | Required. The name of an app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0). |
+| **leasesTableName** | Optional. The name of the table used to store leases. If not specified, the leases table name will be Leases_{FunctionId}_{TableId}. More information on how this is generated can be found [here](https://github.com/Azure/azure-functions-sql-extension/blob/release/trigger/docs/TriggerBinding.md#az_funcleasestablename).|
+
+### Setup for Trigger Bindings
+
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server).
+
+- Open your app in VS Code
+- Press 'F1' and search for 'Azure Functions: Create Function'
+- Choose HttpTrigger ->  (Provide a function name) -> anonymous
+- In the folder that is created with the provided function name, open the file (`run.csx`), replace its contents block with the below code. Note that the casing of the Object field names and the table column names must match.
+
+    ```csharp
+    #load "Product.csx"
+    #r "Newtonsoft.Json"
+    #r "Microsoft.Azure.WebJobs.Extensions.Sql"
+
+    using System.Net;
+    using Microsoft.AspNetCore.Mvc;
+    using Microsoft.Extensions.Primitives;
+    using Newtonsoft.Json;
+    using Microsoft.Azure.WebJobs.Extensions.Sql;
+
+    public static void Run(IReadOnlyList<SqlChange<Product>> changes, ILogger log)
+    {
+        log.LogInformation("SQL Changes: " + JsonConvert.SerializeObject(changes));
+    }
+    ```
+
+- We also need to add the SQL trigger binding for the Products table by defining `bindings.changes` property. Open the function.json file.
+- Paste the below in the file as an additional entry to the "bindings": [] array.
+
+    ```json
+    {
+      "name": "changes",
+      "type": "sqlTrigger",
+      "direction": "in",
+      "tableName": "dbo.Products",
+      "connectionStringSetting": "SqlConnectionString"
+    }
+    ```
+
+    *In the above, "dbo.Products" is the name of the table our trigger binding is triggered on. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [function.json Properties for Trigger Bindings](#functionjson-properties-for-trigger-bindings) section*
+
+- Open the local.settings.json file, and in the brackets for "Values," verify there is a 'SqlConnectionString.' If not, add it.
+- Hit 'F5' to run your code.
+- Update, insert, or delete rows in your SQL table while the function app is running and observe the function logs.
+- You should see the new log messages in the Visual Studio Code terminal containing the values of row-columns after the update operation.
+- Congratulations! You have successfully created your first SQL trigger binding!
