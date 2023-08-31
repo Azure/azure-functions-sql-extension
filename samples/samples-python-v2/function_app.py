@@ -2,7 +2,6 @@
 # Licensed under the MIT License.
 
 import json
-import logging
 import azure.functions as func
 from azure.functions.decorators.core import DataType
 
@@ -50,13 +49,3 @@ def add_product(req: func.HttpRequest, product: func.Out[func.SqlRow]) -> func.H
         status_code=201,
         mimetype="application/json"
     )
-
-# The function gets triggered when a change (Insert, Update, or Delete)
-# is made to the Products table.
-@app.function_name(name="ProductsTrigger")
-@app.generic_trigger(arg_name="products", type="sqlTrigger",
-                        TableName="Products",
-                        ConnectionStringSetting="SqlConnectionString",
-                        data_type=DataType.STRING)
-def products_trigger(products: str) -> None:
-    logging.info("SQL Changes: %s", json.loads(products))

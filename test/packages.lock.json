@@ -73,15 +73,6 @@
         "resolved": "13.0.3",
         "contentHash": "HrC5BXdl00IP9zeV+0Z848QWPAoCr9P3bDEZguI+gkLcBKAOxix/tLEAAHC+UvDNPv4a2d18lOReHMOagPa+zQ=="
       },
-      "xRetry": {
-        "type": "Direct",
-        "requested": "[1.9.0, )",
-        "resolved": "1.9.0",
-        "contentHash": "NeIbJrwpc5EUPagx/mdd/7KzpR36BO8IWrsbgtvOVjxD2xtmNfUHieZ24PeZ4oCYiLBcTviCy+og/bE/OvPchw==",
-        "dependencies": {
-          "xunit.core": "[2.4.0, 3.0.0)"
-        }
-      },
       "xunit": {
         "type": "Direct",
         "requested": "[2.5.0, )",

@@ -14,7 +14,6 @@ import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
-import com.microsoft.azure.functions.sql.annotation.CommandType;
 import com.microsoft.azure.functions.sql.annotation.SQLInput;
 
 import java.util.Optional;
@@ -31,7 +30,7 @@ public class GetProductNamesView {
             @SQLInput(
                 name = "productNames",
                 commandText = "SELECT * FROM ProductNames",
-                commandType = CommandType.Text,
+                commandType = "Text",
                 connectionStringSetting = "SqlConnectionString")
                 ProductName[] products) {
 

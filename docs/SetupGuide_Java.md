@@ -5,7 +5,7 @@
   - [Table of Contents](#table-of-contents)
   - [Setup Function Project](#setup-function-project)
   - [Input Binding](#input-binding)
-    - [SQLInput Annotation](#sqlinput-annotation)
+    - [SQLInput Attribute](#sqlinput-attribute)
     - [Setup for Input Bindings](#setup-for-input-bindings)
     - [Samples for Input Bindings](#samples-for-input-bindings)
       - [Query String](#query-string)
@@ -13,14 +13,11 @@
       - [Null Parameter Value](#null-parameter-value)
       - [Stored Procedure](#stored-procedure)
   - [Output Binding](#output-binding)
-    - [SQLOutput Annotation](#sqloutput-annotation)
+    - [SQLOutput Attribute](#sqloutput-attribute)
     - [Setup for Output Bindings](#setup-for-output-bindings)
     - [Samples for Output Bindings](#samples-for-output-bindings)
       - [Array](#array)
       - [Single Row](#single-row)
-  - [Trigger Binding](#trigger-binding)
-    - [SqlTrigger Annotation](#sqltriggerbinding-annotation)
-    - [Setup for Trigger Binding](#setup-for-trigger-bindings)
   - [Known Issues](#known-issues)
 
 ## Setup Function Project
@@ -39,11 +36,11 @@ These instructions will guide you through creating your Function Project and add
 
 3. Enable SQL bindings on the function project. More information can be found in the [Azure SQL bindings for Azure Functions docs](https://aka.ms/sqlbindings).
 
-    Update the `host.json` file to the preview extension bundle.
+    Update the `host.json` file to the v4 version of the extension bundle.
 
     ```json
     "extensionBundle": {
-        "id": "Microsoft.Azure.Functions.ExtensionBundle.Preview",
+        "id": "Microsoft.Azure.Functions.ExtensionBundle",
         "version": "[4.*, 5.0.0)"
     }
     ```
@@ -54,7 +51,7 @@ These instructions will guide you through creating your Function Project and add
     <dependency>
         <groupId>com.microsoft.azure.functions</groupId>
         <artifactId>azure-functions-java-library-sql</artifactId>
-        <version>[2.0.0-preview,)</version>
+        <version>[1.0.0,)</version>
     </dependency>
     ```
 
@@ -62,7 +59,7 @@ These instructions will guide you through creating your Function Project and add
 
 See [Input Binding Overview](./BindingsOverview.md#input-binding) for general information about the Azure SQL Input binding.
 
-### SQLInput Annotation
+### SQLInput Attribute
 
 In the Java functions runtime library, use the @SQLInput annotation (com.microsoft.azure.functions.sql.annotation.SQLInput) on parameters whose value comes from the query specified by commandText. This annotation supports the following elements:
 
@@ -103,7 +100,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
     }
     ```
 
-    *In the above, `select * from Employees` is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [SQLInput Annotation](#sqlinput-annotation) section*
+    *In the above, `select * from Employees` is the SQL script run by the input binding. The CommandType on the line below specifies whether the first line is a query or a stored procedure. On the next line, the ConnectionStringSetting specifies that the app setting that contains the SQL connection string used to connect to the database is "SqlConnectionString." For more information on this, see the [SQLInput Attribute](#sqlinput-attribute) section*
 
 - Add `import com.microsoft.azure.functions.sql.annotation.SQLInput;`
 - Create a new file and call it `Employee.java`
@@ -323,7 +320,7 @@ If the `{name}` specified in the `getproducts-namenull/{name}` URL is "null", th
 
 See [Output Binding Overview](./BindingsOverview.md#output-binding) for general information about the Azure SQL Output binding.
 
-### SQLOutput Annotation
+### SQLOutput Attribute
 
 In the Java functions runtime library, use the @SQLOutput annotation (com.microsoft.azure.functions.sql.annotation.SQLOutput) on parameters whose values you want to upsert into the target table. This annotation supports the following elements:
 
@@ -367,7 +364,7 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
     }
     ```
 
-    *In the above, "dbo.Employees" is the name of the table our output binding is upserting into. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [SQLOutput Annotation](#sqloutput-annotation) section*
+    *In the above, "dbo.Employees" is the name of the table our output binding is upserting into. The line below is similar to the input binding and specifies where our SqlConnectionString is. For more information on this, see the [SQLOutput Attribute](#sqloutput-attribute) section*
 
 - Hit 'F5' to run your code. Click the link to upsert the output array values in your SQL table. Your upserted values should launch in the browser.
 - Congratulations! You have successfully created your first SQL output binding!
@@ -425,95 +422,6 @@ Note: This tutorial requires that a SQL database is setup as shown in [Create a 
         return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(product).build();
     }
 ```
-
-## Trigger Binding
-
-See [Trigger Binding Overview](./BindingsOverview.md#trigger-binding) for general information about the Azure SQL Trigger binding.
-
-### SqlTrigger Annotation
-
-In the Java functions runtime library, use the @SQLTrigger annotation (com.microsoft.azure.functions.sql.annotation.SQLTrigger) on parameters whose values would come from Azure SQL. This annotation supports the following elements:
-
-| Element |Description|
-|---------|---------|
-| **name** |  Required. The name of the parameter that the trigger binds to. |
-| **tableName** | Required. The name of the table monitored by the trigger. |
-| **connectionStringSetting** | Required. The name of an app setting that contains the connection string for the database containing the table monitored for changes. This isn't the actual connection string and must instead resolve to an environment variable. Optional keywords in the connection string value are [available to refine SQL bindings connectivity](https://aka.ms/sqlbindings#sql-connection-string). |
-| **leasesTableName** | Optional. The name of the table used to store leases. If not specified, the leases table name will be Leases_{FunctionId}_{TableId}. More information on how this is generated can be found [here](https://github.com/Azure/azure-functions-sql-extension/blob/release/trigger/docs/TriggerBinding.md#az_funcleasestablename).|
-
-When you're developing locally, add your application settings in the local.settings.json file in the Values collection.
-### Setup for Trigger Bindings
-
-Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server), and that you have the 'Employee.java' file from the [Setup for Input Bindings](#setup-for-input-bindings) section.
-
-- Create a new file `SqlChangeOperation.java` with the following content:
-    ```java
-    package com.function;
-
-    import com.google.gson.annotations.SerializedName;
-
-    public enum SqlChangeOperation {
-        @SerializedName("0")
-        Insert,
-        @SerializedName("1")
-        Update,
-        @SerializedName("2")
-        Delete;
-    }
-    ```
-
-- Create a new file `SqlChangeEmployee.java` with the following content:
-    ```java
-    package com.function;
-
-  public class SqlChangeEmployee {
-      public Employee employee;
-      public SqlChangeOperation operation;
-
-      public SqlChangeEmployee() {
-      }
-
-      public SqlChangeEmployee(Employee employee, SqlChangeOperation operation) {
-          this.employee = employee;
-          this.operation = operation;
-      }
-  }
-  ```
-    
-- Create a new file `EmployeeTrigger.java` with the following content:
-
-    ```java
-    package com.function;
-
-    import com.microsoft.azure.functions.ExecutionContext;
-    import com.microsoft.azure.functions.annotation.FunctionName;
-    import com.microsoft.azure.functions.sql.annotation.SQLTrigger;
-    import com.function.SqlChangeEmployee;
-    import com.google.gson.Gson;
-
-    import java.util.logging.Level;
-
-    public class EmployeeTrigger {
-        @FunctionName("EmployeeTrigger")
-        public void run(
-                @SQLTrigger(
-                    name = "changes",
-                    tableName = "[dbo].[Employees]",
-                    connectionStringSetting = "SqlConnectionString")
-                    SqlChangeEmployee[] changes,
-                ExecutionContext context) {
-
-            context.getLogger().log(Level.INFO, "SQL Changes: " + new Gson().toJson(changes));
-        }
-    }
-    ```
-
-- *Skip these steps if you have not completed the output binding tutorial.*
-  - Open your output binding file and modify some of the values. For example, change the value of Team column from 'Functions' to 'Azure SQL'.
-  - Hit 'F5' to run your code. Click the link of the HTTP trigger from the output binding tutorial.
-- Update, insert, or delete rows in your SQL table while the function app is running and observe the function logs.
-- You should see the new log messages in the Visual Studio Code terminal containing the values of row-columns after the update operation.
-- Congratulations! You have successfully created your first SQL trigger binding!
 
 ## Known Issues
 

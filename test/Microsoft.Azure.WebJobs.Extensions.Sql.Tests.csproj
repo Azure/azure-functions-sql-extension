@@ -5,7 +5,6 @@
     <PackageReference Include="Moq" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
-    <PackageReference Include="xRetry" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" />
     <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="Microsoft.AspNetCore.Http" />
@@ -19,11 +18,8 @@
 
   <ItemGroup>
     <None Update="Database\**\*.sql">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="xunit.runner.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
   </ItemGroup>
 
   <Target Name="CopySamples" AfterTargets="Build">

@@ -25,7 +25,7 @@ steps:
       $source = 'java-library'
       $destination = '$(Build.ArtifactStagingDirectory)/java-library'
       $jar = Get-ChildItem $source/target/*.jar | Select-Object -First 1 | Select Name
-      $jar -match '\d+\.\d+\.\d+(-preview)?'
+      $jar -match '\d+\.\d+\.\d+'
       $version = $matches[0]
       $prefix = 'azure-functions-java-library-sql-'+$version
       New-Item $destination -ItemType Directory

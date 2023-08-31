@@ -1,6 +1,4 @@
-﻿DROP TABLE IF EXISTS [ProductsWithReservedPrimaryKeyColumnNames];
-
-CREATE TABLE [ProductsWithReservedPrimaryKeyColumnNames] (
+﻿CREATE TABLE [ProductsWithReservedPrimaryKeyColumnNames] (
 	[ProductId] [int] NOT NULL IDENTITY(1, 1),
 	[_az_func_ChangeVersion] [int] NOT NULL,
 	[_az_func_AttemptCount] [int] NOT NULL,

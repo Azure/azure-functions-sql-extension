@@ -14,7 +14,6 @@ import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
-import com.microsoft.azure.functions.sql.annotation.CommandType;
 import com.microsoft.azure.functions.sql.annotation.SQLInput;
 
 import java.util.Optional;
@@ -31,7 +30,7 @@ public class GetProductsStoredProcedure {
             @SQLInput(
                 name = "products",
                 commandText = "SelectProductsCost",
-                commandType = CommandType.StoredProcedure,
+                commandType = "StoredProcedure",
                 parameters = "@Cost={cost}",
                 connectionStringSetting = "SqlConnectionString")
                 Product[] products) {

@@ -8,7 +8,6 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.InputBindingSamples;
 using Xunit;
 using Xunit.Abstractions;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
-using Microsoft.Data.SqlClient;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -16,7 +15,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     [LogTestName]
     public class SqlInputBindingIntegrationTests : IntegrationTestBase
     {
-
         public SqlInputBindingIntegrationTests(ITestOutputHelper output) : base(output)
         {
         }
@@ -27,12 +25,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(100, 500)]
         public async void GetProductsTest(int n, int cost, SupportedLanguages lang)
         {
+            this.StartFunctionHost(nameof(GetProducts), lang);
+
             // Generate T-SQL to insert n rows of data with cost
             Product[] products = GetProductsWithSameCost(n, cost);
             this.InsertProducts(products);
 
             // Run the function
-            HttpResponseMessage response = await this.SendInputRequest("getproducts", cost.ToString(), TestUtils.GetPort(lang));
+            HttpResponseMessage response = await this.SendInputRequest("getproducts", cost.ToString());
 
             // Verify result
             string actualResponse = await response.Content.ReadAsStringAsync();
@@ -47,12 +47,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(100, 999)]
         public async void GetProductsStoredProcedureTest(int n, int cost, SupportedLanguages lang)
         {
+            this.StartFunctionHost(nameof(GetProductsStoredProcedure), lang);
+
             // Generate T-SQL to insert n rows of data with cost
             Product[] products = GetProductsWithSameCost(n, cost);
             this.InsertProducts(products);
 
             // Run the function
-            HttpResponseMessage response = await this.SendInputRequest("getproducts-storedprocedure", cost.ToString(), TestUtils.GetPort(lang));
+            HttpResponseMessage response = await this.SendInputRequest("getproducts-storedprocedure", cost.ToString());
 
             // Verify result
             string actualResponse = await response.Content.ReadAsStringAsync();
@@ -67,6 +69,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(100, 1000)]
         public async void GetProductsNameEmptyTest(int n, int cost, SupportedLanguages lang)
         {
+            this.StartFunctionHost(nameof(GetProductsNameEmpty), lang);
+
             // Add a bunch of noise data
             this.InsertProducts(GetProductsWithSameCost(n * 2, cost));
 
@@ -77,7 +81,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.Equal(n, this.ExecuteScalar($"select count(1) from Products where name = '' and cost = {cost}"));
 
             // Run the function
-            HttpResponseMessage response = await this.SendInputRequest("getproducts-nameempty", cost.ToString(), TestUtils.GetPort(lang));
+            HttpResponseMessage response = await this.SendInputRequest("getproducts-nameempty", cost.ToString());
 
             // Verify result
             string actualResponse = await response.Content.ReadAsStringAsync();
@@ -90,13 +94,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public async void GetProductsByCostTest(SupportedLanguages lang)
         {
+            this.StartFunctionHost(nameof(GetProductsStoredProcedureFromAppSetting), lang);
+
             // Generate T-SQL to insert n rows of data with cost
             Product[] products = GetProducts(3, 100);
             this.InsertProducts(products);
             Product[] productsWithCost100 = GetProducts(1, 100);
 
             // Run the function
-            HttpResponseMessage response = await this.SendInputRequest("getproductsbycost", "", TestUtils.GetPort(lang));
+            HttpResponseMessage response = await this.SendInputRequest("getproductsbycost");
 
             // Verify result
             string actualResponse = await response.Content.ReadAsStringAsync();
@@ -109,12 +115,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public async void GetProductNamesViewTest(SupportedLanguages lang)
         {
+            this.StartFunctionHost(nameof(GetProductNamesView), lang);
+
             // Insert one row of data into Product table
             Product[] products = GetProductsWithSameCost(1, 100);
             this.InsertProducts(products);
 
             // Run the function that queries from the ProductName view
-            HttpResponseMessage response = await this.SendInputRequest("getproduct-namesview", "", TestUtils.GetPort(lang));
+            HttpResponseMessage response = await this.SendInputRequest("getproduct-namesview");
 
             // Verify result
             string expectedResponse = /*lang=json,strict*/ "[{\"name\":\"test\"}]";
@@ -176,6 +184,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public async void GetProductsColumnTypesSerializationTest(SupportedLanguages lang)
         {
+            this.StartFunctionHost(nameof(GetProductsColumnTypesSerialization), lang, true);
+
             string datetime = "2022-10-20 12:39:13.123";
             this.ExecuteNonQuery("INSERT INTO [dbo].[ProductsColumnTypes] VALUES (" +
                 "999, " + // ProductId,
@@ -202,7 +212,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 "CONVERT(BINARY, 'test'), " + // Binary
                 "CONVERT(VARBINARY, 'test'))"); // Varbinary
 
-            HttpResponseMessage response = await this.SendInputRequest("getproducts-columntypesserialization", "", TestUtils.GetPort(lang, true));
+            HttpResponseMessage response = await this.SendInputRequest("getproducts-columntypesserialization");
             // We expect the date fields to be returned in UTC format
             ProductColumnTypes[] expectedResponse = Utils.JsonDeserializeObject<ProductColumnTypes[]>(/*lang=json,strict*/ "[{\"ProductId\":999,\"BigInt\":999,\"Bit\":true,\"DecimalType\":1.2345,\"Money\":1.2345,\"Numeric\":1.2345,\"SmallInt\":1,\"SmallMoney\":1.2345,\"TinyInt\":1,\"FloatType\":0.1,\"Real\":0.1,\"Date\":\"2022-10-20T00:00:00.000Z\",\"Datetime\":\"2022-10-20T12:39:13.123Z\",\"Datetime2\":\"2022-10-20T12:39:13.123Z\",\"DatetimeOffset\":\"2022-10-20T12:39:13.123Z\",\"SmallDatetime\":\"2022-10-20T12:39:00.000Z\",\"Time\":\"12:39:13.1230000\",\"CharType\":\"test\",\"Varchar\":\"test\",\"Nchar\":\"\uFFFD\u0020\u0020\u0020\",\"Nvarchar\":\"\uFFFD\",\"Binary\":\"dGVzdA==\",\"Varbinary\":\"dGVzdA==\"}]");
             string actualResponse = await response.Content.ReadAsStringAsync();
@@ -217,18 +227,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public async void GetProductsFromCaseSensitiveDatabase(SupportedLanguages lang)
         {
+            this.StartFunctionHost(nameof(GetProducts), lang);
+
             // Change database collation to case sensitive
             this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
-            // Clear connection pool to ensure new connection is created with new collation
-            // This is to prevent the following error:
-            // "Resetting the connection results in a different state than the initial login. The login fails."
-            SqlConnection.ClearAllPools();
+
             // Generate T-SQL to insert 10 rows of data with cost 100
             Product[] products = GetProductsWithSameCost(10, 100);
             this.InsertProducts(products);
 
             // Run the function
-            HttpResponseMessage response = await this.SendInputRequest("getproducts", "100", TestUtils.GetPort(lang));
+            HttpResponseMessage response = await this.SendInputRequest("getproducts", "100");
 
             // Verify result
             string actualResponse = await response.Content.ReadAsStringAsync();
@@ -238,7 +247,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // Change database collation back to case insensitive
             this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CI_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");
-            SqlConnection.ClearAllPools();
         }
     }
 }
