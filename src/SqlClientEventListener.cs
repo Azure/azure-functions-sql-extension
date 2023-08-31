@@ -46,24 +46,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     return;
                 }
-                object[] values = new object[eventData.Payload.Count];
-                string[] keys = new string[eventData.PayloadNames.Count];
 
-                eventData.PayloadNames.CopyTo(keys, 0);
-                eventData.Payload.CopyTo(values, 0);
-                var payloadDictionary = keys.Select((k, i) => new { k, v = values[i].ToString() })
-                  .ToDictionary(x => x.k, x => x.v);
                 foreach (object payload in eventData.Payload)
                 {
                     if (payload != null)
                     {
-                        this._logger.LogTrace($"Sending event {eventData.EventName}. Properties: {Utils.JsonSerializeObject(payloadDictionary)}");
+                        this._logger.LogTrace($"EventID {eventData.EventId}. Payload: {payload}");
                     }
                 }
             }
             catch (Exception ex)
             {
-                this._logger.LogError($"Error sending event {eventData.EventName}. Message={ex.Message}");
+                this._logger.LogError($"Error logging SqlClient event {eventData.EventName}. Message={ex.Message}");
 
             }
         }
