@@ -438,8 +438,6 @@ To learn more about our Privacy Statement visit this link: https://go.microsoft.
         Upsert,
         UpsertRollback,
         GetServerTelemetryProperties,
-        SqlClientListenerOnEventWritten,
-
     }
 
     internal class ServerProperties
