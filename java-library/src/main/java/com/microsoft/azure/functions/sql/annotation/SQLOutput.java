@@ -26,10 +26,10 @@ public @interface SQLOutput {
     /**
      * Name of the table to upsert data to.
      */
-    String commandText();
+    String commandText() default "";
 
     /**
      * Setting name for SQL connection string.
      */
-    String connectionStringSetting();
+    String connectionStringSetting() default "";
 }
