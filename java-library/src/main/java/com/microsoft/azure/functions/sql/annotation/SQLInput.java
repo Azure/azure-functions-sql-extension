@@ -25,7 +25,7 @@ public @interface SQLInput {
     /**
      * Query string or name of stored procedure to be run.
      */
-    String commandText();
+    String commandText() default "";
 
     /**
      * Text or Stored Procedure.
@@ -42,5 +42,5 @@ public @interface SQLInput {
     /**
      * Setting name for SQL connection string.
      */
-    String connectionStringSetting();
+    String connectionStringSetting() default "";
 }
