@@ -2,6 +2,7 @@
 Needs Logs:
   comment: |
     We need more info to debug your particular issue. If you could attach your logs to the issue, it would help us fix the issue much faster.
+    Note that these instructions are for local development only.
 
     1. Set the default logging level to `Debug` and enable logging to a file. To do this ensure the following entries are in your `host.json`. ([instructions](https://learn.microsoft.com/azure/azure-functions/configure-monitoring?tabs=v2#configure-log-levels))
 
@@ -26,8 +27,9 @@ Needs Logs:
 Needs Connection Logs:
   comment: |
     We need more info to debug your particular issue. If you could attach your SQL Client logs to the issue, it would help us fix the issue much faster.
+    Note that these instructions are for local development only.
 
-    1. Set the AzureFunctions_SqlBindings_VerboseLogging to `true` in your `*.settings.json` file or your Function App settings.
+    1. Set the AzureFunctions_SqlBindings_VerboseLogging to `true` in your `*.settings.json` file.
 
     ```json
     {
