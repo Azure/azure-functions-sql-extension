@@ -48,7 +48,7 @@ namespace Microsoft.Azure.WebJobs
         /// Name of the table used to store leases.
         /// If not specified, the leases table name will be Leases_{FunctionId}_{TableId}
         /// More information on how this is generated can be found here
-        /// https://github.com/Azure/azure-functions-sql-extension/blob/release/trigger/docs/TriggerBinding.md#az_funcleasestablename
+        /// https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/TriggerBinding.md#az_funcleasestablename
         /// </summary>
         public string LeasesTableName { get; }
     }
