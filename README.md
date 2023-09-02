@@ -10,6 +10,7 @@
     - [Output Bindings](#output-bindings)
     - [Trigger Bindings](#trigger-bindings)
   - [Telemetry](#telemetry)
+  - [Troubleshooting](#troubleshooting)
   - [Privacy Statement](#privacy-statement)
   - [Trademarks](#trademarks)
 
@@ -75,6 +76,10 @@ Below is a list of common issues that users may run into when using the SQL Bind
 ## Telemetry
 
 This extension collects usage data in order to help us improve your experience. The data is anonymous and doesn't include any personal information. You can opt-out of telemetry by setting the `AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT` environment variable or the `AzureFunctionsSqlBindingsTelemetryOptOut` app setting (in your `*.settings.json` file) to '1', 'true' or 'yes';
+
+## Troubleshooting
+
+For troubleshooting SQL Client issues, You can enable verbose logging by setting the `AzureFunctions_SqlBindings_VerboseLogging` app setting (in your `*.settings.json` file) to '1', 'true' or 'yes';
 
 ## Privacy Statement
 
