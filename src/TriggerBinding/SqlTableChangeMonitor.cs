@@ -284,7 +284,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         using (SqlCommand updateTablesPreInvocationCommand = this.BuildUpdateTablesPreInvocation(connection, transaction))
                         {
                             var commandSw = Stopwatch.StartNew();
-                            await updateTablesPreInvocationCommand.ExecuteNonQueryAsyncWithLogging(this._logger, token);
+                            await updateTablesPreInvocationCommand.ExecuteNonQueryAsyncWithLogging(this._logger, token, true);
                             setLastSyncVersionDurationMs = commandSw.ElapsedMilliseconds;
                         }
 
@@ -510,7 +510,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         {
                             var stopwatch = Stopwatch.StartNew();
 
-                            int rowsAffected = await renewLeasesCommand.ExecuteNonQueryAsyncWithLogging(this._logger, token);
+                            int rowsAffected = await renewLeasesCommand.ExecuteNonQueryAsyncWithLogging(this._logger, token, true);
 
                             long durationMs = stopwatch.ElapsedMilliseconds;
 
@@ -613,7 +613,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             using (SqlCommand releaseLeasesCommand = this.BuildReleaseLeasesCommand(connection, transaction))
                             {
                                 var commandSw = Stopwatch.StartNew();
-                                int rowsUpdated = await releaseLeasesCommand.ExecuteNonQueryAsyncWithLogging(this._logger, token);
+                                int rowsUpdated = await releaseLeasesCommand.ExecuteNonQueryAsyncWithLogging(this._logger, token, true);
                                 releaseLeasesDurationMs = commandSw.ElapsedMilliseconds;
                             }
 
