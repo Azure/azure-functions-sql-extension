@@ -185,7 +185,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     dotnet add package Microsoft.Azure.WebJobs.Extensions.Sql --prerelease
     ```
 
-    **JavaScript, TypeScript, Python, PowerShell:** Update the `host.json` file to the extension bundle.
+    **JavaScript, TypeScript, Python, PowerShell:** Update the `host.json` file with the extension bundle.
 
     ```json
     "extensionBundle": {
@@ -195,7 +195,7 @@ These steps can be done in the Terminal/CLI or with PowerShell.
     ```
 
     **Java:**
-    Update the `host.json` file to the extension bundle.
+    Update the `host.json` file with the extension bundle.
 
     ```json
     "extensionBundle": {
