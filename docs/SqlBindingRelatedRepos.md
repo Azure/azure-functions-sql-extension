@@ -28,7 +28,9 @@ Contains templates for the various types of bindings and supported languages, ea
 
 ## Extension Bundle
 
-Currently SQL Bindings is part of the 3.x and 4.x Preview bundles.
+Currently SQL Bindings is part of the 4.x extension bundle and 3.x, 4.x preview extension bundles.
+
+[Azure/azure-functions-extension-bundles at v4.x (github.com)](https://github.com/Azure/azure-functions-extension-bundles/tree/v4.x)
 
 [Azure/azure-functions-extension-bundles at v3.x-preview (github.com)](https://github.com/Azure/azure-functions-extension-bundles/tree/v3.x-preview)
 
