@@ -1,8 +1,8 @@
-# Azure SQL bindings for Azure Functions - Preview
+# Azure SQL bindings for Azure Functions
 
 ## Table of Contents
 
-- [Azure SQL bindings for Azure Functions - Preview](#azure-sql-bindings-for-azure-functions---preview)
+- [Azure SQL bindings for Azure Functions](#azure-sql-bindings-for-azure-functions)
   - [Table of Contents](#table-of-contents)
   - [Introduction](#introduction)
   - [Supported SQL Server Versions](#supported-sql-server-versions)
