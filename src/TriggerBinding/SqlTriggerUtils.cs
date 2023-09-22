@@ -27,7 +27,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <exception cref="InvalidOperationException">
         /// Thrown if there are no primary key columns present in the user table or if their names conflict with columns in leases table.
         /// </exception>
+<<<<<<< HEAD
         public static IReadOnlyList<(string name, string type)> GetPrimaryKeyColumnsAsync(SqlConnection connection, int userTableId, ILogger logger, string userTableName, CancellationToken cancellationToken)
+=======
+        public static async Task<IReadOnlyList<(string name, string type)>> GetPrimaryKeyColumnsAsync(SqlConnection connection, int userTableId, ILogger logger, string userTableName, CancellationToken cancellationToken)
+>>>>>>> main
         {
             const int NameIndex = 0, TypeIndex = 1, LengthIndex = 2, PrecisionIndex = 3, ScaleIndex = 4;
             string getPrimaryKeyColumnsQuery = $@"
@@ -44,16 +48,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 WHERE i.is_primary_key = 1 AND i.object_id = {userTableId};
             ";
             using (var getPrimaryKeyColumnsCommand = new SqlCommand(getPrimaryKeyColumnsQuery, connection))
+<<<<<<< HEAD
             using (SqlDataReader reader = getPrimaryKeyColumnsCommand.ExecuteReaderWithLogging(logger))
+=======
+            using (SqlDataReader reader = await getPrimaryKeyColumnsCommand.ExecuteReaderAsyncWithLogging(logger, cancellationToken))
+>>>>>>> main
             {
                 string[] variableLengthTypes = new[] { "varchar", "nvarchar", "nchar", "char", "binary", "varbinary" };
                 string[] variablePrecisionTypes = new[] { "numeric", "decimal" };
 
                 var primaryKeyColumns = new List<(string name, string type)>();
 
+<<<<<<< HEAD
                 while (reader.Read())
                 {
                     cancellationToken.ThrowIfCancellationRequested();
+=======
+                while (await reader.ReadAsync(cancellationToken))
+                {
+>>>>>>> main
                     string name = reader.GetString(NameIndex);
                     string type = reader.GetString(TypeIndex);
 
@@ -97,7 +110,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string getObjectIdQuery = $"SELECT OBJECT_ID(N{userTable.QuotedFullName}, 'U');";
 
             using (var getObjectIdCommand = new SqlCommand(getObjectIdQuery, connection))
+<<<<<<< HEAD
             using (SqlDataReader reader = getObjectIdCommand.ExecuteReaderWithLogging(logger))
+=======
+            using (SqlDataReader reader = await getObjectIdCommand.ExecuteReaderAsyncWithLogging(logger, cancellationToken))
+>>>>>>> main
             {
                 if (!await reader.ReadAsync(cancellationToken))
                 {

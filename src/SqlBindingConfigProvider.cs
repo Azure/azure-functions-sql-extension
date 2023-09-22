@@ -23,11 +23,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// Exposes SQL input, output and trigger bindings
     /// </summary>
     [Extension("sql")]
-    internal class SqlBindingConfigProvider : IExtensionConfigProvider
+    internal class SqlBindingConfigProvider : IExtensionConfigProvider, IDisposable
     {
         private readonly IConfiguration _configuration;
         private readonly IHostIdProvider _hostIdProvider;
         private readonly ILoggerFactory _loggerFactory;
+        private SqlClientListener sqlClientListener;
+        public const string VerboseLoggingSettingName = "AzureFunctions_SqlBindings_VerboseLogging";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlBindingConfigProvider"/> class.
@@ -57,6 +59,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             ILogger logger = this._loggerFactory.CreateLogger(LogCategories.Bindings);
             TelemetryInstance.Initialize(this._configuration, logger);
+            // Only enable SQL Client logging when VerboseLogging is set in the config to avoid extra overhead when the
+            // detailed logging it provides isn't needed
+            if (this.sqlClientListener == null && Utils.GetConfigSettingAsBool(VerboseLoggingSettingName, this._configuration))
+            {
+                this.sqlClientListener = new SqlClientListener(logger);
+            }
             LogDependentAssemblyVersions(logger);
 #pragma warning disable CS0618 // Fine to use this for our stuff
             FluentBindingRule<SqlAttribute> inputOutputRule = context.AddBindingRule<SqlAttribute>();
@@ -96,6 +104,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             }
         }
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // Dispose managed resources.
+                this.sqlClientListener?.Dispose();
+            }
+            // Free native resources.
+        }
+
+        public void Dispose()
+        {
+            this.Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
     }
 
     /// <summary>

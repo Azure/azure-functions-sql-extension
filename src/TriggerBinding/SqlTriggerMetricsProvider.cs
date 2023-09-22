@@ -56,7 +56,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     await connection.OpenAsync();
 
                     int userTableId = await GetUserTableIdAsync(connection, this._userTable, this._logger, CancellationToken.None);
+<<<<<<< HEAD
                     IReadOnlyList<(string name, string type)> primaryKeyColumns = GetPrimaryKeyColumnsAsync(connection, userTableId, this._logger, this._userTable.FullName, CancellationToken.None);
+=======
+                    IReadOnlyList<(string name, string type)> primaryKeyColumns = await GetPrimaryKeyColumnsAsync(connection, userTableId, this._logger, this._userTable.FullName, CancellationToken.None);
+>>>>>>> main
 
                     // Use a transaction to automatically release the app lock when we're done executing the query
                     using (SqlTransaction transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead))
@@ -66,7 +70,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             using (SqlCommand getUnprocessedChangesCommand = this.BuildGetUnprocessedChangesCommand(connection, transaction, primaryKeyColumns, userTableId))
                             {
                                 var commandSw = Stopwatch.StartNew();
+<<<<<<< HEAD
                                 unprocessedChangeCount = (long)await getUnprocessedChangesCommand.ExecuteScalarAsyncWithLogging(this._logger, CancellationToken.None);
+=======
+                                unprocessedChangeCount = (long)await getUnprocessedChangesCommand.ExecuteScalarAsyncWithLogging(this._logger, CancellationToken.None, true);
+>>>>>>> main
                                 getUnprocessedChangesDurationMs = commandSw.ElapsedMilliseconds;
                             }
 

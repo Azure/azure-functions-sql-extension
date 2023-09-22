@@ -7,6 +7,7 @@ const { app, input } = require('@azure/functions');
 const sqlInput = input.generic({
     type: 'sql',
     commandText: 'select * from Products where Cost = @Cost',
+    commandType: 'Text',
     parameters: '@Cost={cost}',
     connectionStringSetting: 'SqlConnectionString'
 })

@@ -386,11 +386,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="cmd">The SqlCommand being executed</param>
         /// <param name="logger">The logger</param>
         /// <param name="cancellationToken">The cancellation token to pass to the call</param>
+<<<<<<< HEAD
         /// <returns>The result of the call</returns>
         public static async Task<object> ExecuteScalarAsyncWithLogging(this SqlCommand cmd, ILogger logger, CancellationToken cancellationToken)
         {
             try
             {
+=======
+        /// <param name="logCommand">Defaults to false and when set logs the command being executed</param>
+        /// <returns>The result of the call</returns>
+        public static async Task<object> ExecuteScalarAsyncWithLogging(this SqlCommand cmd, ILogger logger, CancellationToken cancellationToken, bool logCommand = false)
+        {
+            try
+            {
+                if (logCommand)
+                {
+                    logger.LogDebug($"Executing query={cmd.CommandText}");
+                }
+>>>>>>> main
                 return await cmd.ExecuteScalarAsync(cancellationToken);
             }
             catch (Exception e)
@@ -406,11 +419,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="cmd">The SqlCommand being executed</param>
         /// <param name="logger">The logger</param>
         /// <param name="cancellationToken">The cancellation token to pass to the call</param>
+        /// <param name="logCommand">Defaults to false and when set logs the command being executed</param>
         /// <returns>The result of the call</returns>
-        public static async Task<int> ExecuteNonQueryAsyncWithLogging(this SqlCommand cmd, ILogger logger, CancellationToken cancellationToken)
+        public static async Task<int> ExecuteNonQueryAsyncWithLogging(this SqlCommand cmd, ILogger logger, CancellationToken cancellationToken, bool logCommand = false)
         {
             try
             {
+                if (logCommand)
+                {
+                    logger.LogDebug($"Executing query={cmd.CommandText}");
+                }
                 return await cmd.ExecuteNonQueryAsync(cancellationToken);
             }
             catch (Exception e)
@@ -425,12 +443,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         /// <param name="cmd">The SqlCommand being executed</param>
         /// <param name="logger">The logger</param>
+<<<<<<< HEAD
         /// <returns>The result of the call</returns>
         public static SqlDataReader ExecuteReaderWithLogging(this SqlCommand cmd, ILogger logger)
         {
             try
             {
                 return cmd.ExecuteReader();
+=======
+        /// <param name="cancellationToken">The cancellation token to pass to the call</param>
+        /// <param name="logCommand">Defaults to false and when set logs the command being executed</param>
+        /// <returns>The result of the call</returns>
+        public static async Task<SqlDataReader> ExecuteReaderAsyncWithLogging(this SqlCommand cmd, ILogger logger, CancellationToken cancellationToken, bool logCommand = false)
+        {
+            try
+            {
+                if (logCommand)
+                {
+                    logger.LogDebug($"Executing query={cmd.CommandText}");
+                }
+                return await cmd.ExecuteReaderAsync(cancellationToken);
+>>>>>>> main
             }
             catch (Exception e)
             {
