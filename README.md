@@ -83,7 +83,7 @@ For troubleshooting SQL Client issues, You can enable verbose logging by setting
 
 ### Logs
 
-Logs for function apps deployed in Azure can be viewed in the Function's monitoring tab. If logs are not showing in the monitoring tab, they can also be found in the Function App's [Log Stream]([url](https://learn.microsoft.com/en-us/azure/azure-functions/streaming-logs?tabs=azure-portal)) or in [Application Insights]([url](https://learn.microsoft.com/en-us/azure/azure-functions/analyze-telemetry-data#view-telemetry-in-application-insights)). More information on logging can be found [here](https://learn.microsoft.com/en-us/azure/azure-functions/functions-monitoring).
+Logs for function apps deployed in Azure can be viewed in the Function's monitoring tab. If logs are not showing in the monitoring tab, they can also be found in the Function App's [Log Stream](https://learn.microsoft.com/en-us/azure/azure-functions/streaming-logs?tabs=azure-portal) or in [Application Insights](https://learn.microsoft.com/en-us/azure/azure-functions/analyze-telemetry-data#view-telemetry-in-application-insights). More information on logging can be found [here](https://learn.microsoft.com/en-us/azure/azure-functions/functions-monitoring).
 
 ## Privacy Statement
 
