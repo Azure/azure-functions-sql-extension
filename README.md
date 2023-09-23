@@ -81,6 +81,10 @@ This extension collects usage data in order to help us improve your experience. 
 
 For troubleshooting SQL Client issues, You can enable verbose logging by setting the `AzureFunctions_SqlBindings_VerboseLogging` app setting (in your `*.settings.json` file) to '1', 'true' or 'yes';
 
+### Logs
+
+Logs for function apps deployed in Azure can be viewed in the function's Monitor tab. If logs are not showing in the Monitor tab, they can also be found in the function app's [Log Stream](https://learn.microsoft.com/azure/azure-functions/streaming-logs?tabs=azure-portal) or in [Application Insights](https://learn.microsoft.com/azure/azure-functions/analyze-telemetry-data#view-telemetry-in-application-insights). More information on logging can be found [here](https://learn.microsoft.com/azure/azure-functions/functions-monitoring).
+
 ## Privacy Statement
 
 To learn more about our Privacy Statement visit [this link](https://go.microsoft.com/fwlink/?LinkID=824704).
