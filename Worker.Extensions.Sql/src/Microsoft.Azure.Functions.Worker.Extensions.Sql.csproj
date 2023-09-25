@@ -7,7 +7,7 @@
 		<Product>SQL Binding Worker</Product>
 		<!-- Default Version for dev -->
 		<Version>99.99.99</Version>
-		<SupportedVersion>99.99.99</SupportedVersion>
+		<OOPWorkerSupportedExtensionVersion>99.99.99</OOPWorkerSupportedExtensionVersion>
 		<PackageId>Microsoft.Azure.Functions.Worker.Extensions.Sql</PackageId>
 		<PackageTags>Microsoft Azure WebJobs AzureFunctions Isolated DotnetIsolated SQL AzureSQL Worker</PackageTags>
 		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
@@ -34,7 +34,7 @@
 	<ItemGroup>
 		<AssemblyAttribute Include="Microsoft.Azure.Functions.Worker.Extensions.Abstractions.ExtensionInformationAttribute">
 			<_Parameter1>Microsoft.Azure.WebJobs.Extensions.Sql</_Parameter1>
-			<_Parameter2>$(SupportedVersion)</_Parameter2>
+			<_Parameter2>$(OOPWorkerSupportedExtensionVersion)</_Parameter2>
 		</AssemblyAttribute>
 	</ItemGroup>
 </Project>
