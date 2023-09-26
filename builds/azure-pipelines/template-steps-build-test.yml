@@ -4,7 +4,7 @@ parameters:
   nugetVersion: ''
   binariesVersion: ''
   testServer: ''
-  supportedVersion: ''
+  oopWorkerSupportedExtensionVersion: ''
 
 steps:
 - task: UseDotNet@2
@@ -92,7 +92,7 @@ steps:
   inputs:
     command: build
     projects: ${{ parameters.solution }}
-    arguments: --configuration ${{ parameters.configuration }} -p:Version=${{ parameters.binariesVersion }} -p:SupportedVersion=${{ parameters.binariesVersion }}
+    arguments: --configuration ${{ parameters.configuration }} -p:Version=${{ parameters.binariesVersion }} -p:OOPWorkerSupportedExtensionVersion=${{ parameters.binariesVersion }}
 
 - task: CopyFiles@2
   displayName: 'Copy Sql extension dll to Azure Functions extension bundle'
@@ -224,7 +224,7 @@ steps:
   inputs:
     command: build
     projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=false -p:Version=${{ parameters.binariesVersion }} -p:SupportedVersion=${{ parameters.supportedVersion }}'
+    arguments: '--configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=false -p:Version=${{ parameters.binariesVersion }} -p:OOPWorkerSupportedExtensionVersion=${{ parameters.oopWorkerSupportedExtensionVersion }}'
 
 # 5.0 isn't supported on Mac yet
 - task: UseDotNet@2

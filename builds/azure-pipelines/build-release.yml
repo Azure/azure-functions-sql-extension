@@ -28,7 +28,7 @@ variables:
   versionPatch: $[counter(variables['versionMajorMinor'], 0)] # This will reset when we bump minor version
   binariesVersion: '$(versionMajor).$(versionMinor).$(versionPatch)'
   nugetVersion: $[replace(replace('True', eq('${{ parameters.ReleaseType }}', 'full'), '$(binariesVersion)'),'True','$(binariesVersion)-preview')] # This will set the preview tag to the version based on the ReleaseType parameter.
-  supportedVersion: $[replace(replace('True', eq('${{ parameters.ReleaseType }}', 'full'), '$(versionMajor).*'),'True','$(versionMajor).*-*')] # This will set the expression to pull the preview vs full version based on the ReleaseType parameter.
+  oopWorkerSupportedExtensionVersion: $[replace(replace('True', eq('${{ parameters.ReleaseType }}', 'full'), '$(binariesVersion)'),'True','$(binariesVersion)-preview')] # This will set the expression to pull the preview vs full version based on the ReleaseType parameter.
   LGTM.UploadSnapshot: true
   Semmle.SkipAnalysis: true
 
@@ -67,7 +67,7 @@ stages:
           configuration: '$(configuration)'
           nugetVersion: '$(nugetVersion)'
           binariesVersion: '$(binariesVersion)'
-          supportedVersion: '$(supportedVersion)'
+          oopWorkerSupportedExtensionVersion: '$(oopWorkerSupportedExtensionVersion)'
 
   - job: BuildTestPublishLinux
     displayName: 'Build, Test and Publish on linux'
@@ -87,7 +87,7 @@ stages:
           configuration: '$(configuration)'
           nugetVersion: '$(nugetVersion)'
           binariesVersion: '$(binariesVersion)'
-          supportedVersion: '$(supportedVersion)'
+          oopWorkerSupportedExtensionVersion: '$(oopWorkerSupportedExtensionVersion)'
           testServer: ''
 
       - template: 'template-steps-publish.yml'
