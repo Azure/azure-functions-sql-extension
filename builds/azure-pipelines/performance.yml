@@ -7,11 +7,7 @@ schedules:
     displayName: Mon-Fri at Midnight
     branches:
       include:
-<<<<<<< HEAD
-        - release/trigger
-=======
         - main
->>>>>>> main
     always: true
 
 variables:
