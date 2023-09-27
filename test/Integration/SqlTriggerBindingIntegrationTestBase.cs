@@ -90,19 +90,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     }
                     catch (Exception ex)
                     {
-<<<<<<< HEAD
-                        throw new InvalidOperationException($"Exception deserializing JSON content. Error={ex.Message} Json=\"{json}\"", ex);
-                    }
-                    foreach (SqlChange<Product> change in changes)
-                    {
-                        Assert.Equal(operation, change.Operation); // Expected change operation
-                        Product product = change.Item;
-                        Assert.NotNull(product); // Product deserialized correctly
-                        Assert.Contains(product.ProductId, expectedIds); // We haven't seen this product ID yet, and it's one we expected to see
-                        expectedIds.Remove(product.ProductId);
-                        Assert.Equal(getName(product.ProductId), product.Name); // The product has the expected name
-                        Assert.Equal(getCost(product.ProductId), product.Cost); // The product has the expected cost
-=======
                         taskCompletion.SetException(new InvalidOperationException($"Exception deserializing JSON content. Error={ex.Message} Json=\"{json}\"", ex));
                         return;
                     }
@@ -122,7 +109,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     catch (Exception ex)
                     {
                         taskCompletion.SetException(ex);
->>>>>>> main
                     }
                     if (expectedIds.Count == 0)
                     {

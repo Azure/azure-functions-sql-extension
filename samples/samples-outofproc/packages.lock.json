@@ -77,15 +77,9 @@
       },
       "Newtonsoft.Json": {
         "type": "Direct",
-<<<<<<< HEAD
-        "requested": "[13.0.2, )",
-        "resolved": "13.0.2",
-        "contentHash": "R2pZ3B0UjeyHShm9vG+Tu0EBb2lC8b0dFzV9gVn50ofHXh9Smjk6kTn7A/FdAsC8B5cKib1OnGYOXxRBz5XQDg=="
-=======
         "requested": "[13.0.3, )",
         "resolved": "13.0.3",
         "contentHash": "HrC5BXdl00IP9zeV+0Z848QWPAoCr9P3bDEZguI+gkLcBKAOxix/tLEAAHC+UvDNPv4a2d18lOReHMOagPa+zQ=="
->>>>>>> main
       },
       "Azure.Core": {
         "type": "Transitive",
@@ -754,15 +748,9 @@
       "microsoft.azure.functions.worker.extensions.sql": {
         "type": "Project",
         "dependencies": {
-<<<<<<< HEAD
-          "Microsoft.Azure.Functions.Worker.Extensions.Abstractions": "1.1.0",
-          "Microsoft.Data.SqlClient": "5.0.1",
-          "System.Drawing.Common": "5.0.3"
-=======
           "Microsoft.Azure.Functions.Worker.Extensions.Abstractions": "[1.2.0, )",
           "Microsoft.Data.SqlClient": "[5.1.1, )",
           "System.Drawing.Common": "[7.0.0, )"
->>>>>>> main
         }
       },
       "Microsoft.Azure.Functions.Worker.Extensions.Abstractions": {

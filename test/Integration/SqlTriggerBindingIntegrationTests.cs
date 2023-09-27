@@ -591,11 +591,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             {
                 if (e.Data.Contains(TriggerWithException.ExceptionMessage))
                 {
-<<<<<<< HEAD
-                    taskCompletionSource.SetResult();
-=======
                     taskCompletionSource.TrySetResult();
->>>>>>> main
                 }
             };
             this.FunctionHost.OutputDataReceived += TestExceptionMessageSeen;

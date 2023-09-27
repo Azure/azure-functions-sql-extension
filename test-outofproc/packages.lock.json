@@ -1646,15 +1646,9 @@
       "microsoft.azure.functions.worker.extensions.sql": {
         "type": "Project",
         "dependencies": {
-<<<<<<< HEAD
-          "Microsoft.Azure.Functions.Worker.Extensions.Abstractions": "1.1.0",
-          "Microsoft.Data.SqlClient": "5.0.1",
-          "System.Drawing.Common": "5.0.3"
-=======
           "Microsoft.Azure.Functions.Worker.Extensions.Abstractions": "[1.2.0, )",
           "Microsoft.Data.SqlClient": "[5.1.1, )",
           "System.Drawing.Common": "[7.0.0, )"
->>>>>>> main
         }
       },
       "Microsoft.Azure.Functions.Worker.Extensions.Abstractions": {
