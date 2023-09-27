@@ -245,11 +245,7 @@ The following table explains the binding configuration properties that you set i
 |**name** | Required. The name of the variable that represents the set of changes that triggered the function code. Must be set to `changes`. |
 | **tableName** | Required. The name of the table to be monitored for changes.  |
 | **connectionStringSetting** | Required. The name of an app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0). |
-<<<<<<< HEAD
-| **leasesTableName** | Optional. The name of the table used to store leases. If not specified, the leases table name will be Leases_{FunctionId}_{TableId}. More information on how this is generated can be found [here](https://github.com/Azure/azure-functions-sql-extension/blob/release/trigger/docs/TriggerBinding.md#az_funcleasestablename).|
-=======
 | **leasesTableName** | Optional. The name of the table used to store leases. If not specified, the leases table name will be Leases_{FunctionId}_{TableId}. More information on how this is generated can be found [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/TriggerBinding.md#az_funcleasestablename).|
->>>>>>> main
 
 ### Setup for Trigger Bindings
 

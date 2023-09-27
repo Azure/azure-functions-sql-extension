@@ -45,11 +45,8 @@ Databases on SQL Server, Azure SQL Database, or Azure SQL Managed Instance which
 
 Below is a list of common issues that users may run into when using the SQL Bindings extension.
 
-<<<<<<< HEAD
-=======
 > **Note:** While we are actively working on resolving the known issues, some may not be supported at this time. We appreciate your patience as we work to improve the Azure Functions SQL Extension.
 
->>>>>>> main
 - **By Design:** The table used by a SQL binding or SQL trigger cannot contain two columns that only differ by casing (Ex. 'Name' and 'name').
 - **By Design:** Non-CSharp functions using SQL bindings against tables with columns of data types `BINARY` or `VARBINARY` need to map those columns to a string type. Input bindings will return the binary value as a base64 encoded string. Output bindings require the value upserted to binary columns to be a base64 encoded string.
 - **Planned for Future Support:** SQL bindings against tables with columns of data types `GEOMETRY` and `GEOGRAPHY` are not supported. Issue is tracked [here](https://github.com/Azure/azure-functions-sql-extension/issues/654).

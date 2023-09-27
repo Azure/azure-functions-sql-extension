@@ -358,19 +358,11 @@ See [Trigger Binding Overview](./BindingsOverview.md#trigger-binding) for genera
 
 ### SqlTriggerAttribute
 
-<<<<<<< HEAD
-The SqlAttribute for Trigger bindings takes two [arguments](https://github.com/Azure/azure-functions-sql-extension/blob/release/trigger/Worker.Extensions.Sql/src/SqlTriggerAttribute.cs)
-
-- **TableName**: Represents the name of the table to be monitored for changes.
-- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
-- **LeasesTableName**: Optional. Name of the table used to store leases. If not specified, the leases table name will be Leases_{FunctionId}_{TableId}. More information on how this is generated can be found [here](https://github.com/Azure/azure-functions-sql-extension/blob/release/trigger/docs/TriggerBinding.md#az_funcleasestablename).
-=======
 The SqlAttribute for Trigger bindings takes two [arguments](https://github.com/Azure/azure-functions-sql-extension/blob/main/Worker.Extensions.Sql/src/SqlTriggerAttribute.cs)
 
 - **TableName**: Represents the name of the table to be monitored for changes.
 - **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
 - **LeasesTableName**: Optional. Name of the table used to store leases. If not specified, the leases table name will be Leases_{FunctionId}_{TableId}. More information on how this is generated can be found [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/TriggerBinding.md#az_funcleasestablename).
->>>>>>> main
 
 The trigger binding can bind to type `IReadOnlyList<SqlChange<T>>`:
 

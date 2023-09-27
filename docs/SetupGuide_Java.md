@@ -19,12 +19,9 @@
       - [Array](#array)
       - [Single Row](#single-row)
   - [Trigger Binding](#trigger-binding)
-<<<<<<< HEAD
-    - [SqlTrigger Annotation](#sqltriggerbinding-annotation)
-    - [Setup for Trigger Binding](#setup-for-trigger-bindings)
-=======
     - [SqlTrigger Annotation](#sqltrigger-annotation)
     - [Setup for Trigger Bindings](#setup-for-trigger-bindings)
+  - [Known Issues](#known-issues)
 >>>>>>> main
   - [Known Issues](#known-issues)
 
@@ -444,11 +441,7 @@ In the Java functions runtime library, use the @SQLTrigger annotation (com.micro
 | **name** |  Required. The name of the parameter that the trigger binds to. |
 | **tableName** | Required. The name of the table monitored by the trigger. |
 | **connectionStringSetting** | Required. The name of an app setting that contains the connection string for the database containing the table monitored for changes. This isn't the actual connection string and must instead resolve to an environment variable. Optional keywords in the connection string value are [available to refine SQL bindings connectivity](https://aka.ms/sqlbindings#sql-connection-string). |
-<<<<<<< HEAD
-| **leasesTableName** | Optional. The name of the table used to store leases. If not specified, the leases table name will be Leases_{FunctionId}_{TableId}. More information on how this is generated can be found [here](https://github.com/Azure/azure-functions-sql-extension/blob/release/trigger/docs/TriggerBinding.md#az_funcleasestablename).|
-=======
 | **leasesTableName** | Optional. The name of the table used to store leases. If not specified, the leases table name will be Leases_{FunctionId}_{TableId}. More information on how this is generated can be found [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/TriggerBinding.md#az_funcleasestablename).|
->>>>>>> main
 
 When you're developing locally, add your application settings in the local.settings.json file in the Values collection.
 ### Setup for Trigger Bindings
