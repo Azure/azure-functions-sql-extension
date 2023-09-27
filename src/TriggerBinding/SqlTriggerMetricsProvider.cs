@@ -66,7 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             using (SqlCommand getUnprocessedChangesCommand = this.BuildGetUnprocessedChangesCommand(connection, transaction, primaryKeyColumns, userTableId))
                             {
                                 var commandSw = Stopwatch.StartNew();
-                                unprocessedChangeCount = (long)await getUnprocessedChangesCommand.ExecuteScalarAsyncWithLogging(this._logger, CancellationToken.None);
+                                unprocessedChangeCount = (long)await getUnprocessedChangesCommand.ExecuteScalarAsyncWithLogging(this._logger, CancellationToken.None, true);
                                 getUnprocessedChangesDurationMs = commandSw.ElapsedMilliseconds;
                             }
 

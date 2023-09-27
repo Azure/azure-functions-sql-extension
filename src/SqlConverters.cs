@@ -170,6 +170,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     TelemetryInstance.TrackConvert(type, props);
                     var dataTable = new DataTable();
                     adapter.Fill(dataTable);
+                    this._logger.LogInformation($"{dataTable.Rows.Count} row(s) queried from database: {connection.Database} using Command: {command.CommandText}");
                     // Serialize any DateTime objects in UTC format
                     var jsonSerializerSettings = new JsonSerializerSettings()
                     {
