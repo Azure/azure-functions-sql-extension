@@ -22,8 +22,6 @@
     - [SqlTrigger Annotation](#sqltrigger-annotation)
     - [Setup for Trigger Bindings](#setup-for-trigger-bindings)
   - [Known Issues](#known-issues)
->>>>>>> main
-  - [Known Issues](#known-issues)
 
 ## Setup Function Project
 
