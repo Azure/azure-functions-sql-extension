@@ -130,9 +130,9 @@ steps:
     architecture: 'x64'
 
 - script: |
-    pip3 install pylint_runner
+    pip3 install "pylint<3.0"
     pip3 install pylintfileheader
-    pylint_runner
+    pylint --recursive=yes .
   workingDirectory: $(Build.SourcesDirectory)/samples/samples-python
   displayName: Lint samples-python
 
