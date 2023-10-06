@@ -1,0 +1,79 @@
+{
+    "PerformanceRuntime": {
+        "InputBinding": {
+            "TestName": "GetProductsTest",
+            "RunTimeAverage": 2.081
+        },
+        "OutputBinding": {
+            "TestName": "AddProductsArrayTest",
+            "RunTimeAverage": 2.055
+        },
+        "TriggerBinding": [
+            {
+                "Count": 100,
+                "TestName": "ProductsTriggerTest",
+                "RunTimeAverage": 1.02
+            },
+            {
+                "Count": 1000,
+                "TestName": "ProductsTriggerTest",
+                "RunTimeAverage": 10.4
+            }
+        ],
+        "TriggerBinding_BatchOverride": [
+            {
+                "MaxBatchSize": 100,
+                "Numbatches": 1,
+                "TestName": "ProductsTrigger",
+                "RunTimeAverage": 1.022
+            },
+            {
+                "MaxBatchSize": 100,
+                "Numbatches": 5,
+                "TestName": "ProductsTrigger",
+                "RunTimeAverage": 5.206
+            },
+            {
+                "MaxBatchSize": 1000,
+                "Numbatches": 1,
+                "TestName": "ProductsTrigger",
+                "RunTimeAverage": 1.071
+            },
+            {
+                "MaxBatchSize": 1000,
+                "Numbatches": 5,
+                "TestName": "ProductsTrigger",
+                "RunTimeAverage": 5.719
+            }
+        ],
+        "TriggerBinding_Parallelization": [
+            {
+                "HostCount": 2,
+                "TestName": "ProductsTriggerTest",
+                "RunTimeAverage": 1.8
+            },
+            {
+                "HostCount": 5,
+                "TestName": "ProductsTriggerTest",
+                "RunTimeAverage": 0.8
+            }
+        ],
+        "TriggerBinding_PollingIntervalOverride": [
+            {
+                "PollingIntervalMs": 100,
+                "TestName": "ProductsTriggerTest",
+                "RunTimeAverage": 0.326
+            },
+            {
+                "PollingIntervalMs": 500,
+                "TestName": "ProductsTriggerTest",
+                "RunTimeAverage": 1.1254
+            },
+            {
+                "PollingIntervalMs": 2000,
+                "TestName": "ProductsTriggerTest",
+                "RunTimeAverage": 4.0976
+            }
+        ]
+    }
+}
