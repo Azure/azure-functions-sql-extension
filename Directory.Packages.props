@@ -6,11 +6,12 @@
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Abstractions" Version="1.2.0" />
     <PackageVersion Include="Microsoft.ApplicationInsights" Version="2.21.0" />
     <PackageVersion Include="Microsoft.Azure.WebJobs" Version="3.0.37" />
+    <!-- Do not upgrade MDS from 5.0.1 due to failures on .NET7, more info available here -> https://github.com/Azure/azure-functions-sql-extension/issues/920 -->
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.0.1" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="1.1.1" />
     <PackageVersion Include="morelinq" Version="3.4.2" />
-    <PackageVersion Include="System.Drawing.Common" Version="7.0.0" />
-    <PackageVersion Include="System.Runtime.Caching" Version="6.0.0" />
+    <PackageVersion Include="System.Drawing.Common" Version="5.0.3" />
+    <PackageVersion Include="System.Runtime.Caching" Version="5.0.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.6.3" />
     <PackageVersion Include="Moq" Version="4.18.4" />
     <PackageVersion Include="xunit" Version="2.5.0" />
@@ -27,7 +28,7 @@
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Timer" Version="4.2.0" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Storage.Queues" Version="5.1.2" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="6.0.1" />
     <PackageVersion Include="Microsoft.SqlServer.TransactSql.ScriptDom" Version="161.8901.0" />
     <PackageVersion Include="Grpc.Net.Client" Version="2.55.0"/>
   </ItemGroup>
