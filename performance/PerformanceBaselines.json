@@ -3,14 +3,14 @@
         "InputBinding": {
             "TestName": "GetProductsTest",
             "RunTimeAverageSec": 2.081,
-            "RunTimeAverageMinSec": 2.208,
-            "RunTimeAverageMaxSec": 1.873
+            "RunTimeAverageMinSec": 1.873,
+            "RunTimeAverageMaxSec": 2.289
         },
         "OutputBinding": {
             "TestName": "AddProductsArrayTest",
             "RunTimeAverageSec": 2.055,
-            "RunTimeAverageMinSec": 2.205,
-            "RunTimeAverageMaxSec": 1.85
+            "RunTimeAverageMinSec": 1.85,
+            "RunTimeAverageMaxSec": 2.26
         },
         "TriggerBinding": [
             {
@@ -35,7 +35,7 @@
                 "TestName": "ProductsTrigger",
                 "RunTimeAverageSec": 1.022,
                 "RunTimeAverageMinSec": 0.922,
-                "RunTimeAverageMaxSec": 1.122
+                "RunTimeAverageMaxSec": 1.124
             },
             {
                 "MaxBatchSize": 100,
