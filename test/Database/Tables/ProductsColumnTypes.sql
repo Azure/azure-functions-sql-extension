@@ -1,4 +1,6 @@
-﻿CREATE TABLE [ProductsColumnTypes] (
+﻿DROP TABLE IF EXISTS [ProductsColumnTypes];
+
+CREATE TABLE [ProductsColumnTypes] (
     [ProductId] [int] NOT NULL PRIMARY KEY,
     [BigInt] [bigint],
     [Bit] [bit],

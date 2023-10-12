@@ -8,6 +8,7 @@ using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlConverters;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Config;
+using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Azure.WebJobs.Logging;
@@ -19,13 +20,16 @@ using Newtonsoft.Json;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     /// <summary>
-    /// Exposes SQL input and output bindings
+    /// Exposes SQL input, output and trigger bindings
     /// </summary>
     [Extension("sql")]
-    internal class SqlBindingConfigProvider : IExtensionConfigProvider
+    internal class SqlBindingConfigProvider : IExtensionConfigProvider, IDisposable
     {
         private readonly IConfiguration _configuration;
+        private readonly IHostIdProvider _hostIdProvider;
         private readonly ILoggerFactory _loggerFactory;
+        private SqlClientListener sqlClientListener;
+        public const string VerboseLoggingSettingName = "AzureFunctions_SqlBindings_VerboseLogging";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlBindingConfigProvider"/> class.
@@ -33,9 +37,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <exception cref="ArgumentNullException">
         /// Thrown if either parameter is null
         /// </exception>
-        public SqlBindingConfigProvider(IConfiguration configuration, ILoggerFactory loggerFactory)
+        public SqlBindingConfigProvider(IConfiguration configuration, IHostIdProvider hostIdProvider, ILoggerFactory loggerFactory)
         {
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            this._hostIdProvider = hostIdProvider ?? throw new ArgumentNullException(nameof(hostIdProvider));
             this._loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
@@ -54,6 +59,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             ILogger logger = this._loggerFactory.CreateLogger(LogCategories.Bindings);
             TelemetryInstance.Initialize(this._configuration, logger);
+            // Only enable SQL Client logging when VerboseLogging is set in the config to avoid extra overhead when the
+            // detailed logging it provides isn't needed
+            if (this.sqlClientListener == null && Utils.GetConfigSettingAsBool(VerboseLoggingSettingName, this._configuration))
+            {
+                this.sqlClientListener = new SqlClientListener(logger);
+            }
             LogDependentAssemblyVersions(logger);
 #pragma warning disable CS0618 // Fine to use this for our stuff
             FluentBindingRule<SqlAttribute> inputOutputRule = context.AddBindingRule<SqlAttribute>();
@@ -62,6 +73,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), this._configuration, logger);
             inputOutputRule.BindToCollector<SQLObjectOpenType>(typeof(SqlAsyncCollectorBuilder<>), this._configuration, logger);
             inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), this._configuration, logger);
+
+            FluentBindingRule<SqlTriggerAttribute> triggerRule = context.AddBindingRule<SqlTriggerAttribute>();
+            triggerRule.BindToTrigger(new SqlTriggerBindingProvider(this._configuration, this._hostIdProvider, this._loggerFactory));
         }
 
         private static readonly Assembly[] _dependentAssemblies = {
@@ -81,7 +95,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 try
                 {
-                    logger.LogInformation($"Using {assembly.GetName().Name} {FileVersionInfo.GetVersionInfo(assembly.Location).ProductVersion}");
+                    logger.LogDebug($"Using {assembly.GetName().Name} {FileVersionInfo.GetVersionInfo(assembly.Location).ProductVersion}");
                 }
                 catch (Exception ex)
                 {
@@ -90,6 +104,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             }
         }
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // Dispose managed resources.
+                this.sqlClientListener?.Dispose();
+            }
+            // Free native resources.
+        }
+
+        public void Dispose()
+        {
+            this.Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
     }
 
     /// <summary>

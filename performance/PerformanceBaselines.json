@@ -1,0 +1,105 @@
+{
+    "PerformanceRuntime": {
+        "InputBinding": {
+            "TestName": "GetProductsTest",
+            "RunTimeAverageSec": 2.081,
+            "RunTimeAverageMinSec": 1.873,
+            "RunTimeAverageMaxSec": 2.289
+        },
+        "OutputBinding": {
+            "TestName": "AddProductsArrayTest",
+            "RunTimeAverageSec": 2.055,
+            "RunTimeAverageMinSec": 1.85,
+            "RunTimeAverageMaxSec": 2.26
+        },
+        "TriggerBinding": [
+            {
+                "Count": 100,
+                "TestName": "ProductsTriggerTest",
+                "RunTimeAverageSec": 1.02,
+                "RunTimeAverageMinSec": 0.92,
+                "RunTimeAverageMaxSec": 1.12
+            },
+            {
+                "Count": 1000,
+                "TestName": "ProductsTriggerTest",
+                "RunTimeAverageSec": 10.4,
+                "RunTimeAverageMinSec": 9.36,
+                "RunTimeAverageMaxSec": 11.44
+            }
+        ],
+        "TriggerBinding_BatchOverride": [
+            {
+                "MaxBatchSize": 100,
+                "Numbatches": 1,
+                "TestName": "ProductsTrigger",
+                "RunTimeAverageSec": 1.022,
+                "RunTimeAverageMinSec": 0.922,
+                "RunTimeAverageMaxSec": 1.124
+            },
+            {
+                "MaxBatchSize": 100,
+                "Numbatches": 5,
+                "TestName": "ProductsTrigger",
+                "RunTimeAverageSec": 5.206,
+                "RunTimeAverageMinSec": 4.686,
+                "RunTimeAverageMaxSec": 5.726
+            },
+            {
+                "MaxBatchSize": 1000,
+                "Numbatches": 1,
+                "TestName": "ProductsTrigger",
+                "RunTimeAverageSec": 1.071,
+                "RunTimeAverageMinSec": 0.964,
+                "RunTimeAverageMaxSec": 1.178
+            },
+            {
+                "MaxBatchSize": 1000,
+                "Numbatches": 5,
+                "TestName": "ProductsTrigger",
+                "RunTimeAverageSec": 5.719,
+                "RunTimeAverageMinSec": 5.147,
+                "RunTimeAverageMaxSec": 6.291
+            }
+        ],
+        "TriggerBinding_Parallelization": [
+            {
+                "HostCount": 2,
+                "TestName": "ProductsTriggerTest",
+                "RunTimeAverageSec": 1.8,
+                "RunTimeAverageMinSec": 1.62,
+                "RunTimeAverageMaxSec": 1.98
+            },
+            {
+                "HostCount": 5,
+                "TestName": "ProductsTriggerTest",
+                "RunTimeAverageSec": 0.8,
+                "RunTimeAverageMinSec": 0.72,
+                "RunTimeAverageMaxSec": 0.88
+            }
+        ],
+        "TriggerBinding_PollingIntervalOverride": [
+            {
+                "PollingIntervalMs": 100,
+                "TestName": "ProductsTriggerTest",
+                "RunTimeAverageSec": 0.326,
+                "RunTimeAverageMinSec": 0.294,
+                "RunTimeAverageMaxSec": 0.358
+            },
+            {
+                "PollingIntervalMs": 500,
+                "TestName": "ProductsTriggerTest",
+                "RunTimeAverageSec": 1.125,
+                "RunTimeAverageMinSec": 1.013,
+                "RunTimeAverageMaxSec": 1.237
+            },
+            {
+                "PollingIntervalMs": 2000,
+                "TestName": "ProductsTriggerTest",
+                "RunTimeAverageSec": 4.0976,
+                "RunTimeAverageMinSec": 3.687,
+                "RunTimeAverageMaxSec": 4.507
+            }
+        ]
+    }
+}

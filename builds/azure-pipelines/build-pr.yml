@@ -46,4 +46,4 @@ stages:
         configuration: '$(configuration)'
         nugetVersion: '99.99.99-test'
         binariesVersion: '99.99.99'
-        supportedVersion: '99.99.99'
+        oopWorkerSupportedExtensionVersion: '99.99.99'

@@ -241,7 +241,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Checks whether an exception is a fatal SqlException. It is deteremined to be fatal
+        /// Checks whether an exception is a fatal SqlException. It is determined to be fatal
         /// if the Class value of the Exception is 20 or higher, see
         /// https://learn.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlexception#remarks
         /// for details
@@ -250,8 +250,26 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>True if the exception is a fatal SqlClientException, false otherwise</returns>
         internal static bool IsFatalSqlException(this Exception e)
         {
+            string lowerMessage = e.Message.ToLowerInvariant();
             // Most SqlExceptions wrap the original error from the native driver, so make sure to check both
-            return (e as SqlException)?.Class >= 20 || (e.InnerException as SqlException)?.Class >= 20;
+            return (e as SqlException)?.Class >= 20
+                || (e.InnerException as SqlException)?.Class >= 20
+                // TEMPORARY - Not all exceptions thrown by SqlClient are SqlExceptions, and the current SqlClient
+                // does not correctly update the State property in all cases. So for now explicitly check for
+                // the string containing a message indicating that the connection has been closed or broken.
+                // This should be removed once version 5.2.0+ has been released
+                // https://github.com/Azure/azure-functions-sql-extension/issues/860
+                || (lowerMessage.Contains("connection") && (lowerMessage.Contains("broken") || lowerMessage.Contains("closed")));
+        }
+
+        /// <summary>
+        /// Checks whether the connection state is currently Broken or Closed
+        /// </summary>
+        /// <param name="conn">The connection to check</param>
+        /// <returns>True if the connection is broken or closed, false otherwise</returns>
+        internal static bool IsBrokenOrClosed(this SqlConnection conn)
+        {
+            return conn.State == ConnectionState.Broken || conn.State == ConnectionState.Closed;
         }
 
         /// <summary>
@@ -270,7 +288,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string connectionName,
             CancellationToken token)
         {
-            if (forceReconnect || conn.State.HasFlag(ConnectionState.Broken | ConnectionState.Closed))
+            if (forceReconnect || conn.IsBrokenOrClosed())
             {
                 logger.LogWarning($"{connectionName} is broken, attempting to reconnect...");
                 try
@@ -363,16 +381,46 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
+        /// Calls ExecuteScalarAsync and logs an error if it fails before rethrowing.
+        /// </summary>
+        /// <param name="cmd">The SqlCommand being executed</param>
+        /// <param name="logger">The logger</param>
+        /// <param name="cancellationToken">The cancellation token to pass to the call</param>
+        /// <param name="logCommand">Defaults to false and when set logs the command being executed</param>
+        /// <returns>The result of the call</returns>
+        public static async Task<object> ExecuteScalarAsyncWithLogging(this SqlCommand cmd, ILogger logger, CancellationToken cancellationToken, bool logCommand = false)
+        {
+            try
+            {
+                if (logCommand)
+                {
+                    logger.LogDebug($"Executing query={cmd.CommandText}");
+                }
+                return await cmd.ExecuteScalarAsync(cancellationToken);
+            }
+            catch (Exception e)
+            {
+                logger.LogError($"Exception executing query. Message={e.Message}\nQuery={cmd.CommandText}");
+                throw;
+            }
+        }
+
+        /// <summary>
         /// Calls ExecuteNonQueryAsync and logs an error if it fails before rethrowing.
         /// </summary>
         /// <param name="cmd">The SqlCommand being executed</param>
         /// <param name="logger">The logger</param>
         /// <param name="cancellationToken">The cancellation token to pass to the call</param>
+        /// <param name="logCommand">Defaults to false and when set logs the command being executed</param>
         /// <returns>The result of the call</returns>
-        public static async Task<int> ExecuteNonQueryAsyncWithLogging(this SqlCommand cmd, ILogger logger, CancellationToken cancellationToken)
+        public static async Task<int> ExecuteNonQueryAsyncWithLogging(this SqlCommand cmd, ILogger logger, CancellationToken cancellationToken, bool logCommand = false)
         {
             try
             {
+                if (logCommand)
+                {
+                    logger.LogDebug($"Executing query={cmd.CommandText}");
+                }
                 return await cmd.ExecuteNonQueryAsync(cancellationToken);
             }
             catch (Exception e)
@@ -388,11 +436,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="cmd">The SqlCommand being executed</param>
         /// <param name="logger">The logger</param>
         /// <param name="cancellationToken">The cancellation token to pass to the call</param>
+        /// <param name="logCommand">Defaults to false and when set logs the command being executed</param>
         /// <returns>The result of the call</returns>
-        public static async Task<SqlDataReader> ExecuteReaderAsyncWithLogging(this SqlCommand cmd, ILogger logger, CancellationToken cancellationToken)
+        public static async Task<SqlDataReader> ExecuteReaderAsyncWithLogging(this SqlCommand cmd, ILogger logger, CancellationToken cancellationToken, bool logCommand = false)
         {
             try
             {
+                if (logCommand)
+                {
+                    logger.LogDebug($"Executing query={cmd.CommandText}");
+                }
                 return await cmd.ExecuteReaderAsync(cancellationToken);
             }
             catch (Exception e)
