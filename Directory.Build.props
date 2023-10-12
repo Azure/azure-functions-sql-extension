@@ -27,5 +27,6 @@
     <PackageIcon>pkgicon.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);NU5104</NoWarn>
   </PropertyGroup>
 </Project>
