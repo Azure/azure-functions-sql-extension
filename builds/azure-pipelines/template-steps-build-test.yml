@@ -74,26 +74,6 @@ steps:
   displayName: Set logging level
   condition: and(succeeded(), ne(variables['AFSQLEXT_TEST_LOGLEVEL'], ''))
 
-  # The build process for the OOP samples involve generating a temporary csproj in the %TEMP% directory, so it doesn't pick
-  # up the custom nuget.config we have. Set up the local-packages source here so that it can build correctly. Running from
-  # WorkFolder so it applies globally.
-- task: DotNetCoreCLI@2
-  displayName: Set up local-packages Nuget source
-  inputs:
-    command: custom
-    custom: nuget
-    arguments: add source -n afsqlext.local $(Build.SourcesDirectory)/local-packages
-    workingDirectory: $(Agent.WorkFolder)
-
-  # Copy the Sql nupkg to ensure it's available for tests since the package copy task is failing occasionally so having this redundancy.
-- task: CopyFiles@2
-  displayName: 'Copy local Sql package to local-packages folder'
-  inputs:
-    sourceFolder: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}
-    contents: '*.nupkg'
-    targetFolder: $(Build.SourcesDirectory)/local-packages
-    overWrite: true
-
 - script: |
     npm install
     npm run lint
@@ -141,6 +121,26 @@ steps:
     # update-snapshot forces a check for updated library dependencies
     options: --batch-mode --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
     checkStyleRunAnalysis: true
+
+  # The build process for the OOP samples involve generating a temporary csproj in the %TEMP% directory, so it doesn't pick
+  # up the custom nuget.config we have. Set up the local-packages source here so that it can build correctly. Running from
+  # WorkFolder so it applies globally.
+- task: DotNetCoreCLI@2
+  displayName: Set up local-packages Nuget source
+  inputs:
+    command: custom
+    custom: nuget
+    arguments: add source -n afsqlext.local $(Build.SourcesDirectory)/local-packages
+    workingDirectory: $(Agent.WorkFolder)
+
+  # Copy the Sql nupkg to ensure it's available for tests since the package copy task is failing occasionally so having this redundancy.
+- task: CopyFiles@2
+  displayName: 'Copy local Sql package to local-packages folder'
+  inputs:
+    sourceFolder: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}
+    contents: '*.nupkg'
+    targetFolder: $(Build.SourcesDirectory)/local-packages
+    overWrite: true
 
   # Build and generate (unsigned) packages & assemblies to use for testing
 - task: DotNetCoreCLI@2
