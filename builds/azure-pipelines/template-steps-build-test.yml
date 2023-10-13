@@ -87,7 +87,7 @@ steps:
 
   # Build and generate (unsigned) packages & assemblies to use for testing
 - task: DotNetCoreCLI@2
-  displayName: .NET Build for Test (Solution)
+  displayName: .NET Build for Test
   inputs:
     command: build
     projects: ${{ parameters.solution }}
