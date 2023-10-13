@@ -91,7 +91,7 @@ steps:
   inputs:
     command: build
     projects: ${{ parameters.solution }}
-    arguments: --configuration ${{ parameters.configuration }} -p:Version=${{ parameters.binariesVersion }} -p:OOPWorkerSupportedExtensionVersion=${{ parameters.oopWorkerSupportedExtensionVersion }} -p:PackageVersion=${{ parameters.nugetVersion }}
+    arguments: --configuration ${{ parameters.configuration }} -p:Version=${{ parameters.binariesVersion }} -p:OOPWorkerSupportedExtensionVersion=${{ parameters.oopWorkerSupportedExtensionVersion }} -p:PackageVersion=${{ parameters.nugetVersion }} -v:diag
 
 - task: CopyFiles@2
   displayName: 'Copy Sql extension dll to Azure Functions extension bundle'
