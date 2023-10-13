@@ -86,21 +86,12 @@ steps:
     workingDirectory: $(Agent.WorkFolder)
 
   # Build and generate (unsigned) packages & assemblies to use for testing
-  # We build the extension project first since the auto-generated WorkerExtension project will try to restore
-  # depdencies before the extension project has finished building and fail if it can't find the nuget package
-- task: DotNetCoreCLI@2
-  displayName: .NET Build for Test (Extension DLL)
-  inputs:
-    command: build
-    projects: $(Build.SourcesDirectory)/src/Microsoft.Azure.WebJobs.Extensions.Sql.csproj
-    arguments: --configuration ${{ parameters.configuration }} -p:Version=${{ parameters.binariesVersion }} -p:OOPWorkerSupportedExtensionVersion=${{ parameters.oopWorkerSupportedExtensionVersion }} -p:PackageVersion=${{ parameters.nugetVersion }}
-
 - task: DotNetCoreCLI@2
   displayName: .NET Build for Test (Solution)
   inputs:
     command: build
     projects: ${{ parameters.solution }}
-    arguments: --configuration ${{ parameters.configuration }} -p:Version=${{ parameters.binariesVersion }} -p:OOPWorkerSupportedExtensionVersion=${{ parameters.oopWorkerSupportedExtensionVersion }} -p:PackageVersion=${{ parameters.nugetVersion }}
+    arguments: --configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=true -p:Version=${{ parameters.binariesVersion }} -p:OOPWorkerSupportedExtensionVersion=${{ parameters.oopWorkerSupportedExtensionVersion }} -p:PackageVersion=${{ parameters.nugetVersion }}
 
 - task: CopyFiles@2
   displayName: 'Copy Sql extension dll to Azure Functions extension bundle'
