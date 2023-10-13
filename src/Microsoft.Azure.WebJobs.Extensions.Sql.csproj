@@ -33,10 +33,10 @@
     <None Include="..\Images\pkgicon.png" Pack="true" PackagePath="" />
     <None Include="..\README.md" Pack="true" PackagePath="" />
   </ItemGroup>
-  <Target Name="PackAndCopyNupkg" AfterTargets="Build">
+  <Target Name="PackAndCopyNupkg" Condition="'$(GeneratePackageOnBuild)' != 'false'" AfterTargets="Build">
     <!-- Removed the GeneratePackageOnBuild and adding this explicit Pack command to run post build
     and also adding the copy package to local-packages to be available for the worker extension project. -->
-    <Exec Command="dotnet pack &quot;$(MSBuildProjectDirectory)\$(PackageId).csproj&quot; --no-build --include-symbols -p:Version=$(Version)" />
+    <Exec Command="dotnet pack &quot;$(MSBuildProjectDirectory)\$(PackageId).csproj&quot; --no-build --include-symbols -p:Version=$(Version) -p:PackageVersion=$(PackageVersion)" />
     <ItemGroup>
       <_Packages Include=".\bin\$(Configuration)\*.nupkg" />
     </ItemGroup>
