@@ -21,9 +21,11 @@
     <!-- Build the sample projects so that they get copied over afterwards -->
     <ProjectReference Include="..\samples\samples-outofproc\Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.csproj">
         <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+        <Private>false</Private>
     </ProjectReference>
     <ProjectReference Include="..\test-outofproc\test-outofproc.csproj">
         <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+        <Private>false</Private>
     </ProjectReference>
   </ItemGroup>
 
