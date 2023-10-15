@@ -13,8 +13,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\samples\samples-csharp\Microsoft.Azure.WebJobs.Extensions.Sql.Samples.csproj" />
     <ProjectReference Include="..\src\Microsoft.Azure.WebJobs.Extensions.Sql.csproj" />
+    <!-- Tests reference types from this assembly -->
+    <ProjectReference Include="..\samples\samples-csharp\Microsoft.Azure.WebJobs.Extensions.Sql.Samples.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Build the sample projects so that they get copied over afterwards -->
+    <ProjectReference Include="..\samples\samples-outofproc\Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.csproj">
+        <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ProjectReference Include="..\test-outofproc\test-outofproc.csproj">
         <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
