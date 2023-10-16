@@ -74,43 +74,6 @@ steps:
   displayName: Set logging level
   condition: and(succeeded(), ne(variables['AFSQLEXT_TEST_LOGLEVEL'], ''))
 
-  # The build process for the OOP samples involve generating a temporary csproj in the %TEMP% directory, so it doesn't pick
-  # up the custom nuget.config we have. Set up the local-packages source here so that it can build correctly. Running from
-  # WorkFolder so it applies globally.
-- task: DotNetCoreCLI@2
-  displayName: Set up local-packages Nuget source
-  inputs:
-    command: custom
-    custom: nuget
-    arguments: add source -n afsqlext.local $(Build.SourcesDirectory)/local-packages
-    workingDirectory: $(Agent.WorkFolder)
-
-  # Do an initial build for use during testing, this will have the OOP "supported version" set to the exact binaries version
-  # so it ensures we use the local version of the package
-- task: DotNetCoreCLI@2
-  displayName: .NET Build for Test
-  inputs:
-    command: build
-    projects: ${{ parameters.solution }}
-    arguments: --configuration ${{ parameters.configuration }} -p:Version=${{ parameters.binariesVersion }} -p:OOPWorkerSupportedExtensionVersion=${{ parameters.binariesVersion }}
-
-- task: CopyFiles@2
-  displayName: 'Copy Sql extension dll to Azure Functions extension bundle'
-  inputs:
-    sourceFolder: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}/netstandard2.0
-    contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
-    targetFolder: $(azureFunctionsExtensionBundlePath)/bin
-    overWrite: true
-
-  # Copy the Sql nupkg to ensure it's available for tests since the package copy task is failing occasionally so having this redundancy.
-- task: CopyFiles@2
-  displayName: 'Copy local Sql package to local-packages folder'
-  inputs:
-    sourceFolder: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}
-    contents: '*.nupkg'
-    targetFolder: $(Build.SourcesDirectory)/local-packages
-    overWrite: true
-
 - script: |
     npm install
     npm run lint
@@ -159,6 +122,42 @@ steps:
     options: --batch-mode --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
     checkStyleRunAnalysis: true
 
+  # The build process for the OOP samples involve generating a temporary csproj in the %TEMP% directory, so it doesn't pick
+  # up the custom nuget.config we have. Set up the local-packages source here so that it can build correctly. Running from
+  # WorkFolder so it applies globally.
+- task: DotNetCoreCLI@2
+  displayName: Set up local-packages Nuget source
+  inputs:
+    command: custom
+    custom: nuget
+    arguments: add source -n afsqlext.local $(Build.SourcesDirectory)/local-packages
+    workingDirectory: $(Agent.WorkFolder)
+
+  # Build and generate (unsigned) packages & assemblies to use for testing
+- task: DotNetCoreCLI@2
+  displayName: .NET Build for Test
+  inputs:
+    command: build
+    projects: ${{ parameters.solution }}
+    arguments: --configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=true -p:Version=${{ parameters.binariesVersion }} -p:OOPWorkerSupportedExtensionVersion=${{ parameters.oopWorkerSupportedExtensionVersion }} -p:PackageVersion=${{ parameters.nugetVersion }}
+
+  # Copy the Sql nupkg to ensure it's available for tests since the package copy task is failing occasionally so having this redundancy.
+- task: CopyFiles@2
+  displayName: 'Copy local Sql package to local-packages folder'
+  inputs:
+    sourceFolder: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}
+    contents: '*.nupkg'
+    targetFolder: $(Build.SourcesDirectory)/local-packages
+    overWrite: true
+
+- task: CopyFiles@2
+  displayName: 'Copy Sql extension dll to Azure Functions extension bundle'
+  inputs:
+    sourceFolder: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}/netstandard2.0
+    contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
+    targetFolder: $(azureFunctionsExtensionBundlePath)/bin
+    overWrite: true
+
 - task: DotNetCoreCLI@2
   displayName: '.NET Test on Mac (unit tests only)'
   env:
@@ -168,7 +167,7 @@ steps:
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} --filter FullyQualifiedName!~Integration'
+    arguments: --configuration ${{ parameters.configuration }} --filter FullyQualifiedName!~Integration --no-build
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Darwin'))
 
 - task: DotNetCoreCLI@2
@@ -184,7 +183,7 @@ steps:
     projects: '${{ parameters.solution }}'
     # Skip any non .NET In-Proc integration tests. Otherwise, the following error will be thrown:
     # System.InvalidOperationException : No data found for Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration.SqlOutputBindingIntegrationTests.NoPropertiesThrows
-    arguments: '--configuration ${{ parameters.configuration }} --filter FullyQualifiedName!~NoPropertiesThrows --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings'
+    arguments: --configuration ${{ parameters.configuration }} --filter FullyQualifiedName!~NoPropertiesThrows --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings --no-build
   condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: DotNetCoreCLI@2
@@ -198,7 +197,7 @@ steps:
     command: test
     projects: '${{ parameters.solution }}'
     # Skip any CSharp only integration tests
-    arguments: '--configuration ${{ parameters.configuration }} --filter "FullyQualifiedName~Integration & FullyQualifiedName!~AddProductsCollectorTest"'
+    arguments: --configuration ${{ parameters.configuration }} --filter "FullyQualifiedName~Integration & FullyQualifiedName!~AddProductsCollectorTest" --no-build
   condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: DotNetCoreCLI@2
@@ -210,7 +209,7 @@ steps:
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }}'
+    arguments: --configuration ${{ parameters.configuration }} --no-build
   condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'linux'))
 
 - script: |
@@ -219,6 +218,7 @@ steps:
   displayName: 'Stop and Remove SQL Server Image'
   condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
+# Build, but don't package since we need to sign the assemblies first
 - task: DotNetCoreCLI@2
   displayName: .NET Build for Release
   inputs:
