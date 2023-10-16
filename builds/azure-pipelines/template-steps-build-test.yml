@@ -296,7 +296,7 @@ steps:
   inputs:
     ConnectedServiceName: 'Code Signing'
     FolderPath: '$(Build.SourcesDirectory)/Worker.Extensions.Sql/src/bin/${{ parameters.configuration }}'
-    Pattern: 'Microsoft.Azure.WebJobs.Extensions.Sql.dll'
+    Pattern: 'Microsoft.Azure.Functions.Worker.Extensions.Sql.dll'
     signConfigType: inlineSignParams
     inlineOperation: |
      [
