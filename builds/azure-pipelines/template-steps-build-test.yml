@@ -133,9 +133,8 @@ steps:
     arguments: add source -n afsqlext.local $(Build.SourcesDirectory)/local-packages
     workingDirectory: $(Agent.WorkFolder)
 
-  # Build and generate (unsigned) packages & assemblies to use for testing
 - task: DotNetCoreCLI@2
-  displayName: .NET Build for Test
+  displayName: .NET Build
   inputs:
     command: build
     projects: ${{ parameters.solution }}
@@ -217,14 +216,6 @@ steps:
     docker rm sql1
   displayName: 'Stop and Remove SQL Server Image'
   condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
-
-# Build, but don't package since we need to sign the assemblies first
-- task: DotNetCoreCLI@2
-  displayName: .NET Build for Release
-  inputs:
-    command: build
-    projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} -p:Version=${{ parameters.binariesVersion }} -p:OOPWorkerSupportedExtensionVersion=${{ parameters.oopWorkerSupportedExtensionVersion }}'
 
 # 5.0 isn't supported on Mac yet
 - task: UseDotNet@2
