@@ -7,6 +7,10 @@ root = true
 [*.cs]
 
 dotnet_analyzer_diagnostic.severity = error
+
+# Do not use insecure JsonSerializerSettings - Part of the default security rules set for Roslyn Analyzers so enforce as an error
+dotnet_diagnostic.CA2327.severity = error
+
 # Namespace does not match folder structure - Ideally this should be enabled but it seems to have issues with root level files so disabling for now
 dotnet_diagnostic.IDE0130.severity = none
 
