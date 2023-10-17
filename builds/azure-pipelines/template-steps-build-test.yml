@@ -133,13 +133,12 @@ steps:
     arguments: add source -n afsqlext.local $(Build.SourcesDirectory)/local-packages
     workingDirectory: $(Agent.WorkFolder)
 
-  # Build and generate (unsigned) packages & assemblies to use for testing
 - task: DotNetCoreCLI@2
-  displayName: .NET Build for Test
+  displayName: .NET Build
   inputs:
     command: build
     projects: ${{ parameters.solution }}
-    arguments: --configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=true -p:Version=${{ parameters.binariesVersion }} -p:OOPWorkerSupportedExtensionVersion=${{ parameters.oopWorkerSupportedExtensionVersion }} -p:PackageVersion=${{ parameters.nugetVersion }}
+    arguments: --configuration ${{ parameters.configuration }} -p:Version=${{ parameters.binariesVersion }} -p:OOPWorkerSupportedExtensionVersion=${{ parameters.oopWorkerSupportedExtensionVersion }} -p:PackageVersion=${{ parameters.nugetVersion }}
 
   # Copy the Sql nupkg to ensure it's available for tests since the package copy task is failing occasionally so having this redundancy.
 - task: CopyFiles@2
@@ -218,14 +217,6 @@ steps:
   displayName: 'Stop and Remove SQL Server Image'
   condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
-# Build, but don't package since we need to sign the assemblies first
-- task: DotNetCoreCLI@2
-  displayName: .NET Build for Release
-  inputs:
-    command: build
-    projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=false -p:Version=${{ parameters.binariesVersion }} -p:OOPWorkerSupportedExtensionVersion=${{ parameters.oopWorkerSupportedExtensionVersion }}'
-
 # 5.0 isn't supported on Mac yet
 - task: UseDotNet@2
   displayName: 'Install .NET Core 2.1.x SDK for CodeSigning on Mac'
@@ -234,11 +225,78 @@ steps:
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Darwin'))
 
 - task: EsrpCodeSigning@1
-  displayName: 'ESRP CodeSigning - Binaries'
+  displayName: 'ESRP CodeSigning - Binaries (Extension)'
   inputs:
     ConnectedServiceName: 'Code Signing'
     FolderPath: '$(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}'
     Pattern: 'Microsoft.Azure.WebJobs.Extensions.Sql.dll'
+    signConfigType: inlineSignParams
+    inlineOperation: |
+     [
+       {
+        "KeyCode" : "CP-235847-SN",
+        "operationSetCode" : "StrongNameSign",
+        "Parameters" : [],
+        "ToolName" : "sign",
+        "ToolVersion" : "1.0"
+       },
+       {
+        "KeyCode" : "CP-235847-SN",
+        "operationSetCode" : "StrongNameVerify",
+        "Parameters" : [],
+        "ToolName" : "sign",
+        "ToolVersion" : "1.0"
+       },
+       {
+         "keyCode": "CP-230012",
+         "operationSetCode": "SigntoolSign",
+         "parameters": [
+          {
+            "parameterName": "OpusName",
+            "parameterValue": "Azure Functions SQL Extension"
+          },
+          {
+            "parameterName": "OpusInfo",
+            "parameterValue": "https://github.com/Azure/azure-functions-sql-extension"
+          },
+          {
+            "parameterName": "PageHash",
+            "parameterValue": "/NPH"
+          },
+          {
+            "parameterName": "FileDigest",
+            "parameterValue": "/fd sha256"
+          },
+          {
+            "parameterName": "TimeStamp",
+            "parameterValue": "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+          }
+         ],
+         "toolName": "signtool.exe",
+         "toolVersion": "6.2.9304.0"
+       },
+       {
+         "keyCode": "CP-230012",
+         "operationSetCode": "SigntoolVerify",
+         "parameters": [
+          {
+            "parameterName": "VerifyAll",
+            "parameterValue": "/all"
+          }
+         ],
+         "toolName": "signtool.exe",
+         "toolVersion": "6.2.9304.0"
+       }
+     ]
+    SessionTimeout: 600
+    MaxConcurrency: 5
+
+- task: EsrpCodeSigning@1
+  displayName: 'ESRP CodeSigning - Binaries (Worker)'
+  inputs:
+    ConnectedServiceName: 'Code Signing'
+    FolderPath: '$(Build.SourcesDirectory)/Worker.Extensions.Sql/src/bin/${{ parameters.configuration }}'
+    Pattern: 'Microsoft.Azure.Functions.Worker.Extensions.Sql.dll'
     signConfigType: inlineSignParams
     inlineOperation: |
      [
