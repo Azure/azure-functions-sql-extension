@@ -86,7 +86,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // set the max batch size to the same value so they can all be processed in one
             // batch. The test will only wait for ~1 batch worth of time so will timeout
             // if the max batch size isn't actually changed
-            const int maxBatchSize = SqlTableChangeMonitor<object>.DefaultMaxBatchSize * 4;
+            const int maxBatchSize = SqlOptions.DefaultBatchSize * 4;
             const int firstId = 1;
             const int lastId = maxBatchSize;
             this.SetChangeTrackingForTable("Products");
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // set the max batch size to the same value so they can all be processed in one
             // batch. The test will only wait for ~1 batch worth of time so will timeout
             // if the max batch size isn't actually changed
-            const int maxBatchSize = SqlTableChangeMonitor<object>.DefaultMaxBatchSize * 4;
+            const int maxBatchSize = SqlOptions.DefaultBatchSize * 4;
             const int firstId = 1;
             const int lastId = maxBatchSize;
             this.SetChangeTrackingForTable("Products");
@@ -172,8 +172,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // Use enough items to require 5 batches to be processed - the test will
             // only wait for the expected time and timeout if the default polling
             // interval isn't actually modified.
-            const int lastId = SqlTableChangeMonitor<object>.DefaultMaxBatchSize * 5;
-            const int pollingIntervalMs = SqlTableChangeMonitor<object>.DefaultPollingIntervalMs / 2;
+            const int lastId = SqlOptions.DefaultBatchSize * 5;
+            const int pollingIntervalMs = SqlOptions.DefaultPollingIntervalMs / 2;
             this.SetChangeTrackingForTable("Products");
             var taskCompletionSource = new TaskCompletionSource<bool>();
             DataReceivedEventHandler handler = TestUtils.CreateOutputReceievedHandler(
@@ -544,7 +544,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.SetChangeTrackingForTable("Products");
             string userFunctionId = "func-id";
             IConfiguration configuration = new ConfigurationBuilder().Build();
-            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", userFunctionId, Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<ILogger>(), configuration);
+            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", userFunctionId, Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
             await listener.StartAsync(CancellationToken.None);
             // Cancel immediately so the listener doesn't start processing the changes
             await listener.StopAsync(CancellationToken.None);
@@ -625,7 +625,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.SetChangeTrackingForTable("Products");
             string userFunctionId = "func-id";
             IConfiguration configuration = new ConfigurationBuilder().Build();
-            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", userFunctionId, Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<ILogger>(), configuration);
+            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", userFunctionId, Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
             await listener.StartAsync(CancellationToken.None);
             // Cancel immediately so the listener doesn't start processing the changes
             await listener.StopAsync(CancellationToken.None);

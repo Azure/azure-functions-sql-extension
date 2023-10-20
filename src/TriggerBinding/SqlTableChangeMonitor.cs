@@ -44,8 +44,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const int LeaseRenewalIntervalInSeconds = 15;
         private const int MaxRetryReleaseLeases = 3;
 
-        public const int DefaultMaxBatchSize = 100;
-        public const int DefaultPollingIntervalMs = 1000;
         #endregion Constants
 
         private readonly string _connectionString;
@@ -57,16 +55,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly IReadOnlyList<(string name, string type)> _primaryKeyColumns;
         private readonly IReadOnlyList<string> _rowMatchConditions;
         private readonly ITriggeredFunctionExecutor _executor;
+        private readonly SqlOptions _sqlOptions;
         private readonly ILogger _logger;
         /// <summary>
         /// Maximum number of changes to process in each iteration of the loop
         /// </summary>
-        private readonly int _maxBatchSize = DefaultMaxBatchSize;
+        private readonly int _maxBatchSize;
         /// <summary>
         /// Delay in ms between processing each batch of changes
         /// </summary>
-        private readonly int _pollingIntervalInMs = DefaultPollingIntervalMs;
-
+        private readonly int _pollingIntervalInMs;
         private readonly CancellationTokenSource _cancellationTokenSourceCheckForChanges = new CancellationTokenSource();
         private readonly CancellationTokenSource _cancellationTokenSourceRenewLeases = new CancellationTokenSource();
         private CancellationTokenSource _cancellationTokenSourceExecutor = new CancellationTokenSource();
@@ -102,6 +100,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="userTableColumns">List of all column names in the user table</param>
         /// <param name="primaryKeyColumns">List of primary key column names in the user table</param>
         /// <param name="executor">Defines contract for triggering user function</param>
+        /// <param name="sqlOptions"></param>
         /// <param name="logger">Facilitates logging of messages</param>
         /// <param name="configuration">Provides configuration values</param>
         /// <param name="telemetryProps">Properties passed in telemetry events</param>
@@ -114,6 +113,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             IReadOnlyList<string> userTableColumns,
             IReadOnlyList<(string name, string type)> primaryKeyColumns,
             ITriggeredFunctionExecutor executor,
+            SqlOptions sqlOptions,
             ILogger logger,
             IConfiguration configuration,
             IDictionary<TelemetryPropertyName, string> telemetryProps)
@@ -124,6 +124,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._bracketedLeasesTableName = !string.IsNullOrEmpty(bracketedLeasesTableName) ? bracketedLeasesTableName : throw new ArgumentNullException(nameof(bracketedLeasesTableName));
             this._userTableColumns = userTableColumns ?? throw new ArgumentNullException(nameof(userTableColumns));
             this._primaryKeyColumns = primaryKeyColumns ?? throw new ArgumentNullException(nameof(primaryKeyColumns));
+            this._sqlOptions = sqlOptions;
             this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
@@ -131,14 +132,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._telemetryProps = telemetryProps ?? new Dictionary<TelemetryPropertyName, string>();
 
             // Check if there's config settings to override the default max batch size/polling interval values
+            // TODO: remove reading from settings when we decide to move to reading them from func.json.
             int? configuredMaxBatchSize = configuration.GetValue<int?>(ConfigKey_SqlTrigger_MaxBatchSize) ?? configuration.GetValue<int?>(ConfigKey_SqlTrigger_BatchSize);
             int? configuredPollingInterval = configuration.GetValue<int?>(ConfigKey_SqlTrigger_PollingInterval);
-            this._maxBatchSize = configuredMaxBatchSize ?? this._maxBatchSize;
+            this._maxBatchSize = configuredMaxBatchSize ?? this._sqlOptions?.BatchSize ?? SqlOptions.DefaultBatchSize;
             if (this._maxBatchSize <= 0)
             {
                 throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_MaxBatchSize}'. Ensure that the value is a positive integer.");
             }
-            this._pollingIntervalInMs = configuredPollingInterval ?? this._pollingIntervalInMs;
+            this._pollingIntervalInMs = configuredPollingInterval ?? this._sqlOptions?.PollingIntervalMs ?? SqlOptions.DefaultPollingIntervalMs;
             if (this._pollingIntervalInMs <= 0)
             {
                 throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_PollingInterval}'. Ensure that the value is a positive integer.");

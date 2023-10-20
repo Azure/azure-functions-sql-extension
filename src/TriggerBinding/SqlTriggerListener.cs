@@ -32,16 +32,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const int ListenerStarted = 2;
         private const int ListenerStopping = 3;
         private const int ListenerStopped = 4;
-
-        // NOTE: please ensure the Readme file and other public documentation are also updated if this value ever
-        // needs to be changed.
-        public const int DefaultMaxChangesPerWorker = 1000;
-
         private readonly SqlObject _userTable;
         private readonly string _connectionString;
         private readonly string _userDefinedLeasesTableName;
         private readonly string _userFunctionId;
         private readonly ITriggeredFunctionExecutor _executor;
+        private readonly SqlOptions _sqlOptions;
         private readonly ILogger _logger;
         private readonly IConfiguration _configuration;
 
@@ -64,20 +60,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="userDefinedLeasesTableName">Optional - Name of the leases table</param>
         /// <param name="userFunctionId">Unique identifier for the user function</param>
         /// <param name="executor">Defines contract for triggering user function</param>
+        /// <param name="sqlOptions"></param>
         /// <param name="logger">Facilitates logging of messages</param>
         /// <param name="configuration">Provides configuration values</param>
-        public SqlTriggerListener(string connectionString, string tableName, string userDefinedLeasesTableName, string userFunctionId, ITriggeredFunctionExecutor executor, ILogger logger, IConfiguration configuration)
+        public SqlTriggerListener(string connectionString, string tableName, string userDefinedLeasesTableName, string userFunctionId, ITriggeredFunctionExecutor executor, SqlOptions sqlOptions, ILogger logger, IConfiguration configuration)
         {
             this._connectionString = !string.IsNullOrEmpty(connectionString) ? connectionString : throw new ArgumentNullException(nameof(connectionString));
             this._userTable = !string.IsNullOrEmpty(tableName) ? new SqlObject(tableName) : throw new ArgumentNullException(nameof(tableName));
             this._userDefinedLeasesTableName = userDefinedLeasesTableName;
             this._userFunctionId = !string.IsNullOrEmpty(userFunctionId) ? userFunctionId : throw new ArgumentNullException(nameof(userFunctionId));
             this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
+            this._sqlOptions = sqlOptions;
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             int? configuredMaxChangesPerWorker;
+            // TODO: remove reading from settings when we decide to move to reading them from func.json.
             configuredMaxChangesPerWorker = configuration.GetValue<int?>(ConfigKey_SqlTrigger_MaxChangesPerWorker);
-            this._maxChangesPerWorker = configuredMaxChangesPerWorker ?? DefaultMaxChangesPerWorker;
+            this._maxChangesPerWorker = configuredMaxChangesPerWorker ?? this._sqlOptions?.MaxChangesPerWorker ?? SqlOptions.DefaultMaxChangesPerWorker;
             if (this._maxChangesPerWorker <= 0)
             {
                 throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_MaxChangesPerWorker}'. Ensure that the value is a positive integer.");
@@ -149,6 +148,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         userTableColumns,
                         primaryKeyColumns,
                         this._executor,
+                        this._sqlOptions,
                         this._logger,
                         this._configuration,
                         this._telemetryProps);

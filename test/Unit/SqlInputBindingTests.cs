@@ -23,14 +23,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         private static readonly Mock<IHostIdProvider> hostIdProvider = new();
         private static readonly Mock<ILoggerFactory> loggerFactory = new();
         private static readonly Mock<ILogger> logger = new();
+        private static readonly Mock<SqlOptions> sqlOptions = new();
         private static readonly SqlConnection connection = new();
 
         [Fact]
         public void TestNullConfiguration()
         {
-            Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(null, hostIdProvider.Object, loggerFactory.Object));
-            Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(config.Object, null, loggerFactory.Object));
-            Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(config.Object, hostIdProvider.Object, null));
+            Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(null, hostIdProvider.Object, loggerFactory.Object, sqlOptions.Object));
+            Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(config.Object, null, loggerFactory.Object, sqlOptions.Object));
+            Assert.Throws<ArgumentNullException>(() => new SqlBindingConfigProvider(config.Object, hostIdProvider.Object, null, sqlOptions.Object));
+
             Assert.Throws<ArgumentNullException>(() => new SqlConverter(null));
             Assert.Throws<ArgumentNullException>(() => new SqlGenericsConverter<string>(null, logger.Object));
         }
@@ -50,7 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [Fact]
         public void TestNullContext()
         {
-            var configProvider = new SqlBindingConfigProvider(config.Object, hostIdProvider.Object, loggerFactory.Object);
+            var configProvider = new SqlBindingConfigProvider(config.Object, hostIdProvider.Object, loggerFactory.Object, sqlOptions.Object);
             Assert.Throws<ArgumentNullException>(() => configProvider.Initialize(null));
         }
 
