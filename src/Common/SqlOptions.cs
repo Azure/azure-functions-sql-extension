@@ -9,6 +9,9 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
+    /// <summary>
+    /// Represents configuration for <see cref="SqlTriggerAttribute"/>.
+    /// </summary>
     public class SqlOptions : IOptionsFormatter
     {
         public const int DefaultBatchSize = 100;
@@ -25,7 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Delay in ms between processing each batch of changes
         /// </summary>
-        private int _pollingInterval = DefaultPollingIntervalMs;
+        private int _pollingIntervalMs = DefaultPollingIntervalMs;
         private readonly int _minPollingInterval = DefaultMinimumPollingIntervalMs;
         private int _maxChangesPerWorker = DefaultMaxChangesPerWorker;
 
@@ -61,7 +64,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         public int PollingIntervalMs
         {
-            get => this._pollingInterval;
+            get => this._pollingIntervalMs;
 
             set
             {
@@ -72,7 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     throw new ArgumentException(message, nameof(value));
                 }
 
-                this._pollingInterval = value;
+                this._pollingIntervalMs = value;
             }
         }
 
@@ -114,7 +117,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             var copy = new SqlOptions
             {
                 _batchSize = this._batchSize,
-                _pollingInterval = this._pollingInterval,
+                _pollingIntervalMs = this._pollingIntervalMs,
                 _maxChangesPerWorker = this._maxChangesPerWorker
             };
             return copy;

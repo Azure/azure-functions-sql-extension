@@ -20,17 +20,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             if (configureSqlOptions != null)
             {
 #pragma warning disable IDE0001
-                _ = builder.Services.Configure<SqlOptions>(configureSqlOptions);
+                builder.Services.Configure<SqlOptions>(configureSqlOptions);
 #pragma warning restore IDE0001
             }
-            builder.Services.AddOptions<SqlOptions>()
-                .Configure<IHostingEnvironment>((options, env) =>
-                {
-                    if (env.IsDevelopment() && options.PollingIntervalMs == SqlOptions.DefaultPollingIntervalMs)
-                    {
-                        options.PollingIntervalMs = 2000;
-                    }
-                });
 
             return builder;
         }
