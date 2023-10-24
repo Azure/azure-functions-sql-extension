@@ -70,7 +70,7 @@ steps:
       AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
     inputs:
       command: run
-      arguments: '-c ${{ parameters.configuration }} -v Diagnostic ${{ test }}'
+      arguments: '-c ${{ parameters.configuration }} -v Normal ${{ test }}'
       workingDirectory: performance
     continueOnError: true
 
