@@ -8,6 +8,7 @@
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <!-- Default Version for dev -->
     <Version>99.99.99</Version>
+    <PackageVersion>99.99.99</PackageVersion>
     <IsPackable>true</IsPackable>
     <PackageId>Microsoft.Azure.WebJobs.Extensions.Sql</PackageId>
     <PackageTags>Microsoft Azure WebJobs AzureFunctions SQL AzureSQL</PackageTags>
