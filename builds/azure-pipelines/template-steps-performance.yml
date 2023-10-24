@@ -1,6 +1,8 @@
 parameters:
   - name: configuration
     default: ''
+  - name: solution
+    default: ''
   - name: nugetVersion
     default: ''
   - name: binariesVersion
