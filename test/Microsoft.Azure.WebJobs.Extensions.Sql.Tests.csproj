@@ -17,7 +17,7 @@
     <!-- Tests reference types from this assembly -->
     <ProjectReference Include="..\samples\samples-csharp\Microsoft.Azure.WebJobs.Extensions.Sql.Samples.csproj" />
   </ItemGroup>
-    <ItemGroup>
+  <ItemGroup>
     <!-- Build the sample projects so that they get copied over afterwards in the CopySamples target -->
     <!-- Private is set to false so we don't end up copying over the metadata files (such as local.settings.json) into the output of this project -->
     <ProjectReference Include="..\samples\samples-outofproc\Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.csproj">

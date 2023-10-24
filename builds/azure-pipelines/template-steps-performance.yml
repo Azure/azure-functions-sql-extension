@@ -1,6 +1,12 @@
 parameters:
   - name: configuration
     default: ''
+  - name: nugetVersion
+    default: ''
+  - name: binariesVersion
+    default: ''
+  - name: oopWorkerSupportedExtensionVersion
+    default: ''
   - name: testServer
     default: ''
   # The benchmarks we want to run, corresponds to the values in performance\SqlBindingBenchmarks.cs
@@ -59,6 +65,13 @@ steps:
   displayName: Set logging level
   condition: and(succeeded(), ne(variables['AFSQLEXT_TEST_LOGLEVEL'], ''))
 
+- task: DotNetCoreCLI@2
+  displayName: .NET Build
+  inputs:
+    command: build
+    projects: ${{ parameters.solution }}
+    arguments: --configuration ${{ parameters.configuration }} -p:Version=${{ parameters.binariesVersion }} -p:OOPWorkerSupportedExtensionVersion=${{ parameters.oopWorkerSupportedExtensionVersion }} -p:PackageVersion=${{ parameters.nugetVersion }}
+
 # Run each benchmark test separately so that failures in one don't block all the others from running
 - ${{ each test in parameters.tests }}:
   - task: DotNetCoreCLI@2
@@ -70,7 +83,7 @@ steps:
       AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
     inputs:
       command: run
-      arguments: '-c ${{ parameters.configuration }} -v Normal ${{ test }}'
+      arguments: '-c ${{ parameters.configuration }} --no-build ${{ test }}'
       workingDirectory: performance
     continueOnError: true
 
