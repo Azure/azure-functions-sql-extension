@@ -8,7 +8,6 @@
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <!-- Default Version for dev -->
     <Version>99.99.99</Version>
-    <PackageVersion>99.99.99</PackageVersion>
     <IsPackable>true</IsPackable>
     <PackageId>Microsoft.Azure.WebJobs.Extensions.Sql</PackageId>
     <PackageTags>Microsoft Azure WebJobs AzureFunctions SQL AzureSQL</PackageTags>
@@ -37,7 +36,7 @@
   <Target Name="PackAndCopyNupkg" AfterTargets="Build">
     <!-- Removed the GeneratePackageOnBuild and adding this explicit Pack command to run post build
     and also adding the copy package to local-packages to be available for the worker extension project. -->
-    <Exec Command="dotnet pack &quot;$(MSBuildProjectDirectory)\$(PackageId).csproj&quot; --configuration $(Configuration) --no-build --include-symbols -p:Version=$(Version) -p:PackageVersion=$(PackageVersion)" />
+    <Exec Command="dotnet pack &quot;$(MSBuildProjectDirectory)\$(PackageId).csproj&quot; --no-build --include-symbols -p:Version=$(Version)" />
     <ItemGroup>
       <_Packages Include=".\bin\$(Configuration)\*.nupkg" />
     </ItemGroup>
@@ -45,7 +44,7 @@
     <Message Text="Copied sql .nupkg to local-packages" Importance="high" />
   </Target>
   <Target Name="RemoveNugetPackageCache" BeforeTargets="Build">
-    <RemoveDir Directories="$(NugetPackageRoot)\$(PackageId.ToLower())\$(PackageVersion)"></RemoveDir>
-    <Message Text="Deleted nuget cache for $(PackageId.ToLower())\$(PackageVersion)" Importance="high" />
+    <RemoveDir Directories="$(NugetPackageRoot)\$(PackageId.ToLower())\$(Version)"></RemoveDir>
+    <Message Text="Deleted nuget cache for $(PackageId.ToLower())\$(Version)" Importance="high" />
   </Target>
 </Project>
