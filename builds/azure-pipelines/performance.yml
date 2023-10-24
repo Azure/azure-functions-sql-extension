@@ -12,10 +12,6 @@ schedules:
 
 variables:
   configuration: 'Release'
-  solution: '**/*.sln'
-  nugetVersion: '99.99.99-test'
-  binariesVersion: '99.99.99'
-  oopWorkerSupportedExtensionVersion: '99.99.99-test'
   serverPassword: ''
   nodeModulesPath: ''
   LGTM.UploadSnapshot: true
@@ -53,7 +49,3 @@ stages:
       - template: 'template-steps-performance.yml'
         parameters:
           configuration: '$(configuration)'
-          solution: '$(solution)'
-          nugetVersion: '$(nugetVersion)'
-          binariesVersion: '$(binariesVersion)'
-          oopWorkerSupportedExtensionVersion: '$(oopWorkerSupportedExtensionVersion)'
