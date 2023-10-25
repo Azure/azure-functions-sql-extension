@@ -31,11 +31,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="hostIdProvider">Provider of unique host identifier</param>
         /// <param name="loggerFactory">Used to create logger instance</param>
         /// <param name="sqlOptions"></param>
-        public SqlTriggerBindingProvider(IConfiguration configuration, IHostIdProvider hostIdProvider, ILoggerFactory loggerFactory, SqlOptions sqlOptions = null)
+        public SqlTriggerBindingProvider(IConfiguration configuration, IHostIdProvider hostIdProvider, ILoggerFactory loggerFactory, SqlOptions sqlOptions)
         {
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             this._hostIdProvider = hostIdProvider ?? throw new ArgumentNullException(nameof(hostIdProvider));
-            this._sqlOptions = sqlOptions;
+            this._sqlOptions = sqlOptions ?? throw new ArgumentNullException(nameof(sqlOptions));
             this._logger = loggerFactory?.CreateLogger(LogCategories.CreateTriggerCategory("Sql")) ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 

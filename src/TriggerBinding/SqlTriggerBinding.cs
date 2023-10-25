@@ -55,7 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._leasesTableName = leasesTableName;
             this._parameter = parameter ?? throw new ArgumentNullException(nameof(parameter));
             this._hostIdProvider = hostIdProvider ?? throw new ArgumentNullException(nameof(hostIdProvider));
-            this._sqlOptions = sqlOptions;
+            this._sqlOptions = sqlOptions ?? throw new ArgumentNullException(nameof(sqlOptions));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }

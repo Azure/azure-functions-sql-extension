@@ -70,13 +70,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._userDefinedLeasesTableName = userDefinedLeasesTableName;
             this._userFunctionId = !string.IsNullOrEmpty(userFunctionId) ? userFunctionId : throw new ArgumentNullException(nameof(userFunctionId));
             this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
-            this._sqlOptions = sqlOptions;
+            this._sqlOptions = sqlOptions ?? throw new ArgumentNullException(nameof(sqlOptions));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             int? configuredMaxChangesPerWorker;
             // TODO: remove reading from settings when we decide to move to reading them from func.json.
             configuredMaxChangesPerWorker = configuration.GetValue<int?>(ConfigKey_SqlTrigger_MaxChangesPerWorker);
-            this._maxChangesPerWorker = configuredMaxChangesPerWorker ?? this._sqlOptions?.MaxChangesPerWorker ?? SqlOptions.DefaultMaxChangesPerWorker;
+            this._maxChangesPerWorker = configuredMaxChangesPerWorker ?? this._sqlOptions.MaxChangesPerWorker;
             if (this._maxChangesPerWorker <= 0)
             {
                 throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_MaxChangesPerWorker}'. Ensure that the value is a positive integer.");

@@ -124,7 +124,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._bracketedLeasesTableName = !string.IsNullOrEmpty(bracketedLeasesTableName) ? bracketedLeasesTableName : throw new ArgumentNullException(nameof(bracketedLeasesTableName));
             this._userTableColumns = userTableColumns ?? throw new ArgumentNullException(nameof(userTableColumns));
             this._primaryKeyColumns = primaryKeyColumns ?? throw new ArgumentNullException(nameof(primaryKeyColumns));
-            this._sqlOptions = sqlOptions;
+            this._sqlOptions = sqlOptions ?? throw new ArgumentNullException(nameof(sqlOptions));
             this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
@@ -135,12 +135,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // TODO: remove reading from settings when we decide to move to reading them from func.json.
             int? configuredMaxBatchSize = configuration.GetValue<int?>(ConfigKey_SqlTrigger_MaxBatchSize) ?? configuration.GetValue<int?>(ConfigKey_SqlTrigger_BatchSize);
             int? configuredPollingInterval = configuration.GetValue<int?>(ConfigKey_SqlTrigger_PollingInterval);
-            this._maxBatchSize = configuredMaxBatchSize ?? this._sqlOptions?.BatchSize ?? SqlOptions.DefaultBatchSize;
+            this._maxBatchSize = configuredMaxBatchSize ?? this._sqlOptions.BatchSize;
             if (this._maxBatchSize <= 0)
             {
                 throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_MaxBatchSize}'. Ensure that the value is a positive integer.");
             }
-            this._pollingIntervalInMs = configuredPollingInterval ?? this._sqlOptions?.PollingIntervalMs ?? SqlOptions.DefaultPollingIntervalMs;
+            this._pollingIntervalInMs = configuredPollingInterval ?? this._sqlOptions.PollingIntervalMs;
             if (this._pollingIntervalInMs <= 0)
             {
                 throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_PollingInterval}'. Ensure that the value is a positive integer.");

@@ -30,7 +30,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly ILoggerFactory _loggerFactory;
         private SqlClientListener sqlClientListener;
         public const string VerboseLoggingSettingName = "AzureFunctions_SqlBindings_VerboseLogging";
-        private readonly SqlOptions _sqlOptions;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlBindingConfigProvider"/> class.
@@ -38,12 +37,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <exception cref="ArgumentNullException">
         /// Thrown if either parameter is null
         /// </exception>
-        public SqlBindingConfigProvider(IConfiguration configuration, IHostIdProvider hostIdProvider, ILoggerFactory loggerFactory, SqlOptions sqlOptions = null)
+        public SqlBindingConfigProvider(IConfiguration configuration, IHostIdProvider hostIdProvider, ILoggerFactory loggerFactory)
         {
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             this._hostIdProvider = hostIdProvider ?? throw new ArgumentNullException(nameof(hostIdProvider));
             this._loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-            this._sqlOptions = sqlOptions;
         }
 
         /// <summary>
@@ -77,7 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), this._configuration, logger);
 
             FluentBindingRule<SqlTriggerAttribute> triggerRule = context.AddBindingRule<SqlTriggerAttribute>();
-            triggerRule.BindToTrigger(new SqlTriggerBindingProvider(this._configuration, this._hostIdProvider, this._loggerFactory, this._sqlOptions));
+            triggerRule.BindToTrigger(new SqlTriggerBindingProvider(this._configuration, this._hostIdProvider, this._loggerFactory, this._configuration.Get<SqlOptions>()));
         }
 
         private static readonly Assembly[] _dependentAssemblies = {
