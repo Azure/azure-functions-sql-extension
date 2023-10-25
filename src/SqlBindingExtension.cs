@@ -3,6 +3,7 @@
 
 using System;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -14,6 +15,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 throw new ArgumentNullException(nameof(builder));
             }
+
+            builder.Services.TryAddSingleton<SqlTriggerBindingProvider>();
 
             builder.AddExtension<SqlBindingConfigProvider>().BindOptions<SqlOptions>();
             if (configureSqlOptions != null)

@@ -96,7 +96,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
                 Mock.Of<IConfiguration>(c => c["testConnectionStringSetting"] == "testConnectionString"),
                 Mock.Of<IHostIdProvider>(),
                 Mock.Of<ILoggerFactory>(f => f.CreateLogger(It.IsAny<string>()) == Mock.Of<ILogger>()),
-                Mock.Of<SqlOptions>());
+                Mock.Of<Microsoft.Extensions.Options.IOptions<SqlOptions>>());
 
             // Possibly the simplest way to construct a ParameterInfo object.
             ParameterInfo parameter = typeof(SqlTriggerBindingProviderTests)

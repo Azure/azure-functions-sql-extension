@@ -8,7 +8,6 @@ using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlConverters;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Config;
-using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Azure.WebJobs.Logging;
@@ -26,8 +25,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     internal class SqlBindingConfigProvider : IExtensionConfigProvider, IDisposable
     {
         private readonly IConfiguration _configuration;
-        private readonly IHostIdProvider _hostIdProvider;
         private readonly ILoggerFactory _loggerFactory;
+        private readonly SqlTriggerBindingProvider _triggerProvider;
         private SqlClientListener sqlClientListener;
         public const string VerboseLoggingSettingName = "AzureFunctions_SqlBindings_VerboseLogging";
 
@@ -37,11 +36,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <exception cref="ArgumentNullException">
         /// Thrown if either parameter is null
         /// </exception>
-        public SqlBindingConfigProvider(IConfiguration configuration, IHostIdProvider hostIdProvider, ILoggerFactory loggerFactory)
+        public SqlBindingConfigProvider(IConfiguration configuration, ILoggerFactory loggerFactory, SqlTriggerBindingProvider triggerProvider)
         {
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            this._hostIdProvider = hostIdProvider ?? throw new ArgumentNullException(nameof(hostIdProvider));
             this._loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+            this._triggerProvider = triggerProvider;
         }
 
         /// <summary>
@@ -74,8 +73,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             inputOutputRule.BindToCollector<SQLObjectOpenType>(typeof(SqlAsyncCollectorBuilder<>), this._configuration, logger);
             inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), this._configuration, logger);
 
-            FluentBindingRule<SqlTriggerAttribute> triggerRule = context.AddBindingRule<SqlTriggerAttribute>();
-            triggerRule.BindToTrigger(new SqlTriggerBindingProvider(this._configuration, this._hostIdProvider, this._loggerFactory, this._configuration.Get<SqlOptions>()));
+            context.AddBindingRule<SqlTriggerAttribute>().BindToTrigger(this._triggerProvider);
+            //FluentBindingRule<SqlTriggerAttribute> triggerRule = context.AddBindingRule<SqlTriggerAttribute>();
+            //triggerRule.BindToTrigger(new SqlTriggerBindingProvider(this._configuration, this._hostIdProvider, this._loggerFactory, this._configuration.Get<SqlOptions>()));
         }
 
         private static readonly Assembly[] _dependentAssemblies = {
