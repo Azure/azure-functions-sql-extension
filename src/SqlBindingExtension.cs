@@ -18,7 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             builder.Services.TryAddSingleton<SqlTriggerBindingProvider>();
 
-            builder.AddExtension<SqlBindingConfigProvider>().BindOptions<SqlOptions>();
+            builder.AddExtension<SqlExtensionConfigProvider>().BindOptions<SqlOptions>();
             if (configureSqlOptions != null)
             {
 #pragma warning disable IDE0001

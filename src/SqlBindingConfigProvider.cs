@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// Exposes SQL input, output and trigger bindings
     /// </summary>
     [Extension("sql")]
-    internal class SqlBindingConfigProvider : IExtensionConfigProvider, IDisposable
+    internal class SqlExtensionConfigProvider : IExtensionConfigProvider, IDisposable
     {
         private readonly IConfiguration _configuration;
         private readonly ILoggerFactory _loggerFactory;
@@ -31,12 +31,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public const string VerboseLoggingSettingName = "AzureFunctions_SqlBindings_VerboseLogging";
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SqlBindingConfigProvider"/> class.
+        /// Initializes a new instance of the <see cref="SqlExtensionConfigProvider"/> class.
         /// </summary>
         /// <exception cref="ArgumentNullException">
         /// Thrown if either parameter is null
         /// </exception>
-        public SqlBindingConfigProvider(IConfiguration configuration, ILoggerFactory loggerFactory, SqlTriggerBindingProvider triggerProvider)
+        public SqlExtensionConfigProvider(IConfiguration configuration, ILoggerFactory loggerFactory, SqlTriggerBindingProvider triggerProvider)
         {
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             this._loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
