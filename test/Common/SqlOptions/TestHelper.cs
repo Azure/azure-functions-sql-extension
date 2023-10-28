@@ -3,9 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Timers;
 using Microsoft.Extensions.Configuration;
@@ -47,44 +44,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 
             TOptions options = host.Services.GetRequiredService<IOptions<TOptions>>().Value;
             return options;
-        }
-
-        // Test error if not reached within a timeout
-        public static Task<TResult> AwaitWithTimeout<TResult>(this TaskCompletionSource<TResult> taskSource)
-        {
-            return taskSource.Task;
-        }
-
-        // Test error if not reached within a timeout
-        public static async Task<TResult> AwaitWithTimeout<TResult>(this Task<TResult> taskSource)
-        {
-            await Await(() => taskSource.IsCompleted);
-            return taskSource.Result;
-        }
-
-        public static async Task Await(Func<Task<bool>> condition, int timeout = 60 * 1000, int pollingInterval = 50, bool throwWhenDebugging = false, Func<string> userMessageCallback = null)
-        {
-            DateTime start = DateTime.Now;
-            while (!await condition())
-            {
-                await Task.Delay(pollingInterval);
-
-                bool shouldThrow = !Debugger.IsAttached || (Debugger.IsAttached && throwWhenDebugging);
-                if (shouldThrow && (DateTime.Now - start).TotalMilliseconds > timeout)
-                {
-                    string error = "Condition not reached within timeout.";
-                    if (userMessageCallback != null)
-                    {
-                        error += " " + userMessageCallback();
-                    }
-                    throw new ApplicationException(error);
-                }
-            }
-        }
-
-        public static async Task Await(Func<bool> condition, int timeout = 60 * 1000, int pollingInterval = 50, bool throwWhenDebugging = false, Func<string> userMessageCallback = null)
-        {
-            await Await(() => Task.FromResult(condition()), timeout, pollingInterval, throwWhenDebugging, userMessageCallback);
         }
 
         public static IHostBuilder ConfigureDefaultTestHost(this IHostBuilder builder, Action<IWebJobsBuilder> configureWebJobs, params Type[] types)
@@ -138,21 +97,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
              {
                  logging.AddProvider(new TestLoggerProvider());
              });
-        }
-
-        public static TestLoggerProvider GetTestLoggerProvider(this IHost host)
-        {
-            return host.Services.GetServices<ILoggerProvider>().OfType<TestLoggerProvider>().Single();
-        }
-
-        public static JobHost GetJobHost(this IHost host)
-        {
-            return host.Services.GetService<IJobHost>() as JobHost;
-        }
-
-        public static TOptions GetOptions<TOptions>(this IHost host) where TOptions : class, new()
-        {
-            return host.Services.GetService<IOptions<TOptions>>().Value;
         }
 
     }

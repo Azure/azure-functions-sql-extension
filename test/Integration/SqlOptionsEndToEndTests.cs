@@ -22,13 +22,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
             SqlOptions options = TestHelpers.GetConfiguredOptions<SqlOptions>(b =>
             {
                 b.AddSql();
-
-                /*  _ = b.Services.AddOptions<SqlOptions>().Configure(options =>
-                     {
-                         options.BatchSize = 30;
-                         options.PollingIntervalMs = 1000;
-                         options.MaxChangesPerWorker = 100;
-                     }); */
             }, values);
 
             Assert.Equal(30, options.BatchSize);
