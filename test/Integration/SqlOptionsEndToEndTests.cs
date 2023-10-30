@@ -10,7 +10,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
     public class SqlOptionsEndToEndTests
     {
         [Fact]
-        public void ConfigureOptions_AppliesValuesCorrectly_Queues()
+        public void ConfigureOptions_AppliesValuesCorrectly_Sql()
         {
             string extensionPath = "AzureWebJobs:Extensions:Sql";
             var values = new Dictionary<string, string>
