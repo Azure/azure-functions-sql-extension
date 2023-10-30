@@ -13,6 +13,7 @@ using Moq;
 using Xunit;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
+using Microsoft.Azure.WebJobs.Host.Executors;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 {
@@ -20,15 +21,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
     {
         private static readonly Mock<IConfiguration> config = new();
         private static readonly Mock<ILoggerFactory> loggerFactory = new();
+        private static readonly Mock<IHostIdProvider> hostIdProvider = new();
         private static readonly Mock<ILogger> logger = new();
         private static readonly SqlConnection connection = new();
-        private static readonly Mock<SqlTriggerBindingProvider> triggerProvider = new();
+        private static readonly SqlOptions sqlOptions = new();
+        private static readonly SqlTriggerBindingProvider triggerProvider = new(config.Object, hostIdProvider.Object, loggerFactory.Object, sqlOptions);
 
         [Fact]
         public void TestNullConfiguration()
         {
-            Assert.Throws<ArgumentNullException>(() => new SqlExtensionConfigProvider(null, loggerFactory.Object, triggerProvider.Object));
-            Assert.Throws<ArgumentNullException>(() => new SqlExtensionConfigProvider(config.Object, null, triggerProvider.Object));
+            Assert.Throws<ArgumentNullException>(() => new SqlExtensionConfigProvider(null, loggerFactory.Object, triggerProvider));
+            Assert.Throws<ArgumentNullException>(() => new SqlExtensionConfigProvider(config.Object, null, triggerProvider));
 
             Assert.Throws<ArgumentNullException>(() => new SqlConverter(null));
             Assert.Throws<ArgumentNullException>(() => new SqlGenericsConverter<string>(null, logger.Object));
@@ -49,7 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [Fact]
         public void TestNullContext()
         {
-            var configProvider = new SqlExtensionConfigProvider(config.Object, loggerFactory.Object, triggerProvider.Object);
+            var configProvider = new SqlExtensionConfigProvider(config.Object, loggerFactory.Object, triggerProvider);
             Assert.Throws<ArgumentNullException>(() => configProvider.Initialize(null));
         }
 
