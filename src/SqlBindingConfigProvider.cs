@@ -74,8 +74,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), this._configuration, logger);
 
             context.AddBindingRule<SqlTriggerAttribute>().BindToTrigger(this._triggerProvider);
-            //FluentBindingRule<SqlTriggerAttribute> triggerRule = context.AddBindingRule<SqlTriggerAttribute>();
-            //triggerRule.BindToTrigger(new SqlTriggerBindingProvider(this._configuration, this._hostIdProvider, this._loggerFactory, this._configuration.Get<SqlOptions>()));
         }
 
         private static readonly Assembly[] _dependentAssemblies = {

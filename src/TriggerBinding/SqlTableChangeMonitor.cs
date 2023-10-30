@@ -131,11 +131,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._userTableId = userTableId;
             this._telemetryProps = telemetryProps ?? new Dictionary<TelemetryPropertyName, string>();
 
+            // TODO: when we move to reading them exclusively from the host options, remove reading from settings.
             // Check if there's config settings to override the default max batch size/polling interval values
-            // TODO: remove reading from settings when we decide to move to reading them from func.json.
             int? configuredMaxBatchSize = configuration.GetValue<int?>(ConfigKey_SqlTrigger_MaxBatchSize) ?? configuration.GetValue<int?>(ConfigKey_SqlTrigger_BatchSize);
             int? configuredPollingInterval = configuration.GetValue<int?>(ConfigKey_SqlTrigger_PollingInterval);
-            this._maxBatchSize = configuredMaxBatchSize ?? this._sqlOptions.BatchSize;
+            this._maxBatchSize = configuredMaxBatchSize ?? this._sqlOptions.MaxBatchSize;
             if (this._maxBatchSize <= 0)
             {
                 throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_MaxBatchSize}'. Ensure that the value is a positive integer.");

@@ -30,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Performance
         [Benchmark]
         public async Task Run()
         {
-            int count = SqlOptions.DefaultBatchSize * 2;
+            int count = SqlOptions.DefaultMaxBatchSize * 2;
             await this.WaitForProductChanges(
                 1,
                 count,

@@ -10,21 +10,20 @@ using Newtonsoft.Json.Linq;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     /// <summary>
-    /// Represents configuration for <see cref="SqlTriggerAttribute"/>.
+    /// Represents configuration for <see cref="SqlBindingExtension"/>.
     /// </summary>
     public class SqlOptions : IOptionsFormatter
     {
-        public const int DefaultBatchSize = 100;
+        // NOTE: please ensure the Readme file and other public documentation are also updated if the deafult values
+        // are ever changed.
+        public const int DefaultMaxBatchSize = 100;
         public const int DefaultPollingIntervalMs = 1000;
         private const int DefaultMinimumPollingIntervalMs = 100;
-
-        // NOTE: please ensure the Readme file and other public documentation are also updated if this value ever
-        // needs to be changed.
         public const int DefaultMaxChangesPerWorker = 1000;
         /// <summary>
         /// Maximum number of changes to process in each iteration of the loop
         /// </summary>
-        private int _batchSize = DefaultBatchSize;
+        private int _maxBatchSize = DefaultMaxBatchSize;
         /// <summary>
         /// Delay in ms between processing each batch of changes
         /// </summary>
@@ -44,18 +43,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Gets or sets the number of changes per batch to retrieve from the server.
         /// The default is 100.
         /// </summary>
-        public int BatchSize
+        public int MaxBatchSize
         {
-            get => this._batchSize;
+            get => this._maxBatchSize;
 
             set
             {
                 if (value <= 0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                    throw new ArgumentOutOfRangeException(nameof(value), "MaxBatchSize must not be less than 1.");
                 }
 
-                this._batchSize = value;
+                this._maxBatchSize = value;
             }
         }
 
@@ -104,7 +103,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             var options = new JObject
             {
-                { nameof(this.BatchSize), this.BatchSize },
+                { nameof(this.MaxBatchSize), this.MaxBatchSize },
                 { nameof(this.PollingIntervalMs), this.PollingIntervalMs },
                 { nameof(this.MaxChangesPerWorker), this.MaxChangesPerWorker }
             };
@@ -116,7 +115,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             var copy = new SqlOptions
             {
-                _batchSize = this._batchSize,
+                _maxBatchSize = this._maxBatchSize,
                 _pollingIntervalMs = this._pollingIntervalMs,
                 _maxChangesPerWorker = this._maxChangesPerWorker
             };
