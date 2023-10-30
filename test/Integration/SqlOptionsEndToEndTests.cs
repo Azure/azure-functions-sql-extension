@@ -5,9 +5,9 @@ using System.Collections.Generic;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 using Xunit;
 
-namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
+namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 {
-    public class SqlOptionsEndToEndTests : SqlTriggerBindingIntegrationTestBase
+    public class SqlOptionsEndToEndTests
     {
         [Fact]
         public void ConfigureOptions_AppliesValuesCorrectly_Queues()
