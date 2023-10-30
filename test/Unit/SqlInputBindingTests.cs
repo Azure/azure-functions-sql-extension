@@ -24,8 +24,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         private static readonly Mock<IHostIdProvider> hostIdProvider = new();
         private static readonly Mock<ILogger> logger = new();
         private static readonly SqlConnection connection = new();
-        private static readonly SqlOptions sqlOptions = new();
-        private static readonly SqlTriggerBindingProvider triggerProvider = new(config.Object, hostIdProvider.Object, loggerFactory.Object, sqlOptions);
+        private static readonly Mock<Microsoft.Extensions.Options.IOptions<SqlOptions>> sqlOptions = new();
+        private static readonly SqlTriggerBindingProvider triggerProvider = new(config.Object, hostIdProvider.Object, loggerFactory.Object, sqlOptions.Object);
 
         [Fact]
         public void TestNullConfiguration()
