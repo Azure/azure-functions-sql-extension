@@ -10,6 +10,7 @@ using Microsoft.Azure.WebJobs.Host.Triggers;
 using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
@@ -22,6 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly IConfiguration _configuration;
         private readonly IHostIdProvider _hostIdProvider;
         private readonly ILogger _logger;
+        private readonly IOptions<SqlOptions> _sqlOptions;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlTriggerBindingProvider"/> class.
@@ -29,11 +31,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="configuration">Configuration to retrieve settings from</param>
         /// <param name="hostIdProvider">Provider of unique host identifier</param>
         /// <param name="loggerFactory">Used to create logger instance</param>
-        public SqlTriggerBindingProvider(IConfiguration configuration, IHostIdProvider hostIdProvider, ILoggerFactory loggerFactory)
+        /// <param name="sqlOptions"></param>
+        public SqlTriggerBindingProvider(IConfiguration configuration, IHostIdProvider hostIdProvider, ILoggerFactory loggerFactory, IOptions<SqlOptions> sqlOptions)
         {
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             this._hostIdProvider = hostIdProvider ?? throw new ArgumentNullException(nameof(hostIdProvider));
-
+            this._sqlOptions = sqlOptions ?? throw new ArgumentNullException(nameof(sqlOptions));
             this._logger = loggerFactory?.CreateLogger(LogCategories.CreateTriggerCategory("Sql")) ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
@@ -87,10 +90,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 bindingType = typeof(SqlTriggerBinding<>).MakeGenericType(userType);
             }
 
-            var constructorParameterTypes = new Type[] { typeof(string), typeof(string), typeof(string), typeof(ParameterInfo), typeof(IHostIdProvider), typeof(ILogger), typeof(IConfiguration) };
+            var constructorParameterTypes = new Type[] { typeof(string), typeof(string), typeof(string), typeof(ParameterInfo), typeof(IOptions<SqlOptions>), typeof(IHostIdProvider), typeof(ILogger), typeof(IConfiguration) };
             ConstructorInfo bindingConstructor = bindingType.GetConstructor(constructorParameterTypes);
 
-            object[] constructorParameterValues = new object[] { connectionString, attribute.TableName, attribute.LeasesTableName, parameter, this._hostIdProvider, this._logger, this._configuration };
+            object[] constructorParameterValues = new object[] { connectionString, attribute.TableName, attribute.LeasesTableName, parameter, this._sqlOptions, this._hostIdProvider, this._logger, this._configuration };
             var triggerBinding = (ITriggerBinding)bindingConstructor.Invoke(constructorParameterValues);
 
             return Task.FromResult(triggerBinding);
