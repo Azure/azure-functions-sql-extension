@@ -18,7 +18,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [InlineData(100, null, 1)]
         public void SqlTriggerTargetScaler_Returns_Expected(int unprocessedChangeCount, int? concurrency, int expected)
         {
-            TargetScalerResult result = SqlTriggerTargetScaler.GetScaleResultInternal(concurrency ?? SqlTriggerListener<object>.DefaultMaxChangesPerWorker, unprocessedChangeCount);
+            TargetScalerResult result = SqlTriggerTargetScaler.GetScaleResultInternal(concurrency ?? SqlOptions.DefaultMaxChangesPerWorker, unprocessedChangeCount);
 
             Assert.Equal(result.TargetWorkerCount, expected);
         }

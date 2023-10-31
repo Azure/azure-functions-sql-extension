@@ -186,7 +186,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <param name="maxBatchSize">The max batch size if different than the default max batch size</param>
         /// <param name="pollingIntervalMs">The polling interval in ms if different than the default polling interval</param>
         /// <returns></returns>
-        public int GetBatchProcessingTimeout(int firstId, int lastId, int maxBatchSize = SqlTableChangeMonitor<object>.DefaultMaxBatchSize, int pollingIntervalMs = SqlTableChangeMonitor<object>.DefaultPollingIntervalMs)
+        public int GetBatchProcessingTimeout(int firstId, int lastId, int maxBatchSize = SqlOptions.DefaultMaxBatchSize, int pollingIntervalMs = SqlOptions.DefaultPollingIntervalMs)
         {
             int changesToProcess = lastId - firstId + 1;
             int calculatedTimeout = (int)(Math.Ceiling((double)changesToProcess / maxBatchSize // The number of batches to process
