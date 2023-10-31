@@ -74,7 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             int? configuredMaxChangesPerWorker;
-            // TODO: when we move to reading them exclusively from the host options, remove reading from settings.
+            // TODO: when we move to reading them exclusively from the host options, remove reading from settings.(https://github.com/Azure/azure-functions-sql-extension/issues/961)
             configuredMaxChangesPerWorker = configuration.GetValue<int?>(ConfigKey_SqlTrigger_MaxChangesPerWorker);
             this._maxChangesPerWorker = configuredMaxChangesPerWorker ?? this._sqlOptions.MaxChangesPerWorker;
             if (this._maxChangesPerWorker <= 0)

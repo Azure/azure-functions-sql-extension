@@ -16,6 +16,7 @@ using Microsoft.Azure.WebJobs.Host.Protocols;
 using Microsoft.Azure.WebJobs.Host.Triggers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -48,14 +49,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="sqlOptions"></param>
         /// <param name="logger">Facilitates logging of messages</param>
         /// <param name="configuration">Provides configuration values</param>
-        public SqlTriggerBinding(string connectionString, string tableName, string leasesTableName, ParameterInfo parameter, SqlOptions sqlOptions, IHostIdProvider hostIdProvider, ILogger logger, IConfiguration configuration)
+        public SqlTriggerBinding(string connectionString, string tableName, string leasesTableName, ParameterInfo parameter, IOptions<SqlOptions> sqlOptions, IHostIdProvider hostIdProvider, ILogger logger, IConfiguration configuration)
         {
             this._connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
             this._tableName = tableName ?? throw new ArgumentNullException(nameof(tableName));
             this._leasesTableName = leasesTableName;
             this._parameter = parameter ?? throw new ArgumentNullException(nameof(parameter));
             this._hostIdProvider = hostIdProvider ?? throw new ArgumentNullException(nameof(hostIdProvider));
-            this._sqlOptions = sqlOptions ?? throw new ArgumentNullException(nameof(sqlOptions));
+            this._sqlOptions = (sqlOptions ?? throw new ArgumentNullException(nameof(sqlOptions))).Value;
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
