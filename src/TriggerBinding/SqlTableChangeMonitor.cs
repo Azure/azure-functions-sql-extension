@@ -297,10 +297,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         {
                             var commandSw = Stopwatch.StartNew();
 
-                            using (SqlDataReader reader = await getChangesCommand.ExecuteReaderAsync(token))
+                            using (SqlDataReader reader = getChangesCommand.ExecuteReader())
                             {
-                                while (await reader.ReadAsync(token))
+                                while (reader.Read())
                                 {
+                                    token.ThrowIfCancellationRequested();
                                     rows.Add(SqlBindingUtilities.BuildDictionaryFromSqlRow(reader));
                                 }
                             }

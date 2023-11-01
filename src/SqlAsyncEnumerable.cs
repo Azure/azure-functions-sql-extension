@@ -90,7 +90,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </returns>
             public ValueTask<bool> MoveNextAsync()
             {
-                return new ValueTask<bool>(this.GetNextRowAsync());
+                return new ValueTask<bool>(this.GetNextRow());
             }
 
             /// <summary>
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <returns>
             /// True if there is another row left in the query to process, or false if this was the last row
             /// </returns>
-            private async Task<bool> GetNextRowAsync()
+            private bool GetNextRow()
             {
                 // check connection state before trying to access the reader
                 // if DisposeAsync has already closed it due to the issue described here https://github.com/Azure/azure-functions-sql-extension/issues/350
@@ -109,10 +109,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         using (SqlCommand command = SqlBindingUtilities.BuildCommand(this._attribute, this._connection))
                         {
-                            this._reader = await command.ExecuteReaderAsync();
+                            this._reader = command.ExecuteReader();
                         }
                     }
-                    if (await this._reader.ReadAsync())
+                    if (this._reader.Read())
                     {
                         this.Current = Utils.JsonDeserializeObject<T>(this.SerializeRow());
                         return true;
