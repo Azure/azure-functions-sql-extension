@@ -30,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             return builder;
         }
 
-        public static IWebJobsBuilder AddSqlScaleForTrigger(this IWebJobsBuilder builder, TriggerMetadata triggerMetadata)
+        internal static IWebJobsBuilder AddSqlScaleForTrigger(this IWebJobsBuilder builder, TriggerMetadata triggerMetadata)
         {
             IServiceProvider serviceProvider = null;
             var scalerProvider = new Lazy<SqlScalerProvider>(() => new SqlScalerProvider(serviceProvider, triggerMetadata));
