@@ -114,7 +114,8 @@ Azure SQL Trigger bindings utilize SQL [change tracking](https://docs.microsoft.
 
 ### Configuration for Trigger Bindings
 
-This section goes over some of the configuration values you can use to customize SQL trigger bindings. See [How to Use Azure Function App Settings](https://learn.microsoft.com/azure/azure-functions/functions-how-to-use-azure-function-app-settings) to learn more.
+This section goes over some of the configuration values you can use to customize SQL trigger bindings. See [How to Use host.json for configuring options](https://learn.microsoft.com/azure/azure-functions/functions-host-json) to learn more.
+**NOTE:** We currently ovveride configuration from app settings over host.json.
 
 #### Sql_Trigger_MaxBatchSize
 
