@@ -67,10 +67,12 @@ Needs More Info:
   comment: |
     We need more info to debug your particular issue. If you could provide us with the following details, it would help us address the issue much faster.
 
-    1. Do you have any cutom settings for your function app. This could be a custom time-out defined specifically for your database server or optional configuration that can be cutomized for the app defined [here](https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-azure-sql-trigger?tabs=isolated-process%2Cportal&pivots=programming-language-csharp#optional-configuration).
+    1. List any custom settings for your function app. This could be a custom time-out defined specifically for your database server or optional configuration that can be customized for the app defined [here](https://learn.microsoft.com/azure/azure-functions/functions-bindings-azure-sql-trigger?tabs=isolated-process%2Cportal&pivots=programming-language-csharp#optional-configuration).
 
-    2. What type of Database are you using? (SQL DB or SQL VM or Other)
+    2. What type of Database are you using? (Run `SELECT @@VERSION as Version, SERVERPROPERTY('EngineEdition') as EngineEdition` on your database)
 
     3. What is the name of the Function?
 
-    4. Which version of the SQL Bindings Package/ExtensionBundle are you using?
+    4. Is this a deployed or local function?
+
+    5. Which version of the SQL Bindings Package/ExtensionBundle are you using?
