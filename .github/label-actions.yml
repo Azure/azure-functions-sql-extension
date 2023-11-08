@@ -65,7 +65,7 @@ Needs Connection Logs:
 #actions for Needs More Info label
 Needs More Info:
   comment: |
-    We need more info to debug your particular issue. If you could provide us with the following details, it would help us address the issue much faster.
+    We need more info to debug your particular issue. If you could provide us with the any of the following details that you haven't already provided, it would help us address the issue much faster.
 
     1. Which version of the SQL Bindings Package/ExtensionBundle are you using?
 
