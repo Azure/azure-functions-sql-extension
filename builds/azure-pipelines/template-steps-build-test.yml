@@ -217,15 +217,8 @@ steps:
   displayName: 'Stop and Remove SQL Server Image'
   condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
-- task: DotNetCoreCLI@2
-  displayName: .NET Build for Release
-  inputs:
-    command: build
-    projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=false -p:Version=${{ parameters.binariesVersion }} -p:SupportedVersion=${{ parameters.supportedVersion }}'
-
 - task: EsrpCodeSigning@3
-  displayName: 'ESRP CodeSigning - Binaries'
+  displayName: 'ESRP CodeSigning - Binaries (Extension)'
   inputs:
     ConnectedServiceName: 'Code Signing'
     FolderPath: '$(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}'
