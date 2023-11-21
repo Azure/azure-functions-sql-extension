@@ -291,7 +291,7 @@ steps:
     SessionTimeout: 600
     MaxConcurrency: 5
 
-- task: EsrpCodeSigning@1
+- task: EsrpCodeSigning@3
   displayName: 'ESRP CodeSigning - Binaries (Worker)'
   inputs:
     ConnectedServiceName: 'Code Signing'
