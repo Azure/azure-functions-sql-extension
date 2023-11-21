@@ -2,6 +2,7 @@
 Needs Logs:
   comment: |
     We need more info to debug your particular issue. If you could attach your logs to the issue, it would help us fix the issue much faster.
+    Note that these instructions are for local development only.
 
     1. Set the default logging level to `Debug` and enable logging to a file. To do this ensure the following entries are in your `host.json`. ([instructions](https://learn.microsoft.com/azure/azure-functions/configure-monitoring?tabs=v2#configure-log-levels))
 
@@ -21,3 +22,57 @@ Needs Logs:
     3. Get the log file and attach it to this issue. By default this will be in `%TMP%/LogFiles/Application/Functions/Host`.
 
     **NOTE** Debug logging will include information such as Database and table names, if you do not wish to include this information you can either redact it from the logs before attaching or let us know and we will provide a way to send logs directly to us.
+
+#actions for Needs Connection Logs label
+Needs Connection Logs:
+  comment: |
+    We need more info to debug your particular issue. If you could attach your SQL Client logs to the issue, it would help us fix the issue much faster.
+    Note that these instructions are for local development only.
+
+    1. Set the AzureFunctions_SqlBindings_VerboseLogging to `true` in your `*.settings.json` file.
+
+    ```json
+    {
+    "IsEncrypted": false,
+    "Values": {
+      "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+      "FUNCTIONS_WORKER_RUNTIME": "<dotnet>",
+      "SqlConnectionString": "<Your Connection string>",
+      "AzureFunctions_SqlBindings_VerboseLogging": "true",
+    }
+    }
+    ```
+
+    2. Set the default logging level to `Trace` and enable logging to a file. To do this ensure the following entries are in your `host.json`. ([instructions](https://learn.microsoft.com/azure/azure-functions/configure-monitoring?tabs=v2#configure-log-levels))
+
+    ```json
+    {
+      "logging": {
+        "fileLoggingMode": "always",
+        "logLevel": {
+          "default": "Trace"
+        }
+      }
+    }
+    ```
+
+    3. Restart your function and reproduce your issue
+
+    4. Get the log file and attach it to this issue. By default this will be in `%TMP%/LogFiles/Application/Functions/Host`.
+
+    **NOTE** Debug logging will include information such as Database and table names, if you do not wish to include this information you can either redact it from the logs before attaching or let us know and we will provide a way to send logs directly to us.
+
+#actions for Needs More Info label
+Needs More Info:
+  comment: |
+    We need more info to debug your particular issue. If you could provide us with the any of the following details that you haven't already provided, it would help us address the issue much faster.
+
+    1. Which version of the SQL Bindings Package or Extension Bundle are you using?
+
+    2. What type of Database are you using? (Run `SELECT @@VERSION as Version, SERVERPROPERTY('EngineEdition') as EngineEdition` on your database)
+
+    3. What is the name of the Function?
+
+    4. Is this a deployed or local function?
+
+    5. List any custom settings for your function app. This could be a custom time-out defined specifically for your database server or optional configuration that can be customized for the app defined [here](https://learn.microsoft.com/azure/azure-functions/functions-bindings-azure-sql-trigger?tabs=isolated-process%2Cportal&pivots=programming-language-csharp#optional-configuration).

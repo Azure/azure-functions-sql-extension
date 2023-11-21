@@ -19,24 +19,28 @@ using Newtonsoft.Json;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     /// <summary>
-    /// Exposes SQL input and output bindings
+    /// Exposes SQL input, output and trigger bindings
     /// </summary>
     [Extension("sql")]
-    internal class SqlBindingConfigProvider : IExtensionConfigProvider
+    internal class SqlExtensionConfigProvider : IExtensionConfigProvider, IDisposable
     {
         private readonly IConfiguration _configuration;
         private readonly ILoggerFactory _loggerFactory;
+        private readonly SqlTriggerBindingProvider _triggerProvider;
+        private SqlClientListener sqlClientListener;
+        public const string VerboseLoggingSettingName = "AzureFunctions_SqlBindings_VerboseLogging";
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SqlBindingConfigProvider"/> class.
+        /// Initializes a new instance of the <see cref="SqlExtensionConfigProvider"/> class.
         /// </summary>
         /// <exception cref="ArgumentNullException">
         /// Thrown if either parameter is null
         /// </exception>
-        public SqlBindingConfigProvider(IConfiguration configuration, ILoggerFactory loggerFactory)
+        public SqlExtensionConfigProvider(IConfiguration configuration, ILoggerFactory loggerFactory, SqlTriggerBindingProvider triggerProvider)
         {
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             this._loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+            this._triggerProvider = triggerProvider;
         }
 
         /// <summary>
@@ -54,6 +58,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             ILogger logger = this._loggerFactory.CreateLogger(LogCategories.Bindings);
             TelemetryInstance.Initialize(this._configuration, logger);
+            // Only enable SQL Client logging when VerboseLogging is set in the config to avoid extra overhead when the
+            // detailed logging it provides isn't needed
+            if (this.sqlClientListener == null && Utils.GetConfigSettingAsBool(VerboseLoggingSettingName, this._configuration))
+            {
+                this.sqlClientListener = new SqlClientListener(logger);
+            }
             LogDependentAssemblyVersions(logger);
 #pragma warning disable CS0618 // Fine to use this for our stuff
             FluentBindingRule<SqlAttribute> inputOutputRule = context.AddBindingRule<SqlAttribute>();
@@ -62,6 +72,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             inputOutputRule.BindToInput<string>(typeof(SqlGenericsConverter<string>), this._configuration, logger);
             inputOutputRule.BindToCollector<SQLObjectOpenType>(typeof(SqlAsyncCollectorBuilder<>), this._configuration, logger);
             inputOutputRule.BindToInput<OpenType>(typeof(SqlGenericsConverter<>), this._configuration, logger);
+
+            context.AddBindingRule<SqlTriggerAttribute>().BindToTrigger(this._triggerProvider);
         }
 
         private static readonly Assembly[] _dependentAssemblies = {
@@ -81,7 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 try
                 {
-                    logger.LogInformation($"Using {assembly.GetName().Name} {FileVersionInfo.GetVersionInfo(assembly.Location).ProductVersion}");
+                    logger.LogDebug($"Using {assembly.GetName().Name} {FileVersionInfo.GetVersionInfo(assembly.Location).ProductVersion}");
                 }
                 catch (Exception ex)
                 {
@@ -90,6 +102,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             }
         }
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // Dispose managed resources.
+                this.sqlClientListener?.Dispose();
+            }
+            // Free native resources.
+        }
+
+        public void Dispose()
+        {
+            this.Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
     }
 
     /// <summary>

@@ -22,6 +22,9 @@
     - [Samples for Output Bindings](#samples-for-output-bindings)
       - [Array](#array)
       - [Single Row](#single-row)
+  - [Trigger Binding](#trigger-binding)
+    - [SqlTriggerAttribute](#sqltriggerattribute)
+    - [Setup for Trigger Bindings](#setup-for-trigger-bindings)
 
 ## Binding Model
 
@@ -348,3 +351,64 @@ public static Task<Product> Run(
     return prod;
 }
 ```
+
+## Trigger Binding
+
+See [Trigger Binding Overview](./BindingsOverview.md#trigger-binding) for general information about the Azure SQL Trigger binding.
+
+### SqlTriggerAttribute
+
+The SqlAttribute for Trigger bindings takes two [arguments](https://github.com/Azure/azure-functions-sql-extension/blob/main/Worker.Extensions.Sql/src/SqlTriggerAttribute.cs)
+
+- **TableName**: Represents the name of the table to be monitored for changes.
+- **ConnectionStringSetting**: Specifies the name of the app setting that contains the SQL connection string used to connect to a database. The connection string must follow the format specified [here](https://docs.microsoft.com/dotnet/api/microsoft.data.sqlclient.sqlconnection.connectionstring?view=sqlclient-dotnet-core-2.0).
+- **LeasesTableName**: Optional. Name of the table used to store leases. If not specified, the leases table name will be Leases_{FunctionId}_{TableId}. More information on how this is generated can be found [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/TriggerBinding.md#az_funcleasestablename).
+
+The trigger binding can bind to type `IReadOnlyList<SqlChange<T>>`:
+
+- **IReadOnlyList<SqlChange\<T\>>**: If there are multiple rows updated in the SQL table, the user function will get invoked with a batch of changes, where each element is a `SqlChange` object. Here `T` is a generic type-argument that can be substituted with a user-defined POCO, or Plain Old C# Object, representing the user table row. The POCO should therefore follow the schema of the queried table. See the [Query String](#query-string) section for an example of what the POCO should look like. The two properties of class `SqlChange<T>` are `Item` of type `T` which represents the table row and `Operation` of type `SqlChangeOperation` which indicates the kind of row operation (insert, update, or delete) that triggered the user function.
+
+Note that for insert and update operations, the user function receives POCO object containing the latest values of table columns. For delete operation, only the properties corresponding to the primary keys of the row are populated.
+
+Any time when the changes happen to the "Products" table, the user function will be invoked with a batch of changes. The changes are processed sequentially, so if there are a large number of changes pending to be processed, the function will be passed a batch containing the earliest changes first.
+
+### Setup for Trigger Bindings
+
+Note: This tutorial requires that a SQL database is setup as shown in [Create a SQL Server](./GeneralSetup.md#create-a-sql-server), and that you have the 'Employee.cs' file from the [Setup for Input Bindings](#setup-for-input-bindings) section.
+
+- Create a new file with the following content:
+
+    ```csharp
+    using System.Collections.Generic;
+    using Microsoft.Azure.WebJobs;
+    using Microsoft.Extensions.Logging;
+    using Microsoft.Azure.WebJobs.Extensions.Sql;
+
+    namespace Company.Function
+    {
+        public static class EmployeeTrigger
+        {
+            private static readonly Action<ILogger, string, Exception> _loggerMessage = LoggerMessage.Define<string>(LogLevel.Information, eventId: new EventId(0, "INFO"), formatString: "{Message}");
+            
+            [Function("EmployeeTrigger")]
+            public static void Run(
+                [SqlTrigger("[dbo].[Employees]", "SqlConnectionString")]
+                IReadOnlyList<SqlChange<Employee>> changes, FunctionContext context)
+            {
+                foreach (SqlChange<Employee> change in changes)
+                {
+                    Employee employee = change.Item;
+                    _loggerMessage(context.GetLogger("EmployeeTrigger"), $"Change operation: {change.Operation}", null);
+                    _loggerMessage(context.GetLogger("EmployeeTrigger"), $"EmployeeID: {employee.EmployeeId}, FirstName: {employee.FirstName}, LastName: {employee.LastName}, Company: {employee.Company}, Team: {employee.Team}", null);
+                }
+            }
+        }
+    }
+    ```
+
+- *Skip these steps if you have not completed the output binding tutorial.*
+  - Open your output binding file and modify some of the values. For example, change the value of Team column from 'Functions' to 'Azure SQL'.
+  - Hit 'F5' to run your code. Click the link of the HTTP trigger from the output binding tutorial.
+- Update, insert, or delete rows in your SQL table while the function app is running and observe the function logs.
+- You should see the new log messages in the Visual Studio Code terminal containing the values of row-columns after the update operation.
+- Congratulations! You have successfully created your first SQL trigger binding!

@@ -11,6 +11,7 @@
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Timer" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Storage.Queues" />
     <PackageReference Include="Microsoft.AspNetCore.Http" />
+    <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="Grpc.Net.Client" />
   </ItemGroup>
   <ItemGroup>
@@ -18,8 +19,10 @@
       Include="..\..\Worker.Extensions.Sql\src\Microsoft.Azure.Functions.Worker.Extensions.Sql.csproj" />
     <!-- We want to build the extension project first since this project references the package
     produced by building that. But we don't want it as an actual runtime depdendency -->
-    <ProjectReference Include="..\..\src\Microsoft.Azure.WebJobs.Extensions.Sql.csproj"
-      ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\src\Microsoft.Azure.WebJobs.Extensions.Sql.csproj">
+        <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+        <Private>false</Private>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">

@@ -1,14 +1,16 @@
-# Azure SQL bindings for Azure Functions
+# Azure SQL bindings for Azure Functions - Preview
 
 ## Table of Contents
 
-- [Azure SQL bindings for Azure Functions](#azure-sql-bindings-for-azure-functions)
+- [Azure SQL bindings for Azure Functions - Preview](#azure-sql-bindings-for-azure-functions---preview)
   - [Table of Contents](#table-of-contents)
   - [Introduction](#introduction)
   - [Supported SQL Server Versions](#supported-sql-server-versions)
   - [Known/By Design Issues](#knownby-design-issues)
     - [Output Bindings](#output-bindings)
+    - [Trigger Bindings](#trigger-bindings)
   - [Telemetry](#telemetry)
+  - [Troubleshooting](#troubleshooting)
   - [Privacy Statement](#privacy-statement)
   - [Trademarks](#trademarks)
 
@@ -18,7 +20,7 @@ This repository contains the Azure SQL bindings for Azure Functions extension co
 
 - **Input Binding**: takes a SQL query or stored procedure to run and returns the output to the function.
 - **Output Binding**: takes a list of rows and upserts them into the user table (i.e. If a row doesn't already exist, it is added. If it does, it is updated).
-- **Trigger (preview)**: monitors the user table for changes (i.e., row inserts, updates, and deletes) and invokes the function with updated rows. Note: This is a preview feature and is available only in preview packages. More information is available on the [trigger branch](https://github.com/Azure/azure-functions-sql-extension/tree/release/trigger) and on the [documentation](https://aka.ms/sqltrigger).
+- **Trigger Binding**: monitors the user table for changes (i.e., row inserts, updates, and deletes) and invokes the function with updated rows.
 
 For a more detailed overview of the different types of bindings see the [Bindings Overview](https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/BindingsOverview.md).
 
@@ -45,7 +47,7 @@ Below is a list of common issues that users may run into when using the SQL Bind
 
 > **Note:** While we are actively working on resolving the known issues, some may not be supported at this time. We appreciate your patience as we work to improve the Azure Functions SQL Extension.
 
-- **By Design:** The table used by a SQL binding cannot contain two columns that only differ by casing (Ex. 'Name' and 'name').
+- **By Design:** The table used by a SQL binding or SQL trigger cannot contain two columns that only differ by casing (Ex. 'Name' and 'name').
 - **By Design:** Non-CSharp functions using SQL bindings against tables with columns of data types `BINARY` or `VARBINARY` need to map those columns to a string type. Input bindings will return the binary value as a base64 encoded string. Output bindings require the value upserted to binary columns to be a base64 encoded string.
 - **Planned for Future Support:** SQL bindings against tables with columns of data types `GEOMETRY` and `GEOGRAPHY` are not supported. Issue is tracked [here](https://github.com/Azure/azure-functions-sql-extension/issues/654).
 - Issues resulting from upstream dependencies can be found [here](https://github.com/Azure/azure-functions-sql-extension/issues?q=is%3Aopen+is%3Aissue+label%3Aupstream).
@@ -67,9 +69,21 @@ Below is a list of common issues that users may run into when using the SQL Bind
   - PowerShell: The workaround is to use the `$TriggerMetadata[$keyName]` to retrieve the query property - an example can be found [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-powershell/AddProductParams/run.ps1). Issue is tracked [here](https://github.com/Azure/azure-functions-powershell-worker/issues/895).
   - Python: The workaround is to use `parse_qs` - an example can be found [here](https://github.com/Azure/azure-functions-sql-extension/blob/main/samples/samples-python/AddProductParams/__init__.py). Issue is tracked [here](https://github.com/Azure/azure-functions-python-worker/issues/894).
 
+### Trigger Bindings
+
+- **By Design:** Trigger bindings will exhibit undefined behavior if the SQL table schema gets modified while the user application is running, for example, if a column is added, renamed or deleted or if the primary key is modified or deleted. In such cases, restarting the application should help resolve any errors.
+
 ## Telemetry
 
 This extension collects usage data in order to help us improve your experience. The data is anonymous and doesn't include any personal information. You can opt-out of telemetry by setting the `AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT` environment variable or the `AzureFunctionsSqlBindingsTelemetryOptOut` app setting (in your `*.settings.json` file) to '1', 'true' or 'yes';
+
+## Troubleshooting
+
+For troubleshooting SQL Client issues, You can enable verbose logging by setting the `AzureFunctions_SqlBindings_VerboseLogging` app setting (in your `*.settings.json` file) to '1', 'true' or 'yes';
+
+### Logs
+
+Logs for function apps deployed in Azure can be viewed in the function's Monitor tab. If logs are not showing in the Monitor tab, they can also be found in the function app's [Log Stream](https://learn.microsoft.com/azure/azure-functions/streaming-logs?tabs=azure-portal) or in [Application Insights](https://learn.microsoft.com/azure/azure-functions/analyze-telemetry-data#view-telemetry-in-application-insights). More information on logging can be found [here](https://learn.microsoft.com/azure/azure-functions/functions-monitoring).
 
 ## Privacy Statement
 

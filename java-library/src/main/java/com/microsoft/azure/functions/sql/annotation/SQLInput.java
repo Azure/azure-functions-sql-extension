@@ -30,7 +30,7 @@ public @interface SQLInput {
     /**
      * Text or Stored Procedure.
      */
-    String commandType() default "";
+    CommandType commandType() default CommandType.Text;
 
     /**
      * Parameters to the query or stored procedure. This string must follow the format
