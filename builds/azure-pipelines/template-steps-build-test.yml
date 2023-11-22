@@ -217,14 +217,7 @@ steps:
   displayName: 'Stop and Remove SQL Server Image'
   condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
-# 5.0 isn't supported on Mac yet
-- task: UseDotNet@2
-  displayName: 'Install .NET Core 2.1.x SDK for CodeSigning on Mac'
-  inputs:
-    version: '2.1.x'
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Darwin'))
-
-- task: EsrpCodeSigning@1
+- task: EsrpCodeSigning@3
   displayName: 'ESRP CodeSigning - Binaries (Extension)'
   inputs:
     ConnectedServiceName: 'Code Signing'
@@ -291,7 +284,7 @@ steps:
     SessionTimeout: 600
     MaxConcurrency: 5
 
-- task: EsrpCodeSigning@1
+- task: EsrpCodeSigning@3
   displayName: 'ESRP CodeSigning - Binaries (Worker)'
   inputs:
     ConnectedServiceName: 'Code Signing'
