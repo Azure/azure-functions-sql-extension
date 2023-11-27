@@ -15,6 +15,7 @@ variables:
   serverPassword: ''
   nodeModulesPath: ''
   LGTM.UploadSnapshot: true
+  Codeql.Enabled: false
 
 stages:
 - stage: BuildPublish
