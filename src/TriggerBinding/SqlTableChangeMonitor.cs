@@ -860,8 +860,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 this._logger.LogError($"Failed to query count of lease locked changes for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
                 TelemetryInstance.TrackException(TelemetryErrorName.GetLeaseLockedRowCount, ex, null, new Dictionary<TelemetryMeasureName, double>() { { TelemetryMeasureName.GetLockedRowCountDurationMs, getLockedRowCountDurationMs } });
-                // This is currently only used for debugging, so return a -1 instead of throwing since it isn't necessary to get the value
-                leaseLockedRowsCount = -1;
+                // This is currently only used for debugging, so ignore the exception if we can. If the error is a fatal one though then the connection will be
+                // closed so we have to let this bubble up so we can attempt to reconnect
+                if (ex.IsFatalSqlException() || connection.IsBrokenOrClosed())
+                {
+                    throw;
+                }
+                else
+                {
+                    // If it's non-fatal though return a -1 instead of throwing since it isn't necessary to get the value
+                    leaseLockedRowsCount = -1;
+                }
             }
             return leaseLockedRowsCount;
         }
