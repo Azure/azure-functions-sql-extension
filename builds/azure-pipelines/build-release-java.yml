@@ -1,4 +1,12 @@
 steps:
+  
+  - task: CodeQL3000Init@0
+    inputs:
+      ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/chgagnon/codeQL') }}:
+        Enabled: true
+      ${{ else }}:
+        Enabled: false
+
   - task: Maven@3
     displayName: Build library
     inputs:
@@ -7,19 +15,6 @@ steps:
       # update-snapshot forces a check for updated library dependencies
       options: --batch-mode --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
       checkStyleRunAnalysis: true
-
-  - task: Semmle@1
-    env:
-      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-    inputs:
-      toolVersion: 'Latest'
-      sourceCodeDirectory: '$(Build.SourcesDirectory)/java-library'
-      language: 'java'
-      buildCommandsString: 'mvn clean package'
-      querySuite: 'Recommended'
-      timeout: '1800'
-      ram: '16384'
-      addProjectDirToScanningExclusionList: true
 
   - powershell: |
       $source = 'java-library'
@@ -44,5 +39,8 @@ steps:
   - publish: $(Build.ArtifactStagingDirectory)
     displayName: Publish library package
     artifact: drop-java-library
+
+  - task: CodeQL3000Finalize@0
+    condition: always()
 
 
