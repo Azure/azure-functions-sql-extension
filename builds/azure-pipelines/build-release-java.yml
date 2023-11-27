@@ -8,19 +8,6 @@ steps:
       options: --batch-mode --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
       checkStyleRunAnalysis: true
 
-  - task: Semmle@1
-    env:
-      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-    inputs:
-      toolVersion: 'Latest'
-      sourceCodeDirectory: '$(Build.SourcesDirectory)/java-library'
-      language: 'java'
-      buildCommandsString: 'mvn clean package'
-      querySuite: 'Recommended'
-      timeout: '1800'
-      ram: '16384'
-      addProjectDirToScanningExclusionList: true
-
   - powershell: |
       $source = 'java-library'
       $destination = '$(Build.ArtifactStagingDirectory)/java-library'
@@ -34,6 +21,19 @@ steps:
       Copy-Item "$source/target/$prefix-javadoc.jar" "$destination/"
       Copy-Item "$source/target/$prefix-sources.jar" "$destination/"
     displayName: Copy output files
+
+  - task: Semmle@1
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+    inputs:
+      toolVersion: 'Latest'
+      sourceCodeDirectory: '$(Build.SourcesDirectory)/java-library'
+      language: 'java'
+      buildCommandsString: 'mvn clean package'
+      querySuite: 'Recommended'
+      timeout: '1800'
+      ram: '16384'
+      addProjectDirToScanningExclusionList: true
 
   - task: ManifestGeneratorTask@0
     displayName: Generate SBOM manifest
