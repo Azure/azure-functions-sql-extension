@@ -15,7 +15,6 @@ variables:
   serverPassword: ''
   nodeModulesPath: ''
   LGTM.UploadSnapshot: true
-  Semmle.SkipAnalysis: true
 
 stages:
 - stage: BuildPublish
