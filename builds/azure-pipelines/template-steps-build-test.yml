@@ -417,7 +417,7 @@ steps:
   displayName: 'TSA upload to Codebase: Sql Bindings Stamp: TSA'
   inputs:
     GdnPublishTsaOnboard: true
-    GdnPublishTsaConfigFile: '$(Build.SourcesDirectory)\builds\TSAConfig.gdntsa'
+    GdnPublishTsaConfigFile: '$(Build.SourcesDirectory)\.config\tsaoptions.json'
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'), eq(variables['TSA_UPLOAD'], 'true'))
 
 - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0

@@ -31,6 +31,7 @@ variables:
   oopWorkerSupportedExtensionVersion: $[replace(replace('True', eq('${{ parameters.ReleaseType }}', 'full'), '$(binariesVersion)'),'True','$(binariesVersion)-preview')] # This will set the expression to pull the preview vs full version based on the ReleaseType parameter.
   LGTM.UploadSnapshot: true
   Codeql.Enabled: true
+  Codeql.TSAEnabled: true
 
 
 stages:

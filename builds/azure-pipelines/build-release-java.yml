@@ -1,11 +1,4 @@
 steps:
-  
-  - task: CodeQL3000Init@0
-    inputs:
-      ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/chgagnon/codeQL') }}:
-        Enabled: true
-      ${{ else }}:
-        Enabled: false
 
   - task: Maven@3
     displayName: Build library
@@ -39,8 +32,3 @@ steps:
   - publish: $(Build.ArtifactStagingDirectory)
     displayName: Publish library package
     artifact: drop-java-library
-
-  - task: CodeQL3000Finalize@0
-    condition: always()
-
-
