@@ -242,6 +242,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             this._logger.LogError($"Fatal SQL Client exception processing changes. Will attempt to reestablish connection in {this._pollingIntervalInMs}ms. Exception = {e.Message}");
                             forceReconnect = true;
                         }
+                        catch (Exception e) when (e.IsDeadlockException())
+                        {
+                            // Deadlocks aren't fatal and don't need a reconnection so just let the loop try again after the normal delay
+                        }
                         await Task.Delay(TimeSpan.FromMilliseconds(this._pollingIntervalInMs), token);
                     }
                 }
@@ -860,8 +864,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 this._logger.LogError($"Failed to query count of lease locked changes for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
                 TelemetryInstance.TrackException(TelemetryErrorName.GetLeaseLockedRowCount, ex, null, new Dictionary<TelemetryMeasureName, double>() { { TelemetryMeasureName.GetLockedRowCountDurationMs, getLockedRowCountDurationMs } });
-                // This is currently only used for debugging, so return a -1 instead of throwing since it isn't necessary to get the value
-                leaseLockedRowsCount = -1;
+                // This is currently only used for debugging, so ignore the exception if we can. If the error is a fatal one though then the connection or transaction will be
+                // unusable so we have to let this bubble up so we can attempt to reconnect
+                if (ex.IsFatalSqlException() || ex.IsDeadlockException() || connection.IsBrokenOrClosed())
+                {
+                    throw;
+                }
+                else
+                {
+                    // If it's non-fatal though return a -1 instead of throwing since it isn't necessary to get the value
+                    leaseLockedRowsCount = -1;
+                }
             }
             return leaseLockedRowsCount;
         }

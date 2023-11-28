@@ -263,6 +263,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
+        /// Whether the exception is a SqlClient deadlock exception (Error Number 1205)
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        internal static bool IsDeadlockException(this Exception e)
+        {
+            // See https://learn.microsoft.com/sql/relational-databases/errors-events/mssqlserver-1205-database-engine-error
+            // Transaction (Process ID %d) was deadlocked on %.*ls resources with another process and has been chosen as the deadlock victim. Rerun the transaction.
+            return (e as SqlException)?.Number == 1205
+                || (e.InnerException as SqlException)?.Number == 1205;
+        }
+
+        /// <summary>
         /// Checks whether the connection state is currently Broken or Closed
         /// </summary>
         /// <param name="conn">The connection to check</param>
