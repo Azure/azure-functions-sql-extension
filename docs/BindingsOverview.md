@@ -34,6 +34,16 @@ Azure SQL Input bindings take a SQL query or stored procedure to run and returns
 
 There currently is no retry support for errors that occur for input bindings. If an exception occurs when an input binding is executed then the function code will not be executed. This may result in an error code being returned, for example an HTTP trigger will return a response with a status of 500 to indicate an error occurred.
 
+### Setup Guides
+
+- [.NET (In-Proc)](./SetupGuide_Dotnet.md#input-binding)
+- [.NET (Isolated)](./SetupGuide_DotnetOutOfProc.md#input-binding)
+- [C# Script](./SetupGuide_DotnetCSharpScript.md#input-binding)
+- [Java](./SetupGuide_Java.md#input-binding)
+- [JavaScript](./SetupGuide_Javascript.md#input-binding)
+- [Python](./SetupGuide_Python.md#input-binding)
+- [PowerShell](./SetupGuide_PowerShell.md#input-binding)
+
 ## Output Binding
 
 Azure SQL Output bindings take a list of rows and upserts them to the user table. Upserting means that if the primary key values of the row already exists in the table, the row is interpreted as an update, meaning that the values of the other columns in the table for that row are updated. If the primary key values do not exist in the table, the row values are inserted as new values. The upserting of the rows is batched by the output binding code.
@@ -78,6 +88,16 @@ There currently is no built-in support for errors that occur while executing out
 If using a .NET Function then `IAsyncCollector` can be used, and the function code can handle exceptions thrown by the call to `FlushAsync()`.
 
 See <https://github.com/Azure/Azure-Functions/issues/891> for further information.
+
+### Setup Guides
+
+- [.NET (In-Proc)](./SetupGuide_Dotnet.md#output-binding)
+- [.NET (Isolated)](./SetupGuide_DotnetOutOfProc.md#output-binding)
+- [C# Script](./SetupGuide_DotnetCSharpScript.md#output-binding)
+- [Java](./SetupGuide_Java.md#output-binding)
+- [JavaScript](./SetupGuide_Javascript.md#output-binding)
+- [Python](./SetupGuide_Python.md#output-binding)
+- [PowerShell](./SetupGuide_PowerShell.md#output-binding)
 
 ## Trigger Binding
 
@@ -278,6 +298,16 @@ CLOSE LeaseTable_Cursor;
 
 DEALLOCATE LeaseTable_Cursor;
 ```
+
+### Setup Guides
+
+- [.NET (In-Proc)](./SetupGuide_Dotnet.md#trigger-binding)
+- [.NET (Isolated)](./SetupGuide_DotnetOutOfProc.md#trigger-binding)
+- [C# Script](./SetupGuide_DotnetCSharpScript.md#trigger-binding)
+- [Java](./SetupGuide_Java.md#trigger-binding)
+- [JavaScript](./SetupGuide_Javascript.md#trigger-binding)
+- [Python](./SetupGuide_Python.md#trigger-binding)
+- [PowerShell](./SetupGuide_PowerShell.md#trigger-binding)
 
 ## Troubleshooting
 
