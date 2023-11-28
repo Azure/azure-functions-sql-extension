@@ -6,12 +6,14 @@
   - [Table of Contents](#table-of-contents)
   - [Input Binding](#input-binding)
     - [Retry support for Input Bindings](#retry-support-for-input-bindings)
+    - [Setup Guides](#setup-guides)
   - [Output Binding](#output-binding)
     - [Output Binding columns](#output-binding-columns)
     - [Primary Key Special Cases](#primary-key-special-cases)
       - [Identity Columns](#identity-columns)
       - [Columns with Default Values](#columns-with-default-values)
     - [Retry support for Output Bindings](#retry-support-for-output-bindings)
+    - [Setup Guides](#setup-guides-1)
   - [Trigger Binding](#trigger-binding)
     - [Change Tracking Setup](#change-tracking-setup)
     - [Configuration for Trigger Bindings](#configuration-for-trigger-bindings)
@@ -24,6 +26,7 @@
       - [Broken connection retries](#broken-connection-retries)
       - [Function exception retries](#function-exception-retries)
       - [Lease Tables clean up](#lease-tables-clean-up)
+    - [Setup Guides](#setup-guides-2)
   - [Troubleshooting](#troubleshooting)
 
 ## Input Binding
