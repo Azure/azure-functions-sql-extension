@@ -32,7 +32,6 @@ Currently SQL Bindings is part of the 4.x extension bundle and 4.x preview exten
 
 [Azure/azure-functions-extension-bundles at v4.x (github.com)](https://github.com/Azure/azure-functions-extension-bundles/tree/v4.x)
 
-[Azure/azure-functions-extension-bundles at v3.x-preview (github.com)](https://github.com/Azure/azure-functions-extension-bundles/tree/v3.x-preview)
 
 [Azure/azure-functions-extension-bundles at v4.x-preview (github.com)](https://github.com/Azure/azure-functions-extension-bundles/tree/v4.x-preview)
 

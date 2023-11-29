@@ -52,7 +52,7 @@ These instructions will guide you through creating your Function Project and add
 
 4. Enable SQL bindings on the csx function created above. More information can be found in the [Azure SQL bindings for Azure Functions docs](https://aka.ms/sqlbindings).
 
-    Update the `host.json` file inside **MyApp/MyCSXFunction/** to the extension bundle.
+    Update the `host.json` file inside **MyApp/MyCSXFunction/** with the extension bundle.
 
     ```json
     "extensionBundle": {
