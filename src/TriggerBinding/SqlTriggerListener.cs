@@ -32,16 +32,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const int ListenerStarted = 2;
         private const int ListenerStopping = 3;
         private const int ListenerStopped = 4;
-
-        // NOTE: please ensure the Readme file and other public documentation are also updated if this value ever
-        // needs to be changed.
-        public const int DefaultMaxChangesPerWorker = 1000;
-
         private readonly SqlObject _userTable;
         private readonly string _connectionString;
         private readonly string _userDefinedLeasesTableName;
         private readonly string _userFunctionId;
         private readonly ITriggeredFunctionExecutor _executor;
+        private readonly SqlOptions _sqlOptions;
         private readonly ILogger _logger;
         private readonly IConfiguration _configuration;
 
@@ -64,20 +60,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="userDefinedLeasesTableName">Optional - Name of the leases table</param>
         /// <param name="userFunctionId">Unique identifier for the user function</param>
         /// <param name="executor">Defines contract for triggering user function</param>
+        /// <param name="sqlOptions"></param>
         /// <param name="logger">Facilitates logging of messages</param>
         /// <param name="configuration">Provides configuration values</param>
-        public SqlTriggerListener(string connectionString, string tableName, string userDefinedLeasesTableName, string userFunctionId, ITriggeredFunctionExecutor executor, ILogger logger, IConfiguration configuration)
+        public SqlTriggerListener(string connectionString, string tableName, string userDefinedLeasesTableName, string userFunctionId, ITriggeredFunctionExecutor executor, SqlOptions sqlOptions, ILogger logger, IConfiguration configuration)
         {
             this._connectionString = !string.IsNullOrEmpty(connectionString) ? connectionString : throw new ArgumentNullException(nameof(connectionString));
             this._userTable = !string.IsNullOrEmpty(tableName) ? new SqlObject(tableName) : throw new ArgumentNullException(nameof(tableName));
             this._userDefinedLeasesTableName = userDefinedLeasesTableName;
             this._userFunctionId = !string.IsNullOrEmpty(userFunctionId) ? userFunctionId : throw new ArgumentNullException(nameof(userFunctionId));
             this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
+            this._sqlOptions = sqlOptions ?? throw new ArgumentNullException(nameof(sqlOptions));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this._configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             int? configuredMaxChangesPerWorker;
+            // TODO: when we move to reading them exclusively from the host options, remove reading from settings.(https://github.com/Azure/azure-functions-sql-extension/issues/961)
             configuredMaxChangesPerWorker = configuration.GetValue<int?>(ConfigKey_SqlTrigger_MaxChangesPerWorker);
-            this._maxChangesPerWorker = configuredMaxChangesPerWorker ?? DefaultMaxChangesPerWorker;
+            this._maxChangesPerWorker = configuredMaxChangesPerWorker ?? this._sqlOptions.MaxChangesPerWorker;
             if (this._maxChangesPerWorker <= 0)
             {
                 throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_MaxChangesPerWorker}'. Ensure that the value is a positive integer.");
@@ -122,8 +121,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     await VerifyDatabaseSupported(connection, this._logger, cancellationToken);
 
                     int userTableId = await GetUserTableIdAsync(connection, this._userTable, this._logger, cancellationToken);
-                    IReadOnlyList<(string name, string type)> primaryKeyColumns = await GetPrimaryKeyColumnsAsync(connection, userTableId, this._logger, this._userTable.FullName, cancellationToken);
-                    IReadOnlyList<string> userTableColumns = await this.GetUserTableColumnsAsync(connection, userTableId, cancellationToken);
+                    IReadOnlyList<(string name, string type)> primaryKeyColumns = GetPrimaryKeyColumnsAsync(connection, userTableId, this._logger, this._userTable.FullName, cancellationToken);
+                    IReadOnlyList<string> userTableColumns = this.GetUserTableColumns(connection, userTableId, cancellationToken);
 
                     string bracketedLeasesTableName = GetBracketedLeasesTableName(this._userDefinedLeasesTableName, this._userFunctionId, userTableId);
                     this._telemetryProps[TelemetryPropertyName.LeasesTableName] = bracketedLeasesTableName;
@@ -149,6 +148,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         userTableColumns,
                         primaryKeyColumns,
                         this._executor,
+                        this._sqlOptions,
                         this._logger,
                         this._configuration,
                         this._telemetryProps);
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Gets the column names of the user table.
         /// </summary>
-        private async Task<IReadOnlyList<string>> GetUserTableColumnsAsync(SqlConnection connection, int userTableId, CancellationToken cancellationToken)
+        private IReadOnlyList<string> GetUserTableColumns(SqlConnection connection, int userTableId, CancellationToken cancellationToken)
         {
             const int NameIndex = 0, TypeIndex = 1, IsAssemblyTypeIndex = 2;
             string getUserTableColumnsQuery = $@"
@@ -222,13 +222,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             ";
 
             using (var getUserTableColumnsCommand = new SqlCommand(getUserTableColumnsQuery, connection))
-            using (SqlDataReader reader = await getUserTableColumnsCommand.ExecuteReaderAsyncWithLogging(this._logger, cancellationToken))
+            using (SqlDataReader reader = getUserTableColumnsCommand.ExecuteReaderWithLogging(this._logger))
             {
                 var userTableColumns = new List<string>();
                 var userDefinedTypeColumns = new List<(string name, string type)>();
 
-                while (await reader.ReadAsync(cancellationToken))
+                while (reader.Read())
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     string columnName = reader.GetString(NameIndex);
                     string columnType = reader.GetString(TypeIndex);
                     bool isAssemblyType = reader.GetBoolean(IsAssemblyTypeIndex);
@@ -373,7 +374,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string getMinValidVersionQuery = $"SELECT CHANGE_TRACKING_MIN_VALID_VERSION({userTableId});";
 
             using (var getMinValidVersionCommand = new SqlCommand(getMinValidVersionQuery, connection, transaction))
-            using (SqlDataReader reader = await getMinValidVersionCommand.ExecuteReaderAsyncWithLogging(this._logger, cancellationToken))
+            using (SqlDataReader reader = getMinValidVersionCommand.ExecuteReaderWithLogging(this._logger))
             {
                 if (!await reader.ReadAsync(cancellationToken))
                 {

@@ -194,7 +194,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string verifyDatabaseSupportedQuery = $"SELECT compatibility_level FROM sys.databases WHERE Name = DB_NAME()";
 
             using (var verifyDatabaseSupportedCommand = new SqlCommand(verifyDatabaseSupportedQuery, connection))
-            using (SqlDataReader reader = await verifyDatabaseSupportedCommand.ExecuteReaderAsyncWithLogging(logger, cancellationToken))
+            using (SqlDataReader reader = verifyDatabaseSupportedCommand.ExecuteReaderWithLogging(logger))
             {
                 if (!await reader.ReadAsync(cancellationToken))
                 {
@@ -263,6 +263,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
+        /// Whether the exception is a SqlClient deadlock exception (Error Number 1205)
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        internal static bool IsDeadlockException(this Exception e)
+        {
+            // See https://learn.microsoft.com/sql/relational-databases/errors-events/mssqlserver-1205-database-engine-error
+            // Transaction (Process ID %d) was deadlocked on %.*ls resources with another process and has been chosen as the deadlock victim. Rerun the transaction.
+            return (e as SqlException)?.Number == 1205
+                || (e.InnerException as SqlException)?.Number == 1205;
+        }
+
+        /// <summary>
         /// Checks whether the connection state is currently Broken or Closed
         /// </summary>
         /// <param name="conn">The connection to check</param>
@@ -326,7 +339,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     string serverPropertiesQuery = $"SELECT SERVERPROPERTY('EngineEdition'), SERVERPROPERTY('Edition')";
 
                     using (var selectServerEditionCommand = new SqlCommand(serverPropertiesQuery, connection))
-                    using (SqlDataReader reader = await selectServerEditionCommand.ExecuteReaderAsyncWithLogging(logger, cancellationToken))
+                    using (SqlDataReader reader = selectServerEditionCommand.ExecuteReaderWithLogging(logger))
                     {
                         if (await reader.ReadAsync(cancellationToken))
                         {
@@ -431,14 +444,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Calls ExecuteReaderAsync and logs an error if it fails before rethrowing.
+        /// Calls ExecuteReader and logs an error if it fails before rethrowing.
         /// </summary>
         /// <param name="cmd">The SqlCommand being executed</param>
         /// <param name="logger">The logger</param>
-        /// <param name="cancellationToken">The cancellation token to pass to the call</param>
         /// <param name="logCommand">Defaults to false and when set logs the command being executed</param>
         /// <returns>The result of the call</returns>
-        public static async Task<SqlDataReader> ExecuteReaderAsyncWithLogging(this SqlCommand cmd, ILogger logger, CancellationToken cancellationToken, bool logCommand = false)
+        public static SqlDataReader ExecuteReaderWithLogging(this SqlCommand cmd, ILogger logger, bool logCommand = false)
         {
             try
             {
@@ -446,7 +458,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     logger.LogDebug($"Executing query={cmd.CommandText}");
                 }
-                return await cmd.ExecuteReaderAsync(cancellationToken);
+                return cmd.ExecuteReader();
             }
             catch (Exception e)
             {

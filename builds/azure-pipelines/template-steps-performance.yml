@@ -14,6 +14,7 @@ parameters:
       - trigger_poll
       - trigger_overrides
       - trigger_parallel
+      - trigger_changerate
 
 steps:
 - task: UseDotNet@2
@@ -57,6 +58,17 @@ steps:
 - powershell: $(System.DefaultWorkingDirectory)/builds/scripts/UpdateLogLevel.ps1
   displayName: Set logging level
   condition: and(succeeded(), ne(variables['AFSQLEXT_TEST_LOGLEVEL'], ''))
+
+  # The build process for the OOP samples involve generating a temporary csproj in the %TEMP% directory, so it doesn't pick
+  # up the custom nuget.config we have. Set up the local-packages source here so that it can build correctly. Running from
+  # WorkFolder so it applies globally.
+- task: DotNetCoreCLI@2
+  displayName: Set up local-packages Nuget source
+  inputs:
+    command: custom
+    custom: nuget
+    arguments: add source -n afsqlext.local $(Build.SourcesDirectory)/local-packages
+    workingDirectory: $(Agent.WorkFolder)
 
 # Run each benchmark test separately so that failures in one don't block all the others from running
 - ${{ each test in parameters.tests }}:

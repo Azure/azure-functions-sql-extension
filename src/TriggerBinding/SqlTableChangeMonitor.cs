@@ -44,8 +44,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const int LeaseRenewalIntervalInSeconds = 15;
         private const int MaxRetryReleaseLeases = 3;
 
-        public const int DefaultMaxBatchSize = 100;
-        public const int DefaultPollingIntervalMs = 1000;
         #endregion Constants
 
         private readonly string _connectionString;
@@ -57,16 +55,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly IReadOnlyList<(string name, string type)> _primaryKeyColumns;
         private readonly IReadOnlyList<string> _rowMatchConditions;
         private readonly ITriggeredFunctionExecutor _executor;
+        private readonly SqlOptions _sqlOptions;
         private readonly ILogger _logger;
         /// <summary>
         /// Maximum number of changes to process in each iteration of the loop
         /// </summary>
-        private readonly int _maxBatchSize = DefaultMaxBatchSize;
+        private readonly int _maxBatchSize;
         /// <summary>
         /// Delay in ms between processing each batch of changes
         /// </summary>
-        private readonly int _pollingIntervalInMs = DefaultPollingIntervalMs;
-
+        private readonly int _pollingIntervalInMs;
         private readonly CancellationTokenSource _cancellationTokenSourceCheckForChanges = new CancellationTokenSource();
         private readonly CancellationTokenSource _cancellationTokenSourceRenewLeases = new CancellationTokenSource();
         private CancellationTokenSource _cancellationTokenSourceExecutor = new CancellationTokenSource();
@@ -102,6 +100,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="userTableColumns">List of all column names in the user table</param>
         /// <param name="primaryKeyColumns">List of primary key column names in the user table</param>
         /// <param name="executor">Defines contract for triggering user function</param>
+        /// <param name="sqlOptions"></param>
         /// <param name="logger">Facilitates logging of messages</param>
         /// <param name="configuration">Provides configuration values</param>
         /// <param name="telemetryProps">Properties passed in telemetry events</param>
@@ -114,6 +113,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             IReadOnlyList<string> userTableColumns,
             IReadOnlyList<(string name, string type)> primaryKeyColumns,
             ITriggeredFunctionExecutor executor,
+            SqlOptions sqlOptions,
             ILogger logger,
             IConfiguration configuration,
             IDictionary<TelemetryPropertyName, string> telemetryProps)
@@ -124,21 +124,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             this._bracketedLeasesTableName = !string.IsNullOrEmpty(bracketedLeasesTableName) ? bracketedLeasesTableName : throw new ArgumentNullException(nameof(bracketedLeasesTableName));
             this._userTableColumns = userTableColumns ?? throw new ArgumentNullException(nameof(userTableColumns));
             this._primaryKeyColumns = primaryKeyColumns ?? throw new ArgumentNullException(nameof(primaryKeyColumns));
+            this._sqlOptions = sqlOptions ?? throw new ArgumentNullException(nameof(sqlOptions));
             this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             this._userTableId = userTableId;
             this._telemetryProps = telemetryProps ?? new Dictionary<TelemetryPropertyName, string>();
 
+            // TODO: when we move to reading them exclusively from the host options, remove reading from settings.(https://github.com/Azure/azure-functions-sql-extension/issues/961)
             // Check if there's config settings to override the default max batch size/polling interval values
             int? configuredMaxBatchSize = configuration.GetValue<int?>(ConfigKey_SqlTrigger_MaxBatchSize) ?? configuration.GetValue<int?>(ConfigKey_SqlTrigger_BatchSize);
             int? configuredPollingInterval = configuration.GetValue<int?>(ConfigKey_SqlTrigger_PollingInterval);
-            this._maxBatchSize = configuredMaxBatchSize ?? this._maxBatchSize;
+            this._maxBatchSize = configuredMaxBatchSize ?? this._sqlOptions.MaxBatchSize;
             if (this._maxBatchSize <= 0)
             {
                 throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_MaxBatchSize}'. Ensure that the value is a positive integer.");
             }
-            this._pollingIntervalInMs = configuredPollingInterval ?? this._pollingIntervalInMs;
+            this._pollingIntervalInMs = configuredPollingInterval ?? this._sqlOptions.PollingIntervalMs;
             if (this._pollingIntervalInMs <= 0)
             {
                 throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_PollingInterval}'. Ensure that the value is a positive integer.");
@@ -240,6 +242,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             this._logger.LogError($"Fatal SQL Client exception processing changes. Will attempt to reestablish connection in {this._pollingIntervalInMs}ms. Exception = {e.Message}");
                             forceReconnect = true;
                         }
+                        catch (Exception e) when (e.IsDeadlockException())
+                        {
+                            // Deadlocks aren't fatal and don't need a reconnection so just let the loop try again after the normal delay
+                        }
                         await Task.Delay(TimeSpan.FromMilliseconds(this._pollingIntervalInMs), token);
                     }
                 }
@@ -295,10 +301,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         {
                             var commandSw = Stopwatch.StartNew();
 
-                            using (SqlDataReader reader = await getChangesCommand.ExecuteReaderAsync(token))
+                            using (SqlDataReader reader = getChangesCommand.ExecuteReader())
                             {
-                                while (await reader.ReadAsync(token))
+                                while (reader.Read())
                                 {
+                                    token.ThrowIfCancellationRequested();
                                     rows.Add(SqlBindingUtilities.BuildDictionaryFromSqlRow(reader));
                                 }
                             }
@@ -857,8 +864,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 this._logger.LogError($"Failed to query count of lease locked changes for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
                 TelemetryInstance.TrackException(TelemetryErrorName.GetLeaseLockedRowCount, ex, null, new Dictionary<TelemetryMeasureName, double>() { { TelemetryMeasureName.GetLockedRowCountDurationMs, getLockedRowCountDurationMs } });
-                // This is currently only used for debugging, so return a -1 instead of throwing since it isn't necessary to get the value
-                leaseLockedRowsCount = -1;
+                // This is currently only used for debugging, so ignore the exception if we can. If the error is a fatal one though then the connection or transaction will be
+                // unusable so we have to let this bubble up so we can attempt to reconnect
+                if (ex.IsFatalSqlException() || ex.IsDeadlockException() || connection.IsBrokenOrClosed())
+                {
+                    throw;
+                }
+                else
+                {
+                    // If it's non-fatal though return a -1 instead of throwing since it isn't necessary to get the value
+                    leaseLockedRowsCount = -1;
+                }
             }
             return leaseLockedRowsCount;
         }

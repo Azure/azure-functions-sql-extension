@@ -183,7 +183,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 string cacheKey = $"{connection.ConnectionString.GetHashCode()}-{fullTableName}";
 
                 ObjectCache cachedTables = MemoryCache.Default;
-                var tableInfo = cachedTables[cacheKey] as TableInformation;
 
                 int timeout = AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES;
                 string timeoutEnvVar = Environment.GetEnvironmentVariable("AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES");
@@ -199,11 +198,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     }
                 }
 
-                if (tableInfo == null)
+                if (!(cachedTables[cacheKey] is TableInformation tableInfo))
                 {
                     TelemetryInstance.TrackEvent(TelemetryEventName.TableInfoCacheMiss, props);
                     // set the columnNames for supporting T as JObject since it doesn't have columns in the member info.
-                    tableInfo = await TableInformation.RetrieveTableInformationAsync(connection, fullTableName, this._logger, GetColumnNamesFromItem(rows.First()), this._serverProperties);
+                    tableInfo = TableInformation.RetrieveTableInformation(connection, fullTableName, this._logger, GetColumnNamesFromItem(rows.First()), this._serverProperties);
                     var policy = new CacheItemPolicy
                     {
                         // Re-look up the primary key(s) after timeout (default timeout is 10 minutes)
@@ -550,7 +549,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <param name="objectColumnNames">Column names from the object</param>
             /// <param name="serverProperties">EngineEdition and Edition of the target Sql Server.</param>
             /// <returns>TableInformation object containing primary keys, column types, etc.</returns>
-            public static async Task<TableInformation> RetrieveTableInformationAsync(SqlConnection sqlConnection, string fullName, ILogger logger, IEnumerable<string> objectColumnNames, ServerProperties serverProperties)
+            public static TableInformation RetrieveTableInformation(SqlConnection sqlConnection, string fullName, ILogger logger, IEnumerable<string> objectColumnNames, ServerProperties serverProperties)
             {
                 Dictionary<TelemetryPropertyName, string> sqlConnProps = sqlConnection.AsConnectionProps(serverProperties);
                 var table = new SqlObject(fullName);
@@ -564,9 +563,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     string getColumnDefinitionsQuery = GetColumnDefinitionsQuery(table);
                     var cmdColDef = new SqlCommand(getColumnDefinitionsQuery, sqlConnection);
-                    using (SqlDataReader rdr = await cmdColDef.ExecuteReaderAsyncWithLogging(logger, CancellationToken.None))
+                    using (SqlDataReader rdr = cmdColDef.ExecuteReaderWithLogging(logger))
                     {
-                        while (await rdr.ReadAsync())
+                        while (rdr.Read())
                         {
                             string columnName = rdr[ColumnName].ToString();
                             columnDefinitionsFromSQL.Add(columnName, rdr[ColumnDefinition].ToString());
@@ -599,9 +598,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     string getPrimaryKeysQuery = GetPrimaryKeysQuery(table);
                     var cmd = new SqlCommand(getPrimaryKeysQuery, sqlConnection);
-                    using (SqlDataReader rdr = await cmd.ExecuteReaderAsyncWithLogging(logger, CancellationToken.None))
+                    using (SqlDataReader rdr = cmd.ExecuteReaderWithLogging(logger))
                     {
-                        while (await rdr.ReadAsync())
+                        while (rdr.Read())
                         {
                             string columnName = rdr[ColumnName].ToString();
                             primaryKeys.Add(new PrimaryKey(columnName, bool.Parse(rdr[IsIdentity].ToString()), bool.Parse(rdr[HasDefault].ToString())));
@@ -656,7 +655,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 sqlConnProps.Add(TelemetryPropertyName.QueryType, queryType.ToString());
                 sqlConnProps.Add(TelemetryPropertyName.HasIdentityColumn, hasIdentityColumnPrimaryKeys.ToString());
                 TelemetryInstance.TrackDuration(TelemetryEventName.GetTableInfo, tableInfoSw.ElapsedMilliseconds, sqlConnProps, durations);
-                logger.LogDebug($"RetrieveTableInformationAsync DB and Table: {sqlConnection.Database}.{fullName}. Primary keys: [{string.Join(",", primaryKeys.Select(pk => pk.Name))}].\nSQL Column and Definitions:  [{string.Join(",", columnDefinitionsFromSQL)}]\nObject columns: [{string.Join(",", objectColumnNames)}]");
+                logger.LogDebug($"RetrieveTableInformation DB and Table: {sqlConnection.Database}.{fullName}. Primary keys: [{string.Join(",", primaryKeys.Select(pk => pk.Name))}].\nSQL Column and Definitions:  [{string.Join(",", columnDefinitionsFromSQL)}]\nObject columns: [{string.Join(",", objectColumnNames)}]");
                 return new TableInformation(primaryKeys, primaryKeyProperties, columnDefinitionsFromSQL, queryType, hasIdentityColumnPrimaryKeys);
             }
         }

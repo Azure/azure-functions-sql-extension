@@ -4,7 +4,7 @@
 
   <groupId>com.microsoft.azure.functions</groupId>
   <artifactId>azure-functions-java-library-sql</artifactId>
-  <version>2.1.0-preview</version> <!-- Update the dependency version in samples-java/pom.xml and test-java/pom.xml if this version is updated. -->
+  <version>2.1.0</version> <!-- Update the dependency version in samples-java/pom.xml and test-java/pom.xml if this version is updated. -->
   <packaging>jar</packaging>
 
   <parent>

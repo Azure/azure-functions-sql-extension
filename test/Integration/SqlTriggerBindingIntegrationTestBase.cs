@@ -90,17 +90,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     }
                     catch (Exception ex)
                     {
-                        throw new InvalidOperationException($"Exception deserializing JSON content. Error={ex.Message} Json=\"{json}\"", ex);
+                        taskCompletion.SetException(new InvalidOperationException($"Exception deserializing JSON content. Error={ex.Message} Json=\"{json}\"", ex));
+                        return;
                     }
-                    foreach (SqlChange<Product> change in changes)
+                    try
                     {
-                        Assert.Equal(operation, change.Operation); // Expected change operation
-                        Product product = change.Item;
-                        Assert.NotNull(product); // Product deserialized correctly
-                        Assert.Contains(product.ProductId, expectedIds); // We haven't seen this product ID yet, and it's one we expected to see
-                        expectedIds.Remove(product.ProductId);
-                        Assert.Equal(getName(product.ProductId), product.Name); // The product has the expected name
-                        Assert.Equal(getCost(product.ProductId), product.Cost); // The product has the expected cost
+                        foreach (SqlChange<Product> change in changes)
+                        {
+                            Assert.Equal(operation, change.Operation); // Expected change operation
+                            Product product = change.Item;
+                            Assert.NotNull(product); // Product deserialized correctly
+                            Assert.Contains(product.ProductId, expectedIds); // We haven't seen this product ID yet, and it's one we expected to see
+                            expectedIds.Remove(product.ProductId);
+                            Assert.Equal(getName(product.ProductId), product.Name); // The product has the expected name
+                            Assert.Equal(getCost(product.ProductId), product.Cost); // The product has the expected cost
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        taskCompletion.SetException(ex);
                     }
                     if (expectedIds.Count == 0)
                     {
@@ -178,7 +186,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <param name="maxBatchSize">The max batch size if different than the default max batch size</param>
         /// <param name="pollingIntervalMs">The polling interval in ms if different than the default polling interval</param>
         /// <returns></returns>
-        public int GetBatchProcessingTimeout(int firstId, int lastId, int maxBatchSize = SqlTableChangeMonitor<object>.DefaultMaxBatchSize, int pollingIntervalMs = SqlTableChangeMonitor<object>.DefaultPollingIntervalMs)
+        public int GetBatchProcessingTimeout(int firstId, int lastId, int maxBatchSize = SqlOptions.DefaultMaxBatchSize, int pollingIntervalMs = SqlOptions.DefaultPollingIntervalMs)
         {
             int changesToProcess = lastId - firstId + 1;
             int calculatedTimeout = (int)(Math.Ceiling((double)changesToProcess / maxBatchSize // The number of batches to process

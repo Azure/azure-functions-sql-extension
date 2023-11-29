@@ -4,7 +4,7 @@ parameters:
   nugetVersion: ''
   binariesVersion: ''
   testServer: ''
-  supportedVersion: ''
+  oopWorkerSupportedExtensionVersion: ''
 
 steps:
 - task: UseDotNet@2
@@ -74,43 +74,6 @@ steps:
   displayName: Set logging level
   condition: and(succeeded(), ne(variables['AFSQLEXT_TEST_LOGLEVEL'], ''))
 
-  # The build process for the OOP samples involve generating a temporary csproj in the %TEMP% directory, so it doesn't pick
-  # up the custom nuget.config we have. Set up the local-packages source here so that it can build correctly. Running from
-  # WorkFolder so it applies globally.
-- task: DotNetCoreCLI@2
-  displayName: Set up local-packages Nuget source
-  inputs:
-    command: custom
-    custom: nuget
-    arguments: add source -n afsqlext.local $(Build.SourcesDirectory)/local-packages
-    workingDirectory: $(Agent.WorkFolder)
-
-  # Do an initial build for use during testing, this will have the OOP "supported version" set to the exact binaries version
-  # so it ensures we use the local version of the package
-- task: DotNetCoreCLI@2
-  displayName: .NET Build for Test
-  inputs:
-    command: build
-    projects: ${{ parameters.solution }}
-    arguments: --configuration ${{ parameters.configuration }} -p:Version=${{ parameters.binariesVersion }} -p:SupportedVersion=${{ parameters.binariesVersion }}
-
-- task: CopyFiles@2
-  displayName: 'Copy Sql extension dll to Azure Functions extension bundle'
-  inputs:
-    sourceFolder: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}/netstandard2.0
-    contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
-    targetFolder: $(azureFunctionsExtensionBundlePath)/bin
-    overWrite: true
-
-  # Copy the Sql nupkg to ensure it's available for tests since the package copy task is failing occasionally so having this redundancy.
-- task: CopyFiles@2
-  displayName: 'Copy local Sql package to local-packages folder'
-  inputs:
-    sourceFolder: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}
-    contents: '*.nupkg'
-    targetFolder: $(Build.SourcesDirectory)/local-packages
-    overWrite: true
-
 - script: |
     npm install
     npm run lint
@@ -130,9 +93,9 @@ steps:
     architecture: 'x64'
 
 - script: |
-    pip3 install pylint_runner
+    pip3 install "pylint<3.0"
     pip3 install pylintfileheader
-    pylint_runner
+    pylint --recursive=yes .
   workingDirectory: $(Build.SourcesDirectory)/samples/samples-python
   displayName: Lint samples-python
 
@@ -159,6 +122,41 @@ steps:
     options: --batch-mode --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
     checkStyleRunAnalysis: true
 
+  # The build process for the OOP samples involve generating a temporary csproj in the %TEMP% directory, so it doesn't pick
+  # up the custom nuget.config we have. Set up the local-packages source here so that it can build correctly. Running from
+  # WorkFolder so it applies globally.
+- task: DotNetCoreCLI@2
+  displayName: Set up local-packages Nuget source
+  inputs:
+    command: custom
+    custom: nuget
+    arguments: add source -n afsqlext.local $(Build.SourcesDirectory)/local-packages
+    workingDirectory: $(Agent.WorkFolder)
+
+- task: DotNetCoreCLI@2
+  displayName: .NET Build
+  inputs:
+    command: build
+    projects: ${{ parameters.solution }}
+    arguments: --configuration ${{ parameters.configuration }} -p:Version=${{ parameters.binariesVersion }} -p:OOPWorkerSupportedExtensionVersion=${{ parameters.oopWorkerSupportedExtensionVersion }} -p:PackageVersion=${{ parameters.nugetVersion }}
+
+  # Copy the Sql nupkg to ensure it's available for tests since the package copy task is failing occasionally so having this redundancy.
+- task: CopyFiles@2
+  displayName: 'Copy local Sql package to local-packages folder'
+  inputs:
+    sourceFolder: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}
+    contents: '*.nupkg'
+    targetFolder: $(Build.SourcesDirectory)/local-packages
+    overWrite: true
+
+- task: CopyFiles@2
+  displayName: 'Copy Sql extension dll to Azure Functions extension bundle'
+  inputs:
+    sourceFolder: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}/netstandard2.0
+    contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
+    targetFolder: $(azureFunctionsExtensionBundlePath)/bin
+    overWrite: true
+
 - task: DotNetCoreCLI@2
   displayName: '.NET Test on Mac (unit tests only)'
   env:
@@ -168,7 +166,7 @@ steps:
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} --filter FullyQualifiedName!~Integration'
+    arguments: --configuration ${{ parameters.configuration }} --filter FullyQualifiedName!~Integration --no-build
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Darwin'))
 
 - task: DotNetCoreCLI@2
@@ -184,7 +182,7 @@ steps:
     projects: '${{ parameters.solution }}'
     # Skip any non .NET In-Proc integration tests. Otherwise, the following error will be thrown:
     # System.InvalidOperationException : No data found for Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration.SqlOutputBindingIntegrationTests.NoPropertiesThrows
-    arguments: '--configuration ${{ parameters.configuration }} --filter FullyQualifiedName!~NoPropertiesThrows --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings'
+    arguments: --configuration ${{ parameters.configuration }} --filter FullyQualifiedName!~NoPropertiesThrows --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings --no-build
   condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: DotNetCoreCLI@2
@@ -198,7 +196,7 @@ steps:
     command: test
     projects: '${{ parameters.solution }}'
     # Skip any CSharp only integration tests
-    arguments: '--configuration ${{ parameters.configuration }} --filter "FullyQualifiedName~Integration & FullyQualifiedName!~AddProductsCollectorTest"'
+    arguments: --configuration ${{ parameters.configuration }} --filter "FullyQualifiedName~Integration & FullyQualifiedName!~AddProductsCollectorTest" --no-build
   condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: DotNetCoreCLI@2
@@ -210,7 +208,7 @@ steps:
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }}'
+    arguments: --configuration ${{ parameters.configuration }} --no-build
   condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'linux'))
 
 - script: |
@@ -219,26 +217,79 @@ steps:
   displayName: 'Stop and Remove SQL Server Image'
   condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
-- task: DotNetCoreCLI@2
-  displayName: .NET Build for Release
-  inputs:
-    command: build
-    projects: '${{ parameters.solution }}'
-    arguments: '--configuration ${{ parameters.configuration }} -p:GeneratePackageOnBuild=false -p:Version=${{ parameters.binariesVersion }} -p:SupportedVersion=${{ parameters.supportedVersion }}'
-
-# 5.0 isn't supported on Mac yet
-- task: UseDotNet@2
-  displayName: 'Install .NET Core 2.1.x SDK for CodeSigning on Mac'
-  inputs:
-    version: '2.1.x'
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Darwin'))
-
-- task: EsrpCodeSigning@1
-  displayName: 'ESRP CodeSigning - Binaries'
+- task: EsrpCodeSigning@3
+  displayName: 'ESRP CodeSigning - Binaries (Extension)'
   inputs:
     ConnectedServiceName: 'Code Signing'
     FolderPath: '$(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}'
     Pattern: 'Microsoft.Azure.WebJobs.Extensions.Sql.dll'
+    signConfigType: inlineSignParams
+    inlineOperation: |
+     [
+       {
+        "KeyCode" : "CP-235847-SN",
+        "operationSetCode" : "StrongNameSign",
+        "Parameters" : [],
+        "ToolName" : "sign",
+        "ToolVersion" : "1.0"
+       },
+       {
+        "KeyCode" : "CP-235847-SN",
+        "operationSetCode" : "StrongNameVerify",
+        "Parameters" : [],
+        "ToolName" : "sign",
+        "ToolVersion" : "1.0"
+       },
+       {
+         "keyCode": "CP-230012",
+         "operationSetCode": "SigntoolSign",
+         "parameters": [
+          {
+            "parameterName": "OpusName",
+            "parameterValue": "Azure Functions SQL Extension"
+          },
+          {
+            "parameterName": "OpusInfo",
+            "parameterValue": "https://github.com/Azure/azure-functions-sql-extension"
+          },
+          {
+            "parameterName": "PageHash",
+            "parameterValue": "/NPH"
+          },
+          {
+            "parameterName": "FileDigest",
+            "parameterValue": "/fd sha256"
+          },
+          {
+            "parameterName": "TimeStamp",
+            "parameterValue": "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+          }
+         ],
+         "toolName": "signtool.exe",
+         "toolVersion": "6.2.9304.0"
+       },
+       {
+         "keyCode": "CP-230012",
+         "operationSetCode": "SigntoolVerify",
+         "parameters": [
+          {
+            "parameterName": "VerifyAll",
+            "parameterValue": "/all"
+          }
+         ],
+         "toolName": "signtool.exe",
+         "toolVersion": "6.2.9304.0"
+       }
+     ]
+    SessionTimeout: 600
+    MaxConcurrency: 5
+
+- task: EsrpCodeSigning@3
+  displayName: 'ESRP CodeSigning - Binaries (Worker)'
+  inputs:
+    ConnectedServiceName: 'Code Signing'
+    FolderPath: '$(Build.SourcesDirectory)/Worker.Extensions.Sql/src/bin/${{ parameters.configuration }}'
+    Pattern: 'Microsoft.Azure.Functions.Worker.Extensions.Sql.dll'
     signConfigType: inlineSignParams
     inlineOperation: |
      [
@@ -323,9 +374,9 @@ steps:
     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'), ne(variables['Build.Reason'], 'PullRequest'))
 
-- task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@2
+- task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@3
   inputs:
-    toolMajorVersion: V2
+    toolMajorVersion: V3
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-report.SdtReport@2
@@ -366,7 +417,7 @@ steps:
   displayName: 'TSA upload to Codebase: Sql Bindings Stamp: TSA'
   inputs:
     GdnPublishTsaOnboard: true
-    GdnPublishTsaConfigFile: '$(Build.SourcesDirectory)\builds\TSAConfig.gdntsa'
+    GdnPublishTsaConfigFile: '$(Build.SourcesDirectory)\.config\tsaoptions.json'
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'), eq(variables['TSA_UPLOAD'], 'true'))
 
 - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
