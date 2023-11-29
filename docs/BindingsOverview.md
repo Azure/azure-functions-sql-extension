@@ -6,12 +6,14 @@
   - [Table of Contents](#table-of-contents)
   - [Input Binding](#input-binding)
     - [Retry support for Input Bindings](#retry-support-for-input-bindings)
+    - [Setup Guides](#setup-guides)
   - [Output Binding](#output-binding)
     - [Output Binding columns](#output-binding-columns)
     - [Primary Key Special Cases](#primary-key-special-cases)
       - [Identity Columns](#identity-columns)
       - [Columns with Default Values](#columns-with-default-values)
     - [Retry support for Output Bindings](#retry-support-for-output-bindings)
+    - [Setup Guides](#setup-guides-1)
   - [Trigger Binding](#trigger-binding)
     - [Change Tracking Setup](#change-tracking-setup)
     - [Configuration for Trigger Bindings](#configuration-for-trigger-bindings)
@@ -24,6 +26,7 @@
       - [Broken connection retries](#broken-connection-retries)
       - [Function exception retries](#function-exception-retries)
       - [Lease Tables clean up](#lease-tables-clean-up)
+    - [Setup Guides](#setup-guides-2)
   - [Troubleshooting](#troubleshooting)
 
 ## Input Binding
@@ -33,6 +36,16 @@ Azure SQL Input bindings take a SQL query or stored procedure to run and returns
 ### Retry support for Input Bindings
 
 There currently is no retry support for errors that occur for input bindings. If an exception occurs when an input binding is executed then the function code will not be executed. This may result in an error code being returned, for example an HTTP trigger will return a response with a status of 500 to indicate an error occurred.
+
+### Setup Guides
+
+- [.NET (In-Proc)](./SetupGuide_Dotnet.md#input-binding)
+- [.NET (Isolated)](./SetupGuide_DotnetOutOfProc.md#input-binding)
+- [C# Script](./SetupGuide_DotnetCSharpScript.md#input-binding)
+- [Java](./SetupGuide_Java.md#input-binding)
+- [JavaScript](./SetupGuide_Javascript.md#input-binding)
+- [Python](./SetupGuide_Python.md#input-binding)
+- [PowerShell](./SetupGuide_PowerShell.md#input-binding)
 
 ## Output Binding
 
@@ -78,6 +91,16 @@ There currently is no built-in support for errors that occur while executing out
 If using a .NET Function then `IAsyncCollector` can be used, and the function code can handle exceptions thrown by the call to `FlushAsync()`.
 
 See <https://github.com/Azure/Azure-Functions/issues/891> for further information.
+
+### Setup Guides
+
+- [.NET (In-Proc)](./SetupGuide_Dotnet.md#output-binding)
+- [.NET (Isolated)](./SetupGuide_DotnetOutOfProc.md#output-binding)
+- [C# Script](./SetupGuide_DotnetCSharpScript.md#output-binding)
+- [Java](./SetupGuide_Java.md#output-binding)
+- [JavaScript](./SetupGuide_Javascript.md#output-binding)
+- [Python](./SetupGuide_Python.md#output-binding)
+- [PowerShell](./SetupGuide_PowerShell.md#output-binding)
 
 ## Trigger Binding
 
@@ -278,6 +301,16 @@ CLOSE LeaseTable_Cursor;
 
 DEALLOCATE LeaseTable_Cursor;
 ```
+
+### Setup Guides
+
+- [.NET (In-Proc)](./SetupGuide_Dotnet.md#trigger-binding)
+- [.NET (Isolated)](./SetupGuide_DotnetOutOfProc.md#trigger-binding)
+- [C# Script](./SetupGuide_DotnetCSharpScript.md#trigger-binding)
+- [Java](./SetupGuide_Java.md#trigger-binding)
+- [JavaScript](./SetupGuide_Javascript.md#trigger-binding)
+- [Python](./SetupGuide_Python.md#trigger-binding)
+- [PowerShell](./SetupGuide_PowerShell.md#trigger-binding)
 
 ## Troubleshooting
 
