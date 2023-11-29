@@ -32,12 +32,16 @@ variables:
   LGTM.UploadSnapshot: true
   Codeql.Enabled: true
   Codeql.TSAEnabled: true
+  Codeql.PublishDatabaseLog: true
+  Codeql.Cadence: 0
 
 
 stages:
 - stage: BuildPublish
   displayName: 'Release Build and Publish'
-
+  variables:
+    Codeql.BuildIdentifier: extension
+    Codeql.Language: csharp,java,javascript,powershell,python,tsql
   jobs:
   - job: BuildTest
     displayName: 'Build and Test on '
@@ -99,6 +103,9 @@ stages:
 - stage: BuildJava
   displayName: 'Release Build and Publish Java Library'
   dependsOn: []
+  variables:
+    Codeql.BuildIdentifier: java_library
+    Codeql.Language: java
   jobs:
   - job: BuildJavaLibrary
     displayName: Build Java Library
