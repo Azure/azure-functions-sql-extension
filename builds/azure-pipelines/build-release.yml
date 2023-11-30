@@ -39,9 +39,6 @@ variables:
 stages:
 - stage: BuildPublish
   displayName: 'Release Build and Publish'
-  variables:
-    Codeql.BuildIdentifier: extension
-    Codeql.Language: csharp,java,javascript,powershell,python,tsql
   jobs:
   - job: BuildTest
     displayName: 'Build and Test on '
@@ -54,9 +51,13 @@ stages:
           # Disabling integration tests on macOS due to issues with running MSSQL on Docker
           # We need to set up a self-hosted agent with Docker running by default: https://github.com/microsoft/azure-pipelines-tasks/issues/12823
           testServer: ''
+          Codeql.BuildIdentifier: extension_mac
+          Codeql.Language: csharp,java,javascript,powershell,python,tsql
         windows:
           imageName: 'windows-latest'
           testServer: '(LocalDb)\MSSQLLocalDB'
+          Codeql.BuildIdentifier: extension_windows
+          Codeql.Language: csharp,java
 
     pool:
       vmImage: '$(imageName)'
@@ -77,6 +78,9 @@ stages:
 
   - job: BuildTestPublishLinux
     displayName: 'Build, Test and Publish on linux'
+    variables:
+      Codeql.BuildIdentifier: extension_linux
+      Codeql.Language: csharp,java
 
     pool:
       vmImage: 'ubuntu-latest'
