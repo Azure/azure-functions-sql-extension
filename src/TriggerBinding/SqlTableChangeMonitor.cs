@@ -719,20 +719,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             var changes = new List<SqlChange<T>>();
             await this._rowsLock.WaitAsync(token);
-            foreach (IReadOnlyDictionary<string, object> row in this._rowsToProcess)
+            try
             {
-                SqlChangeOperation operation = GetChangeOperation(row);
+                foreach (IReadOnlyDictionary<string, object> row in this._rowsToProcess)
+                {
+                    SqlChangeOperation operation = GetChangeOperation(row);
 
-                // If the row has been deleted, there is no longer any data for it in the user table. The best we can do
-                // is populate the row-item with the primary key values of the row.
-                Dictionary<string, object> item = operation == SqlChangeOperation.Delete
-                    ? this._primaryKeyColumns.ToDictionary(col => col.name, col => row[col.name])
-                    : this._userTableColumns.ToDictionary(col => col, col => row[col]);
+                    // If the row has been deleted, there is no longer any data for it in the user table. The best we can do
+                    // is populate the row-item with the primary key values of the row.
+                    Dictionary<string, object> item = operation == SqlChangeOperation.Delete
+                        ? this._primaryKeyColumns.ToDictionary(col => col.name, col => row[col.name])
+                        : this._userTableColumns.ToDictionary(col => col, col => row[col]);
 
-                changes.Add(new SqlChange<T>(operation, Utils.JsonDeserializeObject<T>(Utils.JsonSerializeObject(item))));
+                    changes.Add(new SqlChange<T>(operation, Utils.JsonDeserializeObject<T>(Utils.JsonSerializeObject(item))));
+                }
+                return changes;
             }
-            this._rowsLock.Release();
-            return changes;
+            finally
+            {
+                // Ensure we always release the lock, even if an error occurs
+                this._rowsLock.Release();
+            }
         }
 
         /// <summary>
