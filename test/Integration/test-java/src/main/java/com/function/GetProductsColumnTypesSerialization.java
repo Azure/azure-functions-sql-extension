@@ -59,6 +59,6 @@ public class GetProductsColumnTypesSerialization {
             product.setSmallDatetime(new Timestamp(smallDateTime - offset).toString());
             context.getLogger().log(Level.INFO, gson.toJson(product));
         }
-        return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(mapper.writeValueAsString(products)).build();
+        return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(gson.toJson(products)).build();
     }
 }
