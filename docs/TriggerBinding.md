@@ -111,3 +111,13 @@ This table is used to ensure that all changes are processed and that no change i
   - `_az_func_LeaseExpirationTime` for tracking when the lease on this row for a particular instance is set to expire. This ensures that if an instance exits unexpectedly another instance will be able to pick up and process any changes it had leases for after the expiration time has passed.
 
 A row is created for every row in the target table that is modified. These are then cleaned up after the changes are processed for a set of changes corresponding to a change tracking sync version.
+
+## Transactional application locks
+
+The SQL Trigger uses transactions to guarantee that changes are rolled back in the event of an error during executing. This avoids the situation where multiple trigger functions running in parallel could try and process the same row multiple times.
+
+Because of this, and the number of internal state tables that the trigger interacts with, there is a high chance of deadlocks occurring if two functions are attempting to make changes to the tables at the same time.
+
+To avoid this from happening the trigger utilizes the [sp_getapplock](https://learn.microsoft.com/sql/relational-databases/system-stored-procedures/sp-getapplock-transact-sql) statement to ensure that each transaction is process serially. Before each statement in a transaction, sp_getapplock gets an Exclusive lock on the `_az_func_Trigger` resource - this ensures that for the duration of the transaction it is the only Azure Function that will be accessing any of the tables used.
+
+While this helps ensure concurrency safety for Azure Functions, other queries on the system can still cause a deadlock to occur. [This guide](https://learn.microsoft.com/sql/relational-databases/sql-server-deadlocks-guide) can help troubleshoot any issues that occur and provides some suggestions for fixing these issues. You may also utilize the sp_getapplock statement yourself with the `_az_func_Trigger` resource to synchronize requests, although doing so may have a negative impact on the performance of your Functions.
