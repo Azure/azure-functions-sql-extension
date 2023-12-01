@@ -6,9 +6,9 @@
 
 package com.function;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.function.Common.ProductColumnTypes;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.HttpMethod;
 import com.microsoft.azure.functions.HttpRequestMessage;
@@ -42,11 +42,10 @@ public class GetProductsColumnTypesSerialization {
                 commandType = CommandType.Text,
                 connectionStringSetting = "SqlConnectionString")
                 ProductColumnTypes[] products,
-            ExecutionContext context) throws JsonProcessingException, ParseException {
+            ExecutionContext context) throws ParseException {
 
-        ObjectMapper mapper = new ObjectMapper();
+        Gson gson = new GsonBuilder().setDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'SSSXXX").create();
         SimpleDateFormat df = new SimpleDateFormat("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'SSSXXX");
-        mapper.setDateFormat(df);
         for (ProductColumnTypes product : products) {
             // Convert the datetimes to UTC (Java worker returns the datetimes in local timezone)
             long date = df.parse(product.getDate()).getTime();
@@ -58,7 +57,7 @@ public class GetProductsColumnTypesSerialization {
             product.setDatetime(new Timestamp(datetime - offset).toString());
             product.setDatetime2(new Timestamp(datetime2 - offset).toString());
             product.setSmallDatetime(new Timestamp(smallDateTime - offset).toString());
-            context.getLogger().log(Level.INFO, mapper.writeValueAsString(product));
+            context.getLogger().log(Level.INFO, gson.toJson(product));
         }
         return request.createResponseBuilder(HttpStatus.OK).header("Content-Type", "application/json").body(mapper.writeValueAsString(products)).build();
     }
