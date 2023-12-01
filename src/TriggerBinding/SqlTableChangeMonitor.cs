@@ -228,7 +228,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             }
                             if (this._state == State.ProcessingChanges)
                             {
-                                await this.ProcessTableChangesAsync();
+                                await this.ProcessTableChangesAsync(token);
                             }
                             if (this._state == State.Cleanup)
                             {
@@ -347,8 +347,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         transaction.Commit();
 
                         // Set the rows for processing, now since the leases are acquired.
+                        await this._rowsLock.WaitAsync(token);
                         this._rowsToProcess = rows;
                         this._state = State.ProcessingChanges;
+                        this._rowsLock.Release();
                     }
                     catch (Exception)
                     {
@@ -369,7 +371,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 // If there's an exception in any part of the process, we want to clear all of our data in memory and
                 // retry checking for changes again.
+                await this._rowsLock.WaitAsync(token);
                 this._rowsToProcess = new List<IReadOnlyDictionary<string, object>>();
+                this._rowsLock.Release();
                 this._logger.LogError($"Failed to check for changes in table '{this._userTable.FullName}' due to exception: {e.GetType()}. Exception message: {e.Message}");
                 TelemetryInstance.TrackException(TelemetryErrorName.GetChanges, e, this._telemetryProps);
                 if (e.IsFatalSqlException() || connection.IsBrokenOrClosed())
@@ -380,7 +384,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
         }
 
-        private async Task ProcessTableChangesAsync()
+        private async Task ProcessTableChangesAsync(CancellationToken token)
         {
             if (this._rowsToProcess.Count > 0)
             {
@@ -388,7 +392,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 try
                 {
-                    changes = this.ProcessChanges();
+                    changes = await this.ProcessChanges(token);
                 }
                 catch (Exception e)
                 {
@@ -401,7 +405,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     // now and just retry getting the whole set of changes.
                     this._logger.LogError($"Failed to compose trigger parameter value for table: '{this._userTable.FullName} due to exception: {e.GetType()}. Exception message: {e.Message}");
                     TelemetryInstance.TrackException(TelemetryErrorName.ProcessChanges, e, this._telemetryProps);
-                    await this.ClearRowsAsync();
+                    await this.ClearRowsAsync(token);
                 }
 
                 if (changes != null)
@@ -421,8 +425,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         TelemetryInstance.TrackEvent(TelemetryEventName.TriggerFunction, this._telemetryProps, measures);
                         // We've successfully fully processed these so set them to be released in the cleanup phase
+                        await this._rowsLock.WaitAsync(token);
                         this._rowsToRelease = this._rowsToProcess;
                         this._rowsToProcess = new List<IReadOnlyDictionary<string, object>>();
+                        this._rowsLock.Release();
                     }
                     else
                     {
@@ -437,7 +443,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 // This ideally should never happen, but as a safety measure ensure that if we tried to process changes but there weren't
                 // any we still ensure everything is reset to a clean state
-                await this.ClearRowsAsync();
+                await this.ClearRowsAsync(token);
             }
         }
 
@@ -585,14 +591,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Resets the in-memory state of the change monitor and sets it to start polling for changes again.
         /// </summary>
-        private async Task ClearRowsAsync()
+        /// <param name="token">Cancellation token</param>
+        private async Task ClearRowsAsync(CancellationToken token)
         {
-            await this._rowsLock.WaitAsync();
-
+            await this._rowsLock.WaitAsync(token);
             this._leaseRenewalCount = 0;
             this._state = State.CheckingForChanges;
             this._rowsToProcess = new List<IReadOnlyDictionary<string, object>>();
-
             this._rowsLock.Release();
         }
 
@@ -677,7 +682,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     }
                 }
             }
-            await this.ClearRowsAsync();
+            await this.ClearRowsAsync(token);
         }
 
         /// <summary>
@@ -708,10 +713,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// stored in "_rows". If any of the changes correspond to a deleted row, then the <see cref="SqlChange{T}.Item" />
         /// will be populated with only the primary key values of the deleted row.
         /// </summary>
+        /// <param name="token">Cancellation token</param>
         /// <returns>The list of changes</returns>
-        private IReadOnlyList<SqlChange<T>> ProcessChanges()
+        private async Task<IReadOnlyList<SqlChange<T>>> ProcessChanges(CancellationToken token)
         {
             var changes = new List<SqlChange<T>>();
+            await this._rowsLock.WaitAsync(token);
             foreach (IReadOnlyDictionary<string, object> row in this._rowsToProcess)
             {
                 SqlChangeOperation operation = GetChangeOperation(row);
@@ -724,6 +731,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 changes.Add(new SqlChange<T>(operation, Utils.JsonDeserializeObject<T>(Utils.JsonSerializeObject(item))));
             }
+            this._rowsLock.Release();
             return changes;
         }
 
