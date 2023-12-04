@@ -69,12 +69,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly CancellationTokenSource _cancellationTokenSourceRenewLeases = new CancellationTokenSource();
         private CancellationTokenSource _cancellationTokenSourceExecutor = new CancellationTokenSource();
 
-        // The semaphore gets used by lease-renewal loop to ensure that '_state' stays set to 'ProcessingChanges' while
-        // the leases are being renewed. The change-consumption loop requires to wait for the semaphore before modifying
-        // the value of '_state' back to 'CheckingForChanges'. Since the field '_rows' is only updated if the value of
-        // '_state' is set to 'CheckingForChanges', this guarantees that '_rows' will stay same while it is being
-        // iterated over inside the lease-renewal loop.
-        private readonly SemaphoreSlim _rowsLock = new SemaphoreSlim(1, 1);
+        /// <summary>
+        /// The _rowsToProcess list is used by both the "check for changes" loop and the "renew leases" loop, so in order
+        /// to prevent synchronization issues from occurring we use this lock whenever modifying or iterating over the contents.
+        /// </summary>
+        private readonly SemaphoreSlim _rowsToProcessLock = new SemaphoreSlim(1, 1);
 
         private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps;
 
@@ -228,7 +227,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             }
                             if (this._state == State.ProcessingChanges)
                             {
-                                await this.ProcessTableChangesAsync();
+                                await this.ProcessTableChangesAsync(token);
                             }
                             if (this._state == State.Cleanup)
                             {
@@ -347,8 +346,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         transaction.Commit();
 
                         // Set the rows for processing, now since the leases are acquired.
+                        await this._rowsToProcessLock.WaitAsync(token);
                         this._rowsToProcess = rows;
                         this._state = State.ProcessingChanges;
+                        this._rowsToProcessLock.Release();
                     }
                     catch (Exception)
                     {
@@ -369,7 +370,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 // If there's an exception in any part of the process, we want to clear all of our data in memory and
                 // retry checking for changes again.
+                await this._rowsToProcessLock.WaitAsync(token);
                 this._rowsToProcess = new List<IReadOnlyDictionary<string, object>>();
+                this._rowsToProcessLock.Release();
                 this._logger.LogError($"Failed to check for changes in table '{this._userTable.FullName}' due to exception: {e.GetType()}. Exception message: {e.Message}");
                 TelemetryInstance.TrackException(TelemetryErrorName.GetChanges, e, this._telemetryProps);
                 if (e.IsFatalSqlException() || connection.IsBrokenOrClosed())
@@ -380,7 +383,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
         }
 
-        private async Task ProcessTableChangesAsync()
+        private async Task ProcessTableChangesAsync(CancellationToken token)
         {
             if (this._rowsToProcess.Count > 0)
             {
@@ -388,7 +391,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 try
                 {
-                    changes = this.ProcessChanges();
+                    changes = await this.ProcessChanges(token);
                 }
                 catch (Exception e)
                 {
@@ -401,7 +404,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     // now and just retry getting the whole set of changes.
                     this._logger.LogError($"Failed to compose trigger parameter value for table: '{this._userTable.FullName} due to exception: {e.GetType()}. Exception message: {e.Message}");
                     TelemetryInstance.TrackException(TelemetryErrorName.ProcessChanges, e, this._telemetryProps);
-                    await this.ClearRowsAsync();
+                    await this.ClearRowsAsync(token);
                 }
 
                 if (changes != null)
@@ -421,8 +424,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         TelemetryInstance.TrackEvent(TelemetryEventName.TriggerFunction, this._telemetryProps, measures);
                         // We've successfully fully processed these so set them to be released in the cleanup phase
+                        await this._rowsToProcessLock.WaitAsync(token);
                         this._rowsToRelease = this._rowsToProcess;
                         this._rowsToProcess = new List<IReadOnlyDictionary<string, object>>();
+                        this._rowsToProcessLock.Release();
                     }
                     else
                     {
@@ -437,7 +442,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 // This ideally should never happen, but as a safety measure ensure that if we tried to process changes but there weren't
                 // any we still ensure everything is reset to a clean state
-                await this.ClearRowsAsync();
+                await this.ClearRowsAsync(token);
             }
         }
 
@@ -504,7 +509,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
         private async Task RenewLeasesAsync(SqlConnection connection, CancellationToken token)
         {
-            await this._rowsLock.WaitAsync(token);
+            await this._rowsToProcessLock.WaitAsync(token);
 
             if (this._state == State.ProcessingChanges && this._rowsToProcess.Count > 0)
             {
@@ -579,21 +584,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             // Want to always release the lock at the end, even if renewing the leases failed.
-            this._rowsLock.Release();
+            this._rowsToProcessLock.Release();
         }
 
         /// <summary>
         /// Resets the in-memory state of the change monitor and sets it to start polling for changes again.
         /// </summary>
-        private async Task ClearRowsAsync()
+        /// <param name="token">Cancellation token</param>
+        private async Task ClearRowsAsync(CancellationToken token)
         {
-            await this._rowsLock.WaitAsync();
-
+            await this._rowsToProcessLock.WaitAsync(token);
             this._leaseRenewalCount = 0;
             this._state = State.CheckingForChanges;
             this._rowsToProcess = new List<IReadOnlyDictionary<string, object>>();
-
-            this._rowsLock.Release();
+            this._rowsToProcessLock.Release();
         }
 
         /// <summary>
@@ -677,7 +681,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     }
                 }
             }
-            await this.ClearRowsAsync();
+            await this.ClearRowsAsync(token);
         }
 
         /// <summary>
@@ -708,23 +712,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// stored in "_rows". If any of the changes correspond to a deleted row, then the <see cref="SqlChange{T}.Item" />
         /// will be populated with only the primary key values of the deleted row.
         /// </summary>
+        /// <param name="token">Cancellation token</param>
         /// <returns>The list of changes</returns>
-        private IReadOnlyList<SqlChange<T>> ProcessChanges()
+        private async Task<IReadOnlyList<SqlChange<T>>> ProcessChanges(CancellationToken token)
         {
             var changes = new List<SqlChange<T>>();
-            foreach (IReadOnlyDictionary<string, object> row in this._rowsToProcess)
+            await this._rowsToProcessLock.WaitAsync(token);
+            try
             {
-                SqlChangeOperation operation = GetChangeOperation(row);
+                foreach (IReadOnlyDictionary<string, object> row in this._rowsToProcess)
+                {
+                    SqlChangeOperation operation = GetChangeOperation(row);
 
-                // If the row has been deleted, there is no longer any data for it in the user table. The best we can do
-                // is populate the row-item with the primary key values of the row.
-                Dictionary<string, object> item = operation == SqlChangeOperation.Delete
-                    ? this._primaryKeyColumns.ToDictionary(col => col.name, col => row[col.name])
-                    : this._userTableColumns.ToDictionary(col => col, col => row[col]);
+                    // If the row has been deleted, there is no longer any data for it in the user table. The best we can do
+                    // is populate the row-item with the primary key values of the row.
+                    Dictionary<string, object> item = operation == SqlChangeOperation.Delete
+                        ? this._primaryKeyColumns.ToDictionary(col => col.name, col => row[col.name])
+                        : this._userTableColumns.ToDictionary(col => col, col => row[col]);
 
-                changes.Add(new SqlChange<T>(operation, Utils.JsonDeserializeObject<T>(Utils.JsonSerializeObject(item))));
+                    changes.Add(new SqlChange<T>(operation, Utils.JsonDeserializeObject<T>(Utils.JsonSerializeObject(item))));
+                }
+                return changes;
             }
-            return changes;
+            finally
+            {
+                // Ensure we always release the lock, even if an error occurs
+                this._rowsToProcessLock.Release();
+            }
         }
 
         /// <summary>
