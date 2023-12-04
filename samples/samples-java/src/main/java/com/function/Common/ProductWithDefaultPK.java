@@ -6,12 +6,8 @@
 
 package com.function.Common;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 public class ProductWithDefaultPK {
-    @JsonProperty("Name")
     private String Name;
-    @JsonProperty("Cost")
     private int Cost;
 
     public ProductWithDefaultPK() {

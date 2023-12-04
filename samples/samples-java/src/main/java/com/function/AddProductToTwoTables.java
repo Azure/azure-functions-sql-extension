@@ -15,10 +15,8 @@ import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
 import com.microsoft.azure.functions.sql.annotation.SQLOutput;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.function.Common.Product;
+import com.google.gson.Gson;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -45,11 +43,11 @@ public class AddProductToTwoTables {
                 name = "productWithIdentity",
                 commandText = "ProductsWithIdentity",
                 connectionStringSetting = "SqlConnectionString")
-                OutputBinding<Product> productWithIdentity) throws JsonParseException, JsonMappingException, IOException {
+                OutputBinding<Product> productWithIdentity) throws IOException {
 
         String json = request.getBody().get();
-        ObjectMapper mapper = new ObjectMapper();
-        Product p = mapper.readValue(json, Product.class);
+        Gson gson = new Gson();
+        Product p = gson.fromJson(json, Product.class);
         product.setValue(p);
         productWithIdentity.setValue(p);
 
