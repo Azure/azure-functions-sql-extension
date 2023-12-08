@@ -420,21 +420,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         [TelemetryMeasureName.DurationMs] = durationMs,
                         [TelemetryMeasureName.BatchCount] = this._rowsToProcess.Count,
                     };
+                    // In the future might make sense to retry executing the function, but for now we just let
+                    // another worker try.
                     if (result.Succeeded)
                     {
-                        TelemetryInstance.TrackEvent(TelemetryEventName.TriggerFunction, this._telemetryProps, measures);
+
                         // We've successfully fully processed these so set them to be released in the cleanup phase
                         await this._rowsToProcessLock.WaitAsync(token);
                         this._rowsToRelease = this._rowsToProcess;
                         this._rowsToProcess = new List<IReadOnlyDictionary<string, object>>();
                         this._rowsToProcessLock.Release();
                     }
-                    else
-                    {
-                        // In the future might make sense to retry executing the function, but for now we just let
-                        // another worker try.
-                        TelemetryInstance.TrackException(TelemetryErrorName.TriggerFunction, result.Exception, this._telemetryProps, measures);
-                    }
+                    TelemetryInstance.TrackEvent(
+                        TelemetryEventName.TriggerFunction,
+                        new Dictionary<TelemetryPropertyName, string>(this._telemetryProps) {
+                            { TelemetryPropertyName.Succeeded, result.Succeeded.ToString() },
+                        },
+                        measures);
                     this._state = State.Cleanup;
                 }
             }

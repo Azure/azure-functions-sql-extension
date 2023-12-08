@@ -372,6 +372,7 @@ To learn more about our Privacy Statement visit this link: https://go.microsoft.
         WorkerCount,
         EngineEdition,
         Edition,
+        Succeeded,
     }
 
     /// <summary>
@@ -435,7 +436,6 @@ To learn more about our Privacy Statement visit this link: https://go.microsoft.
         RenewLeasesLoop,
         RenewLeasesRollback,
         StartListener,
-        TriggerFunction,
         Upsert,
         UpsertRollback,
         GetServerTelemetryProperties,
