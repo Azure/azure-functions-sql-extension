@@ -218,10 +218,10 @@ steps:
   condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
 - script: |
-    tarcert https://api.esrp.microsoft.com
+    traceroute https://api.esrp.microsoft.com
   displayName: Tracert EsrpCodeSigning
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Darwin'))
-  
+
 - task: EsrpCodeSigning@3
   displayName: 'ESRP CodeSigning - Binaries (Extension)'
   inputs:
