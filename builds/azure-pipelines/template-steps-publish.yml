@@ -1,6 +1,7 @@
 parameters:
   configuration: ''
   solution: ''
+  nugetVersion: ''
 
 steps:
 - task: EsrpCodeSigning@3
