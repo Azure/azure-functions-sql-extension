@@ -178,7 +178,7 @@ Note that these retries are outside the built in idle connection retry logic tha
 
 #### Function or binding exception retries
 
-If an exception occurs in the binding or while executing the user function when processing changes then the batch of rows currently being processed will be retried again in 60 seconds. Other changes will be processed as normal during this time, but the rows in the batch that caused the exception will be ignored until the timeout period has elapsed.
+If an exception occurs in the binding (such as deadlocks or timeouts) or while executing the user function when processing changes then the batch of rows currently being processed will be retried again in 60 seconds. Other changes will be processed as normal during this time, but the rows in the batch that caused the exception will be ignored until the timeout period has elapsed.
 
 If the function execution fails 5 times in a row for a given row then that row is completely ignored for all future changes. Because the rows in a batch are not deterministic, rows in a failed batch may end up in different batches in subsequent invocations. This means that not all rows in the failed batch will necessarily be ignored. If other rows in the batch were the ones causing the exception, the "good" rows may end up in a different batch that doesn't fail in future invocations.
 
