@@ -5,6 +5,7 @@ parameters:
   binariesVersion: ''
   testServer: ''
   oopWorkerSupportedExtensionVersion: ''
+  signBinaries: false
 
 steps:
 - task: UseDotNet@2
@@ -288,6 +289,7 @@ steps:
      ]
     SessionTimeout: 600
     MaxConcurrency: 5
+  condition: and(succeeded(), eq(parameters['signBinaries'], true))
 
 - task: EsrpCodeSigning@3
   displayName: 'ESRP CodeSigning - Binaries (Worker)'
@@ -355,6 +357,7 @@ steps:
      ]
     SessionTimeout: 600
     MaxConcurrency: 5
+  condition: and(succeeded(), eq(parameters['signBinaries'], true))
 
   # Extra parameter GeneratePackageOnBuild=false is needed for issue https://github.com/dotnet/sdk/pull/3473#issuecomment-516612070
 - task: DotNetCoreCLI@2

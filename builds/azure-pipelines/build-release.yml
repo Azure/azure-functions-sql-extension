@@ -99,6 +99,7 @@ stages:
           binariesVersion: '$(binariesVersion)'
           oopWorkerSupportedExtensionVersion: '$(oopWorkerSupportedExtensionVersion)'
           testServer: ''
+          signBinaries: true
 
       - template: 'template-steps-publish.yml'
         parameters:
