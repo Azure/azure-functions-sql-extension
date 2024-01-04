@@ -102,7 +102,9 @@ stages:
 
       - template: 'template-steps-publish.yml'
         parameters:
+          solution: '$(solution)'
           configuration: '$(configuration)'
+          nugetVersion: '$(nugetVersion)'
 
 - stage: BuildJava
   displayName: 'Release Build and Publish Java Library'
