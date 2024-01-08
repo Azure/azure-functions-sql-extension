@@ -19,9 +19,9 @@
       },
       "Microsoft.Azure.Functions.Worker.Extensions.Abstractions": {
         "type": "Direct",
-        "requested": "[1.2.0, )",
-        "resolved": "1.2.0",
-        "contentHash": "7ANdnQrJcYCIcdhjfvll2jOZpCPz9JAuOcYam81SlZPpDSgeaHI9X1btTqtn7YyaGoyx5eu2QTvoDy2KDmLoTQ=="
+        "requested": "[1.3.0, )",
+        "resolved": "1.3.0",
+        "contentHash": "+6+/Yb/ouWUweaSQhesbbiIVSmwYEzkSfjIHrBnNqIiCYnx2iLeoYyWjN/wHP3Fnn5COtyDXRDwHKr5A/tCL9Q=="
       },
       "Microsoft.Data.SqlClient": {
         "type": "Direct",
