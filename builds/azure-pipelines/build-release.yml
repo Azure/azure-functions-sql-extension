@@ -33,7 +33,6 @@ variables:
   Codeql.Enabled: true
   Codeql.TSAEnabled: true
   Codeql.PublishDatabaseLog: true
-  Codeql.Cadence: 0
 
 
 stages:
