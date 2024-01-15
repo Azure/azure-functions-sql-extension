@@ -21,7 +21,7 @@
     <PackageVersion Include="Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator" Version="4.0.1" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageVersion Include="Microsoft.AspNetCore.Http" Version="2.2.2" />
-    <PackageVersion Include="BenchmarkDotNet" Version="0.13.9" />
+    <PackageVersion Include="BenchmarkDotNet" Version="0.13.12" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker" Version="1.17.0" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.11.0" />
     <PackageVersion Include="System.Net.NameResolution" Version="4.3.0" />
