@@ -645,7 +645,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // If any identity columns or columns with default values aren't included in the object then we have to generate a basic insert since the merge statement expects all primary key
                 // columns to exist. (the merge statement can handle nullable columns though if those exist)
                 QueryType queryType = (hasIdentityColumnPrimaryKeys || hasDefaultColumnPrimaryKeys) && missingPrimaryKeysFromItem.Any() ? QueryType.Insert : QueryType.Merge;
-
+                logger.LogDebug($"QueryType: {queryType} hasIdentityColumnPrimaryKeys: {hasIdentityColumnPrimaryKeys} hasDefaultColumnPrimaryKeys: {hasDefaultColumnPrimaryKeys} Missing primary keys: [{string.Join(",", missingPrimaryKeysFromItem)}]");
                 tableInfoSw.Stop();
                 var durations = new Dictionary<TelemetryMeasureName, double>()
                 {
