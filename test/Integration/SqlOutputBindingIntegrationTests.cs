@@ -355,6 +355,32 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         }
 
         /// <summary>
+        /// Regression test for ensuring that the query type isn't cached
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        public void QueryTypeCachingRegressionTest(SupportedLanguages lang)
+        {
+            // Start off by inserting an item into the database, which we'll update later
+            this.ExecuteNonQuery("INSERT INTO Products VALUES (1, 'test', 100)");
+            // Now make a call that is expected to fail. The important part here is that:
+            //      1. This and the function below both target the same table (dbo.Products)
+            //      2. This one will trigger an "insert" query (which ultimately fails due to the incorrect casing, but the table information is still retrieved first)
+            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-incorrectcasing", null, TestUtils.GetPort(lang, true)).Wait());
+            // Ensure that we have the one expected item
+            Assert.True(1 == (int)this.ExecuteScalar("SELECT COUNT(*) FROM dbo.Products"), "There should be one item initially");
+            var productWithPrimaryKey = new Dictionary<string, object>()
+            {
+                { "ProductId", 1 },
+                { "Name", "MyNewProduct" },
+                { "Cost", 100 }
+            };
+            // Now send an output request that we expect to succeed - specifically one that will result in an update so requires the MERGE statement
+            this.SendOutputPostRequest("addproduct", Utils.JsonSerializeObject(productWithPrimaryKey), TestUtils.GetPort(lang)).Wait();
+            Assert.True(1 == (int)this.ExecuteScalar("SELECT COUNT(*) FROM dbo.Products"), "There should be one item at the end");
+        }
+
+        /// <summary>
         /// Tests that when using an unsupported database the expected error is thrown
         /// </summary>
         [Theory]
