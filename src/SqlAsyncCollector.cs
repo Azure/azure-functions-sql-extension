@@ -249,11 +249,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 IEnumerable<string> primaryKeysFromObject = objectColumnNames.Where(f => tableInfo.PrimaryKeys.Any(k => string.Equals(k.Name, f, StringComparison.Ordinal)));
                 IEnumerable<PrimaryKey> missingPrimaryKeysFromItem = tableInfo.PrimaryKeys
                     .Where(k => !primaryKeysFromObject.Contains(k.Name));
-                bool hasIdentityColumnPrimaryKeys = tableInfo.PrimaryKeys.Any(k => k.IsIdentity);
-                bool hasDefaultColumnPrimaryKeys = tableInfo.PrimaryKeys.Any(k => k.HasDefault);
                 // If none of the primary keys are an identity column or have a default value then we require that all primary keys be present in the POCO so we can
                 // generate the MERGE statement correctly
-                if (!hasIdentityColumnPrimaryKeys && !hasDefaultColumnPrimaryKeys && missingPrimaryKeysFromItem.Any())
+                if (!tableInfo.HasIdentityColumnPrimaryKeys && !tableInfo.HasDefaultColumnPrimaryKeys && missingPrimaryKeysFromItem.Any())
                 {
                     string message = $"All primary keys for SQL table {table} need to be found in '{typeof(T)}.' Missing primary keys: [{string.Join(",", missingPrimaryKeysFromItem)}]";
                     var ex = new InvalidOperationException(message);
