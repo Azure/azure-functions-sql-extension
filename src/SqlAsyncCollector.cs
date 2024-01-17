@@ -200,7 +200,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 if (!(cachedTables[cacheKey] is TableInformation tableInfo))
                 {
-                    this._logger.LogDebug($"Cache hit on {cacheKey}");
+                    this._logger.LogDebug($"Cache miss on {cacheKey}");
                     TelemetryInstance.TrackEvent(TelemetryEventName.TableInfoCacheMiss, props);
                     // set the columnNames for supporting T as JObject since it doesn't have columns in the member info.
                     tableInfo = TableInformation.RetrieveTableInformation(connection, fullTableName, this._logger, this._serverProperties);
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 else
                 {
-                    this._logger.LogDebug($"Cache miss on {cacheKey}");
+                    this._logger.LogDebug($"Cache hit on {cacheKey}");
                     TelemetryInstance.TrackEvent(TelemetryEventName.TableInfoCacheHit, props);
                 }
 
