@@ -203,7 +203,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     this._logger.LogDebug($"Cache miss on {cacheKey}");
                     TelemetryInstance.TrackEvent(TelemetryEventName.TableInfoCacheMiss, props);
                     // set the columnNames for supporting T as JObject since it doesn't have columns in the member info.
-                    tableInfo = TableInformation.RetrieveTableInformation(connection, fullTableName, this._logger, this._serverProperties);
+                    tableInfo = TableInformation.RetrieveTableInformation(connection, fullTableName, this._logger, GetColumnNamesFromItem(rows.First()), this._serverProperties);
                     var policy = new CacheItemPolicy
                     {
                         // Re-look up the primary key(s) after timeout (default timeout is 10 minutes)
@@ -246,26 +246,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
 
                 var table = new SqlObject(fullTableName);
-
-                IEnumerable<string> objectColumnNames = GetColumnNamesFromItem(rows.First());
-                IEnumerable<string> primaryKeysFromObject = objectColumnNames.Where(f => tableInfo.PrimaryKeys.Any(k => string.Equals(k.Name, f, StringComparison.Ordinal)));
-                IEnumerable<PrimaryKey> missingPrimaryKeysFromItem = tableInfo.PrimaryKeys
-                    .Where(k => !primaryKeysFromObject.Contains(k.Name));
-                bool hasIdentityColumnPrimaryKeys = tableInfo.PrimaryKeys.Any(k => k.IsIdentity);
-                bool hasDefaultColumnPrimaryKeys = tableInfo.PrimaryKeys.Any(k => k.HasDefault);
-                // If none of the primary keys are an identity column or have a default value then we require that all primary keys be present in the POCO so we can
-                // generate the MERGE statement correctly
-                if (!hasIdentityColumnPrimaryKeys && !hasDefaultColumnPrimaryKeys && missingPrimaryKeysFromItem.Any())
-                {
-                    string message = $"All primary keys for SQL table {table} need to be found in '{typeof(T)}.' Missing primary keys: [{string.Join(",", missingPrimaryKeysFromItem)}]";
-                    var ex = new InvalidOperationException(message);
-                    TelemetryInstance.TrackException(TelemetryErrorName.MissingPrimaryKeys, ex, connection.AsConnectionProps(this._serverProperties));
-                    throw ex;
-                }
-                // If any identity columns or columns with default values aren't included in the object then we have to generate a basic insert since the merge statement expects all primary key
-                // columns to exist. (the merge statement can handle nullable columns though if those exist)
-                QueryType queryType = (tableInfo.HasIdentityColumnPrimaryKeys || tableInfo.HasDefaultColumnPrimaryKeys) && missingPrimaryKeysFromItem.Any() ? QueryType.Insert : QueryType.Merge;
-                string mergeOrInsertQuery = queryType == QueryType.Insert ? TableInformation.GetInsertQuery(table, bracketedColumnNamesFromItem) :
+                string mergeOrInsertQuery = tableInfo.QueryType == QueryType.Insert ? TableInformation.GetInsertQuery(table, bracketedColumnNamesFromItem) :
                     TableInformation.GetMergeQuery(tableInfo.PrimaryKeys, table, bracketedColumnNamesFromItem);
 
                 var transactionSw = Stopwatch.StartNew();
@@ -436,28 +417,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             public IEnumerable<string> ColumnDefinitions => this.Columns.Select(c => $"{c.Key} {c.Value}");
 
             /// <summary>
+            /// Whether to use an insert query or merge query.
+            /// </summary>
+            public QueryType QueryType { get; }
+
+            /// <summary>
             /// Whether at least one of the primary keys on this table is an identity column
             /// </summary>
             public bool HasIdentityColumnPrimaryKeys { get; }
-
-            /// <summary>
-            /// Whether at least one of the primary keys on this table has a default value
-            /// </summary>
-            public bool HasDefaultColumnPrimaryKeys { get; }
-
             /// <summary>
             /// Settings to use when serializing the POCO into SQL.
             /// Only serialize properties and fields that correspond to SQL columns.
             /// </summary>
             public JsonSerializerSettings JsonSerializerSettings { get; }
 
-            public TableInformation(List<PrimaryKey> primaryKeys, IEnumerable<PropertyInfo> primaryKeyProperties, IDictionary<string, string> columns, bool hasIdentityColumnPrimaryKeys, bool hasDefaultColumnPrimaryKeys)
+            public TableInformation(List<PrimaryKey> primaryKeys, IEnumerable<PropertyInfo> primaryKeyProperties, IDictionary<string, string> columns, QueryType queryType, bool hasIdentityColumnPrimaryKeys)
             {
                 this.PrimaryKeys = primaryKeys;
                 this.PrimaryKeyProperties = primaryKeyProperties;
                 this.Columns = columns;
+                this.QueryType = queryType;
                 this.HasIdentityColumnPrimaryKeys = hasIdentityColumnPrimaryKeys;
-                this.HasDefaultColumnPrimaryKeys = hasDefaultColumnPrimaryKeys;
+
                 // Convert datetime strings to ISO 8061 format to avoid potential errors on the server when converting into a datetime. This
                 // is the only format that are an international standard.
                 // https://docs.microsoft.com/previous-versions/sql/sql-server-2008-r2/ms180878(v=sql.105)
@@ -567,9 +548,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// <param name="sqlConnection">An open connection with which to query SQL against</param>
             /// <param name="fullName">Full name of table, including schema (if exists).</param>
             /// <param name="logger">ILogger used to log any errors or warnings.</param>
+            /// <param name="objectColumnNames">Column names from the object</param>
             /// <param name="serverProperties">EngineEdition and Edition of the target Sql Server.</param>
             /// <returns>TableInformation object containing primary keys, column types, etc.</returns>
-            public static TableInformation RetrieveTableInformation(SqlConnection sqlConnection, string fullName, ILogger logger, ServerProperties serverProperties)
+            public static TableInformation RetrieveTableInformation(SqlConnection sqlConnection, string fullName, ILogger logger, IEnumerable<string> objectColumnNames, ServerProperties serverProperties)
             {
                 Dictionary<TelemetryPropertyName, string> sqlConnProps = sqlConnection.AsConnectionProps(serverProperties);
                 var table = new SqlObject(fullName);
@@ -647,19 +629,36 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 // Match SQL Primary Key column names to POCO property objects. Ensure none are missing.
                 IEnumerable<PropertyInfo> primaryKeyProperties = typeof(T).GetProperties().Where(f => primaryKeys.Any(k => string.Equals(k.Name, f.Name, StringComparison.Ordinal)));
+                IEnumerable<string> primaryKeysFromObject = objectColumnNames.Where(f => primaryKeys.Any(k => string.Equals(k.Name, f, StringComparison.Ordinal)));
+                IEnumerable<PrimaryKey> missingPrimaryKeysFromItem = primaryKeys
+                    .Where(k => !primaryKeysFromObject.Contains(k.Name));
                 bool hasIdentityColumnPrimaryKeys = primaryKeys.Any(k => k.IsIdentity);
                 bool hasDefaultColumnPrimaryKeys = primaryKeys.Any(k => k.HasDefault);
+                // If none of the primary keys are an identity column or have a default value then we require that all primary keys be present in the POCO so we can
+                // generate the MERGE statement correctly
+                if (!hasIdentityColumnPrimaryKeys && !hasDefaultColumnPrimaryKeys && missingPrimaryKeysFromItem.Any())
+                {
+                    string message = $"All primary keys for SQL table {table} need to be found in '{typeof(T)}.' Missing primary keys: [{string.Join(",", missingPrimaryKeysFromItem)}]";
+                    var ex = new InvalidOperationException(message);
+                    TelemetryInstance.TrackException(TelemetryErrorName.MissingPrimaryKeys, ex, sqlConnProps);
+                    throw ex;
+                }
 
+                // If any identity columns or columns with default values aren't included in the object then we have to generate a basic insert since the merge statement expects all primary key
+                // columns to exist. (the merge statement can handle nullable columns though if those exist)
+                QueryType queryType = (hasIdentityColumnPrimaryKeys || hasDefaultColumnPrimaryKeys) && missingPrimaryKeysFromItem.Any() ? QueryType.Insert : QueryType.Merge;
+                logger.LogDebug($"QueryType: {queryType} hasIdentityColumnPrimaryKeys: {hasIdentityColumnPrimaryKeys} hasDefaultColumnPrimaryKeys: {hasDefaultColumnPrimaryKeys} Missing primary keys: [{string.Join(",", missingPrimaryKeysFromItem)}]");
                 tableInfoSw.Stop();
                 var durations = new Dictionary<TelemetryMeasureName, double>()
                 {
                     { TelemetryMeasureName.GetColumnDefinitionsDurationMs, columnDefinitionsSw.ElapsedMilliseconds },
                     { TelemetryMeasureName.GetPrimaryKeysDurationMs, primaryKeysSw.ElapsedMilliseconds }
                 };
+                sqlConnProps.Add(TelemetryPropertyName.QueryType, queryType.ToString());
                 sqlConnProps.Add(TelemetryPropertyName.HasIdentityColumn, hasIdentityColumnPrimaryKeys.ToString());
                 TelemetryInstance.TrackDuration(TelemetryEventName.GetTableInfo, tableInfoSw.ElapsedMilliseconds, sqlConnProps, durations);
-                logger.LogDebug($"RetrieveTableInformation DB and Table: {sqlConnection.Database}.{fullName}. Primary keys: [{string.Join(",", primaryKeys.Select(pk => pk.Name))}].\nSQL Column and Definitions:  [{string.Join(",", columnDefinitionsFromSQL)}]");
-                return new TableInformation(primaryKeys, primaryKeyProperties, columnDefinitionsFromSQL, hasIdentityColumnPrimaryKeys, hasDefaultColumnPrimaryKeys);
+                logger.LogDebug($"RetrieveTableInformation DB and Table: {sqlConnection.Database}.{fullName}. Primary keys: [{string.Join(",", primaryKeys.Select(pk => pk.Name))}].\nSQL Column and Definitions:  [{string.Join(",", columnDefinitionsFromSQL)}]\nObject columns: [{string.Join(",", objectColumnNames)}]");
+                return new TableInformation(primaryKeys, primaryKeyProperties, columnDefinitionsFromSQL, queryType, hasIdentityColumnPrimaryKeys);
             }
         }
 
