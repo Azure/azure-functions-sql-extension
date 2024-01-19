@@ -358,7 +358,8 @@ To learn more about our Privacy Statement visit this link: https://go.microsoft.
     {
         ErrorCode,
         ErrorName,
-        HasIdentityColumn,
+        HasIdentityColumnPrimaryKeys,
+        HasDefaultColumnPrimaryKeys,
         HasConfiguredMaxBatchSize,
         HasConfiguredMaxChangesPerWorker,
         HasConfiguredPollingInterval,
