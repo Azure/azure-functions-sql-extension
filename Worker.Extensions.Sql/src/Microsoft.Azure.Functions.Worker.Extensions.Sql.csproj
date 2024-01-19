@@ -16,10 +16,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Azure.Identity" />
 		<PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Abstractions" />
-		<PackageReference Include="Microsoft.Data.SqlClient" />
-		<PackageReference Include="System.Drawing.Common" />
 		<None Include="..\..\Images\pkgicon.png" Pack="true" PackagePath="" />
 		<None Include=".\README.md" Pack="true" PackagePath="" />
 	</ItemGroup>

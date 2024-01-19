@@ -11,17 +11,16 @@ app = func.FunctionApp()
 # Learn more at aka.ms/pythonprogrammingmodel
 
 # The input binding executes the `SELECT * FROM Products WHERE Cost = @Cost` query.
-# The Parameters argument passes the `{cost}` specified in the URL that triggers the function,
+# The parameters argument passes the `{cost}` specified in the URL that triggers the function,
 # `getproducts/{cost}`, as the value of the `@Cost` parameter in the query.
-# CommandType is set to `Text`, since the constructor argument of the binding is a raw query.
+# command_type is set to `Text`, since the constructor argument of the binding is a raw query.
 @app.function_name(name="GetProducts")
 @app.route(route="getproducts/{cost}")
-@app.generic_input_binding(arg_name="products", type="sql",
-                        CommandText="SELECT * FROM Products WHERE Cost = @Cost",
-                        CommandType="Text",
-                        Parameters="@Cost={cost}",
-                        ConnectionStringSetting="SqlConnectionString",
-                        data_type=DataType.STRING)
+@app.sql_input(arg_name="products",
+                        command_text="SELECT * FROM Products WHERE Cost = @Cost",
+                        command_type="Text",
+                        parameters="@Cost={cost}",
+                        connection_string_setting="SqlConnectionString")
 def get_products(req: func.HttpRequest, products: func.SqlRowList) -> func.HttpResponse:
     rows = list(map(lambda r: json.loads(r.to_json()), products))
 
@@ -36,10 +35,9 @@ def get_products(req: func.HttpRequest, products: func.SqlRowList) -> func.HttpR
 # have the new name and cost.
 @app.function_name(name="AddProduct")
 @app.route(route="addproduct")
-@app.generic_output_binding(arg_name="product", type="sql",
-                        CommandText="[dbo].[Products]",
-                        ConnectionStringSetting="SqlConnectionString",
-                        data_type=DataType.STRING)
+@app.sql_output(arg_name="product",
+                        command_text="[dbo].[Products]",
+                        connection_string_setting="SqlConnectionString")
 def add_product(req: func.HttpRequest, product: func.Out[func.SqlRow]) -> func.HttpResponse:
     body = json.loads(req.get_body())
     row = func.SqlRow.from_dict(body)
@@ -54,9 +52,8 @@ def add_product(req: func.HttpRequest, product: func.Out[func.SqlRow]) -> func.H
 # The function gets triggered when a change (Insert, Update, or Delete)
 # is made to the Products table.
 @app.function_name(name="ProductsTrigger")
-@app.generic_trigger(arg_name="products", type="sqlTrigger",
-                        TableName="Products",
-                        ConnectionStringSetting="SqlConnectionString",
-                        data_type=DataType.STRING)
+@app.sql_trigger(arg_name="products",
+                        table_name="Products",
+                        connection_string_setting="SqlConnectionString")
 def products_trigger(products: str) -> None:
     logging.info("SQL Changes: %s", json.loads(products))
