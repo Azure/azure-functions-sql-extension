@@ -645,8 +645,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 IEnumerable<PropertyInfo> primaryKeyProperties = typeof(T).GetProperties().Where(f => primaryKeys.Any(k => string.Equals(k.Name, f.Name, StringComparison.Ordinal)));
                 bool hasIdentityColumnPrimaryKeys = primaryKeys.Any(k => k.IsIdentity);
                 bool hasDefaultColumnPrimaryKeys = primaryKeys.Any(k => k.HasDefault);
-                tableInfoSw.Stop();
 
+                tableInfoSw.Stop();
                 var durations = new Dictionary<TelemetryMeasureName, double>()
                 {
                     { TelemetryMeasureName.GetColumnDefinitionsDurationMs, columnDefinitionsSw.ElapsedMilliseconds },
