@@ -2,6 +2,10 @@
 
 [*.cs]
 
+# xUnit1031: Do not use blocking task operations in test method
+# Temporary - will be fixed and set back to error
+dotnet_diagnostic.xUnit1031.severity = none
+
 # Disabled
 dotnet_diagnostic.CA1309.severity = silent # Use ordinal StringComparison - this isn't important for tests and just adds clutter
 dotnet_diagnostic.CA1305.severity = silent # Specify IFormatProvider - this isn't important for tests and just adds clutter
