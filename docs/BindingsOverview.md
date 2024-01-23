@@ -6,12 +6,14 @@
   - [Table of Contents](#table-of-contents)
   - [Input Binding](#input-binding)
     - [Retry support for Input Bindings](#retry-support-for-input-bindings)
+    - [Setup Guides](#setup-guides)
   - [Output Binding](#output-binding)
     - [Output Binding columns](#output-binding-columns)
     - [Primary Key Special Cases](#primary-key-special-cases)
       - [Identity Columns](#identity-columns)
       - [Columns with Default Values](#columns-with-default-values)
     - [Retry support for Output Bindings](#retry-support-for-output-bindings)
+    - [Setup Guides](#setup-guides-1)
   - [Trigger Binding](#trigger-binding)
     - [Change Tracking Setup](#change-tracking-setup)
     - [Configuration for Trigger Bindings](#configuration-for-trigger-bindings)
@@ -22,8 +24,9 @@
     - [Retry support for Trigger Bindings](#retry-support-for-trigger-bindings)
       - [Startup retries](#startup-retries)
       - [Broken connection retries](#broken-connection-retries)
-      - [Function exception retries](#function-exception-retries)
+      - [Function or binding exception retries](#function-or-binding-exception-retries)
       - [Lease Tables clean up](#lease-tables-clean-up)
+    - [Setup Guides](#setup-guides-2)
   - [Troubleshooting](#troubleshooting)
 
 ## Input Binding
@@ -33,6 +36,16 @@ Azure SQL Input bindings take a SQL query or stored procedure to run and returns
 ### Retry support for Input Bindings
 
 There currently is no retry support for errors that occur for input bindings. If an exception occurs when an input binding is executed then the function code will not be executed. This may result in an error code being returned, for example an HTTP trigger will return a response with a status of 500 to indicate an error occurred.
+
+### Setup Guides
+
+- [.NET (In-Proc)](./SetupGuide_Dotnet.md#input-binding)
+- [.NET (Isolated)](./SetupGuide_DotnetOutOfProc.md#input-binding)
+- [C# Script](./SetupGuide_DotnetCSharpScript.md#input-binding)
+- [Java](./SetupGuide_Java.md#input-binding)
+- [JavaScript](./SetupGuide_Javascript.md#input-binding)
+- [Python](./SetupGuide_Python.md#input-binding)
+- [PowerShell](./SetupGuide_PowerShell.md#input-binding)
 
 ## Output Binding
 
@@ -79,6 +92,16 @@ If using a .NET Function then `IAsyncCollector` can be used, and the function co
 
 See <https://github.com/Azure/Azure-Functions/issues/891> for further information.
 
+### Setup Guides
+
+- [.NET (In-Proc)](./SetupGuide_Dotnet.md#output-binding)
+- [.NET (Isolated)](./SetupGuide_DotnetOutOfProc.md#output-binding)
+- [C# Script](./SetupGuide_DotnetCSharpScript.md#output-binding)
+- [Java](./SetupGuide_Java.md#output-binding)
+- [JavaScript](./SetupGuide_Javascript.md#output-binding)
+- [Python](./SetupGuide_Python.md#output-binding)
+- [PowerShell](./SetupGuide_PowerShell.md#output-binding)
+
 ## Trigger Binding
 
 Azure SQL Trigger bindings monitor the user table for changes (i.e., row inserts, updates, and deletes) and invokes the function with updated rows.
@@ -114,7 +137,8 @@ Azure SQL Trigger bindings utilize SQL [change tracking](https://docs.microsoft.
 
 ### Configuration for Trigger Bindings
 
-This section goes over some of the configuration values you can use to customize SQL trigger bindings. See [How to Use Azure Function App Settings](https://learn.microsoft.com/azure/azure-functions/functions-how-to-use-azure-function-app-settings) to learn more.
+This section goes over some of the configuration values you can use to customize SQL trigger bindings. See [How to Use host.json for configuring options](https://learn.microsoft.com/azure/azure-functions/functions-host-json) to learn more.
+    > **NOTE:** Currently, SQL trigger bindings configurations from app settings will take precedence over settings in the host.json file. At a point in the future, SQL trigger bindings will move to only use configurations from the host.json file.
 
 #### Sql_Trigger_MaxBatchSize
 
@@ -152,9 +176,9 @@ If the function successfully starts but then an error causes the connection to b
 
 Note that these retries are outside the built in idle connection retry logic that SqlClient has which can be configured with the [ConnectRetryCount](https://learn.microsoft.com/dotnet/api/system.data.sqlclient.sqlconnectionstringbuilder.connectretrycount) and [ConnectRetryInterval](https://learn.microsoft.com/dotnet/api/system.data.sqlclient.sqlconnectionstringbuilder.connectretryinterval) connection string options. The built-in idle connection retries will be attempted first and if those fail to reconnect then the trigger binding will attempt to re-establish the connection itself.
 
-#### Function exception retries
+#### Function or binding exception retries
 
-If an exception occurs in the user function when processing changes then the batch of rows currently being processed will be retried again in 60 seconds. Other changes will be processed as normal during this time, but the rows in the batch that caused the exception will be ignored until the timeout period has elapsed.
+If an exception occurs in the binding (such as deadlocks or timeouts) or while executing the user function when processing changes then the batch of rows currently being processed will be retried again in 60 seconds. Other changes will be processed as normal during this time, but the rows in the batch that caused the exception will be ignored until the timeout period has elapsed.
 
 If the function execution fails 5 times in a row for a given row then that row is completely ignored for all future changes. Because the rows in a batch are not deterministic, rows in a failed batch may end up in different batches in subsequent invocations. This means that not all rows in the failed batch will necessarily be ignored. If other rows in the batch were the ones causing the exception, the "good" rows may end up in a different batch that doesn't fail in future invocations.
 
@@ -277,6 +301,16 @@ CLOSE LeaseTable_Cursor;
 
 DEALLOCATE LeaseTable_Cursor;
 ```
+
+### Setup Guides
+
+- [.NET (In-Proc)](./SetupGuide_Dotnet.md#trigger-binding)
+- [.NET (Isolated)](./SetupGuide_DotnetOutOfProc.md#trigger-binding)
+- [C# Script](./SetupGuide_DotnetCSharpScript.md#trigger-binding)
+- [Java](./SetupGuide_Java.md#trigger-binding)
+- [JavaScript](./SetupGuide_Javascript.md#trigger-binding)
+- [Python](./SetupGuide_Python.md#trigger-binding)
+- [PowerShell](./SetupGuide_PowerShell.md#trigger-binding)
 
 ## Troubleshooting
 

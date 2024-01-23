@@ -6,16 +6,10 @@
 
 package com.function.Common;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 public class ProductUnsupportedTypes {
-    @JsonProperty("ProductId")
     private int ProductId;
-    @JsonProperty("TextCol")
     private String TextCol;
-    @JsonProperty("NtextCol")
     private String NtextCol;
-    @JsonProperty("ImageCol")
     private String ImageCol;
 
     public ProductUnsupportedTypes() {
