@@ -41,11 +41,11 @@
       },
       "Microsoft.Azure.WebJobs": {
         "type": "Direct",
-        "requested": "[3.0.37, )",
-        "resolved": "3.0.37",
-        "contentHash": "cB8ExO360UeFprY4GAuumLhg35krY56LriAAE8kNkckxFQlEIZwQ5lMsOFU0cRwUcvFajLMdALllKF2PgYJRkA==",
+        "requested": "[3.0.39, )",
+        "resolved": "3.0.39",
+        "contentHash": "H/Al/2UOXef8Qqwvsm3Dur9JStz1xvV/UXb0GDys5YPx+qpWDS/U203b/+EUPLeZeuvGTnmcOFtnZzvxMuDamQ==",
         "dependencies": {
-          "Microsoft.Azure.WebJobs.Core": "3.0.37",
+          "Microsoft.Azure.WebJobs.Core": "3.0.39",
           "Microsoft.Extensions.Configuration": "2.1.1",
           "Microsoft.Extensions.Configuration.Abstractions": "2.1.1",
           "Microsoft.Extensions.Configuration.EnvironmentVariables": "2.1.0",
@@ -170,8 +170,8 @@
       },
       "Microsoft.Azure.WebJobs.Core": {
         "type": "Transitive",
-        "resolved": "3.0.37",
-        "contentHash": "nKlnoQyKmC5HsUIWLXu3a9VYhLKAAriZQ8v3PLldWKjV1vIQMiHKGK68FbLjRtvZsxCnIYS44gLlQjuOua//dg==",
+        "resolved": "3.0.39",
+        "contentHash": "O1RDMe2mBGZI4q4IUns+mxsfCjaMej4FzicMLqvnN5Ti5E3mSo+/kqDbEZzXA/RqnuLIOk+DhvFg/rwKhqEaow==",
         "dependencies": {
           "System.ComponentModel.Annotations": "4.4.0",
           "System.Diagnostics.TraceSource": "4.3.0",
