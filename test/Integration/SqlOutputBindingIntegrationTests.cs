@@ -330,7 +330,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 { "cost", "1" }
             };
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithMultiplePrimaryColumnsAndIdentity"));
-            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproductwithmultipleprimarycolumnsandidentity", query, TestUtils.GetPort(lang)).Wait());            // Nothing should have been inserted
+            Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproductwithmultipleprimarycolumnsandidentity", query, TestUtils.GetPort(lang)).Wait());
+            // Nothing should have been inserted
             Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithMultiplePrimaryColumnsAndIdentity"));
         }
 
