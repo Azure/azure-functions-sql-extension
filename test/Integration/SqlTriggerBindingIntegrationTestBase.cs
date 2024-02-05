@@ -100,10 +100,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                             Assert.Equal(operation, change.Operation); // Expected change operation
                             Product product = change.Item;
                             Assert.NotNull(product); // Product deserialized correctly
-                            Assert.Contains(product.ProductId, expectedIds); // We haven't seen this product ID yet, and it's one we expected to see
-                            expectedIds.Remove(product.ProductId);
-                            Assert.Equal(getName(product.ProductId), product.Name); // The product has the expected name
-                            Assert.Equal(getCost(product.ProductId), product.Cost); // The product has the expected cost
+                            Assert.Contains(product.ProductId.Value, expectedIds); // We haven't seen this product ID yet, and it's one we expected to see
+                            expectedIds.Remove(product.ProductId.Value);
+                            Assert.Equal(getName(product.ProductId.Value), product.Name); // The product has the expected name
+                            Assert.Equal(getCost(product.ProductId.Value), product.Cost); // The product has the expected cost
                         }
                     }
                     catch (Exception ex)

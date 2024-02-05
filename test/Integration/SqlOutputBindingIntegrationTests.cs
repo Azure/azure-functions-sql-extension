@@ -352,7 +352,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             await this.SendOutputPostRequest("addproductwithdefaultpk", Utils.JsonSerializeObject(product), TestUtils.GetPort(lang));
             await this.SendOutputPostRequest("addproductwithdefaultpk", Utils.JsonSerializeObject(product), TestUtils.GetPort(lang));
             Assert.Equal(2, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
-            Assert.Throws<AggregateException>(() => this.SendOutputPostRequest("addproductwithmultipleprimarycolumnsandidentity", Utils.JsonSerializeObject(product), TestUtils.GetPort(lang)).Wait());
+            Assert.Throws<AggregateException>(() => this.SendOutputPostRequest("addproduct", Utils.JsonSerializeObject(product), TestUtils.GetPort(lang)).Wait());
         }
 
         /// <summary>
