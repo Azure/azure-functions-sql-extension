@@ -352,6 +352,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             await this.SendOutputPostRequest("addproductwithdefaultpk", Utils.JsonSerializeObject(product), TestUtils.GetPort(lang));
             await this.SendOutputPostRequest("addproductwithdefaultpk", Utils.JsonSerializeObject(product), TestUtils.GetPort(lang));
             Assert.Equal(2, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
+            // Should throw error when there is no default PK and the primary key is missing from the user object.
             Assert.Throws<AggregateException>(() => this.SendOutputPostRequest("addproduct", Utils.JsonSerializeObject(product), TestUtils.GetPort(lang)).Wait());
         }
 
