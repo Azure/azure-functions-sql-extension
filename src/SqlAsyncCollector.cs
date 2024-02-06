@@ -474,7 +474,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         ccu.{ColumnName},
                         c.is_identity,
                         case
-                            when isc.COLUMN_DEFAULT = NULL then 'false'
+                            when isc.COLUMN_DEFAULT IS NULL then 'false'
                             else 'true'
                         end as {HasDefault}
                     FROM
