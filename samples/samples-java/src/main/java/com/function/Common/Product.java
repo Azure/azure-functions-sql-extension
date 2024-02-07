@@ -7,7 +7,7 @@
 package com.function.Common;
 
 public class Product {
-    private int ProductId;
+    private Integer ProductId;
     private String Name;
     private int Cost;
 
