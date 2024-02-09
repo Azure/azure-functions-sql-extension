@@ -94,9 +94,9 @@
       },
       "Microsoft.SqlServer.TransactSql.ScriptDom": {
         "type": "Direct",
-        "requested": "[161.8901.0, )",
-        "resolved": "161.8901.0",
-        "contentHash": "G+7zPBkrq+7SJ4vAXXZbphBYD9IItI8Kj02Rs19mIhxu2RX1fOjrvngZCs7oHc0hq8TGxKb7eJbFbDMnwuzubw=="
+        "requested": "[161.8910.0, )",
+        "resolved": "161.8910.0",
+        "contentHash": "bnf0ykm3WJfqRMr3PJda6+GPzttj8RJH2m2FGd0lS0qXr3986byTifps73J6hzuLKlqarfzvFYaxqzm9tMdxLw=="
       },
       "morelinq": {
         "type": "Direct",
