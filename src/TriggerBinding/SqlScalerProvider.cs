@@ -32,9 +32,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             sqlMetadata.ResolveProperties(serviceProvider.GetService<INameResolver>());
             var userTable = new SqlObject(sqlMetadata.TableName);
             string connectionString = SqlBindingUtilities.GetConnectionString(sqlMetadata.ConnectionStringSetting, config);
-            int maxChangesPerWorker = config.GetValue(SqlTriggerConstants.ConfigKey_SqlTrigger_MaxChangesPerWorker, SqlOptions.DefaultMaxChangesPerWorker);
+            int maxChangesPerWorker = config.GetValue($"azureWebJobs:extensions:sql:{SqlTriggerConstants.ConfigKey_SqlTrigger_MaxChangesPerWorker}", SqlOptions.DefaultMaxChangesPerWorker);
             string userDefinedLeasesTableName = sqlMetadata.LeasesTableName;
-            string userFunctionId = (string)triggerMetadata.Properties["userFunctionId"];
+            string userFunctionId = sqlMetadata.UserFunctionId;
 
             this._scaleMonitor = new SqlTriggerScaleMonitor(userFunctionId, userTable, userDefinedLeasesTableName, connectionString, maxChangesPerWorker, logger);
             this._targetScaler = new SqlTriggerTargetScaler(userFunctionId, userTable, userDefinedLeasesTableName, connectionString, maxChangesPerWorker, logger);
@@ -60,6 +60,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             [JsonProperty]
             public string LeasesTableName { get; set; }
+
+            [JsonProperty]
+            public string UserFunctionId { get; set; }
 
             public void ResolveProperties(INameResolver resolver)
             {
