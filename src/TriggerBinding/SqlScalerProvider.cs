@@ -32,7 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             sqlMetadata.ResolveProperties(serviceProvider.GetService<INameResolver>());
             var userTable = new SqlObject(sqlMetadata.TableName);
             string connectionString = SqlBindingUtilities.GetConnectionString(sqlMetadata.ConnectionStringSetting, config);
-            int maxChangesPerWorker = config.GetValue($"azureWebJobs:extensions:sql:{SqlTriggerConstants.ConfigKey_SqlTrigger_MaxChangesPerWorker}", SqlOptions.DefaultMaxChangesPerWorker);
+            int maxChangesPerWorker = config.GetValue($"azureWebJobs:extensions:sql:MaxChangesPerWorker", SqlOptions.DefaultMaxChangesPerWorker);
             string userDefinedLeasesTableName = sqlMetadata.LeasesTableName;
             string userFunctionId = sqlMetadata.UserFunctionId;
 
