@@ -580,12 +580,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <summary>
         /// Tests that the Scale Controller is able to scale out the workers when required.
         /// </summary>
-        [RetryTheory]
-        [SqlInlineData()]
+        [Fact]
         public async void ScaleHostEndToEndTest()
         {
             string TestFunctionName = "TestFunction";
             string ConnectionStringName = "SqlConnectionString";
+            IConfiguration configuration = new ConfigurationBuilder().Build();
 
             string hostJson =
             /*lang = json */
@@ -605,10 +605,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     ""connectionStringSetting"": ""{ConnectionStringName}"",
                     ""userFunctionId"" : ""testFunctionId""
                 }}";
+            var triggerMetadata = new TriggerMetadata(JObject.Parse(sqlTriggerJson));
 
             this.SetChangeTrackingForTable("Products");
 
-            var triggerMetadata = new TriggerMetadata(JObject.Parse(sqlTriggerJson));
+            // Initializing the listener is needed to create relevant lease table to get unprocessed changes. 
+            // We would be using the scale host methods to get the scale status so the configuration values are not needed here.
+            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", "testFunctionId", Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
+            await listener.StartAsync(CancellationToken.None);
+            // Cancel immediately so the listener doesn't start processing the changes
+            await listener.StopAsync(CancellationToken.None);
+
             IHost host = new HostBuilder().ConfigureServices(services => services.AddAzureClientsCore()).Build();
             AzureComponentFactory defaultAzureComponentFactory = host.Services.GetService<AzureComponentFactory>();
 
@@ -666,7 +673,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             AggregateScaleStatus scaleStatus = await scaleManager.GetScaleStatusAsync(new ScaleStatusContext());
 
             Assert.Equal(ScaleVote.ScaleOut, scaleStatus.Vote);
-            Assert.Equal(2, scaleStatus.TargetWorkerCount);
+            Assert.Equal(3, scaleStatus.TargetWorkerCount);
 
             await scaleHost.StopAsync();
 
