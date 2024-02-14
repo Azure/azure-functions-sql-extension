@@ -33,6 +33,6 @@
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="6.0.1" />
     <PackageVersion Include="Microsoft.SqlServer.TransactSql.ScriptDom" Version="161.8901.0" />
     <PackageVersion Include="Grpc.Net.Client" Version="2.55.0"/>
-	<PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0"/>
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0"/>
   </ItemGroup>
 </Project>

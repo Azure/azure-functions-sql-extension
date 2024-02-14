@@ -8,6 +8,7 @@ using Microsoft.Azure.WebJobs.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
@@ -32,7 +33,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             sqlMetadata.ResolveProperties(serviceProvider.GetService<INameResolver>());
             var userTable = new SqlObject(sqlMetadata.TableName);
             string connectionString = SqlBindingUtilities.GetConnectionString(sqlMetadata.ConnectionStringSetting, config);
-            int maxChangesPerWorker = config.GetValue($"azureWebJobs:extensions:sql:MaxChangesPerWorker", SqlOptions.DefaultMaxChangesPerWorker);
+            IOptions<SqlOptions> options = serviceProvider.GetService<IOptions<SqlOptions>>();
+            int configOptionsMaxChangesPerWorker = options.Value.MaxChangesPerWorker;
+            int configAppSettingsMaxChangesPerWorker = config.GetValue<int>(SqlTriggerConstants.ConfigKey_SqlTrigger_MaxChangesPerWorker);
+            // Override the maxChangesPerWorker value from config if the value is set in the trigger appsettings
+            int maxChangesPerWorker = configAppSettingsMaxChangesPerWorker != 0 ? configAppSettingsMaxChangesPerWorker : configOptionsMaxChangesPerWorker != 0 ? configOptionsMaxChangesPerWorker : SqlOptions.DefaultMaxChangesPerWorker;
             string userDefinedLeasesTableName = sqlMetadata.LeasesTableName;
             string userFunctionId = sqlMetadata.UserFunctionId;
 
@@ -68,9 +73,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 if (resolver != null)
                 {
-                    this.TableName = resolver.ResolveWholeString(this.TableName);
                     this.ConnectionStringSetting = resolver.ResolveWholeString(this.ConnectionStringSetting);
-                    this.LeasesTableName = resolver.ResolveWholeString(this.LeasesTableName);
                 }
             }
         }
