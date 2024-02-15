@@ -551,5 +551,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             await this.SendOutputGetRequest("addproductdefaultpkanddifferentcolumnorder", null, TestUtils.GetPort(lang, true));
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
         }
+
+        /// <summary>
+        /// Tests that when using a table with column names having slash (/ or \) in them 
+        /// we can insert data using output binding.
+        /// Excluding C#, JAVA and CSX languages since / or \ are reserved characters and are discouraged to use in variable names
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.OutOfProc, SupportedLanguages.Java, SupportedLanguages.Csx)]
+        public async Task AddProductWithSlashInColumnName(SupportedLanguages lang)
+        {
+            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithSlashInColumnNames"));
+            this.StartFunctionHost("AddProductWithSlashInColumnName", lang);
+            await this.SendOutputPostRequest("addproduct-slashcolumns", "");
+            // Check that a product should have been inserted
+            Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithSlashInColumnNames"));
+        }
     }
 }
