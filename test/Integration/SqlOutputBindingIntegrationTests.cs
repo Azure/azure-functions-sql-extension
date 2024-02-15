@@ -568,6 +568,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // Check that a product should have been inserted
             Assert.Equal("Test", this.ExecuteScalar("SELECT [Name/Test] FROM dbo.ProductsWithSlashInColumnNames WHERE ProductId = 1"));
             Assert.Equal(1, this.ExecuteScalar("SELECT [Cost\\Test] FROM dbo.ProductsWithSlashInColumnNames WHERE ProductId = 1"));
+
+            var query = new Dictionary<string, object>()
+            {
+                { "ProductId", 2},
+                { "Name/Test", "Test" },
+                { "Cost\\Test", 2 }
+            };
+            await this.SendOutputPostRequest("addproduct-slashcolumns", Utils.JsonSerializeObject(query));
+            // Check that a product should have been inserted
+            Assert.Equal("Test", this.ExecuteScalar("SELECT [Name/Test] FROM dbo.ProductsWithSlashInColumnNames WHERE ProductId = 2"));
+            Assert.Equal(2, this.ExecuteScalar("SELECT [Cost\\Test] FROM dbo.ProductsWithSlashInColumnNames WHERE ProductId = 2"));
         }
     }
 }

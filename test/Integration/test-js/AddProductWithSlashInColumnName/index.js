@@ -3,8 +3,8 @@
 
 // This output binding should successfully add the productMissingColumns object
 // to the SQL table.
-module.exports = async function (context) {
-    const productWithSlashInColumnName = [{
+module.exports = async function (context, req) {
+    const productWithSlashInColumnName = req.body ?? [{
         "ProductId": 1,
         "Name/Test": "Test",
         "Cost\\Test": 1
