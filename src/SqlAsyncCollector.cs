@@ -412,6 +412,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             rowData = Utils.JsonSerializeObject(rowsToUpsert, table.JsonSerializerSettings);
             IEnumerable<string> columnNamesFromItem = GetColumnNamesFromItem(rows.First());
             IEnumerable<string> bracketColumnDefinitionsFromItem = columnNamesFromItem.Select(c => $"{c.AsBracketQuotedString()} {table.Columns[c]}");
+            // Escape any forward and backward slashes in the column names of rowData using REPLACE so the OPENJSON can read from those columns.
             newDataQuery = $"WITH {CteName} AS ( SELECT * FROM OPENJSON(REPLACE(REPLACE({RowDataParameter}, N'\\', N'\\\\'), N'/', N'\\/')) WITH ({string.Join(",", bracketColumnDefinitionsFromItem)}) )";
         }
 

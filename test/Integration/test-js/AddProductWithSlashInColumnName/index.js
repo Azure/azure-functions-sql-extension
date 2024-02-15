@@ -6,8 +6,8 @@
 module.exports = async function (context) {
     const productWithSlashInColumnName = [{
         "ProductId": 1,
-        "Name/Test": "SlashInColumnNameTest",
-        "Cost/Test": 1
+        "Name/Test": "Test",
+        "Cost\\Test": 1
     }];
 
     context.bindings.products = JSON.stringify(productWithSlashInColumnName);

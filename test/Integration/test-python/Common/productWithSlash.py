@@ -8,4 +8,4 @@ class ProductWithSlash(collections.UserDict):
         super().__init__()
         self['ProductId'] = productId
         self['Name/Test'] = name
-        self['Cost/Test'] = cost
+        self['Cost\Test'] = cost
