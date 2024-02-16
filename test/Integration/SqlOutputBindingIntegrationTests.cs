@@ -551,5 +551,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             await this.SendOutputGetRequest("addproductdefaultpkanddifferentcolumnorder", null, TestUtils.GetPort(lang, true));
             Assert.Equal(1, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithDefaultPK"));
         }
+
+        /// <summary>
+        /// Tests that when using a table with column names having slash (/ or \) in them 
+        /// we can insert data using output binding.
+        /// Excluding C#, JAVA and CSX languages since / or \ are reserved characters and are not allowed to use in variable names
+        /// </summary>
+        [Theory]
+        [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.CSharp, SupportedLanguages.OutOfProc, SupportedLanguages.Java, SupportedLanguages.Csx)]
+        public async Task AddProductWithSlashInColumnName(SupportedLanguages lang)
+        {
+            Assert.Equal(0, this.ExecuteScalar("SELECT COUNT(*) FROM dbo.ProductsWithSlashInColumnNames"));
+            this.StartFunctionHost("AddProductWithSlashInColumnName", lang);
+            await this.SendOutputPostRequest("addproduct-slashcolumns", "");
+            // Check that a product should have been inserted
+            Assert.Equal("Test", this.ExecuteScalar("SELECT [Name/Test] FROM dbo.ProductsWithSlashInColumnNames WHERE ProductId = 1"));
+            Assert.Equal(1, this.ExecuteScalar("SELECT [Cost\\Test] FROM dbo.ProductsWithSlashInColumnNames WHERE ProductId = 1"));
+
+            var query = new Dictionary<string, object>()
+            {
+                { "ProductId", 2},
+                { "Name/Test", "Test" },
+                { "Cost\\Test", 2 }
+            };
+            await this.SendOutputPostRequest("addproduct-slashcolumns", Utils.JsonSerializeObject(query));
+            // Check that a product should have been inserted
+            Assert.Equal("Test", this.ExecuteScalar("SELECT [Name/Test] FROM dbo.ProductsWithSlashInColumnNames WHERE ProductId = 2"));
+            Assert.Equal(2, this.ExecuteScalar("SELECT [Cost\\Test] FROM dbo.ProductsWithSlashInColumnNames WHERE ProductId = 2"));
+        }
     }
 }
