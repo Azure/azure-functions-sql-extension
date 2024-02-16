@@ -1,0 +1,27 @@
+{
+  "bindings": [
+    {
+      "authLevel": "function",
+      "name": "req",
+      "direction": "in",
+      "type": "httpTrigger",
+      "methods": [
+        "post"
+      ],
+      "route": "addproduct-slashcolumns"
+    },
+    {
+      "name": "$return",
+      "type": "http",
+      "direction": "out"
+    },
+    {
+      "name": "products",
+      "type": "sql",
+      "direction": "out",
+      "commandText": "[dbo].[ProductsWithSlashInColumnNames]",
+      "connectionStringSetting": "SqlConnectionString"
+    }
+  ],
+  "disabled": false
+}
