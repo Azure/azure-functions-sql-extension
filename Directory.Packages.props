@@ -24,7 +24,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.Http" Version="2.2.2" />
     <PackageVersion Include="BenchmarkDotNet" Version="0.13.12" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker" Version="1.17.0" />
-    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.11.0" />
+    <PackageVersion Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.17.2" />
     <PackageVersion Include="System.Net.NameResolution" Version="4.3.0" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.0.13" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Timer" Version="4.2.0" />
