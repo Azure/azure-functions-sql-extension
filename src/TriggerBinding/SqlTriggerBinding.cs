@@ -104,6 +104,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         private async Task<string> GetUserFunctionIdAsync()
         {
+            string websiteName = await this._hostIdProvider.GetHostIdAsync(CancellationToken.None);
+
+            var methodInfo = (MethodInfo)this._parameter.Member;
+            string functionName = $"{methodInfo.DeclaringType.FullName}.{methodInfo.Name}";
+
+            using (var sha256 = SHA256.Create())
+            {
+                byte[] hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(websiteName + functionName));
+                return new Guid(hash.Take(16).ToArray()).ToString("N").Substring(0, 16);
+            }
+        }
+
+        /// <summary>
+        /// Returns an ID that uniquely identifies the user function.
+        ///
+        /// We call the WebJobs SDK library method to generate the host ID. The host ID is essentially a hash of the
+        /// assembly name containing the user function(s). This ensures that if the user ever updates their application,
+        /// unless the assembly name is modified, the new application version will be able to resume from the point
+        /// where the previous version had left. Appending another hash of class+method in here ensures that if there
+        /// are multiple user functions within the same process and tracking the same SQL table, then each one of them
+        /// gets a separate view of the table changes.
+        /// </summary>
+        private async Task<string> GetOldUserFunctionIdAsync()
+        {
             string hostId = await this._hostIdProvider.GetHostIdAsync(CancellationToken.None);
 
             var methodInfo = (MethodInfo)this._parameter.Member;
