@@ -79,7 +79,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             _ = context ?? throw new ArgumentNullException(nameof(context), "Missing listener context");
 
             string userFunctionId = await this.GetUserFunctionIdAsync();
-            return new SqlTriggerListener<T>(this._connectionString, this._tableName, this._leasesTableName, userFunctionId, context.Executor, this._sqlOptions, this._logger, this._configuration);
+            string oldUserFunctionId = await this.GetOldUserFunctionIdAsync();
+            return new SqlTriggerListener<T>(this._connectionString, this._tableName, this._leasesTableName, userFunctionId, oldUserFunctionId, context.Executor, this._sqlOptions, this._logger, this._configuration);
         }
 
         public ParameterDescriptor ToParameterDescriptor()
@@ -139,5 +140,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 return new Guid(hash.Take(16).ToArray()).ToString("N").Substring(0, 16);
             }
         }
+
     }
 }

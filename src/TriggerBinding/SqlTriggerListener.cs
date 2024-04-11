@@ -36,6 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly string _connectionString;
         private readonly string _userDefinedLeasesTableName;
         private readonly string _userFunctionId;
+        private readonly string _oldUserFunctionId;
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly SqlOptions _sqlOptions;
         private readonly ILogger _logger;
@@ -59,16 +60,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="tableName">Name of the user table</param>
         /// <param name="userDefinedLeasesTableName">Optional - Name of the leases table</param>
         /// <param name="userFunctionId">Unique identifier for the user function</param>
+        /// <param name="oldUserFunctionId">old value created using hostId for the user function</param>
         /// <param name="executor">Defines contract for triggering user function</param>
         /// <param name="sqlOptions"></param>
         /// <param name="logger">Facilitates logging of messages</param>
         /// <param name="configuration">Provides configuration values</param>
-        public SqlTriggerListener(string connectionString, string tableName, string userDefinedLeasesTableName, string userFunctionId, ITriggeredFunctionExecutor executor, SqlOptions sqlOptions, ILogger logger, IConfiguration configuration)
+        public SqlTriggerListener(string connectionString, string tableName, string userDefinedLeasesTableName, string userFunctionId, string oldUserFunctionId, ITriggeredFunctionExecutor executor, SqlOptions sqlOptions, ILogger logger, IConfiguration configuration)
         {
             this._connectionString = !string.IsNullOrEmpty(connectionString) ? connectionString : throw new ArgumentNullException(nameof(connectionString));
             this._userTable = !string.IsNullOrEmpty(tableName) ? new SqlObject(tableName) : throw new ArgumentNullException(nameof(tableName));
             this._userDefinedLeasesTableName = userDefinedLeasesTableName;
             this._userFunctionId = !string.IsNullOrEmpty(userFunctionId) ? userFunctionId : throw new ArgumentNullException(nameof(userFunctionId));
+            this._oldUserFunctionId = oldUserFunctionId;
             this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
             this._sqlOptions = sqlOptions ?? throw new ArgumentNullException(nameof(sqlOptions));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -426,8 +429,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             string primaryKeysWithTypes = string.Join(", ", primaryKeyColumns.Select(col => $"{col.name.AsBracketQuotedString()} {col.type}"));
             string primaryKeys = string.Join(", ", primaryKeyColumns.Select(col => col.name.AsBracketQuotedString()));
+            string OldLeasesTableName = leasesTableName.Contains(this._userFunctionId) ? leasesTableName.Replace(this._userFunctionId, this._oldUserFunctionId) : string.Empty;
 
-            string createLeasesTableQuery = $@"
+            string createLeasesTableQuery = string.IsNullOrEmpty(OldLeasesTableName) ? $@"
                 {AppLockStatements}
 
                 IF OBJECT_ID(N'{leasesTableName}', 'U') IS NULL
@@ -438,6 +442,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         {LeasesTableLeaseExpirationTimeColumnName} datetime2,
                         PRIMARY KEY ({primaryKeys})
                     );
+            " : $@"
+                {AppLockStatements}
+
+                IF OBJECT_ID(N'{leasesTableName}', 'U') IS NULL
+                Begin
+                    CREATE TABLE {leasesTableName} (
+                        {primaryKeysWithTypes},
+                        {LeasesTableChangeVersionColumnName} bigint NOT NULL,
+                        {LeasesTableAttemptCountColumnName} int NOT NULL,
+                        {LeasesTableLeaseExpirationTimeColumnName} datetime2,
+                        PRIMARY KEY ({primaryKeys})
+                    );
+
+                    IF OBJECT_ID(N'{OldLeasesTableName}', 'U') IS NOT NULL
+                    Begin
+                        Insert into {leasesTableName}
+                        Select * from {OldLeasesTableName};
+
+                        Drop Table {OldLeasesTableName};
+                    END
+                End
             ";
 
             using (var createLeasesTableCommand = new SqlCommand(createLeasesTableQuery, connection, transaction))
