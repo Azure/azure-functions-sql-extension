@@ -392,16 +392,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
             }
 
-            string insertRowGlobalStateTableQuery = $@"
+            bool migrateOldUserFunctionIdData = await this.OldUserFunctionIdRecordExists(connection, transaction, cancellationToken);
+
+            string insertRowGlobalStateTableQuery = migrateOldUserFunctionIdData ? $@"
                 {AppLockStatements}
 
                 IF NOT EXISTS (
                     SELECT * FROM {GlobalStateTableName}
                     WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {userTableId}
                 )
+
+                -- Migrate LastSyncVersion from oldUserFunctionId if it exists and delete the record
+                Declare @lastSyncVersion bigint;
+                Select @lastSyncVersion = LastSyncVersion from az_func.GlobalState where UserFunctionID = '{this._oldUserFunctionId}' AND UserTableID = {userTableId}
+                IF @lastSyncVersion is NULL
+                    SET @lastSyncVersion = {(long)minValidVersion};
+                ELSE
+                    Delete from az_func.GlobalState where UserFunctionID = '{this._oldUserFunctionId}' AND UserTableID = {userTableId}
+                    
+                INSERT INTO {GlobalStateTableName}
+                VALUES ('{this._userFunctionId}', {userTableId}, @lastSyncVersion, GETUTCDATE());
+            " :
+            $@"{AppLockStatements}
+
+                IF NOT EXISTS (
+                    SELECT * FROM {GlobalStateTableName}
+                    WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {userTableId}
+                )
                     INSERT INTO {GlobalStateTableName}
-                    VALUES ('{this._userFunctionId}', {userTableId}, {(long)minValidVersion}, GETUTCDATE());
-            ";
+                    VALUES ('{this._userFunctionId}', {userTableId}, {(long)minValidVersion}, GETUTCDATE());";
 
             using (var insertRowGlobalStateTableCommand = new SqlCommand(insertRowGlobalStateTableQuery, connection, transaction))
             {
@@ -493,6 +512,48 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
         }
 
+        /// <summary>
+        /// Returns if oldUserFunctionId records exist.
+        /// </summary>
+        /// <param name="connection">The already-opened connection to use for executing the command</param>
+        /// <param name="transaction">The transaction wrapping this command</param>
+        /// <param name="cancellationToken">Cancellation token to pass to the command</param>
+        /// <returns>The time taken in ms to execute the command</returns>
+        private async Task<bool> OldUserFunctionIdRecordExists(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            CancellationToken cancellationToken)
+        {
+            string getRecordsWithOldUserFunctionId = $@"
+                Select Count(*) from az_func.GlobalState where UserFunctionID = '{this._oldUserFunctionId}' AND UserTableID = {userTableId}
+            ";
+            long rowsExist = 0;
+            using (var getRecordsWithOldUserFunctionIdCommand = new SqlCommand(getRecordsWithOldUserFunctionId, connection, transaction))
+            {
+                var stopwatch = Stopwatch.StartNew();
+                try
+                {
+                    rowsExist = (long)await getRecordsWithOldUserFunctionIdCommand.ExecuteScalarAsyncWithLogging(this._logger, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    TelemetryInstance.TrackException(TelemetryErrorName.OldUserFunctionIdRecordsExist, ex, this._telemetryProps);
+                    var sqlEx = ex as SqlException;
+                    if (sqlEx?.Number == ObjectAlreadyExistsErrorNumber)
+                    {
+                        // This generally shouldn't happen since we check for its existence in the statement but occasionally
+                        // a race condition can make it so that multiple instances will try and create the schema at once.
+                        // In that case we can just ignore the error since all we care about is that the schema exists at all.
+                        this._logger.LogWarning($"Failed to check global state table with '{this._oldUserFunctionId}'. Exception message: {ex.Message} This is informational only, function startup will continue as normal.");
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                return rowsExist > 0;
+            }
+        }
         public IScaleMonitor GetMonitor()
         {
             return this._scaleMonitor;
