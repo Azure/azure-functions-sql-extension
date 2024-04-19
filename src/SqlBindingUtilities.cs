@@ -54,6 +54,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             return connectionString;
         }
 
+        public static string GetWebSiteName(IConfiguration configuration)
+        {
+            if (configuration == null)
+            {
+                throw new ArgumentNullException(nameof(configuration));
+            }
+            return configuration.GetConnectionStringOrSetting(SqlBindingConstants.WebsiteName);
+        }
+
         /// <summary>
         /// Parses the parameter string into a list of parameters, where each parameter is separated by "," and has the form
         /// "@param1=param2". "@param1" is the parameter name to be used in the query or stored procedure, and param1 is the

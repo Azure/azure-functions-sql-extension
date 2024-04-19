@@ -78,7 +78,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             _ = context ?? throw new ArgumentNullException(nameof(context), "Missing listener context");
 
-            string userFunctionId = await this.GetUserFunctionIdAsync();
+            string userFunctionId = this.GetUserFunctionIdAsync();
             string oldUserFunctionId = await this.GetOldUserFunctionIdAsync();
             return new SqlTriggerListener<T>(this._connectionString, this._tableName, this._leasesTableName, userFunctionId, oldUserFunctionId, context.Executor, this._sqlOptions, this._logger, this._configuration);
         }
@@ -103,9 +103,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// are multiple user functions within the same process and tracking the same SQL table, then each one of them
         /// gets a separate view of the table changes.
         /// </summary>
-        private async Task<string> GetUserFunctionIdAsync()
+        private string GetUserFunctionIdAsync()
         {
-            string websiteName = await this._hostIdProvider.GetHostIdAsync(CancellationToken.None);
+            string websiteName = SqlBindingUtilities.GetWebSiteName(this._configuration);
 
             var methodInfo = (MethodInfo)this._parameter.Member;
             string functionName = $"{methodInfo.DeclaringType.FullName}.{methodInfo.Name}";
