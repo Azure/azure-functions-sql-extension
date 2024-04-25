@@ -224,6 +224,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         public async void TestWellformedDeserialization()
         {
             var arg = new SqlAttribute(string.Empty, "SqlConnectionString");
+            // Configuration and Logger objects are not TheoryDataRow arguments; ignoring the warning below.
 #pragma warning disable xUnit1047 // Avoid using TheoryDataRow arguments that might not be serializable
             var converter = new Mock<SqlGenericsConverter<TestData>>(config.Object, logger.Object);
 #pragma warning restore xUnit1047 // Avoid using TheoryDataRow arguments that might not be serializable
@@ -263,6 +264,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         public async void TestMalformedDeserialization()
         {
             var arg = new SqlAttribute(string.Empty, "SqlConnectionString");
+            // Configuration and Logger objects are not TheoryDataRow arguments; ignoring the warning below.
 #pragma warning disable xUnit1047 // Avoid using TheoryDataRow arguments that might not be serializable
             var converter = new Mock<SqlGenericsConverter<TestData>>(config.Object, logger.Object);
 #pragma warning restore xUnit1047 // Avoid using TheoryDataRow arguments that might not be serializable
