@@ -60,7 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="tableName">Name of the user table</param>
         /// <param name="userDefinedLeasesTableName">Optional - Name of the leases table</param>
         /// <param name="userFunctionId">Unique identifier for the user function</param>
-        /// <param name="oldUserFunctionId">old value created using hostId for the user function</param>
+        /// <param name="oldUserFunctionId">deprecated user function id value created using hostId for the user function</param>
         /// <param name="executor">Defines contract for triggering user function</param>
         /// <param name="sqlOptions"></param>
         /// <param name="logger">Facilitates logging of messages</param>
@@ -397,11 +397,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string insertRowGlobalStateTableQuery = migrateOldUserFunctionIdData ? $@"
                 {AppLockStatements}
 
-                IF NOT EXISTS (
-                    SELECT * FROM {GlobalStateTableName}
-                    WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {userTableId}
-                )
-
                 -- Migrate LastSyncVersion from oldUserFunctionId if it exists and delete the record
                 Declare @lastSyncVersion bigint;
                 Select @lastSyncVersion = LastSyncVersion from az_func.GlobalState where UserFunctionID = '{this._oldUserFunctionId}' AND UserTableID = {userTableId}
@@ -474,6 +469,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         PRIMARY KEY ({primaryKeys})
                     );
 
+                    -- Migrate all data from OldLeasesTable and delete it.
                     IF OBJECT_ID(N'{OldLeasesTableName}', 'U') IS NOT NULL
                     Begin
                         Insert into {leasesTableName}
@@ -500,7 +496,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         // This generally shouldn't happen since we check for its existence in the statement but occasionally
                         // a race condition can make it so that multiple instances will try and create the schema at once.
                         // In that case we can just ignore the error since all we care about is that the schema exists at all.
-                        this._logger.LogWarning($"Failed to create global state table '{leasesTableName}'. Exception message: {ex.Message} This is informational only, function startup will continue as normal.");
+                        this._logger.LogWarning($"Failed to create leases table '{leasesTableName}'. Exception message: {ex.Message} This is informational only, function startup will continue as normal.");
                     }
                     else
                     {
@@ -532,7 +528,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             long rowsExist = 0;
             using (var getRecordsWithOldUserFunctionIdCommand = new SqlCommand(getRecordsWithOldUserFunctionId, connection, transaction))
             {
-                var stopwatch = Stopwatch.StartNew();
                 try
                 {
                     rowsExist = (long)await getRecordsWithOldUserFunctionIdCommand.ExecuteScalarAsyncWithLogging(this._logger, cancellationToken);
@@ -546,7 +541,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         // This generally shouldn't happen since we check for its existence in the statement but occasionally
                         // a race condition can make it so that multiple instances will try and create the schema at once.
                         // In that case we can just ignore the error since all we care about is that the schema exists at all.
-                        this._logger.LogWarning($"Failed to check global state table with '{this._oldUserFunctionId}'. Exception message: {ex.Message} This is informational only, function startup will continue as normal.");
+                        this._logger.LogWarning($"Failed to check global state table for the deprecated functionId '{this._oldUserFunctionId}'. Exception message: {ex.Message} This is informational only, function startup will continue as normal.");
                     }
                     else
                     {
