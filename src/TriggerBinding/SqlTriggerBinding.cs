@@ -96,15 +96,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Returns an ID that uniquely identifies the user function.
         ///
-        /// We call the WebJobs SDK library method to generate the host ID. The host ID is essentially a hash of the
-        /// assembly name containing the user function(s). This ensures that if the user ever updates their application,
-        /// unless the assembly name is modified, the new application version will be able to resume from the point
-        /// where the previous version had left. Appending another hash of class+method in here ensures that if there
+        /// We call the WEBSITE_SITE_NAME from the configuration and use that to create the hash of the
+        /// user function id. Appending another hash of class+method in here ensures that if there
         /// are multiple user functions within the same process and tracking the same SQL table, then each one of them
         /// gets a separate view of the table changes.
         /// </summary>
         private string GetUserFunctionIdAsync()
         {
+            // Using read-only App name for the hash https://learn.microsoft.com/en-us/azure/app-service/reference-app-settings?tabs=kudu%2Cdotnet#app-environment
             string websiteName = SqlBindingUtilities.GetWebSiteName(this._configuration);
 
             var methodInfo = (MethodInfo)this._parameter.Member;
@@ -118,7 +117,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Returns an ID that uniquely identifies the user function.
+        /// Returns the deprecated ID that was used to identify the user function.
         ///
         /// We call the WebJobs SDK library method to generate the host ID. The host ID is essentially a hash of the
         /// assembly name containing the user function(s). This ensures that if the user ever updates their application,
