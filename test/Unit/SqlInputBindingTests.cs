@@ -13,6 +13,7 @@ using Moq;
 using Xunit;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 {
@@ -221,7 +222,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         }
 
         [Fact]
-        public async void TestWellformedDeserialization()
+        public async Task TestWellformedDeserialization()
         {
             var arg = new SqlAttribute(string.Empty, "SqlConnectionString");
             // Configuration and Logger objects are not TheoryDataRow arguments; ignoring the warning below.
@@ -261,7 +262,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         }
 
         [Fact]
-        public async void TestMalformedDeserialization()
+        public async Task TestMalformedDeserialization()
         {
             var arg = new SqlAttribute(string.Empty, "SqlConnectionString");
             // Configuration and Logger objects are not TheoryDataRow arguments; ignoring the warning below.
