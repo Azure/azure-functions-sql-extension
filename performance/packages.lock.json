@@ -1827,37 +1827,37 @@
       },
       "xunit.analyzers": {
         "type": "Transitive",
-        "resolved": "1.11.0",
-        "contentHash": "SCv+Ihxv+fCqotGeM8sVwLhw8nzAJ2aFRN5lcoKn9QtGdbVJ79JqDc+4u8/Ddnp2udxtmv+xYFWkHNlb/sk01w=="
+        "resolved": "1.13.0",
+        "contentHash": "Pai9YnDV71/Ox14nBHB6/f62iyPyLbmUG/YYMiA4dfdFZvr0gIYE9yGxSr0i5Tr3INK75wgL2MCUNEKpeiZ2Fw=="
       },
       "xunit.assert": {
         "type": "Transitive",
-        "resolved": "2.7.0",
-        "contentHash": "CCTs3bUhmIS4tDwK6Cn/IiabG3RhYzdf65eIkO7u9/grKoN9MrN780LzVED3E8v+vwmmj7b5TW3/GFuZHPAzWA=="
+        "resolved": "2.8.0",
+        "contentHash": "lwf7Dy5/5HbDkaPx1YrGXCByytCEEcIn+KPI74jh2BD/RU/7RhO8c+S3k0Ph+Mr7+cLf338fl+o6UcgPCLa6PA=="
       },
       "xunit.core": {
         "type": "Transitive",
-        "resolved": "2.7.0",
-        "contentHash": "98tzqYAbtc/p/2Ba455XTNbD12Qoo8kPehjC4oDT46CAsLli5JOCU9hFF2MV3HHWMw/Y3yFUV2Vcukplbs6kuA==",
+        "resolved": "2.8.0",
+        "contentHash": "McSTFGTETCxLpmJKE9TWi9FtFthrRbpRrjz2V2g8sK2wRt1+JHs15vwi+B+nfftFkV9aFWIXZfzZM95TIGZNIA==",
         "dependencies": {
-          "xunit.extensibility.core": "[2.7.0]",
-          "xunit.extensibility.execution": "[2.7.0]"
+          "xunit.extensibility.core": "[2.8.0]",
+          "xunit.extensibility.execution": "[2.8.0]"
         }
       },
       "xunit.extensibility.core": {
         "type": "Transitive",
-        "resolved": "2.7.0",
-        "contentHash": "JLnx4PI0vn1Xr1Ust6ydrp2t/ktm2dyGPAVoDJV5gQuvBMSbd2K7WGzODa2ttiz030CeQ8nbsXl05+cvf7QNyA==",
+        "resolved": "2.8.0",
+        "contentHash": "eBJv9xQeY0p5z+C/L1tFjUFYqtl5pQqIEYCGTMl+MbRzA7sOlgYKwJE//vEePBp+mgBh7NjD0Qhz0liZBYM27w==",
         "dependencies": {
           "xunit.abstractions": "2.0.3"
         }
       },
       "xunit.extensibility.execution": {
         "type": "Transitive",
-        "resolved": "2.7.0",
-        "contentHash": "bjY+crT1jOyxKagFjCMdEVzoenO2v66ru8+CK/0UaXvyG4U9Q3UTieJkbQXbi7/1yZIK1sGh01l5/jh2CwLJtQ==",
+        "resolved": "2.8.0",
+        "contentHash": "TyyrZesHB9ODZMS9c73OqiBz4x0vL944JCkSPBWW5w6PF2LlUfdfXRjjOhoIOuY6lTmEgl07rS4/Jot9mCYnpg==",
         "dependencies": {
-          "xunit.extensibility.core": "[2.7.0]"
+          "xunit.extensibility.core": "[2.8.0]"
         }
       },
       "microsoft.azure.webjobs.extensions.sql": {
@@ -1898,8 +1898,8 @@
           "Moq": "[4.20.70, )",
           "Newtonsoft.Json": "[13.0.3, )",
           "xRetry": "[1.9.0, )",
-          "xunit": "[2.7.0, )",
-          "xunit.runner.visualstudio": "[2.5.7, )"
+          "xunit": "[2.8.0, )",
+          "xunit.runner.visualstudio": "[2.8.0, )"
         }
       },
       "Azure.Identity": {
@@ -2125,20 +2125,20 @@
       },
       "xunit": {
         "type": "CentralTransitive",
-        "requested": "[2.7.0, )",
-        "resolved": "2.7.0",
-        "contentHash": "KcCI5zxh8zbUfQTeErc4oT7YokViVND2V0p4vDJ2VD4lhF9V5qCYMMDNixme7FdwYy3SwPHF+2xC2Dq4Z9GSlA==",
+        "requested": "[2.8.0, )",
+        "resolved": "2.8.0",
+        "contentHash": "US3a3twJziAif1kFPGdk9fALwILHxV0n1roX5j67bN/d3o4DGNLHnV3tr5ZX+uinVrzfkf0avH3zGX8JPBC0qA==",
         "dependencies": {
-          "xunit.analyzers": "1.11.0",
-          "xunit.assert": "2.7.0",
-          "xunit.core": "[2.7.0]"
+          "xunit.analyzers": "1.13.0",
+          "xunit.assert": "2.8.0",
+          "xunit.core": "[2.8.0]"
         }
       },
       "xunit.runner.visualstudio": {
         "type": "CentralTransitive",
-        "requested": "[2.5.7, )",
-        "resolved": "2.5.7",
-        "contentHash": "31Rl7dBJriX0DNwZfDp8gqFOPsiM0c9kqpcH/HvNi9vDp+K7Ydf42H7mVIvYT918Ywzn1ymLg1c4DDC6iU754w=="
+        "requested": "[2.8.0, )",
+        "resolved": "2.8.0",
+        "contentHash": "mqQbS2zr8dfgSWxkNOC6UTzO8JoqpTmM5+FFn2XR/2nVmx2JvEY0YbM5pt2FmXVg9YVe+jKUPHd6KrroyCl67w=="
       }
     }
   }

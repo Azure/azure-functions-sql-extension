@@ -5,6 +5,7 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Xunit;
 using Xunit.Abstractions;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -22,7 +23,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        public async void GetAndAddProductsTest(SupportedLanguages lang)
+        public async Task GetAndAddProductsTest(SupportedLanguages lang)
         {
             // Insert 10 rows to Products table
             Product[] products = GetProductsWithSameCost(10, 100);
