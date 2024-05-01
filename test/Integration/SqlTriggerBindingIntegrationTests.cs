@@ -553,7 +553,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         /// <remarks>We call this directly since there isn't a way to test scaling locally - with this we at least verify the methods called don't throw unexpectedly.</remarks>
         [Fact]
-        public async void GetMetricsTest()
+        public async Task GetMetricsTest()
         {
             this.SetChangeTrackingForTable("Products");
             string userFunctionId = "func-id";
@@ -633,7 +633,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         /// <remarks>We call StartAsync which initializes the GlobalState and then drop the LastAccessTime column from the table and recall the StartAsync to check if the GlobalState has the column.</remarks>
         [Fact]
-        public async void LastAccessTimeColumn_Created_OnStartup()
+        public async Task LastAccessTimeColumn_Created_OnStartup()
         {
 
             this.SetChangeTrackingForTable("Products");
@@ -676,7 +676,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Theory]
         [SqlInlineData()]
         [UnsupportedLanguages(SupportedLanguages.Java)] // test timing out for Java
-        public async void ReservedTableNameTest(SupportedLanguages lang)
+        public async Task ReservedTableNameTest(SupportedLanguages lang)
         {
             this.SetChangeTrackingForTable("User");
             this.StartFunctionHost(nameof(ReservedTableNameTrigger), lang, true);
