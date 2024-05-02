@@ -1,0 +1,37 @@
+Para verificar la velocidad de tu conexión a Internet desde la línea de comandos, puedes seguir estos métodos:
+
+1. **Usando `ipconfig` para obtener información de la tarjeta de red**:
+    - Abre la ventana de **CMD** (Símbolo del sistema).
+    - Escribe `ipconfig` y presiona Enter. Esto mostrará información sobre todas las tarjetas de red instaladas en tu PC, incluyendo sus direcciones IP y configuraciones.
+    - Si deseas obtener detalles más específicos, como la dirección MAC de la tarjeta de red, ejecuta `ipconfig /all`.
+
+2. **Ejecutando una prueba de velocidad con `speedtest-cli`**:
+    - Instala `speedtest-cli` en tu sistema operativo:
+        - **Ubuntu (y otras distribuciones de Linux)**: Ejecuta `sudo apt install speedtest-cli`.
+        - **macOS (con Homebrew)**: Si no tienes Homebrew instalado, sigue las instrucciones [aquí](https://brew.sh/) para instalarlo. Luego, ejecuta `brew install speedtest_cli`.
+        - **Windows**: Primero, instala Python en Windows. Asegúrate de que `python` y `pip` estén agregados al sistema PATH. Luego, ejecuta `pip install speedtest-cli`.
+    - Una vez instalado, ejecuta el siguiente comando en la línea de comandos:
+        ```
+        speedtest-cli
+        ```
+    - Esto realizará una prueba de velocidad y mostrará los resultados, incluyendo la velocidad de descarga y carga.
+
+3. **Usando `ping` para verificar la conexión**:
+    - Ejecuta el siguiente comando:
+        ```
+        ping -t 8.8.8.8
+        ```
+    - Esto enviará paquetes de datos al servidor DNS de Google (8.8.8.8) y mostrará el tiempo de respuesta. Si ves "request timed out", podría haber problemas con tu conexión.
+
+Recuerda que estos comandos te ayudarán a diagnosticar problemas y evaluar la velocidad de tu conexión. ¡Espero que te sean útiles! 😊
+
+Origen: Conversación con Bing, 2/5/2024
+(1) Medir Velocidad de Internet con CMD 2022 ✔. https://www.youtube.com/watch?v=NU15yYT2pwk.
+(2) Como Ejecutar un programa desde CMD ✅ uSAR pINg.EXE. https://www.youtube.com/watch?v=Wk_dHqIA1dw.
+(3) Como comprobar conexión a internet por CMD (Símbolo del Sistema). https://www.youtube.com/watch?v=jt8fEF-UAtw.
+(4) Cómo comprobar si la conexión a Internet funciona bien desde CMD. https://www.softzone.es/windows/como-se-hace/cmd-comprobar-conexion/.
+(5) Cómo probar la velocidad de Internet desde la línea de comandos. https://www.thefastcode.com/article/how-to-test-your-internet-speed-from-the-command-line.
+(6) Cómo ejecutar la prueba de velocidad desde la línea de comando para .... https://bing.com/search?q=abrir+cmd+y+ejecutar+prueba+de+velocidad+en+modem.
+(7) Cómo ejecutar la prueba de velocidad desde la línea de comando para .... https://es.compien.com/how-run-speed-test-from-command-line-check-internet-connection-speed.
+(8) Como hacer un test de velocidad de Internet por cmd?. https://respuestasrapidas.com.mx/como-hacer-un-test-de-velocidad-de-internet-por-cmd/.
+(9) undefined. http://speedtest.wdc01.softlayer.com/downloads/test10.zip.
