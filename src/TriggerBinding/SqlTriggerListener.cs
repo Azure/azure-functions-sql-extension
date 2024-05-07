@@ -394,7 +394,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             string insertRowGlobalStateTableQuery = $@"
                 {AppLockStatements}
-                
+                -- For back compatibility copy the lastSyncVersion from _oldUserFunctionId if it exists.
                 IF NOT EXISTS (
                     SELECT * FROM {GlobalStateTableName}
                     WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {userTableId}
@@ -443,9 +443,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             string primaryKeysWithTypes = string.Join(", ", primaryKeyColumns.Select(col => $"{col.name.AsBracketQuotedString()} {col.type}"));
             string primaryKeys = string.Join(", ", primaryKeyColumns.Select(col => col.name.AsBracketQuotedString()));
-            string OldLeasesTableName = leasesTableName.Contains(this._userFunctionId) ? leasesTableName.Replace(this._userFunctionId, this._oldUserFunctionId) : string.Empty;
+            string oldLeasesTableName = leasesTableName.Contains(this._userFunctionId) ? leasesTableName.Replace(this._userFunctionId, this._oldUserFunctionId) : string.Empty;
 
-            string createLeasesTableQuery = string.IsNullOrEmpty(OldLeasesTableName) ? $@"
+            string createLeasesTableQuery = string.IsNullOrEmpty(oldLeasesTableName) ? $@"
                 {AppLockStatements}
 
                 IF OBJECT_ID(N'{leasesTableName}', 'U') IS NULL
@@ -470,12 +470,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     );
 
                     -- Migrate all data from OldLeasesTable and delete it.
-                    IF OBJECT_ID(N'{OldLeasesTableName}', 'U') IS NOT NULL
+                    IF OBJECT_ID(N'{oldLeasesTableName}', 'U') IS NOT NULL
                     Begin
                         Insert into {leasesTableName}
-                        Select * from {OldLeasesTableName};
+                        Select * from {oldLeasesTableName};
 
-                        Drop Table {OldLeasesTableName};
+                        Drop Table {oldLeasesTableName};
                     END
                 End
             ";
