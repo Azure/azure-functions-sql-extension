@@ -835,5 +835,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Thread.Sleep(5000);
             Assert.Equal(1, (int)this.ExecuteScalar("SELECT COUNT(*) FROM sys.tables WHERE [name] = 'Leases'"));
         }
+
+        /// <summary>
+        /// Tests that the old UserfunctionId is deleted and the data is migrated correctly to the new one.
+        /// </summary>
+        /// <remarks>We manually create a row with old userfunction id and call StartAsync which initializes the GlobalState and checks/migrates data to the new userfunctionid.</remarks>
+        [Fact]
+        public async Task NewUserFunctionId_Migration_Test()
+        {
+
+            this.SetChangeTrackingForTable("Products");
+            string oldUserFunctionId = "oldOne";
+            string userFunctionId = "newOne";
+            IConfiguration configuration = new ConfigurationBuilder().Build();
+            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", oldUserFunctionId, "", Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
+            await listener.StartAsync(CancellationToken.None);
+            // Cancel immediately so the listener doesn't start processing the changes
+            await listener.StopAsync(CancellationToken.None);
+
+            //Check that oldUserFunctionId is created in the GlobalState table
+            Assert.True(1 == (int)this.ExecuteScalar($@"SELECT 1 FROM {GlobalStateTableName} WHERE UserFunctionID = N'{oldUserFunctionId}'"), $"{GlobalStateTableName} should have {oldUserFunctionId} row on creation");
+
+            listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", userFunctionId, oldUserFunctionId, Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
+            await listener.StartAsync(CancellationToken.None);
+            // Cancel immediately so the listener doesn't start processing the changes
+            await listener.StopAsync(CancellationToken.None);
+
+            //Check if oldUserFunctionId is cleaned up from GlobalState table and the newfunctionId created.
+            Assert.True(0 == (int)this.ExecuteScalar($@"SELECT COUNT(*) FROM {GlobalStateTableName} WHERE UserFunctionID = N'{oldUserFunctionId}'"), $"{GlobalStateTableName} should not have the old functionid `{oldUserFunctionId}` row");
+            Assert.True(1 == (int)this.ExecuteScalar($@"SELECT 1 FROM {GlobalStateTableName} WHERE UserFunctionID = N'{userFunctionId}'"), $"{GlobalStateTableName} should have {userFunctionId} row on successful migration");
+        }
     }
 }
