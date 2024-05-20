@@ -460,7 +460,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {AppLockStatements}
 
                 IF OBJECT_ID(N'{leasesTableName}', 'U') IS NULL
-                Begin
+                BEGIN
                     CREATE TABLE {leasesTableName} (
                         {primaryKeysWithTypes},
                         {LeasesTableChangeVersionColumnName} bigint NOT NULL,
@@ -471,7 +471,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                     -- Migrate all data from OldLeasesTable and delete it.
                     IF OBJECT_ID(N'{oldLeasesTableName}', 'U') IS NOT NULL
-                    Begin
+                    BEGIN
                         Insert into {leasesTableName}
                         Select * from {oldLeasesTableName};
 

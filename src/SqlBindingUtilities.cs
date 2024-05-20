@@ -60,7 +60,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
-            return configuration.GetConnectionStringOrSetting(SqlBindingConstants.WebsiteName);
+            return configuration.GetConnectionStringOrSetting(SqlBindingConstants.WEBSITENAME);
         }
 
         /// <summary>

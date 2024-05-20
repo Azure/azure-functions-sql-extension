@@ -7,7 +7,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     {
         public const string ISO_8061_DATETIME_FORMAT = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fffZ";
 
-        public const string WebsiteName = "WEBSITE_SITE_NAME";
+        public const string WEBSITENAME = "WEBSITE_SITE_NAME";
 
         /// <summary>
         /// Sql Server Edition of the target server, list consolidated from
