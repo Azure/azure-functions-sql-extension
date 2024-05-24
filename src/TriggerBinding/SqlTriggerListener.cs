@@ -401,15 +401,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 )
                 BEGIN
                     -- Migrate LastSyncVersion from oldUserFunctionId if it exists and delete the record
-                    Declare @lastSyncVersion bigint;
-                    Select @lastSyncVersion = LastSyncVersion from az_func.GlobalState where UserFunctionID = '{this._oldUserFunctionId}' AND UserTableID = {userTableId}
-                    IF @lastSyncVersion is NULL
+                    DECLARE @lastSyncVersion bigint;
+                    SELECT @lastSyncVersion = LastSyncVersion from az_func.GlobalState where UserFunctionID = '{this._oldUserFunctionId}' AND UserTableID = {userTableId}
+                    IF @lastSyncVersion IS NULL
                         SET @lastSyncVersion = {(long)minValidVersion};
                     ELSE
-                        Delete from az_func.GlobalState where UserFunctionID = '{this._oldUserFunctionId}' AND UserTableID = {userTableId}
+                        DELETE FROM az_func.GlobalState WHERE UserFunctionID = '{this._oldUserFunctionId}' AND UserTableID = {userTableId}
                     
                     INSERT INTO {GlobalStateTableName}
-                    VALUES ('{this._userFunctionId}', {userTableId}, {(long)minValidVersion}, GETUTCDATE());
+                    VALUES ('{this._userFunctionId}', {userTableId}, @lastSyncVersion, GETUTCDATE());
                 END
             ";
 
@@ -472,10 +472,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     -- Migrate all data from OldLeasesTable and delete it.
                     IF OBJECT_ID(N'{oldLeasesTableName}', 'U') IS NOT NULL
                     BEGIN
-                        Insert into {leasesTableName}
-                        Select * from {oldLeasesTableName};
+                        INSERT INTO {leasesTableName}
+                        SELECT * FROM {oldLeasesTableName};
 
-                        Drop Table {oldLeasesTableName};
+                        DROP TABLE {oldLeasesTableName};
                     END
                 End
             ";
