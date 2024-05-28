@@ -4,7 +4,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-      # Check for updates on Wednesday
+      # Check for updates on Wednesday https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#scheduleday
       day: "wednesday"
     ignore:
         # Please do not bump Azure.Identity from 1.10.2, even a minor bump to 1.10.3 is causing a major bump in it's trasitive dependecny Microsoft.Identity.Client.Extensions.Msal which will fail the bundle test.
