@@ -581,7 +581,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// Tests that the Scale Controller is able to scale out the workers when required.
         /// </summary>
         [Fact]
-        public async void ScaleHostEndToEndTest()
+        public async Task ScaleHostEndToEndTest()
         {
             string TestFunctionName = "TestFunction";
             string ConnectionStringName = "SqlConnectionString";
@@ -611,7 +611,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             // Initializing the listener is needed to create relevant lease table to get unprocessed changes. 
             // We would be using the scale host methods to get the scale status so the configuration values are not needed here.
-            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", "testFunctionId", Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
+            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", "testFunctionId", "testOldFunctionId", Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
             await listener.StartAsync(CancellationToken.None);
             // Cancel immediately so the listener doesn't start processing the changes
             await listener.StopAsync(CancellationToken.None);
