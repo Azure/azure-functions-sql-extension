@@ -9,6 +9,7 @@ using Xunit;
 using Xunit.Abstractions;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 using Microsoft.Data.SqlClient;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -25,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(0, 100)]
         [SqlInlineData(1, -500)]
         [SqlInlineData(100, 500)]
-        public async void GetProductsTest(int n, int cost, SupportedLanguages lang)
+        public async Task GetProductsTest(int n, int cost, SupportedLanguages lang)
         {
             // Generate T-SQL to insert n rows of data with cost
             Product[] products = GetProductsWithSameCost(n, cost);
@@ -45,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(0, 99)]
         [SqlInlineData(1, -999)]
         [SqlInlineData(100, 999)]
-        public async void GetProductsStoredProcedureTest(int n, int cost, SupportedLanguages lang)
+        public async Task GetProductsStoredProcedureTest(int n, int cost, SupportedLanguages lang)
         {
             // Generate T-SQL to insert n rows of data with cost
             Product[] products = GetProductsWithSameCost(n, cost);
@@ -65,7 +66,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData(0, 0)]
         [SqlInlineData(1, 20)]
         [SqlInlineData(100, 1000)]
-        public async void GetProductsNameEmptyTest(int n, int cost, SupportedLanguages lang)
+        public async Task GetProductsNameEmptyTest(int n, int cost, SupportedLanguages lang)
         {
             // Add a bunch of noise data
             this.InsertProducts(GetProductsWithSameCost(n * 2, cost));
@@ -88,7 +89,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        public async void GetProductsByCostTest(SupportedLanguages lang)
+        public async Task GetProductsByCostTest(SupportedLanguages lang)
         {
             // Generate T-SQL to insert n rows of data with cost
             Product[] products = GetProducts(3, 100);
@@ -107,7 +108,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         [Theory]
         [SqlInlineData()]
-        public async void GetProductNamesViewTest(SupportedLanguages lang)
+        public async Task GetProductNamesViewTest(SupportedLanguages lang)
         {
             // Insert one row of data into Product table
             Product[] products = GetProductsWithSameCost(1, 100);
@@ -130,7 +131,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData("en-US")]
         [SqlInlineData("it-IT")]
         [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.PowerShell, SupportedLanguages.Java, SupportedLanguages.Python)] // IAsyncEnumerable is only available in C#
-        public async void GetProductsColumnTypesSerializationAsyncEnumerableTest(string culture, SupportedLanguages lang)
+        public async Task GetProductsColumnTypesSerializationAsyncEnumerableTest(string culture, SupportedLanguages lang)
         {
             this.StartFunctionHost(nameof(GetProductsColumnTypesSerializationAsyncEnumerable), lang, true);
 
@@ -174,7 +175,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        public async void GetProductsColumnTypesSerializationTest(SupportedLanguages lang)
+        public async Task GetProductsColumnTypesSerializationTest(SupportedLanguages lang)
         {
             string datetime = "2022-10-20 12:39:13.123";
             this.ExecuteNonQuery("INSERT INTO [dbo].[ProductsColumnTypes] VALUES (" +
@@ -215,7 +216,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [Theory]
         [SqlInlineData()]
-        public async void GetProductsFromCaseSensitiveDatabase(SupportedLanguages lang)
+        public async Task GetProductsFromCaseSensitiveDatabase(SupportedLanguages lang)
         {
             // Change database collation to case sensitive
             this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET Single_User WITH ROLLBACK IMMEDIATE; ALTER DATABASE {this.DatabaseName} COLLATE Latin1_General_CS_AS; ALTER DATABASE {this.DatabaseName} SET Multi_User;");

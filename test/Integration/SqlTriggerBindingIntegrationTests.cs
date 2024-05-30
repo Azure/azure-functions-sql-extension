@@ -560,12 +560,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         /// <remarks>We call this directly since there isn't a way to test scaling locally - with this we at least verify the methods called don't throw unexpectedly.</remarks>
         [Fact]
-        public async void GetMetricsTest()
+        public async Task GetMetricsTest()
         {
             this.SetChangeTrackingForTable("Products");
             string userFunctionId = "func-id";
             IConfiguration configuration = new ConfigurationBuilder().Build();
-            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", userFunctionId, Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
+            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", userFunctionId, "", Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
             await listener.StartAsync(CancellationToken.None);
             // Cancel immediately so the listener doesn't start processing the changes
             await listener.StopAsync(CancellationToken.None);
@@ -742,13 +742,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         /// <remarks>We call StartAsync which initializes the GlobalState and then drop the LastAccessTime column from the table and recall the StartAsync to check if the GlobalState has the column.</remarks>
         [Fact]
-        public async void LastAccessTimeColumn_Created_OnStartup()
+        public async Task LastAccessTimeColumn_Created_OnStartup()
         {
 
             this.SetChangeTrackingForTable("Products");
             string userFunctionId = "func-id";
             IConfiguration configuration = new ConfigurationBuilder().Build();
-            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", userFunctionId, Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
+            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", userFunctionId, "", Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
             await listener.StartAsync(CancellationToken.None);
             // Cancel immediately so the listener doesn't start processing the changes
             await listener.StopAsync(CancellationToken.None);
@@ -785,7 +785,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [Theory]
         [SqlInlineData()]
         [UnsupportedLanguages(SupportedLanguages.Java)] // test timing out for Java
-        public async void ReservedTableNameTest(SupportedLanguages lang)
+        public async Task ReservedTableNameTest(SupportedLanguages lang)
         {
             this.SetChangeTrackingForTable("User");
             this.StartFunctionHost(nameof(ReservedTableNameTrigger), lang, true);
@@ -943,6 +943,43 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.StartFunctionHost(nameof(ProductsTriggerLeasesTableName), lang);
             Thread.Sleep(5000);
             Assert.Equal(1, (int)this.ExecuteScalar("SELECT COUNT(*) FROM sys.tables WHERE [name] = 'Leases'"));
+        }
+
+        /// <summary>
+        /// Tests that the old UserfunctionId is deleted and the data is migrated correctly to the new one.
+        /// </summary>
+        /// <remarks>We manually create a row with old userfunction id and call StartAsync which initializes the GlobalState and checks/migrates data to the new userfunctionid.</remarks>
+        [Fact]
+        public async Task NewUserFunctionId_Migration_Test()
+        {
+            string oldUserFunctionId = "oldOne";
+            string userFunctionId = "newOne";
+            long lastSyncVersion = 5;
+
+            this.SetChangeTrackingForTable("Products");
+            IConfiguration configuration = new ConfigurationBuilder().Build();
+            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", oldUserFunctionId, "", Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
+            await listener.StartAsync(CancellationToken.None);
+            // Cancel immediately so the listener doesn't start processing the changes
+            await listener.StopAsync(CancellationToken.None);
+
+            //Check that oldUserFunctionId is created in the GlobalState table and no record with new userFunctionId exists
+            Assert.True(1 == (int)this.ExecuteScalar($@"SELECT 1 FROM {GlobalStateTableName} WHERE UserFunctionID = N'{oldUserFunctionId}'"), $"{GlobalStateTableName} should have {oldUserFunctionId} row on creation");
+            Assert.True(0 == (int)this.ExecuteScalar($@"SELECT COUNT(*) FROM {GlobalStateTableName} WHERE UserFunctionID = N'{userFunctionId}'"), $"{GlobalStateTableName} should have {oldUserFunctionId} row on creation");
+
+            // Update LastSyncVersion of the oldUserFunctionId table in global state
+            this.ExecuteNonQuery($@"UPDATE {GlobalStateTableName} SET LastSyncVersion = {lastSyncVersion}
+                    WHERE UserFunctionID = N'{oldUserFunctionId}'");
+
+            listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", userFunctionId, oldUserFunctionId, Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
+            await listener.StartAsync(CancellationToken.None);
+            // Cancel immediately so the listener doesn't start processing the changes
+            await listener.StopAsync(CancellationToken.None);
+
+            //Check if oldUserFunctionId is cleaned up from GlobalState table and the newfunctionId created.
+            Assert.True(0 == (int)this.ExecuteScalar($@"SELECT COUNT(*) FROM {GlobalStateTableName} WHERE UserFunctionID = N'{oldUserFunctionId}'"), $"{GlobalStateTableName} should not have the old functionid `{oldUserFunctionId}` row");
+            Assert.True(1 == (int)this.ExecuteScalar($@"SELECT 1 FROM {GlobalStateTableName} WHERE UserFunctionID = N'{userFunctionId}'"), $"{GlobalStateTableName} should have {userFunctionId} row on successful migration");
+            Assert.True(lastSyncVersion == (long)this.ExecuteScalar($@"SELECT LastSyncVersion FROM {GlobalStateTableName} WHERE UserFunctionID = N'{userFunctionId}'"), $"{GlobalStateTableName} should have {userFunctionId} row woth on successful migration");
         }
     }
 }

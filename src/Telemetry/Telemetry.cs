@@ -348,7 +348,8 @@ To learn more about our Privacy Statement visit this link: https://go.microsoft.
         TableInfoCacheMiss,
         TriggerFunction,
         TriggerMonitorStart,
-        Upsert
+        Upsert,
+        InsertGlobalStateTableRow
     }
 
     /// <summary>

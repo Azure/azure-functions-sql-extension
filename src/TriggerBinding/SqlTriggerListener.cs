@@ -36,6 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly string _connectionString;
         private readonly string _userDefinedLeasesTableName;
         private readonly string _userFunctionId;
+        private readonly string _oldUserFunctionId;
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly SqlOptions _sqlOptions;
         private readonly ILogger _logger;
@@ -59,16 +60,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="tableName">Name of the user table</param>
         /// <param name="userDefinedLeasesTableName">Optional - Name of the leases table</param>
         /// <param name="userFunctionId">Unique identifier for the user function</param>
+        /// <param name="oldUserFunctionId">deprecated user function id value created using hostId for the user function</param>
         /// <param name="executor">Defines contract for triggering user function</param>
         /// <param name="sqlOptions"></param>
         /// <param name="logger">Facilitates logging of messages</param>
         /// <param name="configuration">Provides configuration values</param>
-        public SqlTriggerListener(string connectionString, string tableName, string userDefinedLeasesTableName, string userFunctionId, ITriggeredFunctionExecutor executor, SqlOptions sqlOptions, ILogger logger, IConfiguration configuration)
+        public SqlTriggerListener(string connectionString, string tableName, string userDefinedLeasesTableName, string userFunctionId, string oldUserFunctionId, ITriggeredFunctionExecutor executor, SqlOptions sqlOptions, ILogger logger, IConfiguration configuration)
         {
             this._connectionString = !string.IsNullOrEmpty(connectionString) ? connectionString : throw new ArgumentNullException(nameof(connectionString));
             this._userTable = !string.IsNullOrEmpty(tableName) ? new SqlObject(tableName) : throw new ArgumentNullException(nameof(tableName));
             this._userDefinedLeasesTableName = userDefinedLeasesTableName;
             this._userFunctionId = !string.IsNullOrEmpty(userFunctionId) ? userFunctionId : throw new ArgumentNullException(nameof(userFunctionId));
+            this._oldUserFunctionId = oldUserFunctionId;
             this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
             this._sqlOptions = sqlOptions ?? throw new ArgumentNullException(nameof(sqlOptions));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -391,19 +394,33 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             string insertRowGlobalStateTableQuery = $@"
                 {AppLockStatements}
-
+                -- For back compatibility copy the lastSyncVersion from _oldUserFunctionId if it exists.
                 IF NOT EXISTS (
                     SELECT * FROM {GlobalStateTableName}
                     WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {userTableId}
                 )
+                BEGIN
+                    -- Migrate LastSyncVersion from oldUserFunctionId if it exists and delete the record
+                    DECLARE @lastSyncVersion bigint;
+                    SELECT @lastSyncVersion = LastSyncVersion from az_func.GlobalState where UserFunctionID = '{this._oldUserFunctionId}' AND UserTableID = {userTableId}
+                    IF @lastSyncVersion IS NULL
+                        SET @lastSyncVersion = {(long)minValidVersion};
+                    ELSE
+                        DELETE FROM az_func.GlobalState WHERE UserFunctionID = '{this._oldUserFunctionId}' AND UserTableID = {userTableId}
+                    
                     INSERT INTO {GlobalStateTableName}
-                    VALUES ('{this._userFunctionId}', {userTableId}, {(long)minValidVersion}, GETUTCDATE());
+                    VALUES ('{this._userFunctionId}', {userTableId}, @lastSyncVersion, GETUTCDATE());
+                END
             ";
 
             using (var insertRowGlobalStateTableCommand = new SqlCommand(insertRowGlobalStateTableQuery, connection, transaction))
             {
                 var stopwatch = Stopwatch.StartNew();
-                await insertRowGlobalStateTableCommand.ExecuteNonQueryAsyncWithLogging(this._logger, cancellationToken);
+                int rowsInserted = await insertRowGlobalStateTableCommand.ExecuteNonQueryAsyncWithLogging(this._logger, cancellationToken);
+                if (rowsInserted > 0)
+                {
+                    TelemetryInstance.TrackEvent(TelemetryEventName.InsertGlobalStateTableRow);
+                }
                 return stopwatch.ElapsedMilliseconds;
             }
         }
@@ -426,8 +443,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             string primaryKeysWithTypes = string.Join(", ", primaryKeyColumns.Select(col => $"{col.name.AsBracketQuotedString()} {col.type}"));
             string primaryKeys = string.Join(", ", primaryKeyColumns.Select(col => col.name.AsBracketQuotedString()));
+            string oldLeasesTableName = leasesTableName.Contains(this._userFunctionId) ? leasesTableName.Replace(this._userFunctionId, this._oldUserFunctionId) : string.Empty;
 
-            string createLeasesTableQuery = $@"
+            string createLeasesTableQuery = string.IsNullOrEmpty(oldLeasesTableName) ? $@"
                 {AppLockStatements}
 
                 IF OBJECT_ID(N'{leasesTableName}', 'U') IS NULL
@@ -438,6 +456,28 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         {LeasesTableLeaseExpirationTimeColumnName} datetime2,
                         PRIMARY KEY ({primaryKeys})
                     );
+            " : $@"
+                {AppLockStatements}
+
+                IF OBJECT_ID(N'{leasesTableName}', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE {leasesTableName} (
+                        {primaryKeysWithTypes},
+                        {LeasesTableChangeVersionColumnName} bigint NOT NULL,
+                        {LeasesTableAttemptCountColumnName} int NOT NULL,
+                        {LeasesTableLeaseExpirationTimeColumnName} datetime2,
+                        PRIMARY KEY ({primaryKeys})
+                    );
+
+                    -- Migrate all data from OldLeasesTable and delete it.
+                    IF OBJECT_ID(N'{oldLeasesTableName}', 'U') IS NOT NULL
+                    BEGIN
+                        INSERT INTO {leasesTableName}
+                        SELECT * FROM {oldLeasesTableName};
+
+                        DROP TABLE {oldLeasesTableName};
+                    END
+                End
             ";
 
             using (var createLeasesTableCommand = new SqlCommand(createLeasesTableQuery, connection, transaction))
@@ -456,7 +496,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         // This generally shouldn't happen since we check for its existence in the statement but occasionally
                         // a race condition can make it so that multiple instances will try and create the schema at once.
                         // In that case we can just ignore the error since all we care about is that the schema exists at all.
-                        this._logger.LogWarning($"Failed to create global state table '{leasesTableName}'. Exception message: {ex.Message} This is informational only, function startup will continue as normal.");
+                        this._logger.LogWarning($"Failed to create leases table '{leasesTableName}'. Exception message: {ex.Message} This is informational only, function startup will continue as normal.");
                     }
                     else
                     {
@@ -467,7 +507,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 return durationMs;
             }
         }
-
         public IScaleMonitor GetMonitor()
         {
             return this._scaleMonitor;
