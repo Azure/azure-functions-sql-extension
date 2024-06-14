@@ -61,10 +61,11 @@
       },
       "Microsoft.Azure.Functions.Worker.Extensions.Timer": {
         "type": "Direct",
-        "requested": "[4.3.0, )",
-        "resolved": "4.3.0",
-        "contentHash": "jEMKTn43Zwd7iONxtS+xNNkUuX1XbSDe/Ha0AoutMf7N9PdjxQ8T0YVJrN/F8fHHcOqcw3ucxa9QGqrTslCPqQ==",
+        "requested": "[4.3.1, )",
+        "resolved": "4.3.1",
+        "contentHash": "uNKWSuelJi2SG2e6Dc+s7l3yBkXZCkYnF/OcssXlONY+vM+AP+rm/wPR7iJ5xeDgOp5sOCKHEu5XYsbhZsfCRg==",
         "dependencies": {
+          "Microsoft.Azure.Functions.Worker.Core": "1.18.0",
           "Microsoft.Azure.Functions.Worker.Extensions.Abstractions": "1.3.0"
         }
       },
