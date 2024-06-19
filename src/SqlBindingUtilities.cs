@@ -60,7 +60,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
-            return configuration.GetConnectionStringOrSetting(SqlBindingConstants.WEBSITENAME);
+            string websitename = configuration.GetConnectionStringOrSetting(SqlBindingConstants.WEBSITENAME);
+            // We require a WEBSITE_SITE_NAME for avoiding duplicates if users use the same function name accross apps.
+            if (string.IsNullOrEmpty(websitename))
+            {
+                throw new ArgumentException(websitename == null ? $"WEBSITE_SITE_NAME setting is missing in your function app settings, please add the setting with a string value." :
+                $"WEBSITE_SITE_NAME setting is empty in your function app settings, please update the setting with a string value.");
+            }
+            return websitename;
         }
 
         /// <summary>
