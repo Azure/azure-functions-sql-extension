@@ -27,7 +27,7 @@ steps:
     result: PoliCheck.xml
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
-- script: npm install -g azure-functions-core-tools@4.3.1
+- script: npm install -g azure-functions-core-tools@4.0.5801
   displayName: 'Install Azure Functions Core Tools'
 
 - script: npm install -g azurite
