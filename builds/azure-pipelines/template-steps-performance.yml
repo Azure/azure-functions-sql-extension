@@ -22,7 +22,7 @@ steps:
   inputs:
     useGlobalJson: true
 
-- script: npm install -g azure-functions-core-tools
+- script: npm install -g azure-functions-core-tools@4
   displayName: 'Install Azure Functions Core Tools'
 
 - script: npm install -g azurite
