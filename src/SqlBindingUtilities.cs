@@ -64,8 +64,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // We require a WEBSITE_SITE_NAME for avoiding duplicates if users use the same function name accross apps.
             if (string.IsNullOrEmpty(websitename))
             {
-                throw new ArgumentException(websitename == null ? $"WEBSITE_SITE_NAME setting is missing in your function app settings, please add the setting with a string value. Please refer to https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/BindingsOverview.md#website_site_name for more information." :
-                $"WEBSITE_SITE_NAME setting is empty in your function app settings, please update the setting with a string value.");
+                throw new ArgumentException($"WEBSITE_SITE_NAME cannot be null or empty in your function app settings, please update the setting with a string value. Please refer to https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/BindingsOverview.md#website_site_name for more information.");
             }
             return websitename;
         }
