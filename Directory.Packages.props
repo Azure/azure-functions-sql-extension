@@ -28,7 +28,7 @@
     <PackageVersion Include="Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator" Version="4.0.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="6.0.1" />
-    <PackageVersion Include="Microsoft.SqlServer.TransactSql.ScriptDom" Version="161.9118.2" />
+    <PackageVersion Include="Microsoft.SqlServer.TransactSql.ScriptDom" Version="161.9123.0" />
     <PackageVersion Include="Grpc.Net.Client" Version="2.63.0"/>
 
     <!-- Packages below this line result in a major version bump of dependencies, which can cause conflicts with the host.
