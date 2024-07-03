@@ -11,12 +11,19 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.TriggerBindingSamples;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlTriggerConstants;
 using Microsoft.Azure.WebJobs.Host.Executors;
+using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 using Xunit.Abstractions;
 using xRetry;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Azure;
+using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json.Linq;
+using System.IO;
+using System.Text;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -568,6 +575,108 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.InsertProducts(1, 5);
             metrics = await metricsProvider.GetMetricsAsync();
             Assert.True(metrics.UnprocessedChangeCount == 5, $"There should be 5 unprocessed changes after insertion. Actual={metrics.UnprocessedChangeCount}");
+        }
+
+        /// <summary>
+        /// Tests that the Scale Controller is able to scale out the workers when required.
+        /// </summary>
+        [Fact]
+        public async Task ScaleHostEndToEndTest()
+        {
+            string TestFunctionName = "TestFunction";
+            string ConnectionStringName = "SqlConnectionString";
+            IConfiguration configuration = new ConfigurationBuilder().Build();
+
+            string hostJson =
+            /*lang = json */
+                          @"{
+                ""azureWebJobs"" : {
+                    ""extensions"": {
+                        ""sql"": {
+                            ""MaxChangesPerWorker"" :  10
+                        }
+                    }
+                }   
+            }";
+            string sqlTriggerJson = $@"{{
+                    ""name"": ""{TestFunctionName}"",
+                    ""type"": ""sqlTrigger"",
+                    ""tableName"": ""[dbo].[Products]"",
+                    ""connectionStringSetting"": ""{ConnectionStringName}"",
+                    ""userFunctionId"" : ""testFunctionId""
+                }}";
+            var triggerMetadata = new TriggerMetadata(JObject.Parse(sqlTriggerJson));
+
+            this.SetChangeTrackingForTable("Products");
+
+            // Initializing the listener is needed to create relevant lease table to get unprocessed changes. 
+            // We would be using the scale host methods to get the scale status so the configuration values are not needed here.
+            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", "testFunctionId", "testOldFunctionId", Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
+            await listener.StartAsync(CancellationToken.None);
+            // Cancel immediately so the listener doesn't start processing the changes
+            await listener.StopAsync(CancellationToken.None);
+
+            IHost host = new HostBuilder().ConfigureServices(services => services.AddAzureClientsCore()).Build();
+            AzureComponentFactory defaultAzureComponentFactory = host.Services.GetService<AzureComponentFactory>();
+
+            string hostId = "test-host";
+            var loggerProvider = new TestLoggerProvider();
+
+            IHostBuilder hostBuilder = new HostBuilder();
+            hostBuilder.ConfigureLogging(configure =>
+            {
+                configure.SetMinimumLevel(LogLevel.Debug);
+                configure.AddProvider(loggerProvider);
+            });
+            hostBuilder.ConfigureAppConfiguration((hostBuilderContext, config) =>
+            {
+                // Adding host.json here
+                config.AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(hostJson)));
+
+                var settings = new Dictionary<string, string>()
+                {
+                    { ConnectionStringName, this.DbConnectionString },
+                    { "Microsoft.Azure.WebJobs.Extensions.Sql", "1" }
+                };
+
+                // Adding app setting
+                config.AddInMemoryCollection(settings);
+            })
+            .ConfigureServices(services =>
+            {
+                services.AddAzureClientsCore();
+                services.AddAzureStorageScaleServices();
+            })
+            .ConfigureWebJobsScale((context, builder) =>
+            {
+                builder.AddSql();
+                builder.UseHostId(hostId);
+                builder.AddSqlScaleForTrigger(triggerMetadata);
+            },
+            scaleOptions =>
+            {
+                scaleOptions.IsTargetScalingEnabled = true;
+                scaleOptions.MetricsPurgeEnabled = false;
+                scaleOptions.ScaleMetricsMaxAge = TimeSpan.FromMinutes(4);
+                scaleOptions.IsRuntimeScalingEnabled = true;
+                scaleOptions.ScaleMetricsSampleInterval = TimeSpan.FromSeconds(1);
+            });
+
+            IHost scaleHost = hostBuilder.Build();
+            await scaleHost.StartAsync();
+
+            int firstId = 1;
+            int lastId = 30;
+            this.InsertProducts(firstId, lastId);
+
+            IScaleStatusProvider scaleManager = scaleHost.Services.GetService<IScaleStatusProvider>();
+            AggregateScaleStatus scaleStatus = await scaleManager.GetScaleStatusAsync(new ScaleStatusContext());
+
+            Assert.Equal(ScaleVote.ScaleOut, scaleStatus.Vote);
+            Assert.Equal(3, scaleStatus.TargetWorkerCount);
+
+            await scaleHost.StopAsync();
+
         }
 
         /// <summary>
