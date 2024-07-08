@@ -122,8 +122,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 
             connectionStringBuilder.InitialCatalog = databaseName;
 
-            // Set SqlConnectionString env var for the tests to use
+            // Set SqlConnectionString and WEBSITE_SITE_NAME env variables for the tests to use
             Environment.SetEnvironmentVariable("SqlConnectionString", connectionStringBuilder.ToString());
+            Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", "TestSqlFunction");
             MasterConnectionString = masterConnectionString;
             DatabaseName = databaseName;
         }
