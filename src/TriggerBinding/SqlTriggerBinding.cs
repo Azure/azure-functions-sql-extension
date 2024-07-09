@@ -107,7 +107,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string websiteName = SqlBindingUtilities.GetWebSiteName(this._configuration);
 
             var methodInfo = (MethodInfo)this._parameter.Member;
-            string functionName = $"{methodInfo.DeclaringType.Name}";
+            string functionName = $"{methodInfo.DeclaringType.Name}.{methodInfo.Name}";
 
             using (var sha256 = SHA256.Create())
             {
