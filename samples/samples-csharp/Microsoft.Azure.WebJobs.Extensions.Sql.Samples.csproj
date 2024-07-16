@@ -10,6 +10,7 @@
     <PackageReference Include="Microsoft.NET.Sdk.Functions"/>
     <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="Microsoft.AspNetCore.Http" />
+    <PackageReference Include="System.Text.Json" />
   </ItemGroup>
 
   <ItemGroup>
