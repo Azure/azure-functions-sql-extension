@@ -20,6 +20,16 @@
           "System.Management": "5.0.0"
         }
       },
+      "System.Text.Json": {
+        "type": "Direct",
+        "requested": "[8.0.4, )",
+        "resolved": "8.0.4",
+        "contentHash": "bAkhgDJ88XTsqczoxEMliSrpijKZHhbJQldhAmObj/RbrN3sU5dcokuXmWJWsdQAhiMJ9bTayWsL1C9fbbCRhw==",
+        "dependencies": {
+          "System.Runtime.CompilerServices.Unsafe": "6.0.0",
+          "System.Text.Encodings.Web": "8.0.0"
+        }
+      },
       "Azure.Core": {
         "type": "Transitive",
         "resolved": "1.35.0",
@@ -1686,8 +1696,8 @@
       },
       "System.Text.Encodings.Web": {
         "type": "Transitive",
-        "resolved": "6.0.0",
-        "contentHash": "Vg8eB5Tawm1IFqj4TVK1czJX89rhFxJo9ELqc/Eiq0eXy13RK00eubyU6TJE6y+GQXjyV5gSfiewDUZjQgSE0w==",
+        "resolved": "8.0.0",
+        "contentHash": "yev/k9GHAEGx2Rg3/tU6MQh4HGBXJs70y7j1LaM1i/ER9po+6nnQ6RRqTJn1E7Xu0fbIFK80Nh5EoODxrbxwBQ==",
         "dependencies": {
           "System.Runtime.CompilerServices.Unsafe": "6.0.0"
         }
@@ -1839,6 +1849,7 @@
           "Microsoft.SqlServer.TransactSql.ScriptDom": "[161.9123.0, )",
           "Newtonsoft.Json": "[13.0.3, )",
           "System.Runtime.Caching": "[6.0.0, )",
+          "System.Text.Json": "[8.0.4, )",
           "morelinq": "[3.4.2, )"
         }
       },
@@ -1850,7 +1861,8 @@
           "Microsoft.Azure.WebJobs.Extensions.Sql": "[99.99.99, )",
           "Microsoft.Azure.WebJobs.Extensions.Storage": "[5.1.3, )",
           "Microsoft.NET.Sdk.Functions": "[4.4.0, )",
-          "Newtonsoft.Json": "[13.0.3, )"
+          "Newtonsoft.Json": "[13.0.3, )",
+          "System.Text.Json": "[8.0.4, )"
         }
       },
       "microsoft.azure.webjobs.extensions.sql.tests": {
@@ -1867,6 +1879,7 @@
           "Microsoft.NET.Test.Sdk": "[17.10.0, )",
           "Moq": "[4.20.70, )",
           "Newtonsoft.Json": "[13.0.3, )",
+          "System.Text.Json": "[8.0.4, )",
           "xRetry": "[1.9.0, )",
           "xunit": "[2.9.0, )",
           "xunit.runner.visualstudio": "[2.8.2, )"
@@ -2106,12 +2119,6 @@
         "dependencies": {
           "System.Configuration.ConfigurationManager": "6.0.0"
         }
-      },
-      "System.Text.Json": {
-        "type": "CentralTransitive",
-        "requested": "[8.0.4, )",
-        "resolved": "4.7.2",
-        "contentHash": "TcMd95wcrubm9nHvJEQs70rC0H/8omiSGGpU4FQ/ZA1URIqD4pjmFJh2Mfv1yH1eHgJDWTi2hMDXwTET+zOOyg=="
       },
       "xRetry": {
         "type": "CentralTransitive",
