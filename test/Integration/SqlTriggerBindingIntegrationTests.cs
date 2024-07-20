@@ -981,5 +981,68 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             Assert.True(1 == (int)this.ExecuteScalar($@"SELECT 1 FROM {GlobalStateTableName} WHERE UserFunctionID = N'{userFunctionId}'"), $"{GlobalStateTableName} should have {userFunctionId} row on successful migration");
             Assert.True(lastSyncVersion == (long)this.ExecuteScalar($@"SELECT LastSyncVersion FROM {GlobalStateTableName} WHERE UserFunctionID = N'{userFunctionId}'"), $"{GlobalStateTableName} should have {userFunctionId} row woth on successful migration");
         }
+
+        /// <summary>
+        /// Ensures that the user function gets invoked for each of the insert, update and delete operation after migration seamlessly.
+        /// </summary>
+        [RetryTheory]
+        [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Java)] // test timing out for Java
+        public async Task UserFunctionIdMigrationTriggerTest(SupportedLanguages lang)
+        {
+            this.SetChangeTrackingForTable("Products");
+            string userFunctionId = "func-id";
+            string newUserFuntionId = "new-func-id";
+            IConfiguration configuration = new ConfigurationBuilder().Build();
+            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", userFunctionId, "", Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
+            await listener.StartAsync(CancellationToken.None);
+            // Cancel immediately so the listener doesn't start processing the changes
+            await listener.StopAsync(CancellationToken.None);
+
+            this.StartFunctionHost(nameof(ProductsTrigger), lang);
+
+            int firstId = 1;
+            int lastId = 30;
+            await this.WaitForProductChanges(
+                firstId,
+                lastId,
+                SqlChangeOperation.Insert,
+                () => { this.InsertProducts(firstId, lastId); return Task.CompletedTask; },
+                id => $"Product {id}",
+                id => id * 100,
+                this.GetBatchProcessingTimeout(firstId, lastId));
+
+            listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", newUserFuntionId, userFunctionId, Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
+            await listener.StartAsync(CancellationToken.None);
+            // Cancel immediately so the listener doesn't start processing the changes
+            await listener.StopAsync(CancellationToken.None);
+
+            this.StartFunctionHost(nameof(ProductsTrigger), lang);
+
+            firstId = 1;
+            lastId = 20;
+            // All table columns (not just the columns that were updated) would be returned for update operation.
+            await this.WaitForProductChanges(
+                firstId,
+                lastId,
+                SqlChangeOperation.Update,
+                () => { this.UpdateProducts(firstId, lastId); return Task.CompletedTask; },
+                id => $"Updated Product {id}",
+                id => id * 100,
+                this.GetBatchProcessingTimeout(firstId, lastId));
+
+            firstId = 11;
+            lastId = 30;
+            // The properties corresponding to non-primary key columns would be set to the C# type's default values
+            // (null and 0) for delete operation.
+            await this.WaitForProductChanges(
+                firstId,
+                lastId,
+                SqlChangeOperation.Delete,
+                () => { this.DeleteProducts(firstId, lastId); return Task.CompletedTask; },
+                _ => null,
+                _ => 0,
+                this.GetBatchProcessingTimeout(firstId, lastId));
+        }
     }
 }
