@@ -71,12 +71,12 @@
       },
       "Microsoft.Azure.Functions.Worker.Sdk": {
         "type": "Direct",
-        "requested": "[1.17.3, )",
-        "resolved": "1.17.3",
-        "contentHash": "BjC6pOWb4doPd7UdPFXuQi7uGJEBoChZ3FyWmkaImkjBk77vNu1ENy7V8+jhhjL84vkB/1XD/rPIZFjC9IysiA==",
+        "requested": "[1.17.4, )",
+        "resolved": "1.17.4",
+        "contentHash": "6VOUx9cWUyhOfWKw8YVoIUSMQHmXq7YTZs1d2b9pE7k60RxiQM1EdB6N87q00GbqFLzFRbrzG/i5+AXcjFp2eA==",
         "dependencies": {
           "Microsoft.Azure.Functions.Worker.Sdk.Analyzers": "1.2.1",
-          "Microsoft.Azure.Functions.Worker.Sdk.Generators": "1.3.1"
+          "Microsoft.Azure.Functions.Worker.Sdk.Generators": "1.3.2"
         }
       },
       "Newtonsoft.Json": {
@@ -205,8 +205,8 @@
       },
       "Microsoft.Azure.Functions.Worker.Sdk.Generators": {
         "type": "Transitive",
-        "resolved": "1.3.1",
-        "contentHash": "ffhIwVAU2gcmY3yHaQjUkVFdwYwaAJJTpIHQWRZQhTjkLHkEaW5Y3QHWusfpFNNvxWWlSRR+DNBrs06RQJjpdQ=="
+        "resolved": "1.3.2",
+        "contentHash": "yRIgj+RqHR86vnelI58k6uq7GHJTrPFYKzEES1mdfrv1+kWplerr3W/psb2hWXHwIouYp8ytyKwV08S/obEZDg=="
       },
       "Microsoft.Bcl.AsyncInterfaces": {
         "type": "Transitive",
