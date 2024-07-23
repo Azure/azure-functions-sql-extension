@@ -36,6 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public const string ConfigKey_SqlTrigger_MaxBatchSize = "Sql_Trigger_MaxBatchSize";
         public const string ConfigKey_SqlTrigger_PollingInterval = "Sql_Trigger_PollingIntervalMs";
         public const string ConfigKey_SqlTrigger_MaxChangesPerWorker = "Sql_Trigger_MaxChangesPerWorker";
+        public const string ConfigKey_SqlTrigger_LeaseTimeoutIntervalSec = "Sql_Trigger_LeaseTimeoutIntervalSec";
 
         /// <summary>
         /// The resource name to use for getting the application lock. We use the same resource name for all instances

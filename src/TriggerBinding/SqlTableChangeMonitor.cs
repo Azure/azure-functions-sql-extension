@@ -30,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// The maximum number of times we'll attempt to process a change before giving up
         /// </summary>
-        private const int MaxChangeProcessAttemptCount = 5;
+        public const int MaxChangeProcessAttemptCount = 5;
         /// <summary>
         /// The maximum number of times that we'll attempt to renew a lease be
         /// </summary>
@@ -40,7 +40,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// renew the lease succeed to prevent it from expiring.
         /// </remarks>
         private const int MaxLeaseRenewalCount = 10;
-        public const int LeaseIntervalInSeconds = 60;
         private const int LeaseRenewalIntervalInSeconds = 15;
         private const int MaxRetryReleaseLeases = 3;
 
@@ -61,6 +60,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Maximum number of changes to process in each iteration of the loop
         /// </summary>
         private readonly int _maxBatchSize;
+
+        private readonly int _leaseTimeoutIntervalSec = 60;
+
         /// <summary>
         /// Delay in ms between processing each batch of changes
         /// </summary>
@@ -134,6 +136,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // Check if there's config settings to override the default max batch size/polling interval values
             int? configuredMaxBatchSize = configuration.GetValue<int?>(ConfigKey_SqlTrigger_MaxBatchSize) ?? configuration.GetValue<int?>(ConfigKey_SqlTrigger_BatchSize);
             int? configuredPollingInterval = configuration.GetValue<int?>(ConfigKey_SqlTrigger_PollingInterval);
+            int? configuredLeaseTimeoutIntervalSec = configuration.GetValue<int?>(ConfigKey_SqlTrigger_LeaseTimeoutIntervalSec);
+            if (configuredLeaseTimeoutIntervalSec != null)
+            {
+                this._leaseTimeoutIntervalSec = configuredLeaseTimeoutIntervalSec.Value;
+            }
             this._maxBatchSize = configuredMaxBatchSize ?? this._sqlOptions.MaxBatchSize;
             if (this._maxBatchSize <= 0)
             {
@@ -454,7 +461,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         private async void RunLeaseRenewalLoopAsync()
         {
-            this._logger.LogDebug("Starting lease renewal loop.");
+            this._logger.LogDebug($"Starting lease renewal loop. LeaseTimeoutSec: {this._leaseTimeoutIntervalSec}");
 
             try
             {
@@ -932,9 +939,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         UPDATE SET
                         {LeasesTableChangeVersionColumnName} = NewData.{SysChangeVersionColumnName},
                         {LeasesTableAttemptCountColumnName} = ExistingData.{LeasesTableAttemptCountColumnName} + 1,
-                        {LeasesTableLeaseExpirationTimeColumnName} = DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME())
+                        {LeasesTableLeaseExpirationTimeColumnName} = DATEADD(second, {this._leaseTimeoutIntervalSec}, SYSDATETIME())
                     WHEN NOT MATCHED THEN
-                        INSERT VALUES ({string.Join(",", bracketedPrimaryKeys.Select(k => $"NewData.{k}"))}, NewData.{SysChangeVersionColumnName}, 1, DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME()));";
+                        INSERT VALUES ({string.Join(",", bracketedPrimaryKeys.Select(k => $"NewData.{k}"))}, NewData.{SysChangeVersionColumnName}, 1, DATEADD(second, {this._leaseTimeoutIntervalSec}, SYSDATETIME()));";
 
             var command = new SqlCommand(query, connection, transaction);
             SqlParameter par = command.Parameters.Add(rowDataParameter, SqlDbType.NVarChar, -1);
@@ -957,7 +964,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {AppLockStatements}
 
                 UPDATE {this._bracketedLeasesTableName}
-                SET {LeasesTableLeaseExpirationTimeColumnName} = DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME())
+                SET {LeasesTableLeaseExpirationTimeColumnName} = DATEADD(second, {this._leaseTimeoutIntervalSec}, SYSDATETIME())
                 WHERE {matchCondition};
             ";
 
@@ -1043,7 +1050,7 @@ WHERE l.{LeasesTableChangeVersionColumnName} <= cte.{SysChangeVersionColumnName}
                     SET LastSyncVersion = {newLastSyncVersion}, LastAccessTime = GETUTCDATE()
                     WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
 
-                    DELETE FROM {this._bracketedLeasesTableName} WHERE {LeasesTableChangeVersionColumnName} <= {newLastSyncVersion};
+                    DELETE FROM {this._bracketedLeasesTableName} WHERE {LeasesTableChangeVersionColumnName} <= {newLastSyncVersion} AND {LeasesTableAttemptCountColumnName} < {MaxChangeProcessAttemptCount};
                 END
             ";
 

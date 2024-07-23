@@ -189,6 +189,8 @@ If an exception occurs in the binding (such as deadlocks or timeouts) or while e
 
 If the function execution fails 5 times in a row for a given row then that row is completely ignored for all future changes. Because the rows in a batch are not deterministic, rows in a failed batch may end up in different batches in subsequent invocations. This means that not all rows in the failed batch will necessarily be ignored. If other rows in the batch were the ones causing the exception, the "good" rows may end up in a different batch that doesn't fail in future invocations.
 
+> **Important** Rows that are ignored because of having hit the retry limit will NOT be cleaned up from the leases table, and so that table can continue to grow in size indefinitely. It is suggested that the function and this table are monitored for errors processing rows to avoid this from causing further issues.
+
 You can run this query to see what rows have failed 5 times and are currently ignored, see [Leases table](./TriggerBinding.md#az_funcleasestablename) documentation for how to get the correct Leases table to query for your function.
 
 ```sql

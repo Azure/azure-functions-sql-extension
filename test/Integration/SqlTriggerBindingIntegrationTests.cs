@@ -708,7 +708,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public async Task FunctionExceptionsCauseRetry(SupportedLanguages lang)
         {
             this.SetChangeTrackingForTable("Products");
-            this.StartFunctionHost(nameof(TriggerWithException), lang, useTestFolder: true);
+            // Set lease timeout to 5sec to speed up test
+            int leaseTimeoutIntervalSec = 5;
+            this.StartFunctionHost(nameof(TriggerWithException), lang, useTestFolder: true, environmentVariables: new Dictionary<string, string>()
+            {
+                {  TriggerWithException.NumThrowsEnvVar, "1" },
+                { ConfigKey_SqlTrigger_LeaseTimeoutIntervalSec, leaseTimeoutIntervalSec.ToString() }
+            });
             TaskCompletionSource taskCompletionSource = new();
             void TestExceptionMessageSeen(object sender, DataReceivedEventArgs e)
             {
@@ -728,13 +734,69 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 () => { this.InsertProducts(firstId, lastId); return Task.CompletedTask; },
                 id => $"Product {id}",
                 id => id * 100,
-                (SqlTableChangeMonitor<object>.LeaseIntervalInSeconds * 1000) + batchProcessingTimeout);
+                (leaseTimeoutIntervalSec * 1000) + batchProcessingTimeout);
 
             // First wait for the exception message to show up
             await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromMilliseconds(batchProcessingTimeout), "Timed out waiting for exception message");
             // Now wait for the retry to occur and successfully pass
             await changesTask;
 
+        }
+
+        /// <summary>
+        /// Tests that when rows are retried the maximum number of times and ignored for further attempts they aren't cleaned up from the leases table
+        /// </summary>
+        [RetryTheory]
+        [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.JavaScript, SupportedLanguages.Python, SupportedLanguages.PowerShell, SupportedLanguages.Csx, SupportedLanguages.Java)] // Keeping static state for threwException across calls is only valid for C# and Java.
+        public async Task ErroredRowsAreNotCleanedUp(SupportedLanguages lang)
+        {
+            this.SetChangeTrackingForTable("Products");
+            // Set lease timeout to 5sec to speed up test
+            int leaseTimeoutIntervalSec = 5;
+            this.StartFunctionHost(nameof(TriggerWithException), lang, useTestFolder: true, environmentVariables: new Dictionary<string, string>()
+            {
+                {  TriggerWithException.NumThrowsEnvVar, SqlTableChangeMonitor<object>.MaxChangeProcessAttemptCount.ToString() },
+                { ConfigKey_SqlTrigger_LeaseTimeoutIntervalSec, leaseTimeoutIntervalSec.ToString() }
+            });
+            TaskCompletionSource taskCompletionSource = new();
+            int numTimesExceptionThrown = 0;
+            void TestExceptionMessageSeen(object sender, DataReceivedEventArgs e)
+            {
+                if (e.Data.Contains(TriggerWithException.ExceptionMessage))
+                {
+                    if (++numTimesExceptionThrown == SqlTableChangeMonitor<object>.MaxChangeProcessAttemptCount)
+                    {
+                        taskCompletionSource.TrySetResult();
+                    }
+                }
+            };
+            this.FunctionHost.OutputDataReceived += TestExceptionMessageSeen;
+            int firstId = 1;
+            int lastId = 30;
+            int batchProcessingTimeout = this.GetBatchProcessingTimeout(1, 30);
+            this.InsertProducts(firstId, lastId);
+            // First wait for the exception message to show up MaxChangeProcessAttemptCount times so it exhausts all retries
+            int exceptionMessageTimeout = batchProcessingTimeout * SqlTableChangeMonitor<object>.MaxChangeProcessAttemptCount;
+            await taskCompletionSource.Task.TimeoutAfter(TimeSpan.FromMilliseconds(exceptionMessageTimeout), $"Timed out waiting for exception message to show up {SqlTableChangeMonitor<object>.MaxChangeProcessAttemptCount} times");
+            // Now insert a new row to make sure we trigger the cleanup logic for the leases table
+            int newItemId = lastId + 1;
+            Task insertNewItemTask = this.WaitForProductChanges(
+                newItemId,
+                newItemId,
+                SqlChangeOperation.Insert,
+                () => { this.InsertProducts(newItemId, newItemId); return Task.CompletedTask; },
+                id => $"Product {id}",
+                id => id * 100,
+                (leaseTimeoutIntervalSec * 1000) + batchProcessingTimeout);
+            await insertNewItemTask;
+            // And finally check to make sure that we still have the original rows that failed (they weren't cleaned up)
+            int numLeasedRows = (int)this.ExecuteScalar($@"
+DECLARE @leases_table_name nvarchar(128);
+SELECT @leases_table_name = [name] FROM sys.tables WHERE name LIKE 'Leases_%';
+DECLARE @sql nvarchar(max) = 'SELECT COUNT(*) FROM az_func.' + @leases_table_name + ' WHERE {LeasesTableAttemptCountColumnName} = {SqlTableChangeMonitor<object>.MaxChangeProcessAttemptCount}';
+EXEC sp_executesql @sql");
+            Assert.True(lastId == numLeasedRows, $"Leases table should have all original rows. Actual={numLeasedRows}");
         }
 
         /// <summary>
