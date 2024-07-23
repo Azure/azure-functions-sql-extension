@@ -11,12 +11,19 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.TriggerBindingSamples;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlTriggerConstants;
 using Microsoft.Azure.WebJobs.Host.Executors;
+using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 using Xunit.Abstractions;
 using xRetry;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Azure;
+using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json.Linq;
+using System.IO;
+using System.Text;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
@@ -558,7 +565,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.SetChangeTrackingForTable("Products");
             string userFunctionId = "func-id";
             IConfiguration configuration = new ConfigurationBuilder().Build();
-            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", userFunctionId, Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
+            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", userFunctionId, "", Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
             await listener.StartAsync(CancellationToken.None);
             // Cancel immediately so the listener doesn't start processing the changes
             await listener.StopAsync(CancellationToken.None);
@@ -568,6 +575,108 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.InsertProducts(1, 5);
             metrics = await metricsProvider.GetMetricsAsync();
             Assert.True(metrics.UnprocessedChangeCount == 5, $"There should be 5 unprocessed changes after insertion. Actual={metrics.UnprocessedChangeCount}");
+        }
+
+        /// <summary>
+        /// Tests that the Scale Controller is able to scale out the workers when required.
+        /// </summary>
+        [Fact]
+        public async Task ScaleHostEndToEndTest()
+        {
+            string TestFunctionName = "TestFunction";
+            string ConnectionStringName = "SqlConnectionString";
+            IConfiguration configuration = new ConfigurationBuilder().Build();
+
+            string hostJson =
+            /*lang = json */
+                          @"{
+                ""azureWebJobs"" : {
+                    ""extensions"": {
+                        ""sql"": {
+                            ""MaxChangesPerWorker"" :  10
+                        }
+                    }
+                }   
+            }";
+            string sqlTriggerJson = $@"{{
+                    ""name"": ""{TestFunctionName}"",
+                    ""type"": ""sqlTrigger"",
+                    ""tableName"": ""[dbo].[Products]"",
+                    ""connectionStringSetting"": ""{ConnectionStringName}"",
+                    ""userFunctionId"" : ""testFunctionId""
+                }}";
+            var triggerMetadata = new TriggerMetadata(JObject.Parse(sqlTriggerJson));
+
+            this.SetChangeTrackingForTable("Products");
+
+            // Initializing the listener is needed to create relevant lease table to get unprocessed changes. 
+            // We would be using the scale host methods to get the scale status so the configuration values are not needed here.
+            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", "testFunctionId", "testOldFunctionId", Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
+            await listener.StartAsync(CancellationToken.None);
+            // Cancel immediately so the listener doesn't start processing the changes
+            await listener.StopAsync(CancellationToken.None);
+
+            IHost host = new HostBuilder().ConfigureServices(services => services.AddAzureClientsCore()).Build();
+            AzureComponentFactory defaultAzureComponentFactory = host.Services.GetService<AzureComponentFactory>();
+
+            string hostId = "test-host";
+            var loggerProvider = new TestLoggerProvider();
+
+            IHostBuilder hostBuilder = new HostBuilder();
+            hostBuilder.ConfigureLogging(configure =>
+            {
+                configure.SetMinimumLevel(LogLevel.Debug);
+                configure.AddProvider(loggerProvider);
+            });
+            hostBuilder.ConfigureAppConfiguration((hostBuilderContext, config) =>
+            {
+                // Adding host.json here
+                config.AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(hostJson)));
+
+                var settings = new Dictionary<string, string>()
+                {
+                    { ConnectionStringName, this.DbConnectionString },
+                    { "Microsoft.Azure.WebJobs.Extensions.Sql", "1" }
+                };
+
+                // Adding app setting
+                config.AddInMemoryCollection(settings);
+            })
+            .ConfigureServices(services =>
+            {
+                services.AddAzureClientsCore();
+                services.AddAzureStorageScaleServices();
+            })
+            .ConfigureWebJobsScale((context, builder) =>
+            {
+                builder.AddSql();
+                builder.UseHostId(hostId);
+                builder.AddSqlScaleForTrigger(triggerMetadata);
+            },
+            scaleOptions =>
+            {
+                scaleOptions.IsTargetScalingEnabled = true;
+                scaleOptions.MetricsPurgeEnabled = false;
+                scaleOptions.ScaleMetricsMaxAge = TimeSpan.FromMinutes(4);
+                scaleOptions.IsRuntimeScalingEnabled = true;
+                scaleOptions.ScaleMetricsSampleInterval = TimeSpan.FromSeconds(1);
+            });
+
+            IHost scaleHost = hostBuilder.Build();
+            await scaleHost.StartAsync();
+
+            int firstId = 1;
+            int lastId = 30;
+            this.InsertProducts(firstId, lastId);
+
+            IScaleStatusProvider scaleManager = scaleHost.Services.GetService<IScaleStatusProvider>();
+            AggregateScaleStatus scaleStatus = await scaleManager.GetScaleStatusAsync(new ScaleStatusContext());
+
+            Assert.Equal(ScaleVote.ScaleOut, scaleStatus.Vote);
+            Assert.Equal(3, scaleStatus.TargetWorkerCount);
+
+            await scaleHost.StopAsync();
+
         }
 
         /// <summary>
@@ -639,7 +748,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.SetChangeTrackingForTable("Products");
             string userFunctionId = "func-id";
             IConfiguration configuration = new ConfigurationBuilder().Build();
-            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", userFunctionId, Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
+            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", userFunctionId, "", Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
             await listener.StartAsync(CancellationToken.None);
             // Cancel immediately so the listener doesn't start processing the changes
             await listener.StopAsync(CancellationToken.None);
@@ -834,6 +943,106 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.StartFunctionHost(nameof(ProductsTriggerLeasesTableName), lang);
             Thread.Sleep(5000);
             Assert.Equal(1, (int)this.ExecuteScalar("SELECT COUNT(*) FROM sys.tables WHERE [name] = 'Leases'"));
+        }
+
+        /// <summary>
+        /// Tests that the old UserfunctionId is deleted and the data is migrated correctly to the new one.
+        /// </summary>
+        /// <remarks>We manually create a row with old userfunction id and call StartAsync which initializes the GlobalState and checks/migrates data to the new userfunctionid.</remarks>
+        [Fact]
+        public async Task NewUserFunctionId_Migration_Test()
+        {
+            string oldUserFunctionId = "oldOne";
+            string userFunctionId = "newOne";
+            long lastSyncVersion = 5;
+
+            this.SetChangeTrackingForTable("Products");
+            IConfiguration configuration = new ConfigurationBuilder().Build();
+            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", oldUserFunctionId, "", Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
+            await listener.StartAsync(CancellationToken.None);
+            // Cancel immediately so the listener doesn't start processing the changes
+            await listener.StopAsync(CancellationToken.None);
+
+            //Check that oldUserFunctionId is created in the GlobalState table and no record with new userFunctionId exists
+            Assert.True(1 == (int)this.ExecuteScalar($@"SELECT 1 FROM {GlobalStateTableName} WHERE UserFunctionID = N'{oldUserFunctionId}'"), $"{GlobalStateTableName} should have {oldUserFunctionId} row on creation");
+            Assert.True(0 == (int)this.ExecuteScalar($@"SELECT COUNT(*) FROM {GlobalStateTableName} WHERE UserFunctionID = N'{userFunctionId}'"), $"{GlobalStateTableName} should have {oldUserFunctionId} row on creation");
+
+            // Update LastSyncVersion of the oldUserFunctionId table in global state
+            this.ExecuteNonQuery($@"UPDATE {GlobalStateTableName} SET LastSyncVersion = {lastSyncVersion}
+                    WHERE UserFunctionID = N'{oldUserFunctionId}'");
+
+            listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", userFunctionId, oldUserFunctionId, Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
+            await listener.StartAsync(CancellationToken.None);
+            // Cancel immediately so the listener doesn't start processing the changes
+            await listener.StopAsync(CancellationToken.None);
+
+            //Check if oldUserFunctionId is cleaned up from GlobalState table and the newfunctionId created.
+            Assert.True(0 == (int)this.ExecuteScalar($@"SELECT COUNT(*) FROM {GlobalStateTableName} WHERE UserFunctionID = N'{oldUserFunctionId}'"), $"{GlobalStateTableName} should not have the old functionid `{oldUserFunctionId}` row");
+            Assert.True(1 == (int)this.ExecuteScalar($@"SELECT 1 FROM {GlobalStateTableName} WHERE UserFunctionID = N'{userFunctionId}'"), $"{GlobalStateTableName} should have {userFunctionId} row on successful migration");
+            Assert.True(lastSyncVersion == (long)this.ExecuteScalar($@"SELECT LastSyncVersion FROM {GlobalStateTableName} WHERE UserFunctionID = N'{userFunctionId}'"), $"{GlobalStateTableName} should have {userFunctionId} row woth on successful migration");
+        }
+
+        /// <summary>
+        /// Ensures that the user function gets invoked for each of the insert, update and delete operation after migration seamlessly.
+        /// </summary>
+        [RetryTheory]
+        [SqlInlineData()]
+        [UnsupportedLanguages(SupportedLanguages.Java)] // test timing out for Java
+        public async Task UserFunctionIdMigrationTriggerTest(SupportedLanguages lang)
+        {
+            this.SetChangeTrackingForTable("Products");
+            string userFunctionId = "func-id";
+            string newUserFuntionId = "new-func-id";
+            IConfiguration configuration = new ConfigurationBuilder().Build();
+            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", userFunctionId, "", Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
+            await listener.StartAsync(CancellationToken.None);
+            // Cancel immediately so the listener doesn't start processing the changes
+            await listener.StopAsync(CancellationToken.None);
+
+            this.StartFunctionHost(nameof(ProductsTrigger), lang);
+
+            int firstId = 1;
+            int lastId = 30;
+            await this.WaitForProductChanges(
+                firstId,
+                lastId,
+                SqlChangeOperation.Insert,
+                () => { this.InsertProducts(firstId, lastId); return Task.CompletedTask; },
+                id => $"Product {id}",
+                id => id * 100,
+                this.GetBatchProcessingTimeout(firstId, lastId));
+
+            listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", newUserFuntionId, userFunctionId, Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
+            await listener.StartAsync(CancellationToken.None);
+            // Cancel immediately so the listener doesn't start processing the changes
+            await listener.StopAsync(CancellationToken.None);
+
+            this.StartFunctionHost(nameof(ProductsTrigger), lang);
+
+            firstId = 1;
+            lastId = 20;
+            // All table columns (not just the columns that were updated) would be returned for update operation.
+            await this.WaitForProductChanges(
+                firstId,
+                lastId,
+                SqlChangeOperation.Update,
+                () => { this.UpdateProducts(firstId, lastId); return Task.CompletedTask; },
+                id => $"Updated Product {id}",
+                id => id * 100,
+                this.GetBatchProcessingTimeout(firstId, lastId));
+
+            firstId = 11;
+            lastId = 30;
+            // The properties corresponding to non-primary key columns would be set to the C# type's default values
+            // (null and 0) for delete operation.
+            await this.WaitForProductChanges(
+                firstId,
+                lastId,
+                SqlChangeOperation.Delete,
+                () => { this.DeleteProducts(firstId, lastId); return Task.CompletedTask; },
+                _ => null,
+                _ => 0,
+                this.GetBatchProcessingTimeout(firstId, lastId));
         }
     }
 }
