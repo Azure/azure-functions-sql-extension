@@ -289,7 +289,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         using (SqlCommand updateTablesPreInvocationCommand = this.BuildUpdateTablesPreInvocation(connection, transaction))
                         {
                             var commandSw = Stopwatch.StartNew();
-                            await updateTablesPreInvocationCommand.ExecuteNonQueryAsyncWithLogging(this._logger, token, true);
+                            object result = await updateTablesPreInvocationCommand.ExecuteScalarAsyncWithLogging(this._logger, token, true);
+                            if (result != null)
+                            {
+                                // If we updated the LastSyncVersion we'll get a message back from the query, so log it here
+                                this._logger.LogDebug($"[PreInvocation] {result}");
+                            }
                             setLastSyncVersionDurationMs = commandSw.ElapsedMilliseconds;
                         }
 
@@ -530,6 +535,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                             if (rowsAffected > 0)
                             {
+                                this._logger.LogDebug($"Renewed leases for {rowsAffected} rows");
                                 // Only send an event if we actually updated rows to reduce the overall number of events we send
                                 var measures = new Dictionary<TelemetryMeasureName, double>
                                 {
@@ -598,6 +604,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             await this._rowsToProcessLock.WaitAsync(token);
             this._leaseRenewalCount = 0;
             this._state = State.CheckingForChanges;
+            if (this._rowsToProcess.Count > 0)
+            {
+                this._logger.LogDebug($"Clearing internal state for {this._rowsToProcess.Count} rows");
+            }
             this._rowsToProcess = new List<IReadOnlyDictionary<string, object>>();
             this._rowsToProcessLock.Release();
         }
@@ -635,7 +645,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             using (SqlCommand updateTablesPostInvocationCommand = this.BuildUpdateTablesPostInvocation(connection, transaction, newLastSyncVersion))
                             {
                                 var commandSw = Stopwatch.StartNew();
-                                await updateTablesPostInvocationCommand.ExecuteNonQueryAsyncWithLogging(this._logger, token);
+                                object result = await updateTablesPostInvocationCommand.ExecuteScalarAsyncWithLogging(this._logger, token);
+                                if (result != null)
+                                {
+                                    // If we updated the LastSyncVersion we'll get a message back from the query, so log it here
+                                    this._logger.LogDebug($"[PostInvocation] {result}");
+                                }
                                 updateLastSyncVersionDurationMs = commandSw.ElapsedMilliseconds;
                             }
                             transaction.Commit();
@@ -782,9 +797,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
 
                 IF @last_sync_version < @min_valid_version
+                BEGIN
                     UPDATE {GlobalStateTableName}
                     SET LastSyncVersion = @min_valid_version
                     WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
+                    SELECT 'Updated LastSyncVersion from ' + CAST(@last_sync_version AS NVARCHAR) + ' to ' + CAST(@min_valid_version AS NVARCHAR);
+                END
             ";
 
             return new SqlCommand(updateTablesPreInvocationQuery, connection, transaction);
@@ -1044,6 +1062,8 @@ WHERE l.{LeasesTableChangeVersionColumnName} <= cte.{SysChangeVersionColumnName}
                     WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
 
                     DELETE FROM {this._bracketedLeasesTableName} WHERE {LeasesTableChangeVersionColumnName} <= {newLastSyncVersion};
+
+                    SELECT 'Updated LastSyncVersion from ' + CAST(@current_last_sync_version AS NVARCHAR) + ' to {newLastSyncVersion}';
                 END
             ";
 
