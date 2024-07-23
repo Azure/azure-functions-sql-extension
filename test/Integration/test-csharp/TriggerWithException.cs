@@ -11,7 +11,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     public static class TriggerWithException
     {
         public const string ExceptionMessage = "TriggerWithException test exception";
-        private static bool threwException = false;
+        public const string NumThrowsEnvVar = "AZ_FUNC_TEST_NUM_THROWS";
+        private static int attemptNum = 0;
+        private static readonly int numThrows = int.Parse(Environment.GetEnvironmentVariable(NumThrowsEnvVar));
 
         /// <summary>
         /// Used in verification that exceptions thrown by functions cause the trigger to retry calling the function
@@ -23,9 +25,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             IReadOnlyList<SqlChange<Product>> changes,
             ILogger logger)
         {
-            if (!threwException)
+            if (attemptNum++ < numThrows)
             {
-                threwException = true;
                 throw new Exception(ExceptionMessage);
             }
             logger.LogInformation("SQL Changes: " + Utils.JsonSerializeObject(changes));
