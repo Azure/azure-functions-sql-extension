@@ -136,6 +136,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // Check if there's config settings to override the default max batch size/polling interval values
             int? configuredMaxBatchSize = configuration.GetValue<int?>(ConfigKey_SqlTrigger_MaxBatchSize) ?? configuration.GetValue<int?>(ConfigKey_SqlTrigger_BatchSize);
             int? configuredPollingInterval = configuration.GetValue<int?>(ConfigKey_SqlTrigger_PollingInterval);
+            // Read in the lease timeout interval. This is NOT currently meant for public use (just for tests) and so is not documented.
             int? configuredLeaseTimeoutIntervalSec = configuration.GetValue<int?>(ConfigKey_SqlTrigger_LeaseTimeoutIntervalSec);
             if (configuredLeaseTimeoutIntervalSec != null)
             {
