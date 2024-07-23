@@ -94,9 +94,9 @@
       },
       "Microsoft.SqlServer.TransactSql.ScriptDom": {
         "type": "Direct",
-        "requested": "[161.9109.0, )",
-        "resolved": "161.9109.0",
-        "contentHash": "tGGxlY6tJEEChAzcmZ98JWPTnFdMidNNttDj9ubuZf9mtMGQ6JAHOjr/kV81cuznMhC9z+ui7/ZuShOsx2Yrpw=="
+        "requested": "[161.9123.0, )",
+        "resolved": "161.9123.0",
+        "contentHash": "v1I3SV+EqPHBM+RGrB5LyEc2z74t8WRYFmB0BmSc7EMBDUxFgmJ5oentkf9hPkUFfesha9spB0jci4hDtrCE3Q=="
       },
       "morelinq": {
         "type": "Direct",
@@ -240,16 +240,6 @@
         "dependencies": {
           "Microsoft.Extensions.Configuration": "2.1.0",
           "Microsoft.Extensions.FileProviders.Physical": "2.1.0"
-        }
-      },
-      "Microsoft.Extensions.Configuration.Json": {
-        "type": "Transitive",
-        "resolved": "2.1.0",
-        "contentHash": "9OCdAv7qiRtRlXQnECxW9zINUK8bYPKbNp5x8FQaLZbm/flv7mPvo1muZ1nsKGMZF4uL4Bl6nHw2v1fi3MqQ1Q==",
-        "dependencies": {
-          "Microsoft.Extensions.Configuration": "2.1.0",
-          "Microsoft.Extensions.Configuration.FileExtensions": "2.1.0",
-          "Newtonsoft.Json": "11.0.2"
         }
       },
       "Microsoft.Extensions.DependencyInjection.Abstractions": {
@@ -789,6 +779,17 @@
         "contentHash": "zteT+G8xuGu6mS+mzDzYXbzS7rd3K6Fjb9RiZlYlJPam2/hU7JCBZBVEcywNuR+oZ1ncTvc/cq0faRr3P01OVg==",
         "dependencies": {
           "System.Runtime.CompilerServices.Unsafe": "4.5.3"
+        }
+      },
+      "Microsoft.Extensions.Configuration.Json": {
+        "type": "CentralTransitive",
+        "requested": "[5.0.0, )",
+        "resolved": "2.1.0",
+        "contentHash": "9OCdAv7qiRtRlXQnECxW9zINUK8bYPKbNp5x8FQaLZbm/flv7mPvo1muZ1nsKGMZF4uL4Bl6nHw2v1fi3MqQ1Q==",
+        "dependencies": {
+          "Microsoft.Extensions.Configuration": "2.1.0",
+          "Microsoft.Extensions.Configuration.FileExtensions": "2.1.0",
+          "Newtonsoft.Json": "11.0.2"
         }
       },
       "Microsoft.Extensions.DependencyInjection": {

@@ -152,6 +152,13 @@ The delay in milliseconds between processing each batch of changes.
 
 The upper limit on the number of pending changes in the user table that are allowed per application-worker. If the count of changes exceeds this limit, it may result in a scale out. The setting only applies for Azure Function Apps with runtime driven scaling enabled. See the [Scaling](#scaling-for-trigger-bindings) section for more information.
 
+#### WEBSITE_SITE_NAME
+
+The unique name used in creating the lease tables. The local apps depend on this setting for creating unique leases tables, please give a unique name for each app.
+    > **NOTE:** If the setting is re-used accross apps, having the same function name could cause the functions to use the same lease tables and the function runs to not work as expected.
+    > **NOTE:** If you have 2 different SQL trigger functions with same functionName locally, not having WEBSITE_SITE_NAME would mean that the same leasees table would be used for both triggers resulting in only one of the functions being triggered.
+    > **NOTE:** This is a read-only variable that is provided by the azure environment variables for deployed functions and the user provided value will be overridden. Refer to [Environment variables](https://learn.microsoft.com/azure/app-service/reference-app-settings?tabs=kudu%2Cdotnet#app-environment) for apps.
+
 ### Scaling for Trigger Bindings
 
 If your application containing functions with SQL trigger bindings is running as an Azure function app, it will be scaled automatically based on the amount of changes that are pending to be processed in the user table. As of today, we only support scaling of function apps running in Elastic Premium plan with 'Runtime Scale Monitoring' enabled. To enable scaling, you will need to go the function app resource's page on Azure Portal, then to Configuration > 'Function runtime settings' and turn on 'Runtime Scale Monitoring'.

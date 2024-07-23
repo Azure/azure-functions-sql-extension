@@ -78,8 +78,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             _ = context ?? throw new ArgumentNullException(nameof(context), "Missing listener context");
 
-            string userFunctionId = await this.GetUserFunctionIdAsync();
-            return new SqlTriggerListener<T>(this._connectionString, this._tableName, this._leasesTableName, userFunctionId, context.Executor, this._sqlOptions, this._logger, this._configuration);
+            string userFunctionId = this.GetUserFunctionId();
+            string oldUserFunctionId = await this.GetOldUserFunctionIdAsync();
+            return new SqlTriggerListener<T>(this._connectionString, this._tableName, this._leasesTableName, userFunctionId, oldUserFunctionId, context.Executor, this._sqlOptions, this._logger, this._configuration);
         }
 
         public ParameterDescriptor ToParameterDescriptor()
@@ -95,6 +96,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Returns an ID that uniquely identifies the user function.
         ///
+        /// We call the WEBSITE_SITE_NAME from the configuration and use that to create the hash of the
+        /// user function id. Appending another hash of class+method in here ensures that if there
+        /// are multiple user functions within the same process and tracking the same SQL table, then each one of them
+        /// gets a separate view of the table changes.
+        /// </summary>
+        private string GetUserFunctionId()
+        {
+            // Using read-only App name for the hash https://learn.microsoft.com/en-us/azure/app-service/reference-app-settings?tabs=kudu%2Cdotnet#app-environment
+            string websiteName = SqlBindingUtilities.GetWebSiteName(this._configuration);
+
+            var methodInfo = (MethodInfo)this._parameter.Member;
+            // Get the function name from FunctionName attribute for .NET functions and methodInfo.Name for non .Net
+            string functionName = ((FunctionNameAttribute)methodInfo.GetCustomAttribute(typeof(FunctionNameAttribute)))?.Name ?? $"{methodInfo.Name}";
+
+            using (var sha256 = SHA256.Create())
+            {
+                byte[] hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(websiteName + functionName));
+                return new Guid(hash.Take(16).ToArray()).ToString("N").Substring(0, 16);
+            }
+        }
+
+        /// <summary>
+        /// Returns the deprecated ID that was used to identify the user function.
+        ///
         /// We call the WebJobs SDK library method to generate the host ID. The host ID is essentially a hash of the
         /// assembly name containing the user function(s). This ensures that if the user ever updates their application,
         /// unless the assembly name is modified, the new application version will be able to resume from the point
@@ -102,7 +127,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// are multiple user functions within the same process and tracking the same SQL table, then each one of them
         /// gets a separate view of the table changes.
         /// </summary>
-        private async Task<string> GetUserFunctionIdAsync()
+        private async Task<string> GetOldUserFunctionIdAsync()
         {
             string hostId = await this._hostIdProvider.GetHostIdAsync(CancellationToken.None);
 
@@ -115,5 +140,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 return new Guid(hash.Take(16).ToArray()).ToString("N").Substring(0, 16);
             }
         }
+
     }
 }
