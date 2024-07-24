@@ -317,13 +317,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             getChangesDurationMs = commandSw.ElapsedMilliseconds;
                         }
                         // Also get the number of rows that currently have lease locks on them
+                        // or are skipped because they have reached their max attempt count.
                         // This can help with supportability by allowing a customer to see when a
-                        // trigger was processed successfully but returned fewer rows than expected
-                        // because of the rows being locked.
-                        int leaseLockedRowCount = await this.GetLeaseLockedRowCount(connection, transaction);
-                        if (rows.Count > 0 || leaseLockedRowCount > 0)
+                        // trigger was processed successfully but returned fewer rows than expected.
+                        string leaseLockedOrMaxAttemptRowCountMessage = await this.GetLeaseLockedOrMaxAttemptRowCountMessage(connection, transaction, token);
+                        if (rows.Count > 0 || leaseLockedOrMaxAttemptRowCountMessage != null)
                         {
-                            this._logger.LogDebug($"Executed GetChangesCommand in GetTableChangesAsync. {rows.Count} available changed rows ({leaseLockedRowCount} found with lease locks).");
+                            this._logger.LogDebug($"Executed GetChangesCommand in GetTableChangesAsync. {rows.Count} available changed rows. {leaseLockedOrMaxAttemptRowCountMessage}");
                         }
                         // If changes were found, acquire leases on them.
                         if (rows.Count > 0)
@@ -860,44 +860,53 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Returns the number of changes(rows) on the user's table that are actively locked by other leases OR returns -1 on exception.
+        /// Returns a message indicating the number of changes(rows) on the user's table that are actively locked by other leases or have
+        /// reached the max attempts allowed for the row.
         /// </summary>
         /// <param name="connection">The connection to add to the SqlCommand</param>
         /// <param name="transaction">The transaction to add to the SqlCommand</param>
-        /// <returns>The number of rows locked by leases or -1 on exception</returns>
-        private async Task<int> GetLeaseLockedRowCount(SqlConnection connection, SqlTransaction transaction)
+        /// <param name="token">Cancellation token</param>
+        /// <returns>The message with the number of rows that were lease locked or were at the max attempt limit. Null if no such rows exist</returns>
+        private async Task<string> GetLeaseLockedOrMaxAttemptRowCountMessage(SqlConnection connection, SqlTransaction transaction, CancellationToken token)
         {
             string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
-            int leaseLockedRowsCount = 0;
-            long getLockedRowCountDurationMs = 0L;
             // Get the count of changes from CHANGETABLE that meet the following criteria:
-            // * Not Null LeaseExpirationTime AND
-            // * LeaseExpirationTime > Current Time
-            string getLeaseLockedrowCountQuery = $@"
+            // Lease locked:
+            //  * Have attempts remaining (Attempt count < Max attempts)
+            //  * NOT NULL LeaseExpirationTime
+            //  * LeaseExpirationTime > Current Time
+            // Max Attempts reached:
+            //  * NULL LeaseExpirationTime OR LeaseExpirationTime <= Current Time
+            //  * No attempts remaining (Attempt count = Max attempts)
+            string getLeaseLockedOrMaxAttemptRowCountQuery = $@"
                 {AppLockStatements}
 
                 DECLARE @last_sync_version bigint;
                 SELECT @last_sync_version = LastSyncVersion
                 FROM {GlobalStateTableName}
                 WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
-
-                SELECT COUNT(*)
+                DECLARE @lease_locked_count int;
+                DECLARE @max_attempts_count int;
+                SELECT 
+                    @lease_locked_count = COUNT(CASE WHEN l.{LeasesTableAttemptCountColumnName} < {MaxChangeProcessAttemptCount} AND l.{LeasesTableLeaseExpirationTimeColumnName} IS NOT NULL AND l.{LeasesTableLeaseExpirationTimeColumnName} > SYSDATETIME() THEN 1 ELSE NULL END),
+                    @max_attempts_count = COUNT(CASE WHEN (l.{LeasesTableLeaseExpirationTimeColumnName} IS NULL OR l.{LeasesTableLeaseExpirationTimeColumnName} <= SYSDATETIME()) AND l.{LeasesTableAttemptCountColumnName} = {MaxChangeProcessAttemptCount} THEN 1 ELSE NULL END)
                 FROM CHANGETABLE(CHANGES {this._userTable.BracketQuotedFullName}, @last_sync_version) AS c
-                LEFT OUTER JOIN {this._bracketedLeasesTableName} AS l ON {leasesTableJoinCondition}
-                WHERE l.{LeasesTableLeaseExpirationTimeColumnName} IS NOT NULL AND l.{LeasesTableLeaseExpirationTimeColumnName} > SYSDATETIME()";
+                LEFT OUTER JOIN {this._bracketedLeasesTableName} AS l ON {leasesTableJoinCondition};
+                IF @lease_locked_count > 0 OR @max_attempts_count > 0
+                BEGIN
+                    SELECT '(' + CAST(@lease_locked_count AS NVARCHAR) + ' found with lease locks and ' + CAST(@max_attempts_count AS NVARCHAR) + ' ignored because they''ve reached the max attempt limit)';
+                END";
             try
             {
-                using (var getLeaseLockedRowCountCommand = new SqlCommand(getLeaseLockedrowCountQuery, connection, transaction))
+                using (var getLeaseLockedOrMaxAttemptsRowCountCommand = new SqlCommand(getLeaseLockedOrMaxAttemptRowCountQuery, connection, transaction))
                 {
-                    var commandSw = Stopwatch.StartNew();
-                    leaseLockedRowsCount = (int)await getLeaseLockedRowCountCommand.ExecuteScalarAsyncWithLogging(this._logger, CancellationToken.None);
-                    getLockedRowCountDurationMs = commandSw.ElapsedMilliseconds;
+                    return (await getLeaseLockedOrMaxAttemptsRowCountCommand.ExecuteScalarAsyncWithLogging(this._logger, token))?.ToString();
                 }
             }
             catch (Exception ex)
             {
-                this._logger.LogError($"Failed to query count of lease locked changes for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
-                TelemetryInstance.TrackException(TelemetryErrorName.GetLeaseLockedRowCount, ex, null, new Dictionary<TelemetryMeasureName, double>() { { TelemetryMeasureName.GetLockedRowCountDurationMs, getLockedRowCountDurationMs } });
+                this._logger.LogError($"Failed to query count of lease locked or max attempt changes for table '{this._userTable.FullName}' due to exception: {ex.GetType()}. Exception message: {ex.Message}");
+                TelemetryInstance.TrackException(TelemetryErrorName.GetLeaseLockedOrMaxAttemptRowCount, ex);
                 // This is currently only used for debugging, so ignore the exception if we can. If the error is a fatal one though then the connection or transaction will be
                 // unusable so we have to let this bubble up so we can attempt to reconnect
                 if (ex.IsFatalSqlException() || ex.IsDeadlockException() || connection.IsBrokenOrClosed())
@@ -906,11 +915,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 else
                 {
-                    // If it's non-fatal though return a -1 instead of throwing since it isn't necessary to get the value
-                    leaseLockedRowsCount = -1;
+                    // If it's non-fatal though return null instead of throwing since it isn't necessary to get the value
+                    return null;
                 }
             }
-            return leaseLockedRowsCount;
         }
 
         /// <summary>
@@ -1061,9 +1069,12 @@ WHERE l.{LeasesTableChangeVersionColumnName} <= cte.{SysChangeVersionColumnName}
                     SET LastSyncVersion = {newLastSyncVersion}, LastAccessTime = GETUTCDATE()
                     WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {this._userTableId};
 
+                    DECLARE @max_attempt_rows_to_be_deleted int;
+                    SELECT @max_attempt_rows_to_be_deleted = COUNT(*) FROM {this._bracketedLeasesTableName} WHERE {LeasesTableChangeVersionColumnName} <= {newLastSyncVersion} AND {LeasesTableAttemptCountColumnName} = {MaxChangeProcessAttemptCount};
+
                     DELETE FROM {this._bracketedLeasesTableName} WHERE {LeasesTableChangeVersionColumnName} <= {newLastSyncVersion};
 
-                    SELECT 'Updated LastSyncVersion from ' + CAST(@current_last_sync_version AS NVARCHAR) + ' to {newLastSyncVersion}';
+                    SELECT 'Updated LastSyncVersion from ' + CAST(@current_last_sync_version AS NVARCHAR) + ' to {newLastSyncVersion} MaxAttemptRowsToBeDeleted=' + CAST(@max_attempt_rows_to_be_deleted AS NVARCHAR);
                 END
             ";
 
