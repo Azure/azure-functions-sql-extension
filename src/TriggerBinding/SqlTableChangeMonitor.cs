@@ -525,28 +525,30 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     try
                     {
-                        using (SqlCommand renewLeasesCommand = this.BuildRenewLeasesCommand(connection, transaction))
+                        SqlCommand renewLeasesCommand = this.BuildRenewLeasesCommand(connection, transaction);
+                        if (renewLeasesCommand != null)
                         {
-                            var stopwatch = Stopwatch.StartNew();
-
-                            int rowsAffected = await renewLeasesCommand.ExecuteNonQueryAsyncWithLogging(this._logger, token, true);
-
-                            long durationMs = stopwatch.ElapsedMilliseconds;
-
-                            if (rowsAffected > 0)
+                            using (renewLeasesCommand)
                             {
-                                this._logger.LogDebug($"Renewed leases for {rowsAffected} rows");
-                                // Only send an event if we actually updated rows to reduce the overall number of events we send
-                                var measures = new Dictionary<TelemetryMeasureName, double>
+                                var stopwatch = Stopwatch.StartNew();
+
+                                int rowsAffected = await renewLeasesCommand.ExecuteNonQueryAsyncWithLogging(this._logger, token, true);
+
+                                long durationMs = stopwatch.ElapsedMilliseconds;
+
+                                if (rowsAffected > 0)
                                 {
-                                    [TelemetryMeasureName.DurationMs] = durationMs,
-                                };
+                                    this._logger.LogDebug($"Renewed leases for {rowsAffected} rows");
+                                    // Only send an event if we actually updated rows to reduce the overall number of events we send
+                                    var measures = new Dictionary<TelemetryMeasureName, double>
+                                    {
+                                        [TelemetryMeasureName.DurationMs] = durationMs,
+                                    };
 
-                                TelemetryInstance.TrackEvent(TelemetryEventName.RenewLeases, this._telemetryProps, measures);
+                                    TelemetryInstance.TrackEvent(TelemetryEventName.RenewLeases, this._telemetryProps, measures);
+                                }
+                                transaction.Commit();
                             }
-
-
-                            transaction.Commit();
                         }
                     }
                     catch (Exception e)
@@ -981,6 +983,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             if (string.IsNullOrEmpty(matchCondition))
             {
                 this._logger.LogError($"MatchCondition resolved to empty with '{this._rowsToProcess.Count}' rowsToProcess.");
+                return null;
             }
             string renewLeasesQuery = $@"
                 {AppLockStatements}
