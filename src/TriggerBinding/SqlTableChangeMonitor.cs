@@ -978,7 +978,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private SqlCommand BuildRenewLeasesCommand(SqlConnection connection, SqlTransaction transaction)
         {
             string matchCondition = string.Join(" OR ", this._rowMatchConditions.Take(this._rowsToProcess.Count));
-
+            if (string.IsNullOrEmpty(matchCondition))
+            {
+                this._logger.LogError($"MatchCondition resolved to empty with '{this._rowsToProcess.Count}' rowsToProcess.");
+            }
             string renewLeasesQuery = $@"
                 {AppLockStatements}
 
