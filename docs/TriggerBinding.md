@@ -98,7 +98,7 @@ This log message is at the `Information` level, so make sure your log level is s
 
 NOTE: `FunctionId` is generated from a couple of inputs:
     - The [WEBSITE_SITE_NAME](https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/BindingsOverview.md#website_site_name) setting
-    - The function name of the function
+    - The name of the function
 
 If either of these values are changed then a new FunctionId will be generated and result in the function starting over from the beginning, including creating a new Leases table.
 
