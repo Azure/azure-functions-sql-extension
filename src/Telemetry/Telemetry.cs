@@ -441,6 +441,7 @@ To learn more about our Privacy Statement visit this link: https://go.microsoft.
         UpsertRollback,
         GetServerTelemetryProperties,
         GetLeaseLockedOrMaxAttemptRowCount,
+        BuildRenewLeasesWithEmptyMatchCondtion
     }
 
     internal class ServerProperties

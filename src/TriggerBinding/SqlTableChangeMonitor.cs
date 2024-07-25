@@ -980,9 +980,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private SqlCommand BuildRenewLeasesCommand(SqlConnection connection, SqlTransaction transaction)
         {
             string matchCondition = string.Join(" OR ", this._rowMatchConditions.Take(this._rowsToProcess.Count));
+            // If the matchCondition is empty return null to avoid empty where clause query failure.
             if (string.IsNullOrEmpty(matchCondition))
             {
                 this._logger.LogError($"MatchCondition resolved to empty with '{this._rowsToProcess.Count}' rowsToProcess.");
+                TelemetryInstance.TrackException(TelemetryErrorName.BuildRenewLeasesWithEmptyMatchCondtion, null);
                 return null;
             }
             string renewLeasesQuery = $@"
