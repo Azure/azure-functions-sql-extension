@@ -984,7 +984,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             if (string.IsNullOrEmpty(matchCondition))
             {
                 this._logger.LogError($"MatchCondition resolved to empty with '{this._rowsToProcess.Count}' rowsToProcess.");
-                TelemetryInstance.TrackException(TelemetryErrorName.BuildRenewLeasesWithEmptyMatchCondtion, null);
+                TelemetryInstance.TrackEvent(TelemetryEventName.BuildRenewLeasesWithEmptyMatchCondtion);
                 return null;
             }
             string renewLeasesQuery = $@"
