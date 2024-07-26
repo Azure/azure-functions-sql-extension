@@ -349,7 +349,8 @@ To learn more about our Privacy Statement visit this link: https://go.microsoft.
         TriggerFunction,
         TriggerMonitorStart,
         Upsert,
-        InsertGlobalStateTableRow
+        InsertGlobalStateTableRow,
+        BuildRenewLeasesWithEmptyMatchCondtion
     }
 
     /// <summary>
@@ -440,7 +441,7 @@ To learn more about our Privacy Statement visit this link: https://go.microsoft.
         Upsert,
         UpsertRollback,
         GetServerTelemetryProperties,
-        GetLeaseLockedOrMaxAttemptRowCount,
+        GetLeaseLockedOrMaxAttemptRowCount
     }
 
     internal class ServerProperties
