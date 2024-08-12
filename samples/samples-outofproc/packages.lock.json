@@ -50,9 +50,9 @@
       },
       "Microsoft.Azure.Functions.Worker.Extensions.Storage.Queues": {
         "type": "Direct",
-        "requested": "[5.4.0, )",
-        "resolved": "5.4.0",
-        "contentHash": "LbfKt3+X2tSFfx1qxthjJRgtfvVo2c0v8M3aX5VgqI6I/OWCP76mEDEY/wnggyCqAuwAWcc1TlZjO3LdwLvJ9A==",
+        "requested": "[5.5.0, )",
+        "resolved": "5.5.0",
+        "contentHash": "bJ+mtss/2TFH80OCZ80WJNZOZTzMX7jIe/XcpKugyCuF4JH98sv0T/XrTYVak9fyeMCLPyDZUQomYhqYU9ydpA==",
         "dependencies": {
           "Azure.Storage.Queues": "12.17.1",
           "Microsoft.Azure.Functions.Worker.Core": "1.18.0",
