@@ -122,8 +122,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 
             connectionStringBuilder.InitialCatalog = databaseName;
 
-            // Set SqlConnectionString env var for the tests to use
+            // Set SqlConnectionString and WEBSITE_SITE_NAME env variables for the tests to use
             Environment.SetEnvironmentVariable("SqlConnectionString", connectionStringBuilder.ToString());
+            Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", "TestSqlFunction");
             MasterConnectionString = masterConnectionString;
             DatabaseName = databaseName;
         }
@@ -357,18 +358,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         {
             return (object sender, DataReceivedEventArgs e) =>
             {
-                Match match = Regex.Match(e.Data, regex);
-                if (match.Success)
+                if (e != null && e.Data != null)
                 {
-                    // We found the line so now check that the group matches our expected value
-                    string actualValue = match.Groups[1].Value;
-                    if (actualValue == expectedValue)
+                    Match match = Regex.Match(e.Data, regex);
+                    if (match.Success)
                     {
-                        taskCompletionSource.SetResult(true);
-                    }
-                    else
-                    {
-                        taskCompletionSource.SetException(new Exception($"Expected {valueName} value of {expectedValue} but got value {actualValue}"));
+                        // We found the line so now check that the group matches our expected value
+                        string actualValue = match.Groups[1].Value;
+                        if (actualValue == expectedValue)
+                        {
+                            taskCompletionSource.SetResult(true);
+                        }
+                        else
+                        {
+                            taskCompletionSource.SetException(new Exception($"Expected {valueName} value of {expectedValue} but got value {actualValue}"));
+                        }
                     }
                 }
             };

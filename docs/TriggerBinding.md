@@ -97,8 +97,8 @@ To find the name of the leases table associated with your function, look in the 
 This log message is at the `Information` level, so make sure your log level is set correctly.
 
 NOTE: `FunctionId` is generated from a couple of inputs:
-    - The HostId, which is a hash of the assembly name containing the function
-    - The full class and method name of the function
+    - The [WEBSITE_SITE_NAME](https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/BindingsOverview.md#website_site_name) setting
+    - The name of the function
 
 If either of these values are changed then a new FunctionId will be generated and result in the function starting over from the beginning, including creating a new Leases table.
 
