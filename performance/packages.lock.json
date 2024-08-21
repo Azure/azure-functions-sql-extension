@@ -1839,7 +1839,7 @@
           "Microsoft.AspNetCore.Http": "[2.2.2, )",
           "Microsoft.Azure.WebJobs": "[3.0.41, )",
           "Microsoft.Data.SqlClient": "[5.1.3, )",
-          "Microsoft.SqlServer.TransactSql.ScriptDom": "[161.9123.0, )",
+          "Microsoft.SqlServer.TransactSql.ScriptDom": "[161.9135.0, )",
           "Newtonsoft.Json": "[13.0.3, )",
           "System.Runtime.Caching": "[6.0.0, )",
           "morelinq": "[3.4.2, )"
@@ -2067,9 +2067,9 @@
       },
       "Microsoft.SqlServer.TransactSql.ScriptDom": {
         "type": "CentralTransitive",
-        "requested": "[161.9123.0, )",
-        "resolved": "161.9123.0",
-        "contentHash": "v1I3SV+EqPHBM+RGrB5LyEc2z74t8WRYFmB0BmSc7EMBDUxFgmJ5oentkf9hPkUFfesha9spB0jci4hDtrCE3Q=="
+        "requested": "[161.9135.0, )",
+        "resolved": "161.9135.0",
+        "contentHash": "Ayubg3Qijaysyn/fJ0QMhv+ADTl5+nPcqE2KsvcIlMZGmSSRAKMxApVf947bLWNRmBIr2TlAS8cSA+cFQUZz1g=="
       },
       "Moq": {
         "type": "CentralTransitive",
