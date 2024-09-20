@@ -369,3 +369,4 @@ target/
 
 # Local nupkg files
 local-packages/
+samples/java/local/local.settings
