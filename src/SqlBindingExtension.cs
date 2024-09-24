@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             builder.AddExtension<SqlExtensionConfigProvider>().BindOptions<SqlOptions>();
             if (configureSqlOptions != null)
             {
-#pragma warning disable IDE0001 // Cannot simplify the name here, supressing the warning.
+#pragma warning disable IDE0001 // Cannot simplify the name here, suppressing the warning.
                 builder.Services.Configure<SqlOptions>(configureSqlOptions);
 #pragma warning restore IDE0001
             }
