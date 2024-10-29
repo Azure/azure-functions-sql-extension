@@ -1,5 +1,7 @@
 # Azure SQL bindings for Azure Functions
 
+TEST 
+
 ## Table of Contents
 
 - [Azure SQL bindings for Azure Functions](#azure-sql-bindings-for-azure-functions)
