@@ -7,9 +7,9 @@ parameters:
   oopWorkerSupportedExtensionVersion: ''
 
 steps:
-- ${{ if eq(variables['Agent.OS'], 'Windows_NT') }}:
-  - script: 'sqllocaldb start MSSQLLocalDB'
-    displayName: 'Start SQL Server LocalDB'
+- script: 'sqllocaldb start MSSQLLocalDB'
+  displayName: 'Start SQL Server LocalDB'
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: UseDotNet@2
   displayName: 'Install .NET SDK'
