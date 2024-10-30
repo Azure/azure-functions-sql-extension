@@ -7,6 +7,13 @@ parameters:
   oopWorkerSupportedExtensionVersion: ''
 
 steps:
+- script: |
+    echo %TEST_SERVER_1%
+    echo %TEST_SERVER_2%
+  displayName: Print
+  env:
+    TEST_SERVER_1: $(testServer)
+    TEST_SERVER_2: ${{ parameters.testServer }}
 - task: UseDotNet@2
   displayName: 'Install .NET SDK'
   inputs:
