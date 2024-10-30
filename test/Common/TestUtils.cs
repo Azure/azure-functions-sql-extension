@@ -107,7 +107,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
                 }
                 masterConnectionString = connectionStringBuilder.ToString();
             }
-
+            Console.WriteLine($"Setting up database on {connectionStringBuilder.DataSource}");
             // Create database
             // Retry this in case the server isn't fully initialized yet
             string databaseName = GetUniqueDBName("SqlBindingsTest");
