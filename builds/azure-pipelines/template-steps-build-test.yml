@@ -19,14 +19,6 @@ steps:
     packageType: sdk
     version: '3.1.x'
 
-# Run Policheck early to avoid scanning dependency folders
-- task: securedevelopmentteam.vss-secure-development-tools.build-task-policheck.PoliCheck@2
-  displayName: 'Run PoliCheck'
-  inputs:
-    targetType: F
-    result: PoliCheck.xml
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
-
 - script: npm install -g azure-functions-core-tools
   displayName: 'Install Azure Functions Core Tools'
 
@@ -64,12 +56,6 @@ steps:
   displayName: Start Server in Docker Container
   condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
-- task: DotNetCoreCLI@2
-  displayName: '.NET Restore'
-  inputs:
-    command: restore
-    projects: '${{ parameters.solution }}'
-
 - powershell: $(System.DefaultWorkingDirectory)/builds/scripts/UpdateLogLevel.ps1
   displayName: Set logging level
   condition: and(succeeded(), ne(variables['AFSQLEXT_TEST_LOGLEVEL'], ''))
@@ -104,7 +90,7 @@ steps:
   workingDirectory: $(Build.SourcesDirectory)/samples/samples-python
   displayName: Install samples-python dependencies
 
-- task: Maven@3
+- task: Maven@4
   displayName: Build Java Samples
   inputs:
     mavenPomFile: samples/samples-java/pom.xml
@@ -113,7 +99,7 @@ steps:
     options: --batch-mode --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
     checkStyleRunAnalysis: true
 
-- task: Maven@3
+- task: Maven@4
   displayName: Build Java Tests
   inputs:
     mavenPomFile: test/Integration/test-java/pom.xml
@@ -217,12 +203,6 @@ steps:
   displayName: 'Stop and Remove SQL Server Image'
   condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
-- task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
-  inputs:
-    InputType: 'CommandLine'
-    arguments: 'analyze $(Build.SourcesDirectory)\src\bin\${{ parameters.configuration }}\* --recurse --verbose'
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
-
 # Don't run for PRs since this currently breaks on runs from forks. We run this daily ourselves anyways.
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-roslynanalyzers.RoslynAnalyzers@3
   inputs:
@@ -231,61 +211,7 @@ steps:
     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'), ne(variables['Build.Reason'], 'PullRequest'))
 
-- task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@3
-  inputs:
-    toolMajorVersion: V3
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
-
-- task: securedevelopmentteam.vss-secure-development-tools.build-task-report.SdtReport@2
-  displayName: 'Create Security Analysis Report'
-  inputs:
-    GdnExportTsvFile: true
-    GdnExportHtmlFile: true
-    GdnExportOutputBaselineFile: global
-    GdnExportOutputBaseline: default
-    GdnExportOutputSuppressionFile: global
-    GdnExportOutputSuppressionSet: default
-    GdnExportPolicyMinSev: Warning
-    GdnExportGdnToolApiScanSeverity: Warning
-    GdnExportGdnToolArmorySeverity: Warning
-    GdnExportGdnToolBanditSeverity: Warning
-    GdnExportGdnToolBinSkimSeverity: Warning
-    GdnExportGdnToolCodesignValidationSeverity: Warning
-    GdnExportGdnToolCredScanSeverity: Warning
-    GdnExportGdnToolESLintSeverity: Warning
-    GdnExportGdnToolFlawfinderSeverity: Warning
-    GdnExportGdnToolFortifyScaSeverity: Warning
-    GdnExportGdnToolFxCopSeverity: Warning
-    GdnExportGdnToolGosecSeverity: Warning
-    GdnExportGdnToolModernCopSeverity: Warning
-    GdnExportGdnToolPoliCheckSeverity: Warning
-    GdnExportGdnToolRoslynAnalyzersSeverity: Warning
-    GdnExportGdnToolSDLNativeRulesSeverity: Warning
-    GdnExportGdnToolSemmleSeverity: Warning
-    GdnExportGdnToolSpotBugsSeverity: Warning
-    GdnExportGdnToolTSLintSeverity: Warning
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
-
-- task: securedevelopmentteam.vss-secure-development-tools.build-task-publishsecurityanalysislogs.PublishSecurityAnalysisLogs@3
-  displayName: 'Publish Security Analysis Logs'
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
-
-- task: securedevelopmentteam.vss-secure-development-tools.build-task-uploadtotsa.TSAUpload@2
-  displayName: 'TSA upload to Codebase: Sql Bindings Stamp: TSA'
-  inputs:
-    GdnPublishTsaOnboard: true
-    GdnPublishTsaConfigFile: '$(Build.SourcesDirectory)\.config\tsaoptions.json'
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'), eq(variables['TSA_UPLOAD'], 'true'))
-
 - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
   displayName: 'Component Detection'
   inputs:
-    failOnAlert: false
-
-- task: securedevelopmentteam.vss-secure-development-tools.build-task-postanalysis.PostAnalysis@2
-  displayName: 'Post Analysis'
-  inputs:
-    GdnBreakPolicyMinSev: Error
-    GdnBreakSuppressionFiles: $(Build.SourcesDirectory)\.gdn\global.gdnsuppress
-    GdnBreakSuppressionSets: default
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
+    failOnAlert: true
