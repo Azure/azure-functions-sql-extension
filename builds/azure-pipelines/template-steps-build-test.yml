@@ -158,7 +158,7 @@ steps:
 - task: DotNetCoreCLI@2
   displayName: '.NET Test on Windows (unit tests and .NET In-Proc integration tests)'
   env:
-    TEST_SERVER: '(testServer)'
+    TEST_SERVER: '$(testServer)'
     NODE_MODULES_PATH: '$(nodeModulesPath)'
     AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
     # Only running CSharp integration tests to get accurate code coverage numbers
@@ -174,7 +174,7 @@ steps:
 - task: DotNetCoreCLI@2
   displayName: '.NET Test on Windows (Non .NET In-Proc)'
   env:
-    TEST_SERVER: '(testServer)'
+    TEST_SERVER: '$(testServer)'
     NODE_MODULES_PATH: '$(nodeModulesPath)'
     AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
     LANGUAGES_TO_TEST: 'Java,JavaScript,OutOfProc,PowerShell,Python,Csx'
