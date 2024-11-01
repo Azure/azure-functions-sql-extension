@@ -7,6 +7,8 @@ parameters:
   oopWorkerSupportedExtensionVersion: ''
 
 steps:
+  # Workaround for known issue where LocalDB startup can take a while https://github.com/actions/runner-images/issues/8164
+  # This will ensure that it's started before moving on
 - script: 'sqllocaldb start MSSQLLocalDB'
   displayName: 'Start SQL Server LocalDB'
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
