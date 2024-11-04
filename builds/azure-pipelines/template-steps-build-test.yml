@@ -123,14 +123,14 @@ steps:
   displayName: .NET Build
   inputs:
     command: build
-    projects: $(solution)
-    arguments: --configuration $(configuration) -p:Version=$(binariesVersion) -p:OOPWorkerSupportedExtensionVersion=$(oopWorkerSupportedExtensionVersion) -p:PackageVersion=$(nugetVersion) -v d
+    projects: ${{ parameters.solution }}
+    arguments: --configuration ${{ parameters.configuration }} -p:Version=${{ parameters.binariesVersion }} -p:OOPWorkerSupportedExtensionVersion=${{ parameters.oopWorkerSupportedExtensionVersion }} -p:PackageVersion=${{ parameters.nugetVersion }} -v d
 
   # Copy the Sql nupkg to ensure it's available for tests since the package copy task is failing occasionally so having this redundancy.
 - task: CopyFiles@2
   displayName: 'Copy local Sql package to local-packages folder'
   inputs:
-    sourceFolder: $(Build.SourcesDirectory)/src/bin/$(configuration)
+    sourceFolder: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}
     contents: '*.nupkg'
     targetFolder: $(Build.SourcesDirectory)/local-packages
     overWrite: true
@@ -138,7 +138,7 @@ steps:
 - task: CopyFiles@2
   displayName: 'Copy Sql extension dll to Azure Functions extension bundle'
   inputs:
-    sourceFolder: $(Build.SourcesDirectory)/src/bin/$(configuration)/netstandard2.0
+    sourceFolder: $(Build.SourcesDirectory)/src/bin/${{ parameters.configuration }}/netstandard2.0
     contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
     targetFolder: $(azureFunctionsExtensionBundlePath)/bin
     overWrite: true
@@ -146,43 +146,43 @@ steps:
 - task: DotNetCoreCLI@2
   displayName: '.NET Test on Mac (unit tests only)'
   env:
-    TEST_SERVER: '$(testServer)'
+    TEST_SERVER: ${{ parameters.testServer }}
     NODE_MODULES_PATH: '$(nodeModulesPath)'
     AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
   inputs:
     command: test
-    projects: '$(solution)'
-    arguments: --configuration $(configuration) --filter FullyQualifiedName!~Integration --no-build
+    projects: '${{ parameters.solution }}'
+    arguments: --configuration ${{ parameters.configuration }} --filter FullyQualifiedName!~Integration --no-build
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Darwin'))
 
 - task: DotNetCoreCLI@2
   displayName: '.NET Test on Windows (unit tests and .NET In-Proc integration tests)'
   env:
-    TEST_SERVER: '$(testServer)'
+    TEST_SERVER: ${{ parameters.testServer }}
     NODE_MODULES_PATH: '$(nodeModulesPath)'
     AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
     # Only running CSharp integration tests to get accurate code coverage numbers
     LANGUAGES_TO_TEST: 'CSharp'
   inputs:
     command: test
-    projects: '$(solution)'
+    projects: '${{ parameters.solution }}'
     # Skip any non .NET In-Proc integration tests. Otherwise, the following error will be thrown:
     # System.InvalidOperationException : No data found for Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration.SqlOutputBindingIntegrationTests.NoPropertiesThrows
-    arguments: --configuration $(configuration) --filter "FullyQualifiedName!~NoPropertiesThrows & FullyQualifiedName!~AddProductWithSlashInColumnName" --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings --no-build
+    arguments: --configuration ${{ parameters.configuration }} --filter "FullyQualifiedName!~NoPropertiesThrows & FullyQualifiedName!~AddProductWithSlashInColumnName" --collect "Code Coverage" -s $(Build.SourcesDirectory)/test/coverage.runsettings --no-build
   condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: DotNetCoreCLI@2
   displayName: '.NET Test on Windows (Non .NET In-Proc)'
   env:
-    TEST_SERVER: '$(testServer)'
+    TEST_SERVER: ${{ parameters.testServer }}
     NODE_MODULES_PATH: '$(nodeModulesPath)'
     AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
     LANGUAGES_TO_TEST: 'Java,JavaScript,OutOfProc,PowerShell,Python,Csx'
   inputs:
     command: test
-    projects: '$(solution)'
+    projects: '${{ parameters.solution }}'
     # Skip any CSharp only integration tests
-    arguments: --configuration $(configuration) --filter "FullyQualifiedName~Integration & FullyQualifiedName!~AddProductsCollectorTest" --no-build
+    arguments: --configuration ${{ parameters.configuration }} --filter "FullyQualifiedName~Integration & FullyQualifiedName!~AddProductsCollectorTest" --no-build
   condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: DotNetCoreCLI@2
@@ -193,8 +193,8 @@ steps:
     AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
   inputs:
     command: test
-    projects: '$(solution)'
-    arguments: --configuration $(configuration) --no-build
+    projects: '${{ parameters.solution }}'
+    arguments: --configuration ${{ parameters.configuration }} --no-build
   condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'linux'))
 
 - script: |
