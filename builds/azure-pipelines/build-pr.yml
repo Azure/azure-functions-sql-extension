@@ -9,41 +9,57 @@ pr:
 variables:
   solution: '**/*.sln'
   configuration: 'Debug'
+  nugetVersion: '99.99.99-test'
+  binariesVersion: '99.99.99'
+  oopWorkerSupportedExtensionVersion: '99.99.99-test'
 
 stages:
 - stage: Build
   displayName: 'PR Validation'
 
   jobs:
-  - job: BuildTest
-    displayName: 'Build and Test on'
-
-    # Verifies cross-platform build and test
-    strategy:
-      matrix:
-        mac:
-          imageName: 'macos-latest'
-          testServer: ''
-        windows:
-          imageName: 'windows-latest'
-          testServer: '(LocalDb)\MSSQLLocalDB'
-        linux:
-          imageName: 'ubuntu-latest'
-          testServer: ''
-
+  - job: Mac
+    timeoutInMinutes: 90
     pool:
-      vmImage: '$(imageName)'
-
+      vmImage: macos-latest
     workspace:
       clean: all
-
-    timeoutInMinutes: '90'
-
     steps:
     - template: 'template-steps-build-test.yml'
       parameters:
         solution: '$(solution)'
         configuration: '$(configuration)'
-        nugetVersion: '99.99.99-test'
-        binariesVersion: '99.99.99'
-        oopWorkerSupportedExtensionVersion: '99.99.99-test'
+        testServer: 'localhost'
+        nugetVersion: '$(nugetVersion)'
+        binariesVersion: '$(binariesVersion)'
+        oopWorkerSupportedExtensionVersion: '$(oopWorkerSupportedExtensionVersion)'
+  - job: Linux
+    timeoutInMinutes: 90
+    pool:
+      vmImage: ubuntu-latest
+    workspace:
+      clean: all
+    steps:
+    - template: 'template-steps-build-test.yml'
+      parameters:
+        solution: '$(solution)'
+        configuration: '$(configuration)'
+        testServer: 'localhost'
+        nugetVersion: '$(nugetVersion)'
+        binariesVersion: '$(binariesVersion)'
+        oopWorkerSupportedExtensionVersion: '$(oopWorkerSupportedExtensionVersion)'
+  - job: Windows
+    timeoutInMinutes: 90
+    pool:
+      vmImage: windows-latest
+    workspace:
+      clean: all
+    steps:
+    - template: 'template-steps-build-test.yml'
+      parameters:
+        solution: '$(solution)'
+        configuration: '$(configuration)'
+        testServer: '(LocalDb)\MSSQLLocalDB'
+        nugetVersion: '$(nugetVersion)'
+        binariesVersion: '$(binariesVersion)'
+        oopWorkerSupportedExtensionVersion: '$(oopWorkerSupportedExtensionVersion)'
