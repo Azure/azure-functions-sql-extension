@@ -42,9 +42,9 @@
       },
       "Microsoft.NET.Sdk.Functions": {
         "type": "Direct",
-        "requested": "[4.5.0, )",
-        "resolved": "4.5.0",
-        "contentHash": "ZvwOVAhKO/ojjPd8vtGp0n0sVHNPlBcOgcq9UbeC8x1cApuZEt6enE16jeJhL5u2ErcpadCjxyYef3tQuI9aHQ==",
+        "requested": "[4.6.0, )",
+        "resolved": "4.6.0",
+        "contentHash": "jDnf2TZ5JcBQY9BhI5hzRsbsu+EzJuz22GzmHmV9iGFFBraD3MaOTsoHxtS5kpd9qX3qCv7I7HuNjUSiH3nTZg==",
         "dependencies": {
           "Microsoft.Azure.Functions.Analyzers": "[1.0.0, 2.0.0)",
           "Microsoft.Azure.WebJobs": "[3.0.32, 3.1.0)",
