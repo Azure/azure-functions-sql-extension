@@ -25,7 +25,7 @@ steps:
     workingFile: $(Build.SourcesDirectory)/.npmrc
 
 - script: npm install azure-functions-core-tools --global --globalconfig $(Build.SourcesDirectory)/.npmrc --loglevel verbose
-  isplayName: 'Install Azure Functions Core Tools'
+  displayName: 'Install Azure Functions Core Tools'
 
 - script: npm install azurite --global --globalconfig $(Build.SourcesDirectory)/.npmrc --loglevel verbose
   displayName: 'Install Azurite Local Storage Emulator'
