@@ -1852,7 +1852,7 @@
           "Microsoft.AspNetCore.Http": "[2.2.2, )",
           "Microsoft.Azure.WebJobs.Extensions.Sql": "[99.99.99, )",
           "Microsoft.Azure.WebJobs.Extensions.Storage": "[5.1.3, )",
-          "Microsoft.NET.Sdk.Functions": "[4.5.0, )",
+          "Microsoft.NET.Sdk.Functions": "[4.6.0, )",
           "Newtonsoft.Json": "[13.0.3, )"
         }
       },
@@ -1866,7 +1866,7 @@
           "Microsoft.Azure.WebJobs.Host.Storage": "[5.0.0, )",
           "Microsoft.Extensions.Configuration.Json": "[5.0.0, )",
           "Microsoft.Extensions.DependencyInjection": "[6.0.1, )",
-          "Microsoft.NET.Sdk.Functions": "[4.5.0, )",
+          "Microsoft.NET.Sdk.Functions": "[4.6.0, )",
           "Microsoft.NET.Test.Sdk": "[17.11.0, )",
           "Moq": "[4.20.72, )",
           "Newtonsoft.Json": "[13.0.3, )",
@@ -2040,9 +2040,9 @@
       },
       "Microsoft.NET.Sdk.Functions": {
         "type": "CentralTransitive",
-        "requested": "[4.5.0, )",
-        "resolved": "4.5.0",
-        "contentHash": "ZvwOVAhKO/ojjPd8vtGp0n0sVHNPlBcOgcq9UbeC8x1cApuZEt6enE16jeJhL5u2ErcpadCjxyYef3tQuI9aHQ==",
+        "requested": "[4.6.0, )",
+        "resolved": "4.6.0",
+        "contentHash": "jDnf2TZ5JcBQY9BhI5hzRsbsu+EzJuz22GzmHmV9iGFFBraD3MaOTsoHxtS5kpd9qX3qCv7I7HuNjUSiH3nTZg==",
         "dependencies": {
           "Microsoft.Azure.Functions.Analyzers": "[1.0.0, 2.0.0)",
           "Microsoft.Azure.WebJobs": "[3.0.32, 3.1.0)",
