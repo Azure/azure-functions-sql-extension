@@ -67,13 +67,13 @@ steps:
 
   
 - script: |
-    npm install --userconfig $(Build.SourcesDirectory)\.npmrc --loglevel verbose
+    npm install --userconfig $(Build.SourcesDirectory)/.npmrc --loglevel verbose
     npm run lint
   workingDirectory: $(Build.SourcesDirectory)/samples/samples-js
   displayName: Lint samples-js
 
 - script: |
-    npm install --userconfig $(Build.SourcesDirectory)\.npmrc --loglevel verbose
+    npm install --userconfig $(Build.SourcesDirectory)/.npmrc --loglevel verbose
     npm run lint
   workingDirectory: $(Build.SourcesDirectory)/test/Integration/test-js
   displayName: Lint test-js
