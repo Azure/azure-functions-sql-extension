@@ -65,19 +65,15 @@ steps:
   displayName: Set logging level
   condition: and(succeeded(), ne(variables['AFSQLEXT_TEST_LOGLEVEL'], ''))
 
-- task: npmAuthenticate@0
-  displayName: 'npm Authenticate for project'
-  inputs:
-  workingFile: $(Build.SourcesDirectory)/.npmrc
   
 - script: |
-    npm install
+    npm install --userconfig $(Build.SourcesDirectory)\.npmrc --loglevel verbose
     npm run lint
   workingDirectory: $(Build.SourcesDirectory)/samples/samples-js
   displayName: Lint samples-js
 
 - script: |
-    npm install
+    npm install --userconfig $(Build.SourcesDirectory)\.npmrc --loglevel verbose
     npm run lint
   workingDirectory: $(Build.SourcesDirectory)/test/Integration/test-js
   displayName: Lint test-js
