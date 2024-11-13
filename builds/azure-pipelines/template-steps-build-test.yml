@@ -19,10 +19,15 @@ steps:
     packageType: sdk
     version: '3.1.x'
 
-- script: npm install -g azure-functions-core-tools
-  displayName: 'Install Azure Functions Core Tools'
+- task: npmAuthenticate@0
+  displayName: 'npm Authenticate for project'
+  inputs:
+    workingFile: $(Build.SourcesDirectory)/.npmrc
 
-- script: npm install -g azurite
+- script: npm install azure-functions-core-tools --global --globalconfig $(Build.SourcesDirectory)/.npmrc --loglevel verbose
+  isplayName: 'Install Azure Functions Core Tools'
+
+- script: npm install azurite --global --globalconfig $(Build.SourcesDirectory)/.npmrc --loglevel verbose
   displayName: 'Install Azurite Local Storage Emulator'
 
 # This step is necessary because npm installs to a non-traditional location on Windows hosted agents
@@ -60,6 +65,11 @@ steps:
   displayName: Set logging level
   condition: and(succeeded(), ne(variables['AFSQLEXT_TEST_LOGLEVEL'], ''))
 
+- task: npmAuthenticate@0
+  displayName: 'npm Authenticate for project'
+  inputs:
+  workingFile: $(Build.SourcesDirectory)/.npmrc
+  
 - script: |
     npm install
     npm run lint
