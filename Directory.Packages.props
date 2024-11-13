@@ -27,7 +27,7 @@
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Storage.Queues" Version="5.5.0" />
     <PackageVersion Include="Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator" Version="4.0.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="6.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="6.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0"/>
     <PackageVersion Include="Microsoft.SqlServer.TransactSql.ScriptDom" Version="161.9135.0" />
     <PackageVersion Include="Grpc.Net.Client" Version="2.66.0"/>
