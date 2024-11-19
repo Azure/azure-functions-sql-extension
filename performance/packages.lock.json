@@ -1865,7 +1865,7 @@
           "Microsoft.Azure.WebJobs.Extensions.Sql.Samples": "[1.0.0, )",
           "Microsoft.Azure.WebJobs.Host.Storage": "[5.0.0, )",
           "Microsoft.Extensions.Configuration.Json": "[5.0.0, )",
-          "Microsoft.Extensions.DependencyInjection": "[6.0.1, )",
+          "Microsoft.Extensions.DependencyInjection": "[6.0.2, )",
           "Microsoft.NET.Sdk.Functions": "[4.6.0, )",
           "Microsoft.NET.Test.Sdk": "[17.11.0, )",
           "Moq": "[4.20.72, )",
@@ -2030,12 +2030,11 @@
       },
       "Microsoft.Extensions.DependencyInjection": {
         "type": "CentralTransitive",
-        "requested": "[6.0.1, )",
-        "resolved": "6.0.1",
-        "contentHash": "vWXPg3HJQIpZkENn1KWq8SfbqVujVD7S7vIAyFXXqK5xkf1Vho+vG0bLBCHxU36lD1cLLtmGpfYf0B3MYFi9tQ==",
+        "requested": "[6.0.2, )",
+        "resolved": "6.0.2",
+        "contentHash": "gWUfUZ2ZDvwiVCxsOMComAhG43xstNWWVjV2takUZYRuDSJjO9Q5/b3tfOSkl5mcVwZAL3RZviRj5ZilxHghlw==",
         "dependencies": {
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "6.0.0",
-          "System.Runtime.CompilerServices.Unsafe": "6.0.0"
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "6.0.0"
         }
       },
       "Microsoft.NET.Sdk.Functions": {
