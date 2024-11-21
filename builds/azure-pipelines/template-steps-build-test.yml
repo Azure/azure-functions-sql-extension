@@ -24,11 +24,17 @@ steps:
   inputs:
     workingFile: $(Build.SourcesDirectory)/.npmrc
 
-- script: npm install azure-functions-core-tools --global --globalconfig $(Build.SourcesDirectory)/.npmrc --loglevel verbose
+- task: Npm@1
   displayName: 'Install Azure Functions Core Tools'
+  inputs:
+    command: 'custom'
+    customCommand: 'install azure-functions-core-tools --global --loglevel verbose'
 
-- script: npm install azurite --global --globalconfig $(Build.SourcesDirectory)/.npmrc --loglevel verbose
+- task: Npm@1
   displayName: 'Install Azurite Local Storage Emulator'
+  inputs:
+    command: 'custom'
+    customCommand: 'install azurite --global --loglevel verbose'
 
 # This step is necessary because npm installs to a non-traditional location on Windows hosted agents
 # For non-Windows agents we still want to ensure that we always get the correct location where the tools are installed
