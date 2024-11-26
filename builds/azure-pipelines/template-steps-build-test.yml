@@ -28,14 +28,14 @@ steps:
   displayName: 'Install Azure Functions Core Tools'
   inputs:
     command: 'custom'
-    customCommand: 'install azure-functions-core-tools --registry https://msdata.pkgs.visualstudio.com/SQLToolsAndLibraries/_packaging/SQLToolsAndLibraries_PublicPackages/npm/registry/ --global --loglevel verbose'
+    customCommand: 'install azure-functions-core-tools --registry https://msdata.pkgs.visualstudio.com/SQLToolsAndLibraries/_packaging/SQLToolsAndLibraries_PublicPackages/npm/registry/ --always-auth false --global --loglevel verbose'
     workingDir: '$(Build.SourcesDirectory)'
 
 - task: Npm@1
   displayName: 'Install Azurite Local Storage Emulator'
   inputs:
     command: 'custom'
-    customCommand: 'install azurite --registry https://msdata.pkgs.visualstudio.com/SQLToolsAndLibraries/_packaging/SQLToolsAndLibraries_PublicPackages/npm/registry/ --global --loglevel verbose'
+    customCommand: 'install azurite --registry https://msdata.pkgs.visualstudio.com/SQLToolsAndLibraries/_packaging/SQLToolsAndLibraries_PublicPackages/npm/registry/ --always-auth false --global --loglevel verbose'
     workingDir: '$(Build.SourcesDirectory)'
 
 # This step is necessary because npm installs to a non-traditional location on Windows hosted agents
