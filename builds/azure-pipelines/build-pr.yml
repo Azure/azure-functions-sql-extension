@@ -33,6 +33,7 @@ stages:
         nugetVersion: '$(nugetVersion)'
         binariesVersion: '$(binariesVersion)'
         oopWorkerSupportedExtensionVersion: '$(oopWorkerSupportedExtensionVersion)'
+        rootDirectory: '$(Build.SourcesDirectory)'
   - job: Linux
     timeoutInMinutes: 90
     pool:
@@ -48,6 +49,7 @@ stages:
         nugetVersion: '$(nugetVersion)'
         binariesVersion: '$(binariesVersion)'
         oopWorkerSupportedExtensionVersion: '$(oopWorkerSupportedExtensionVersion)'
+        rootDirectory: '$(Build.SourcesDirectory)'
   - job: Windows
     timeoutInMinutes: 90
     pool:
@@ -63,3 +65,4 @@ stages:
         nugetVersion: '$(nugetVersion)'
         binariesVersion: '$(binariesVersion)'
         oopWorkerSupportedExtensionVersion: '$(oopWorkerSupportedExtensionVersion)'
+        rootDirectory: '$(Build.SourcesDirectory)'
