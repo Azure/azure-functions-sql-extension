@@ -108,7 +108,7 @@ steps:
 - task: Maven@4
   displayName: Build Java Samples
   inputs:
-    mavenPomFile: samples/samples-java/pom.xml
+    mavenPomFile: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/samples/samples-java/pom.xml
     # batch-mode and Slf4jMavenTransferListener definition are used to make the build logging verbose
     # update-snapshot forces a check for updated library dependencies
     options: --batch-mode --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
@@ -117,7 +117,7 @@ steps:
 - task: Maven@4
   displayName: Build Java Tests
   inputs:
-    mavenPomFile: test/Integration/test-java/pom.xml
+    mavenPomFile: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/test/Integration/test-java/pom.xml
     # batch-mode and Slf4jMavenTransferListener definition are used to make the build logging verbose
     # update-snapshot forces a check for updated library dependencies
     options: --batch-mode --define=org.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --update-snapshots
