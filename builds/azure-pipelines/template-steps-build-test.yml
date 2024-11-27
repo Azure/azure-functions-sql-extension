@@ -5,7 +5,7 @@ parameters:
   binariesVersion: ''
   testServer: ''
   oopWorkerSupportedExtensionVersion: ''
-  rootDirectory: ''
+  sourcesSubdirectory: ''
 
 steps:
 - task: UseDotNet@2
@@ -23,21 +23,21 @@ steps:
 - task: npmAuthenticate@0
   displayName: 'npm Authenticate for project'
   inputs:
-    workingFile: $(rootDirectory)/.npmrc
+    workingFile: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc
 
 - task: Npm@1
   displayName: 'Install Azure Functions Core Tools'
   inputs:
     command: 'custom'
-    customCommand: 'install azure-functions-core-tools --global --globalconfig $(rootDirectory)/.npmrc --loglevel verbose'
-    workingDir: '$(rootDirectory)'
+    customCommand: 'install azure-functions-core-tools --global --globalconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --loglevel verbose'
+    workingDir: '$(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}'
 
 - task: Npm@1
   displayName: 'Install Azurite Local Storage Emulator'
   inputs:
     command: 'custom'
-    customCommand: 'install azurite --global --globalconfig $(rootDirectory)/.npmrc --loglevel verbose'
-    workingDir: '$(rootDirectory)'
+    customCommand: 'install azurite --global --globalconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --loglevel verbose'
+    workingDir: '$(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}'
 
 # This step is necessary because npm installs to a non-traditional location on Windows hosted agents
 # For non-Windows agents we still want to ensure that we always get the correct location where the tools are installed
@@ -47,7 +47,7 @@ steps:
 
 - bash: echo "##vso[task.setvariable variable=azureFunctionsExtensionBundlePath]$(func GetExtensionBundlePath)"
   displayName: 'Set Azure Functions extension bundle path'
-  workingDirectory: $(rootDirectory)/samples/samples-js
+  workingDirectory: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/samples/samples-js
 
 - task: DockerInstaller@0
   displayName: Docker Installer
@@ -76,15 +76,15 @@ steps:
 
 
 - script: |
-    npm install --userconfig $(rootDirectory)/.npmrc --loglevel verbose
+    npm install --userconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --loglevel verbose
     npm run lint
-  workingDirectory: $(rootDirectory)/samples/samples-js
+  workingDirectory: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/samples/samples-js
   displayName: Lint samples-js
 
 - script: |
-    npm install --userconfig $(rootDirectory)/.npmrc --loglevel verbose
+    npm install --userconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --loglevel verbose
     npm run lint
-  workingDirectory: $(rootDirectory)/test/Integration/test-js
+  workingDirectory: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/test/Integration/test-js
   displayName: Lint test-js
 
 - task: UsePythonVersion@0
@@ -97,12 +97,12 @@ steps:
     pip3 install "pylint<3.0"
     pip3 install pylintfileheader
     pylint --recursive=yes .
-  workingDirectory: $(rootDirectory)/samples/samples-python
+  workingDirectory: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/samples/samples-python
   displayName: Lint samples-python
 
 - script: |
     pip3 install -r requirements.txt
-  workingDirectory: $(rootDirectory)/samples/samples-python
+  workingDirectory: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/samples/samples-python
   displayName: Install samples-python dependencies
 
 - task: Maven@4
@@ -131,7 +131,7 @@ steps:
   inputs:
     command: custom
     custom: nuget
-    arguments: add source -n afsqlext.local $(rootDirectory)/local-packages
+    arguments: add source -n afsqlext.local $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/local-packages
     workingDirectory: $(Agent.WorkFolder)
 
 - task: DotNetCoreCLI@2
@@ -145,15 +145,15 @@ steps:
 - task: CopyFiles@2
   displayName: 'Copy local Sql package to local-packages folder'
   inputs:
-    sourceFolder: $(rootDirectory)/src/bin/${{ parameters.configuration }}
+    sourceFolder: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/src/bin/${{ parameters.configuration }}
     contents: '*.nupkg'
-    targetFolder: $(rootDirectory)/local-packages
+    targetFolder: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/local-packages
     overWrite: true
 
 - task: CopyFiles@2
   displayName: 'Copy Sql extension dll to Azure Functions extension bundle'
   inputs:
-    sourceFolder: $(rootDirectory)/src/bin/${{ parameters.configuration }}/netstandard2.0
+    sourceFolder: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/src/bin/${{ parameters.configuration }}/netstandard2.0
     contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
     targetFolder: $(azureFunctionsExtensionBundlePath)/bin
     overWrite: true
@@ -183,7 +183,7 @@ steps:
     projects: '${{ parameters.solution }}'
     # Skip any non .NET In-Proc integration tests. Otherwise, the following error will be thrown:
     # System.InvalidOperationException : No data found for Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration.SqlOutputBindingIntegrationTests.NoPropertiesThrows
-    arguments: --configuration ${{ parameters.configuration }} --filter "FullyQualifiedName!~NoPropertiesThrows & FullyQualifiedName!~AddProductWithSlashInColumnName" --collect "Code Coverage" -s $(rootDirectory)/test/coverage.runsettings --no-build
+    arguments: --configuration ${{ parameters.configuration }} --filter "FullyQualifiedName!~NoPropertiesThrows & FullyQualifiedName!~AddProductWithSlashInColumnName" --collect "Code Coverage" -s $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/test/coverage.runsettings --no-build
   condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: DotNetCoreCLI@2
