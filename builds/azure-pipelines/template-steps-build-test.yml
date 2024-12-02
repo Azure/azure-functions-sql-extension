@@ -25,20 +25,12 @@ steps:
   inputs:
     workingFile: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc
 
-- task: Npm@1
+- script: npm install azure-functions-core-tools --global --globalconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --loglevel verbose
   displayName: 'Install Azure Functions Core Tools'
-  inputs:
-    command: 'custom'
-    customCommand: 'install azure-functions-core-tools --global --globalconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --loglevel verbose'
-    workingDir: '$(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}'
 
-- task: Npm@1
+- script: npm install azurite --global --globalconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --loglevel verbose
   displayName: 'Install Azurite Local Storage Emulator'
-  inputs:
-    command: 'custom'
-    customCommand: 'install azurite --global --globalconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --loglevel verbose'
-    workingDir: '$(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}'
-
+  
 # This step is necessary because npm installs to a non-traditional location on Windows hosted agents
 # For non-Windows agents we still want to ensure that we always get the correct location where the tools are installed
 # This sets the path to npm global installations as a variable which then gets passed to .NET test task
