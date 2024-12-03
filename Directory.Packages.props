@@ -30,7 +30,7 @@
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="6.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0"/>
     <PackageVersion Include="Microsoft.SqlServer.TransactSql.ScriptDom" Version="161.9135.0" />
-    <PackageVersion Include="Grpc.Net.Client" Version="2.66.0"/>
+    <PackageVersion Include="Grpc.Net.Client" Version="2.67.0"/>
 
     <!-- Packages below this line result in a major version bump of dependencies, which can cause conflicts with the host.
          Any such updates should only happen with a major version bump of the SQL extension, or by :
