@@ -1,6 +1,5 @@
 <Project>
   <ItemGroup>
-    <PackageVersion Include="Azure.Identity" Version="1.12.1"/>
     <PackageVersion Include="Microsoft.NET.Sdk.Functions" Version="4.6.0" />
     <PackageVersion Include="Microsoft.ApplicationInsights" Version="2.22.0" />
     <!-- Be careful when updating this, previously failures occurred on .NET7, more info available here -> https://github.com/Azure/azure-functions-sql-extension/issues/920 -->
@@ -38,6 +37,7 @@
             1. Verifying with the core Azure Functions host team that there will not be any issues
             2. Running the bundle dependency test and verifying it passes
      -->
+    <PackageVersion Include="Azure.Identity" Version="1.12.1"/>
     <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="5.1.3" />
     <PackageVersion Include="Microsoft.Azure.WebJobs.Host.Storage" Version="5.0.0" />
   </ItemGroup>
