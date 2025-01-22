@@ -19,6 +19,7 @@
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="6.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0"/>
     <!-- Be careful when updating this, previously failures occurred on .NET7, more info available here -> https://github.com/Azure/azure-functions-sql-extension/issues/920 -->
+    <!-- **IMPORTANT** When updating this make sure to also update the bundle version https://github.com/Azure/azure-functions-extension-bundles/blob/main/src/Microsoft.Azure.Functions.ExtensionBundle/extensions.json#L203 -->
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="5.2.2" />
     <PackageVersion Include="Microsoft.NET.Sdk.Functions" Version="4.6.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.11.0" />
