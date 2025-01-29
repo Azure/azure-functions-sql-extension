@@ -40,7 +40,7 @@
             1. Verifying with the core Azure Functions host team that there will not be any issues
             2. Running the bundle dependency test and verifying it passes
      -->
-    <PackageVersion Include="Azure.Core" Version="1.41.0"/> <!-- Pin version to address security issue, should be removed once Azure.Identity is updated to latest -->
+    <PackageVersion Include="Azure.Core" Version="1.44.1"/> <!-- Pin version to address security issue, should be removed once Azure.Identity is updated to latest -->
     <PackageVersion Include="Azure.Identity" Version="1.12.1"/>
   </ItemGroup>
 </Project>
