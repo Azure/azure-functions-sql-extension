@@ -13,7 +13,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     {
         public override void Configure(IFunctionsHostBuilder builder)
         {
-            // Test code, safe to ignore
             // Set default settings for JsonConvert to simulate a user doing the same in their function.
             // This will cause test failures if serialization/deserialization isn't done correctly
             // (using the helper methods in Utils.cs)
