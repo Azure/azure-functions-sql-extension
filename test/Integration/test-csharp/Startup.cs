@@ -19,7 +19,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             var settings = new JsonSerializerSettings
             {
                 Formatting = Formatting.Indented,
-                TypeNameHandling = TypeNameHandling.Objects,
                 ContractResolver = new CamelCasePropertyNamesContractResolver()
             };
             JsonConvert.DefaultSettings = () => settings;
