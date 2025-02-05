@@ -13,17 +13,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
     {
         public override void Configure(IFunctionsHostBuilder builder)
         {
-#pragma warning disable CA2327 // Test code, safe to ignore
             // Set default settings for JsonConvert to simulate a user doing the same in their function.
             // This will cause test failures if serialization/deserialization isn't done correctly
             // (using the helper methods in Utils.cs)
-            JsonConvert.DefaultSettings = () => new JsonSerializerSettings
+            var settings = new JsonSerializerSettings
             {
                 Formatting = Formatting.Indented,
-                TypeNameHandling = TypeNameHandling.Objects,
                 ContractResolver = new CamelCasePropertyNamesContractResolver()
             };
-#pragma warning restore CA2327
+            JsonConvert.DefaultSettings = () => settings;
         }
     }
 }
