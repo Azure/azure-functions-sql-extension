@@ -155,9 +155,11 @@ The upper limit on the number of pending changes in the user table that are allo
 #### WEBSITE_SITE_NAME
 
 The unique name used in creating the lease tables. The local apps depend on this setting for creating unique leases tables, please give a unique name for each app.
-    > **NOTE:** If the setting is re-used accross apps, having the same function name could cause the functions to use the same lease tables and the function runs to not work as expected.
-    > **NOTE:** If you have 2 different SQL trigger functions with same functionName locally, not having WEBSITE_SITE_NAME would mean that the same leasees table would be used for both triggers resulting in only one of the functions being triggered.
-    > **NOTE:** This is a read-only variable that is provided by the azure environment variables for deployed functions and the user provided value will be overridden. Refer to [Environment variables](https://learn.microsoft.com/azure/app-service/reference-app-settings?tabs=kudu%2Cdotnet#app-environment) for apps.
+
+> **NOTE:**
+> * If the setting is re-used across apps, having the same function name could cause the functions to use the same lease tables and the function runs to not work as expected.
+> * If you have 2 different SQL trigger functions with same functionName locally, not having WEBSITE_SITE_NAME would mean that the same leasees table would be used for both triggers resulting in only one of the functions being triggered.
+> * This is a read-only variable that is provided by the azure environment variables for deployed functions and the user provided value will be overridden. Refer to [Environment variables](https://learn.microsoft.com/azure/app-service/reference-app-settings?tabs=kudu%2Cdotnet#app-environment) for apps.
 
 ### Scaling for Trigger Bindings
 
