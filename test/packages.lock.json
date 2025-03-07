@@ -1830,7 +1830,7 @@
         "dependencies": {
           "Azure.Core": "[1.41.0, )",
           "Azure.Identity": "[1.12.1, )",
-          "Microsoft.ApplicationInsights": "[2.22.0, )",
+          "Microsoft.ApplicationInsights": "[2.23.0, )",
           "Microsoft.AspNetCore.Http": "[2.2.2, )",
           "Microsoft.Azure.WebJobs": "[3.0.41, )",
           "Microsoft.Data.SqlClient": "[5.2.2, )",
@@ -1854,9 +1854,9 @@
       },
       "Microsoft.ApplicationInsights": {
         "type": "CentralTransitive",
-        "requested": "[2.22.0, )",
-        "resolved": "2.22.0",
-        "contentHash": "3AOM9bZtku7RQwHyMEY3tQMrHIgjcfRDa6YQpd/QG2LDGvMydSlL9Di+8LLMt7J2RDdfJ7/2jdYv6yHcMJAnNw==",
+        "requested": "[2.23.0, )",
+        "resolved": "2.23.0",
+        "contentHash": "nWArUZTdU7iqZLycLKWe0TDms48KKGE6pONH2terYNa8REXiqixrMOkf1sk5DHGMaUTqONU2YkS4SAXBhLStgw==",
         "dependencies": {
           "System.Diagnostics.DiagnosticSource": "5.0.0"
         }
