@@ -13,7 +13,7 @@
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Extensions.Timer" Version="4.3.1" />
     <PackageVersion Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.18.1" />
     <PackageVersion Include="Microsoft.Azure.WebJobs" Version="3.0.41" />
-    <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="5.3.2" />
+    <PackageVersion Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="5.3.4" />
     <PackageVersion Include="Microsoft.Azure.WebJobs.Host.Storage" Version="5.0.1" />
     <PackageVersion Include="Microsoft.Azure.WebJobs.Script.ExtensionsMetadataGenerator" Version="4.0.1" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="6.0.2" />
