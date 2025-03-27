@@ -173,6 +173,9 @@ There are two types of scaling available:
 
 For more information, check documentation on [Runtime Scaling](https://learn.microsoft.com/azure/azure-functions/event-driven-scaling#runtime-scaling). You can configure scaling parameters by going to 'Scale out (App Service plan)' setting on the function app's page. To understand various scale settings, please check the respective sections in [Azure Functions Premium plan](https://learn.microsoft.com/azure/azure-functions/functions-premium-plan?tabs=portal#eliminate-cold-starts)'s documentation.
 
+For information on setup and configuration details, see the [overview](https://learn.microsoft.com/azure/azure-functions/functions-bindings-azure-sql).
+The Azure SQL trigger scaling decisions for the Consumption and Premium plans are done via target-based scaling. For more information, see [Target-based scaling](https://learn.microsoft.com/azure/azure-functions/functions-target-based-scaling).
+
 ### Retry support for Trigger Bindings
 
 #### Startup retries
