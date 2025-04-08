@@ -1792,6 +1792,7 @@
           "Microsoft.SqlServer.TransactSql.ScriptDom": "[161.9135.0, )",
           "Newtonsoft.Json": "[13.0.3, )",
           "System.Runtime.Caching": "[8.0.1, )",
+          "System.Security.AccessControl": "[6.0.1, )",
           "morelinq": "[3.4.2, )"
         }
       },
@@ -2067,12 +2068,8 @@
       "System.Security.AccessControl": {
         "type": "CentralTransitive",
         "requested": "[6.0.1, )",
-        "resolved": "5.0.0",
-        "contentHash": "dagJ1mHZO3Ani8GH0PHpPEe/oYO+rVdbQjvjJkBRNQkX4t0r1iaeGn8+/ybkSLEan3/slM0t59SVdHzuHf2jmw==",
-        "dependencies": {
-          "Microsoft.NETCore.Platforms": "5.0.0",
-          "System.Security.Principal.Windows": "5.0.0"
-        }
+        "resolved": "6.0.1",
+        "contentHash": "IQ4NXP/B3Ayzvw0rDQzVTYsCKyy0Jp9KI6aYcK7UnGVlR9+Awz++TIPCQtPYfLJfOpm8ajowMR09V7quD3sEHw=="
       },
       "xRetry": {
         "type": "CentralTransitive",

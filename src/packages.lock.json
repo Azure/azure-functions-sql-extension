@@ -145,6 +145,15 @@
           "System.Configuration.ConfigurationManager": "8.0.1"
         }
       },
+      "System.Security.AccessControl": {
+        "type": "Direct",
+        "requested": "[6.0.1, )",
+        "resolved": "6.0.1",
+        "contentHash": "IQ4NXP/B3Ayzvw0rDQzVTYsCKyy0Jp9KI6aYcK7UnGVlR9+Awz++TIPCQtPYfLJfOpm8ajowMR09V7quD3sEHw==",
+        "dependencies": {
+          "System.Security.Principal.Windows": "5.0.0"
+        }
+      },
       "Microsoft.AspNetCore.Http.Abstractions": {
         "type": "Transitive",
         "resolved": "2.2.0",
@@ -798,15 +807,6 @@
         "contentHash": "gqQviLfuA31PheEGi+XJoZc1bc9H9RsPa9Gq9XuDct7XGWSR9eVXjK5Sg7CSUPhTFHSuxUFY12wcTYLZ4zM1hg==",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "2.1.0"
-        }
-      },
-      "System.Security.AccessControl": {
-        "type": "CentralTransitive",
-        "requested": "[6.0.1, )",
-        "resolved": "5.0.0",
-        "contentHash": "dagJ1mHZO3Ani8GH0PHpPEe/oYO+rVdbQjvjJkBRNQkX4t0r1iaeGn8+/ybkSLEan3/slM0t59SVdHzuHf2jmw==",
-        "dependencies": {
-          "System.Security.Principal.Windows": "5.0.0"
         }
       }
     }
