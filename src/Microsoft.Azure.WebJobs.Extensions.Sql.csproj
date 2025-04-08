@@ -24,6 +24,7 @@
     <PackageReference Include="Microsoft.SqlServer.TransactSql.ScriptDom" />
     <PackageReference Include="morelinq" />
     <PackageReference Include="System.Runtime.Caching" />
+    <!-- This isn't directly needed, but pinning it to v6 since v5 is deprecated and our transitive dependencies currently only ask for v5 -->
     <PackageReference Include="System.Security.AccessControl" />
     <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="Microsoft.AspNetCore.Http" />
