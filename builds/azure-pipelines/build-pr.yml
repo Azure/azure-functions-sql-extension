@@ -36,17 +36,10 @@ stages:
   - job: Linux
     timeoutInMinutes: 90
     pool:
-      vmImage: ubuntu-latest
+      vmImage: ubuntu-22.04 # Ubuntu 24.04 causes an error about missing libssl - using 22.04 for now
     workspace:
       clean: all
     steps:
-    - script: |
-
-        sudo add-apt-repository 'deb http://security.ubuntu.com/ubuntu jammy-security main'
-        sudo apt-get update
-        sudo apt-get install -y libssl-dev=3.0.2-0ubuntu1.19
-      displayName: 'Install libssl-dev'
-
     - template: 'template-steps-build-test.yml'
       parameters:
         solution: '$(solution)'
