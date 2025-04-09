@@ -40,6 +40,10 @@ stages:
     workspace:
       clean: all
     steps:
+    - script: |
+        sudo apt-get install -y libssl-dev=3.0.2-0ubuntu1.19
+      displayName: 'Install libssl-dev'
+
     - template: 'template-steps-build-test.yml'
       parameters:
         solution: '$(solution)'
