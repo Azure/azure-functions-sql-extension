@@ -96,11 +96,12 @@ To find the name of the leases table associated with your function, look in the 
 
 This log message is at the `Information` level, so make sure your log level is set correctly.
 
-NOTE: `FunctionId` is generated from a couple of inputs:
-   - The [WEBSITE_SITE_NAME](https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/BindingsOverview.md#website_site_name) setting
-   - The name of the function
+NOTE: `FunctionId` is generated from the name of the function and either
 
-If either of these values are changed then a new FunctionId will be generated and result in the function starting over from the beginning, including creating a new Leases table.
+* The [WEBSITE_SITE_NAME](https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/BindingsOverview.md#website_site_name) setting
+* [IHostIdProvider.GetHostIdAsync](https://github.com/Azure/azure-webjobs-sdk/blob/dev/src/Microsoft.Azure.WebJobs.Host/Executors/IHostIdProvider.cs#L14) as a fallback if the WEBSITE_SITE_NAME setting doesn't exist
+
+If either the name of the function or the ID value are changed then a new FunctionId will be generated and result in the function starting over from the beginning, including creating a new Leases table.
 
 This table is used to ensure that all changes are processed and that no change is processed more than once. This table consists of two groups of columns:
 
