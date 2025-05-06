@@ -41,7 +41,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public async Task SingleOperationTriggerTest(SupportedLanguages lang)
         {
-            await this.SingleOperationTriggerTestImpl(lang, clearWebsiteSiteName: false);
+            await this.SingleOperationTriggerTestImpl(lang);
         }
 
         /// <summary>
@@ -52,17 +52,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public async Task SingleOperationTriggerTest_NoWebsiteSiteName(SupportedLanguages lang)
         {
-            await this.SingleOperationTriggerTestImpl(lang, clearWebsiteSiteName: true);
+            await this.SingleOperationTriggerTestImpl(lang, new Dictionary<string, string>() { { "WEBSITE_SITE_NAME", string.Empty } });
         }
 
-        private async Task SingleOperationTriggerTestImpl(SupportedLanguages lang, bool clearWebsiteSiteName)
+        private async Task SingleOperationTriggerTestImpl(SupportedLanguages lang, IDictionary<string, string> environmentVariables = null)
         {
             this.SetChangeTrackingForTable("Products");
-            if (clearWebsiteSiteName)
-            {
-                Environment.SetEnvironmentVariable("WEBSITE_SITE_NAME", string.Empty);
-            }
-            this.StartFunctionHost(nameof(ProductsTrigger), lang);
+            this.StartFunctionHost(nameof(ProductsTrigger), lang, environmentVariables: environmentVariables);
 
             int firstId = 1;
             int lastId = 30;
