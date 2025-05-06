@@ -14,7 +14,6 @@ using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using MoreLinq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
@@ -23,6 +22,7 @@ using Newtonsoft.Json.Linq;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlBindingConstants;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlBindingUtilities;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Common;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {

@@ -34,6 +34,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "azurite",
+                    Arguments = "--skipVersionCheck",
                     WindowStyle = ProcessWindowStyle.Hidden,
                     UseShellExecute = true
                 }
