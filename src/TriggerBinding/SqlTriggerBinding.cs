@@ -102,11 +102,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// gets a separate view of the table changes.
         /// </summary>
         /// <returns>The function ID, or NULL if there isn't a config value for WEBSITE_SITE_NAME</returns>
+#pragma warning disable CA1822 // Mark members as static
         private string GetWebsiteSiteNameFunctionId()
+#pragma warning restore CA1822 // Mark members as static
         {
             // Using read-only App name for the hash https://learn.microsoft.com/en-us/azure/app-service/reference-app-settings?tabs=kudu%2Cdotnet#app-environment
-            string websiteName = this._configuration.GetConnectionStringOrSetting(SqlBindingConstants.WEBSITENAME);
-            if (string.IsNullOrEmpty(websiteName))
+            // string websiteName = this._configuration.GetConnectionStringOrSetting(SqlBindingConstants.WEBSITENAME);
+            throw new ArgumentException($"WEBSITE_SITE_NAME cannot be null or empty in your function app settings, please update the setting with a string value. Please refer to https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/BindingsOverview.md#website_site_name for more information.");
+            /*
+             * if (string.IsNullOrEmpty(websiteName))
             {
                 // TODO REVERT
                 this._logger.LogWarning("WEBSITE_SITE_NAME configuration is not set, will fall back to using function ID based on the host ID. This will mean consumption plan scaling will not work as intended.");
@@ -122,6 +126,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 byte[] hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(websiteName + functionName));
                 return new Guid(hash.Take(16).ToArray()).ToString("N").Substring(0, 16);
             }
+            */
         }
 
         /// <summary>
