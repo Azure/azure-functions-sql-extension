@@ -141,7 +141,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                     var transactionSw = Stopwatch.StartNew();
                     long createdSchemaDurationMs = 0L, createGlobalStateTableDurationMs = 0L, insertGlobalStateTableRowDurationMs = 0L, createLeasesTableDurationMs = 0L;
-                    this._logger.LogInformation("Creating stuff");
                     using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
                     {
                         createdSchemaDurationMs = await this.CreateSchemaAsync(connection, transaction, cancellationToken);
