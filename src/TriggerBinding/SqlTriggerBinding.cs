@@ -108,8 +108,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string websiteName = this._configuration.GetConnectionStringOrSetting(SqlBindingConstants.WEBSITENAME);
             if (string.IsNullOrEmpty(websiteName))
             {
+                // TODO REVERT
                 this._logger.LogWarning("WEBSITE_SITE_NAME configuration is not set, will fall back to using function ID based on the host ID. This will mean consumption plan scaling will not work as intended.");
-                return null;
+                throw new ArgumentException($"WEBSITE_SITE_NAME cannot be null or empty in your function app settings, please update the setting with a string value. Please refer to https://github.com/Azure/azure-functions-sql-extension/blob/main/docs/BindingsOverview.md#website_site_name for more information.");
+                // return null;
             }
             var methodInfo = (MethodInfo)this._parameter.Member;
             // Get the function name from FunctionName attribute for .NET functions and methodInfo.Name for non .Net
