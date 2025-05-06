@@ -46,7 +46,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
         /// <summary>
         /// Ensures that the user function gets invoked for each of the insert, update and delete operation.
-        /// Does not set a WEBSITE_SITE_NAME to verify functionality without that
+        /// Sets a WEBSITE_SITE_NAME to verify functionality with that being set.
         /// </summary>
         [RetryTheory]
         [SqlInlineData()]
