@@ -5,7 +5,6 @@
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "AzureWebJobsFeatureFlags": "EnableWorkerIndexing",
     "SqlConnectionString": "",
-    "WEBSITE_SITE_NAME": "SamplesPythonV2",
     "PYTHON_ISOLATE_WORKER_DEPENDENCIES": "1"
   }
 }

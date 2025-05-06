@@ -50,9 +50,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// </summary>
         [RetryTheory]
         [SqlInlineData()]
-        public async Task SingleOperationTriggerTest_NoWebsiteSiteName(SupportedLanguages lang)
+        public async Task SingleOperationTriggerTest_WithWebsiteSiteName(SupportedLanguages lang)
         {
-            await this.SingleOperationTriggerTestImpl(lang, new Dictionary<string, string>() { { "WEBSITE_SITE_NAME", string.Empty } });
+            await this.SingleOperationTriggerTestImpl(lang, new Dictionary<string, string>() { { "WEBSITE_SITE_NAME", "SqlBindingsTriggerTest" } });
         }
 
         private async Task SingleOperationTriggerTestImpl(SupportedLanguages lang, IDictionary<string, string> environmentVariables = null)
