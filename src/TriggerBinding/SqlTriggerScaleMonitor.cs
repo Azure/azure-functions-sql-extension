@@ -9,7 +9,7 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Logging;
-using MoreLinq;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Common;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
