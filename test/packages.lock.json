@@ -1836,8 +1836,7 @@
           "Microsoft.Data.SqlClient": "[5.2.2, )",
           "Microsoft.SqlServer.TransactSql.ScriptDom": "[161.9135.0, )",
           "Newtonsoft.Json": "[13.0.3, )",
-          "System.Runtime.Caching": "[6.0.1, )",
-          "morelinq": "[3.4.2, )"
+          "System.Runtime.Caching": "[6.0.1, )"
         }
       },
       "microsoft.azure.webjobs.extensions.sql.samples": {
@@ -1944,12 +1943,6 @@
         "requested": "[161.9135.0, )",
         "resolved": "161.9135.0",
         "contentHash": "Ayubg3Qijaysyn/fJ0QMhv+ADTl5+nPcqE2KsvcIlMZGmSSRAKMxApVf947bLWNRmBIr2TlAS8cSA+cFQUZz1g=="
-      },
-      "morelinq": {
-        "type": "CentralTransitive",
-        "requested": "[3.4.2, )",
-        "resolved": "3.4.2",
-        "contentHash": "nKdpt7Ai+xQO8PZ0YFTn13INGJcKO0Nx65kO/ut0zaDirRo6d7atedmW2l68YB3x7U4pOqTLdMfYsBys8KxA1Q=="
       },
       "System.Drawing.Common": {
         "type": "CentralTransitive",

@@ -1822,8 +1822,7 @@
           "Microsoft.Data.SqlClient": "[5.2.2, )",
           "Microsoft.SqlServer.TransactSql.ScriptDom": "[161.9135.0, )",
           "Newtonsoft.Json": "[13.0.3, )",
-          "System.Runtime.Caching": "[6.0.1, )",
-          "morelinq": "[3.4.2, )"
+          "System.Runtime.Caching": "[6.0.1, )"
         }
       },
       "microsoft.azure.webjobs.extensions.sql.samples": {
