@@ -2074,12 +2074,6 @@
           "Castle.Core": "5.1.1"
         }
       },
-      "morelinq": {
-        "type": "CentralTransitive",
-        "requested": "[3.4.2, )",
-        "resolved": "3.4.2",
-        "contentHash": "nKdpt7Ai+xQO8PZ0YFTn13INGJcKO0Nx65kO/ut0zaDirRo6d7atedmW2l68YB3x7U4pOqTLdMfYsBys8KxA1Q=="
-      },
       "Newtonsoft.Json": {
         "type": "CentralTransitive",
         "requested": "[13.0.3, )",
