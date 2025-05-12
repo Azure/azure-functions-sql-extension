@@ -8,9 +8,9 @@ In addition, go through the checklist below and check each item as you validate 
 # Code Changes
 
 - [ ] [Unit tests](https://github.com/Azure/azure-functions-sql-extension/tree/main/test/Unit) are added, if possible
-- [ ] [integration tests](https://github.com/Azure/azure-functions-sql-extension/tree/main/test/Integration)  are addedif the change is modifying existing behavior of one or more of the bindings
+- [ ] [Integration tests](https://github.com/Azure/azure-functions-sql-extension/tree/main/test/Integration)  are added if the change is modifying existing behavior of one or more of the bindings
 - [ ] New or changed code follows the C# style guidelines defined in .editorconfig
-- [ ] All changes MUST be backwards compatible and changes to the shared `az_func.GlobalState` table must be comptible with all prior versions of the extension
+- [ ] All changes MUST be backwards compatible and changes to the shared `az_func.GlobalState` table must be compatible with all prior versions of the extension
 - [ ] Use the `ILogger` instance to log relevant information, especially information useful for debugging or troubleshooting
 - [ ] Use `async` and `await` for all long-running operations
 - [ ] Ensure proper usage and propagation of `CancellationToken`
@@ -18,7 +18,7 @@ In addition, go through the checklist below and check each item as you validate 
 
 # Dependencies
 
-- [ ] If updating dependencies, run `dotnet restore --force-evaluate` to update the lock files and ensure that there are NO major versions updates in either [src/packages.lock.json](https://github.com/Azure/azure-functions-sql-extension/blob/main/src/packages.lock.json) or [Worker.Extensions.Sql/src/pacakkag.lock.json](https://github.com/Azure/azure-functions-sql-extension/blob/main/Worker.Extensions.Sql/src/packages.lock.json). If there are, contact the dev team for instructions.
+- [ ] If updating dependencies, run `dotnet restore --force-evaluate` to update the lock files and ensure that there are NO major versions updates in either [src/packages.lock.json](https://github.com/Azure/azure-functions-sql-extension/blob/main/src/packages.lock.json) or [Worker.Extensions.Sql/src/packages.lock.json](https://github.com/Azure/azure-functions-sql-extension/blob/main/Worker.Extensions.Sql/src/packages.lock.json). If there are, contact the dev team for instructions.
 
 # Documentation
 
