@@ -413,7 +413,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             IEnumerable<string> columnNamesFromItem = GetColumnNamesFromItem(rows.First());
             IEnumerable<string> bracketColumnDefinitionsFromItem = columnNamesFromItem.Select(c => $"{c.AsBracketQuotedString()} {table.Columns[c]}");
             // Escape any forward and backward slashes in the column names of rowData using REPLACE so the OPENJSON can read from those columns.
-            newDataQuery = $"WITH {CteName} AS ( SELECT * FROM OPENJSON(REPLACE({RowDataParameter}, N'/', N'\\/')) WITH ({string.Join(",", bracketColumnDefinitionsFromItem)}) )";
+            newDataQuery = $"WITH {CteName} AS ( SELECT * FROM OPENJSON({RowDataParameter}) WITH ({string.Join(",", bracketColumnDefinitionsFromItem)}) )";
         }
 
         public class TableInformation
