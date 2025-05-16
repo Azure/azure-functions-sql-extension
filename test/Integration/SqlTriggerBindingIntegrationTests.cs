@@ -41,8 +41,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         [SqlInlineData()]
         public async Task SingleOperationTriggerTest(SupportedLanguages lang)
         {
+            await this.SingleOperationTriggerTestImpl(lang);
+        }
+
+        /// <summary>
+        /// Ensures that the user function gets invoked for each of the insert, update and delete operation.
+        /// Sets a WEBSITE_SITE_NAME to verify functionality with that being set.
+        /// </summary>
+        [RetryTheory]
+        [SqlInlineData()]
+        public async Task SingleOperationTriggerTest_WithWebsiteSiteName(SupportedLanguages lang)
+        {
+            await this.SingleOperationTriggerTestImpl(lang, new Dictionary<string, string>() { { "WEBSITE_SITE_NAME", "SqlBindingsTriggerTest" } });
+        }
+
+        private async Task SingleOperationTriggerTestImpl(SupportedLanguages lang, IDictionary<string, string> environmentVariables = null)
+        {
             this.SetChangeTrackingForTable("Products");
-            this.StartFunctionHost(nameof(ProductsTrigger), lang);
+            this.StartFunctionHost(nameof(ProductsTrigger), lang, environmentVariables: environmentVariables);
 
             int firstId = 1;
             int lastId = 30;
@@ -80,6 +96,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 _ => 0,
                 this.GetBatchProcessingTimeout(firstId, lastId));
         }
+
+
 
         /// <summary>
         /// Verifies that manually settings of the batch size and polling interval from the app settings overrides settings from the host options
@@ -596,7 +614,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                             ""MaxChangesPerWorker"" :  10
                         }
                     }
-                }   
+                }
             }";
             string sqlTriggerJson = $@"{{
                     ""name"": ""{TestFunctionName}"",
@@ -609,7 +627,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             this.SetChangeTrackingForTable("Products");
 
-            // Initializing the listener is needed to create relevant lease table to get unprocessed changes. 
+            // Initializing the listener is needed to create relevant lease table to get unprocessed changes.
             // We would be using the scale host methods to get the scale status so the configuration values are not needed here.
             var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", "testFunctionId", "testOldFunctionId", Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
             await listener.StartAsync(CancellationToken.None);
