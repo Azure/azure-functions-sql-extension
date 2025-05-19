@@ -35,8 +35,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly SqlObject _userTable;
         private readonly string _connectionString;
         private readonly string _userDefinedLeasesTableName;
+        /// <summary>
+        /// The unique ID we'll use to identify this function in our global state tables
+        /// </summary>
         private readonly string _userFunctionId;
-        private readonly string _oldUserFunctionId;
+        /// <summary>
+        /// The unique function ID based on the host ID - this is used for backwards compatibility to
+        /// ensure that users upgrading to the new WEBSITE_SITE_NAME based ID don't lose their state
+        /// </summary>
+        private readonly string _hostIdFunctionId;
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly SqlOptions _sqlOptions;
         private readonly ILogger _logger;
@@ -59,19 +66,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="connectionString">SQL connection string used to connect to user database</param>
         /// <param name="tableName">Name of the user table</param>
         /// <param name="userDefinedLeasesTableName">Optional - Name of the leases table</param>
-        /// <param name="userFunctionId">Unique identifier for the user function</param>
-        /// <param name="oldUserFunctionId">deprecated user function id value created using hostId for the user function</param>
+        /// <param name="websiteSiteNameFunctionId">Unique identifier for the user function based on the WEBSITE_SITE_NAME configuration value</param>
+        /// <param name="hostIdFunctionId">Unique identifier for the user function based on the hostId for the function</param>
         /// <param name="executor">Defines contract for triggering user function</param>
         /// <param name="sqlOptions"></param>
         /// <param name="logger">Facilitates logging of messages</param>
         /// <param name="configuration">Provides configuration values</param>
-        public SqlTriggerListener(string connectionString, string tableName, string userDefinedLeasesTableName, string userFunctionId, string oldUserFunctionId, ITriggeredFunctionExecutor executor, SqlOptions sqlOptions, ILogger logger, IConfiguration configuration)
+        public SqlTriggerListener(string connectionString, string tableName, string userDefinedLeasesTableName, string websiteSiteNameFunctionId, string hostIdFunctionId, ITriggeredFunctionExecutor executor, SqlOptions sqlOptions, ILogger logger, IConfiguration configuration)
         {
             this._connectionString = !string.IsNullOrEmpty(connectionString) ? connectionString : throw new ArgumentNullException(nameof(connectionString));
             this._userTable = !string.IsNullOrEmpty(tableName) ? new SqlObject(tableName) : throw new ArgumentNullException(nameof(tableName));
             this._userDefinedLeasesTableName = userDefinedLeasesTableName;
-            this._userFunctionId = !string.IsNullOrEmpty(userFunctionId) ? userFunctionId : throw new ArgumentNullException(nameof(userFunctionId));
-            this._oldUserFunctionId = oldUserFunctionId;
+            // We'll use the WEBSITE_SITE_NAME based ID if we have it, but some environments (like running locally) may not have it
+            // so we'll just fall back to the host ID version instead
+            this._userFunctionId = string.IsNullOrEmpty(websiteSiteNameFunctionId) ? hostIdFunctionId : websiteSiteNameFunctionId;
+            this._hostIdFunctionId = hostIdFunctionId;
             this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
             this._sqlOptions = sqlOptions ?? throw new ArgumentNullException(nameof(sqlOptions));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -124,7 +133,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     await VerifyDatabaseSupported(connection, this._logger, cancellationToken);
 
                     int userTableId = await GetUserTableIdAsync(connection, this._userTable, this._logger, cancellationToken);
-                    IReadOnlyList<(string name, string type)> primaryKeyColumns = GetPrimaryKeyColumnsAsync(connection, userTableId, this._logger, this._userTable.FullName, cancellationToken);
+                    IReadOnlyList<(string name, string type)> primaryKeyColumns = GetPrimaryKeyColumns(connection, userTableId, this._logger, this._userTable.FullName, cancellationToken);
                     IReadOnlyList<string> userTableColumns = this.GetUserTableColumns(connection, userTableId, cancellationToken);
 
                     string bracketedLeasesTableName = GetBracketedLeasesTableName(this._userDefinedLeasesTableName, this._userFunctionId, userTableId);
@@ -132,7 +141,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                     var transactionSw = Stopwatch.StartNew();
                     long createdSchemaDurationMs = 0L, createGlobalStateTableDurationMs = 0L, insertGlobalStateTableRowDurationMs = 0L, createLeasesTableDurationMs = 0L;
-
                     using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
                     {
                         createdSchemaDurationMs = await this.CreateSchemaAsync(connection, transaction, cancellationToken);
@@ -394,7 +402,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             string insertRowGlobalStateTableQuery = $@"
                 {AppLockStatements}
-                -- For back compatibility copy the lastSyncVersion from _oldUserFunctionId if it exists.
+                -- For back compatibility copy the lastSyncVersion from _hostIdFunctionId if it exists.
                 IF NOT EXISTS (
                     SELECT * FROM {GlobalStateTableName}
                     WHERE UserFunctionID = '{this._userFunctionId}' AND UserTableID = {userTableId}
@@ -402,12 +410,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 BEGIN
                     -- Migrate LastSyncVersion from oldUserFunctionId if it exists and delete the record
                     DECLARE @lastSyncVersion bigint;
-                    SELECT @lastSyncVersion = LastSyncVersion from az_func.GlobalState where UserFunctionID = '{this._oldUserFunctionId}' AND UserTableID = {userTableId}
+                    SELECT @lastSyncVersion = LastSyncVersion from az_func.GlobalState where UserFunctionID = '{this._hostIdFunctionId}' AND UserTableID = {userTableId}
                     IF @lastSyncVersion IS NULL
                         SET @lastSyncVersion = {(long)minValidVersion};
                     ELSE
-                        DELETE FROM az_func.GlobalState WHERE UserFunctionID = '{this._oldUserFunctionId}' AND UserTableID = {userTableId}
-                    
+                        DELETE FROM az_func.GlobalState WHERE UserFunctionID = '{this._hostIdFunctionId}' AND UserTableID = {userTableId}
+
                     INSERT INTO {GlobalStateTableName}
                     VALUES ('{this._userFunctionId}', {userTableId}, @lastSyncVersion, GETUTCDATE());
                 END
@@ -443,20 +451,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             string primaryKeysWithTypes = string.Join(", ", primaryKeyColumns.Select(col => $"{col.name.AsBracketQuotedString()} {col.type}"));
             string primaryKeys = string.Join(", ", primaryKeyColumns.Select(col => col.name.AsBracketQuotedString()));
-            string oldLeasesTableName = leasesTableName.Contains(this._userFunctionId) ? leasesTableName.Replace(this._userFunctionId, this._oldUserFunctionId) : string.Empty;
-
-            string createLeasesTableQuery = string.IsNullOrEmpty(oldLeasesTableName) ? $@"
-                {AppLockStatements}
-
-                IF OBJECT_ID(N'{leasesTableName}', 'U') IS NULL
-                    CREATE TABLE {leasesTableName} (
-                        {primaryKeysWithTypes},
-                        {LeasesTableChangeVersionColumnName} bigint NOT NULL,
-                        {LeasesTableAttemptCountColumnName} int NOT NULL,
-                        {LeasesTableLeaseExpirationTimeColumnName} datetime2,
-                        PRIMARY KEY ({primaryKeys})
-                    );
-            " : $@"
+            string oldLeasesTableName = leasesTableName.Contains(this._userFunctionId) ? leasesTableName.Replace(this._userFunctionId, this._hostIdFunctionId) : string.Empty;
+            // We should only migrate the lease table from the old hostId based one to the newer WEBSITE_SITE_NAME one if
+            // we're actually using the WEBSITE_SITE_NAME one (e.g. leasesTableName is different)
+            bool shouldMigrateOldLeasesTable = !string.IsNullOrEmpty(oldLeasesTableName) && oldLeasesTableName != leasesTableName;
+            string createLeasesTableQuery = shouldMigrateOldLeasesTable ? $@"
                 {AppLockStatements}
 
                 IF OBJECT_ID(N'{leasesTableName}', 'U') IS NULL
@@ -478,6 +477,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         DROP TABLE {oldLeasesTableName};
                     END
                 End
+            " :
+            $@"
+                {AppLockStatements}
+
+                IF OBJECT_ID(N'{leasesTableName}', 'U') IS NULL
+                    CREATE TABLE {leasesTableName} (
+                        {primaryKeysWithTypes},
+                        {LeasesTableChangeVersionColumnName} bigint NOT NULL,
+                        {LeasesTableAttemptCountColumnName} int NOT NULL,
+                        {LeasesTableLeaseExpirationTimeColumnName} datetime2,
+                        PRIMARY KEY ({primaryKeys})
+                    );
             ";
 
             using (var createLeasesTableCommand = new SqlCommand(createLeasesTableQuery, connection, transaction))
@@ -485,7 +496,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 var stopwatch = Stopwatch.StartNew();
                 try
                 {
-                    await createLeasesTableCommand.ExecuteNonQueryAsyncWithLogging(this._logger, cancellationToken);
+                    await createLeasesTableCommand.ExecuteNonQueryAsyncWithLogging(this._logger, cancellationToken, true);
                 }
                 catch (Exception ex)
                 {

@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <exception cref="InvalidOperationException">
         /// Thrown if there are no primary key columns present in the user table or if their names conflict with columns in leases table.
         /// </exception>
-        public static IReadOnlyList<(string name, string type)> GetPrimaryKeyColumnsAsync(SqlConnection connection, int userTableId, ILogger logger, string userTableName, CancellationToken cancellationToken)
+        public static IReadOnlyList<(string name, string type)> GetPrimaryKeyColumns(SqlConnection connection, int userTableId, ILogger logger, string userTableName, CancellationToken cancellationToken)
         {
             const int NameIndex = 0, TypeIndex = 1, LengthIndex = 2, PrecisionIndex = 3, ScaleIndex = 4;
             string getPrimaryKeyColumnsQuery = $@"
