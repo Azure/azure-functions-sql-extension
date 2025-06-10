@@ -32,13 +32,5 @@
     <PackageVersion Include="xRetry" Version="1.9.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
-
-    <!-- Packages below this line result in a major version bump of dependencies, which can cause conflicts with the host.
-         Any such updates should only happen with a major version bump of the SQL extension, or by :
-            1. Verifying with the core Azure Functions host team that there will not be any issues
-            2. Running the bundle dependency test and verifying it passes
-     -->
-    <PackageVersion Include="Azure.Core" Version="1.41.0"/> <!-- Pin version to address security issue, should be removed once Azure.Identity is updated to latest -->
-    <PackageVersion Include="Azure.Identity" Version="1.12.1"/>
   </ItemGroup>
 </Project>
