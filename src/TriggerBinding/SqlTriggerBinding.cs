@@ -113,7 +113,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             var methodInfo = (MethodInfo)this._parameter.Member;
             // Get the function name from FunctionName attribute for .NET functions and methodInfo.Name for non .Net
-            string functionName = ((FunctionNameAttribute)methodInfo.GetCustomAttribute(typeof(FunctionNameAttribute)))?.Name ?? $"{methodInfo.Name}";
+            string functionName = methodInfo.GetCustomAttribute<FunctionNameAttribute>()?.Name ?? $"{methodInfo.Name}";
 
             using (var sha256 = SHA256.Create())
             {
