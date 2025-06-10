@@ -1,6 +1,6 @@
 {
     "azureFunctions.projectSubpath": "samples/samples-csharp",
-    "azureFunctions.deploySubpath": "samples/samples-csharp/bin/Release/net6/publish",
+    "azureFunctions.deploySubpath": "samples/samples-csharp/bin/Release/net9/publish",
     "azureFunctions.projectLanguage": "C#",
     "azureFunctions.projectRuntime": "~4",
     "debug.internalConsoleOptions": "neverOpen",
