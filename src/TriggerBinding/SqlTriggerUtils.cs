@@ -3,13 +3,16 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlTriggerConstants;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -125,6 +128,264 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             return string.IsNullOrEmpty(userDefinedLeasesTableName) ? string.Format(CultureInfo.InvariantCulture, LeasesTableNameFormat, $"{userFunctionId}_{userTableId}") :
                 string.Format(CultureInfo.InvariantCulture, UserDefinedLeasesTableNameFormat, $"{userDefinedLeasesTableName.AsBracketQuotedString()}");
+        }
+
+        /// <summary>
+        /// Creates the schema for global state table and leases tables, if it does not already exist.
+        /// </summary>
+        /// <param name="connection">The already-opened connection to use for executing the command</param>
+        /// <param name="transaction">The transaction wrapping this command</param>
+        /// <param name="telemetryProps">The property bag for telemetry</param>
+        /// <param name="logger">Facilitates logging of messages</param>
+        /// <param name="cancellationToken">Cancellation token to pass to the command</param>
+        /// <returns>The time taken in ms to execute the command</returns>
+        internal static async Task<long> CreateSchemaAsync(SqlConnection connection, SqlTransaction transaction, IDictionary<TelemetryPropertyName, string> telemetryProps, ILogger logger, CancellationToken cancellationToken)
+        {
+            string createSchemaQuery = $@"
+                {AppLockStatements}
+
+                IF SCHEMA_ID(N'{SchemaName}') IS NULL
+                    EXEC ('CREATE SCHEMA {SchemaName}');
+            ";
+
+            using (var createSchemaCommand = new SqlCommand(createSchemaQuery, connection, transaction))
+            {
+                var stopwatch = Stopwatch.StartNew();
+
+                try
+                {
+                    await createSchemaCommand.ExecuteNonQueryAsyncWithLogging(logger, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    TelemetryInstance.TrackException(TelemetryErrorName.CreateSchema, ex, telemetryProps);
+                    var sqlEx = ex as SqlException;
+                    if (sqlEx?.Number == ObjectAlreadyExistsErrorNumber)
+                    {
+                        // This generally shouldn't happen since we check for its existence in the statement but occasionally
+                        // a race condition can make it so that multiple instances will try and create the schema at once.
+                        // In that case we can just ignore the error since all we care about is that the schema exists at all.
+                        logger.LogWarning($"Failed to create schema '{SchemaName}'. Exception message: {ex.Message} This is informational only, function startup will continue as normal.");
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+
+                return stopwatch.ElapsedMilliseconds;
+            }
+        }
+
+        /// <summary>
+        /// Creates the global state table if it does not already exist.
+        /// </summary>
+        /// <param name="connection">The already-opened connection to use for executing the command</param>
+        /// <param name="transaction">The transaction wrapping this command</param>
+        /// <param name="telemetryProps">The property bag for telemetry</param>
+        /// <param name="logger">Facilitates logging of messages</param>
+        /// <param name="cancellationToken">Cancellation token to pass to the command</param>
+        /// <returns>The time taken in ms to execute the command</returns>
+        internal static async Task<long> CreateGlobalStateTableAsync(SqlConnection connection, SqlTransaction transaction, IDictionary<TelemetryPropertyName, string> telemetryProps, ILogger logger, CancellationToken cancellationToken)
+        {
+            string createGlobalStateTableQuery = $@"
+                {AppLockStatements}
+
+                IF OBJECT_ID(N'{GlobalStateTableName}', 'U') IS NULL
+                    CREATE TABLE {GlobalStateTableName} (
+                        UserFunctionID char(16) NOT NULL,
+                        UserTableID int NOT NULL,
+                        LastSyncVersion bigint NOT NULL,
+                        LastAccessTime Datetime NOT NULL DEFAULT GETUTCDATE(),
+                        PRIMARY KEY (UserFunctionID, UserTableID)
+                    );
+                ELSE IF NOT EXISTS(SELECT 1 FROM sys.columns WHERE Name = N'LastAccessTime'
+                    AND Object_ID = Object_ID(N'{GlobalStateTableName}'))
+                        ALTER TABLE {GlobalStateTableName} ADD LastAccessTime Datetime NOT NULL DEFAULT GETUTCDATE();
+            ";
+
+            using (var createGlobalStateTableCommand = new SqlCommand(createGlobalStateTableQuery, connection, transaction))
+            {
+                var stopwatch = Stopwatch.StartNew();
+                try
+                {
+                    await createGlobalStateTableCommand.ExecuteNonQueryAsyncWithLogging(logger, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    TelemetryInstance.TrackException(TelemetryErrorName.CreateGlobalStateTable, ex, telemetryProps);
+                    var sqlEx = ex as SqlException;
+                    if (sqlEx?.Number == ObjectAlreadyExistsErrorNumber)
+                    {
+                        // This generally shouldn't happen since we check for its existence in the statement but occasionally
+                        // a race condition can make it so that multiple instances will try and create the schema at once.
+                        // In that case we can just ignore the error since all we care about is that the schema exists at all.
+                        logger.LogWarning($"Failed to create global state table '{GlobalStateTableName}'. Exception message: {ex.Message} This is informational only, function startup will continue as normal.");
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                return stopwatch.ElapsedMilliseconds;
+            }
+        }
+
+        /// <summary>
+        /// Inserts row for the 'user function and table' inside the global state table, if one does not already exist.
+        /// </summary>
+        /// <param name="connection">The already-opened connection to use for executing the command</param>
+        /// <param name="transaction">The transaction wrapping this command</param>
+        /// <param name="userTableId">The ID of the table being watched</param>
+        /// <param name="userTable">The User table being watched for Trigger function</param>
+        /// <param name="oldUserFunctionId">deprecated user function id value created using hostId for the user function</param>
+        /// <param name="userFunctionId">Unique identifier for the user function</param>
+        /// <param name="logger">Facilitates logging of messages</param>
+        /// <param name="cancellationToken">Cancellation token to pass to the command</param>
+        /// <returns>The time taken in ms to execute the command</returns>
+        internal static async Task<long> InsertGlobalStateTableRowAsync(SqlConnection connection, SqlTransaction transaction, int userTableId, SqlObject userTable, string oldUserFunctionId, string userFunctionId, ILogger logger, CancellationToken cancellationToken)
+        {
+            object minValidVersion;
+            string getMinValidVersionQuery = $"SELECT CHANGE_TRACKING_MIN_VALID_VERSION({userTableId});";
+
+            using (var getMinValidVersionCommand = new SqlCommand(getMinValidVersionQuery, connection, transaction))
+            using (SqlDataReader reader = getMinValidVersionCommand.ExecuteReaderWithLogging(logger))
+            {
+                if (!await reader.ReadAsync(cancellationToken))
+                {
+                    throw new InvalidOperationException($"Received empty response when querying the 'change tracking min valid version' for table: '{userTable.FullName}'.");
+                }
+
+                minValidVersion = reader.GetValue(0);
+
+                if (minValidVersion is DBNull)
+                {
+                    throw new InvalidOperationException($"Could not find change tracking enabled for table: '{userTable.FullName}'.");
+                }
+            }
+
+            string insertRowGlobalStateTableQuery = $@"
+                {AppLockStatements}
+                -- For back compatibility copy the lastSyncVersion from _oldUserFunctionId if it exists.
+                IF NOT EXISTS (
+                    SELECT * FROM {GlobalStateTableName}
+                    WHERE UserFunctionID = '{userFunctionId}' AND UserTableID = {userTableId}
+                )
+                BEGIN
+                    -- Migrate LastSyncVersion from oldUserFunctionId if it exists and delete the record
+                    DECLARE @lastSyncVersion bigint;
+                    SELECT @lastSyncVersion = LastSyncVersion from az_func.GlobalState where UserFunctionID = '{oldUserFunctionId}' AND UserTableID = {userTableId}
+                    IF @lastSyncVersion IS NULL
+                        SET @lastSyncVersion = {(long)minValidVersion};
+                    ELSE
+                        DELETE FROM az_func.GlobalState WHERE UserFunctionID = '{oldUserFunctionId}' AND UserTableID = {userTableId}
+                    
+                    INSERT INTO {GlobalStateTableName}
+                    VALUES ('{userFunctionId}', {userTableId}, @lastSyncVersion, GETUTCDATE());
+                END
+            ";
+
+            using (var insertRowGlobalStateTableCommand = new SqlCommand(insertRowGlobalStateTableQuery, connection, transaction))
+            {
+                var stopwatch = Stopwatch.StartNew();
+                int rowsInserted = await insertRowGlobalStateTableCommand.ExecuteNonQueryAsyncWithLogging(logger, cancellationToken);
+                if (rowsInserted > 0)
+                {
+                    TelemetryInstance.TrackEvent(TelemetryEventName.InsertGlobalStateTableRow);
+                }
+                return stopwatch.ElapsedMilliseconds;
+            }
+        }
+
+        /// <summary>
+        /// Creates the leases table for the 'user function and table', if one does not already exist.
+        /// </summary>
+        /// <param name="connection">The already-opened connection to use for executing the command</param>
+        /// <param name="transaction">The transaction wrapping this command</param>
+        /// <param name="leasesTableName">The name of the leases table to create</param>
+        /// <param name="primaryKeyColumns">The primary keys of the user table this leases table is for</param>
+        /// <param name="oldUserFunctionId">deprecated user function id value created using hostId for the user function</param>
+        /// <param name="userFunctionId">Unique identifier for the user function</param>
+        /// <param name="telemetryProps"></param>
+        /// <param name="logger">Facilitates logging of messages</param>
+        /// <param name="cancellationToken">Cancellation token to pass to the command</param>
+        /// <returns>The time taken in ms to execute the command</returns>
+        internal static async Task<long> CreateLeasesTableAsync(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            string leasesTableName,
+            IReadOnlyList<(string name, string type)> primaryKeyColumns,
+            string oldUserFunctionId,
+            string userFunctionId,
+            IDictionary<TelemetryPropertyName, string> telemetryProps,
+            ILogger logger,
+            CancellationToken cancellationToken)
+        {
+            string primaryKeysWithTypes = string.Join(", ", primaryKeyColumns.Select(col => $"{col.name.AsBracketQuotedString()} {col.type}"));
+            string primaryKeys = string.Join(", ", primaryKeyColumns.Select(col => col.name.AsBracketQuotedString()));
+            string oldLeasesTableName = leasesTableName.Contains(userFunctionId) ? leasesTableName.Replace(userFunctionId, oldUserFunctionId) : string.Empty;
+
+            string createLeasesTableQuery = string.IsNullOrEmpty(oldLeasesTableName) ? $@"
+                {AppLockStatements}
+
+                IF OBJECT_ID(N'{leasesTableName}', 'U') IS NULL
+                    CREATE TABLE {leasesTableName} (
+                        {primaryKeysWithTypes},
+                        {LeasesTableChangeVersionColumnName} bigint NOT NULL,
+                        {LeasesTableAttemptCountColumnName} int NOT NULL,
+                        {LeasesTableLeaseExpirationTimeColumnName} datetime2,
+                        PRIMARY KEY ({primaryKeys})
+                    );
+            " : $@"
+                {AppLockStatements}
+
+                IF OBJECT_ID(N'{leasesTableName}', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE {leasesTableName} (
+                        {primaryKeysWithTypes},
+                        {LeasesTableChangeVersionColumnName} bigint NOT NULL,
+                        {LeasesTableAttemptCountColumnName} int NOT NULL,
+                        {LeasesTableLeaseExpirationTimeColumnName} datetime2,
+                        PRIMARY KEY ({primaryKeys})
+                    );
+
+                    -- Migrate all data from OldLeasesTable and delete it.
+                    IF OBJECT_ID(N'{oldLeasesTableName}', 'U') IS NOT NULL
+                    BEGIN
+                        INSERT INTO {leasesTableName}
+                        SELECT * FROM {oldLeasesTableName};
+
+                        DROP TABLE {oldLeasesTableName};
+                    END
+                End
+            ";
+
+            using (var createLeasesTableCommand = new SqlCommand(createLeasesTableQuery, connection, transaction))
+            {
+                var stopwatch = Stopwatch.StartNew();
+                try
+                {
+                    await createLeasesTableCommand.ExecuteNonQueryAsyncWithLogging(logger, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    TelemetryInstance.TrackException(TelemetryErrorName.CreateLeasesTable, ex, telemetryProps);
+                    var sqlEx = ex as SqlException;
+                    if (sqlEx?.Number == ObjectAlreadyExistsErrorNumber)
+                    {
+                        // This generally shouldn't happen since we check for its existence in the statement but occasionally
+                        // a race condition can make it so that multiple instances will try and create the schema at once.
+                        // In that case we can just ignore the error since all we care about is that the schema exists at all.
+                        logger.LogWarning($"Failed to create leases table '{leasesTableName}'. Exception message: {ex.Message} This is informational only, function startup will continue as normal.");
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                long durationMs = stopwatch.ElapsedMilliseconds;
+                return durationMs;
+            }
         }
     }
 }
