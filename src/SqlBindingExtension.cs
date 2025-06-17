@@ -5,6 +5,7 @@ using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Azure.WebJobs.Host.Scale;
+using System.Threading.Tasks;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -33,17 +34,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         internal static IWebJobsBuilder AddSqlScaleForTrigger(this IWebJobsBuilder builder, TriggerMetadata triggerMetadata)
         {
             IServiceProvider serviceProvider = null;
-            var scalerProvider = new Lazy<SqlScalerProvider>(() => new SqlScalerProvider(serviceProvider, triggerMetadata));
-            builder.Services.AddSingleton((Func<IServiceProvider, IScaleMonitorProvider>)delegate (IServiceProvider resolvedServiceProvider)
+            var scalerProviderTask = new Lazy<Task<SqlScalerProvider>>(() =>
+                SqlScalerProvider.CreateAsync(serviceProvider, triggerMetadata));
+
+            builder.Services.AddSingleton((Func<IServiceProvider, IScaleMonitorProvider>)(resolvedServiceProvider =>
             {
                 serviceProvider = serviceProvider ?? resolvedServiceProvider;
-                return scalerProvider.Value;
-            });
-            builder.Services.AddSingleton((Func<IServiceProvider, ITargetScalerProvider>)delegate (IServiceProvider resolvedServiceProvider)
+                // Wait for the async initialization to complete
+                return scalerProviderTask.Value.GetAwaiter().GetResult();
+            }));
+
+            builder.Services.AddSingleton((Func<IServiceProvider, ITargetScalerProvider>)(resolvedServiceProvider =>
             {
                 serviceProvider = serviceProvider ?? resolvedServiceProvider;
-                return scalerProvider.Value;
-            });
+                // Wait for the async initialization to complete
+                return scalerProviderTask.Value.GetAwaiter().GetResult();
+            }));
+
             return builder;
         }
     }

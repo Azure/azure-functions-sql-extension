@@ -29,6 +29,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly SqlTriggerTargetScaler _targetScaler;
         private readonly string _connectionString;
         private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps = new Dictionary<TelemetryPropertyName, string>();
+        private readonly SqlObject _userTable;
+        private readonly string _userFunctionId;
+        private readonly int _maxChangesPerWorker;
+        private readonly ILogger _logger;
+        private readonly bool _hasConfiguredMaxChangesPerWorker;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlScalerProvider"/> class.
@@ -43,18 +48,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             ILogger logger = loggerFactory.CreateLogger(LogCategories.CreateTriggerCategory("Sql"));
             SqlMetaData sqlMetadata = JsonConvert.DeserializeObject<SqlMetaData>(triggerMetadata.Metadata.ToString());
             sqlMetadata.ResolveProperties(serviceProvider.GetService<INameResolver>());
-            var userTable = new SqlObject(sqlMetadata.TableName);
+            this._userTable = new SqlObject(sqlMetadata.TableName);
             this._connectionString = GetConnectionString(sqlMetadata.ConnectionStringSetting, config);
             IOptions<SqlOptions> options = serviceProvider.GetService<IOptions<SqlOptions>>();
             int configOptionsMaxChangesPerWorker = options.Value.MaxChangesPerWorker;
+            this._hasConfiguredMaxChangesPerWorker = configOptionsMaxChangesPerWorker != 0;
             int configAppSettingsMaxChangesPerWorker = config.GetValue<int>(SqlTriggerConstants.ConfigKey_SqlTrigger_MaxChangesPerWorker);
             // Override the maxChangesPerWorker value from config if the value is set in the trigger appsettings
             int maxChangesPerWorker = configAppSettingsMaxChangesPerWorker != 0 ? configAppSettingsMaxChangesPerWorker : configOptionsMaxChangesPerWorker != 0 ? configOptionsMaxChangesPerWorker : SqlOptions.DefaultMaxChangesPerWorker;
+            this._maxChangesPerWorker = maxChangesPerWorker;
+            this._logger = logger;
             string userDefinedLeasesTableName = sqlMetadata.LeasesTableName;
-            string userFunctionId = sqlMetadata.UserFunctionId;
+            this._userFunctionId = sqlMetadata.UserFunctionId;
 
-            this._scaleMonitor = new SqlTriggerScaleMonitor(userFunctionId, userTable, userDefinedLeasesTableName, this._connectionString, maxChangesPerWorker, logger);
-            this._targetScaler = new SqlTriggerTargetScaler(userFunctionId, userTable, userDefinedLeasesTableName, this._connectionString, maxChangesPerWorker, logger);
+            this._scaleMonitor = new SqlTriggerScaleMonitor(this._userFunctionId, this._userTable, userDefinedLeasesTableName, this._connectionString, maxChangesPerWorker, logger);
+            this._targetScaler = new SqlTriggerTargetScaler(this._userFunctionId, this._userTable, userDefinedLeasesTableName, this._connectionString, maxChangesPerWorker, logger);
         }
 
         public IScaleMonitor GetMonitor()
@@ -66,28 +74,37 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             return this._targetScaler;
         }
-        internal async Task CreateTriggerTables(SqlObject userTable, string oldUserFunctionId, string userFunctionId, int maxChangesPerWorker, bool hasConfiguredMaxChangesPerWorker, ILogger logger, CancellationToken cancellationToken = default)
+
+        public static async Task<SqlScalerProvider> CreateAsync(IServiceProvider serviceProvider, TriggerMetadata triggerMetadata)
+        {
+            var provider = new SqlScalerProvider(serviceProvider, triggerMetadata);
+            await provider.InitializeAsync();
+            return provider;
+        }
+
+
+        public async Task InitializeAsync(CancellationToken cancellationToken = default)
         {
             using (var connection = new SqlConnection(this._connectionString))
             {
-                ServerProperties serverProperties = await GetServerTelemetryProperties(connection, logger, cancellationToken);
+                ServerProperties serverProperties = await GetServerTelemetryProperties(connection, this._logger, cancellationToken);
                 this._telemetryProps.AddConnectionProps(connection, serverProperties);
-                await VerifyDatabaseSupported(connection, logger, cancellationToken);
+                await VerifyDatabaseSupported(connection, this._logger, cancellationToken);
 
-                int userTableId = await GetUserTableIdAsync(connection, userTable, logger, cancellationToken);
-                IReadOnlyList<(string name, string type)> primaryKeyColumns = GetPrimaryKeyColumnsAsync(connection, userTableId, logger, userTable.FullName, cancellationToken);
+                int userTableId = await GetUserTableIdAsync(connection, this._userTable, this._logger, cancellationToken);
+                IReadOnlyList<(string name, string type)> primaryKeyColumns = GetPrimaryKeyColumnsAsync(connection, userTableId, this._logger, this._userTable.FullName, cancellationToken);
 
-                string bracketedLeasesTableName = GetBracketedLeasesTableName(null, userFunctionId, userTableId);
+                string bracketedLeasesTableName = GetBracketedLeasesTableName(null, this._userFunctionId, userTableId);
                 this._telemetryProps[TelemetryPropertyName.LeasesTableName] = bracketedLeasesTableName;
 
                 var transactionSw = Stopwatch.StartNew();
                 long createdSchemaDurationMs = 0L, createGlobalStateTableDurationMs = 0L, insertGlobalStateTableRowDurationMs = 0L, createLeasesTableDurationMs = 0L;
                 using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
                 {
-                    createdSchemaDurationMs = await CreateSchemaAsync(connection, transaction, this._telemetryProps, logger, cancellationToken);
-                    createGlobalStateTableDurationMs = await CreateGlobalStateTableAsync(connection, transaction, this._telemetryProps, logger, cancellationToken);
-                    insertGlobalStateTableRowDurationMs = await InsertGlobalStateTableRowAsync(connection, transaction, userTableId, userTable, oldUserFunctionId, userFunctionId, logger, cancellationToken);
-                    createLeasesTableDurationMs = await CreateLeasesTableAsync(connection, transaction, bracketedLeasesTableName, primaryKeyColumns, oldUserFunctionId, userFunctionId, this._telemetryProps, logger, cancellationToken);
+                    createdSchemaDurationMs = await CreateSchemaAsync(connection, transaction, this._telemetryProps, this._logger, cancellationToken);
+                    createGlobalStateTableDurationMs = await CreateGlobalStateTableAsync(connection, transaction, this._telemetryProps, this._logger, cancellationToken);
+                    insertGlobalStateTableRowDurationMs = await InsertGlobalStateTableRowAsync(connection, transaction, userTableId, this._userTable, null, this._userFunctionId, this._logger, cancellationToken);
+                    createLeasesTableDurationMs = await CreateLeasesTableAsync(connection, transaction, bracketedLeasesTableName, primaryKeyColumns, null, this._userFunctionId, this._telemetryProps, this._logger, cancellationToken);
                     transaction.Commit();
                 }
 
@@ -98,13 +115,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     [TelemetryMeasureName.InsertGlobalStateTableRowDurationMs] = insertGlobalStateTableRowDurationMs,
                     [TelemetryMeasureName.CreateLeasesTableDurationMs] = createLeasesTableDurationMs,
                     [TelemetryMeasureName.TransactionDurationMs] = transactionSw.ElapsedMilliseconds,
-                    [TelemetryMeasureName.MaxChangesPerWorker] = maxChangesPerWorker
+                    [TelemetryMeasureName.MaxChangesPerWorker] = this._maxChangesPerWorker
                 };
 
                 TelemetryInstance.TrackEvent(
-                    TelemetryEventName.StartListener,
+                    TelemetryEventName.InitializeScaleProvider,
                     new Dictionary<TelemetryPropertyName, string>(this._telemetryProps) {
-                        { TelemetryPropertyName.HasConfiguredMaxChangesPerWorker, hasConfiguredMaxChangesPerWorker.ToString() }
+                        { TelemetryPropertyName.HasConfiguredMaxChangesPerWorker, this._hasConfiguredMaxChangesPerWorker.ToString() }
                     },
                     measures);
             }

@@ -350,7 +350,8 @@ To learn more about our Privacy Statement visit this link: https://go.microsoft.
         TriggerMonitorStart,
         Upsert,
         InsertGlobalStateTableRow,
-        BuildRenewLeasesWithEmptyMatchCondtion
+        BuildRenewLeasesWithEmptyMatchCondtion,
+        InitializeScaleProvider
     }
 
     /// <summary>
