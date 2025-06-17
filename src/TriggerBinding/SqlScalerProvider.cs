@@ -87,6 +87,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             using (var connection = new SqlConnection(this._connectionString))
             {
+                await connection.OpenAsyncWithSqlErrorHandling(cancellationToken);
                 ServerProperties serverProperties = await GetServerTelemetryProperties(connection, this._logger, cancellationToken);
                 this._telemetryProps.AddConnectionProps(connection, serverProperties);
                 await VerifyDatabaseSupported(connection, this._logger, cancellationToken);
