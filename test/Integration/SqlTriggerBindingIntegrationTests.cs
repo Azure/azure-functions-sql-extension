@@ -609,13 +609,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             this.SetChangeTrackingForTable("Products");
 
-            // Initializing the listener is needed to create relevant lease table to get unprocessed changes. 
-            // We would be using the scale host methods to get the scale status so the configuration values are not needed here.
-            var listener = new SqlTriggerListener<Product>(this.DbConnectionString, "dbo.Products", "", "testFunctionId", "testOldFunctionId", Mock.Of<ITriggeredFunctionExecutor>(), Mock.Of<SqlOptions>(), Mock.Of<ILogger>(), configuration);
-            await listener.StartAsync(CancellationToken.None);
-            // Cancel immediately so the listener doesn't start processing the changes
-            await listener.StopAsync(CancellationToken.None);
-
             IHost host = new HostBuilder().ConfigureServices(services => services.AddAzureClientsCore()).Build();
             AzureComponentFactory defaultAzureComponentFactory = host.Services.GetService<AzureComponentFactory>();
 
