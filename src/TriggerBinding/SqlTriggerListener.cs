@@ -145,8 +145,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         createdSchemaDurationMs = await CreateSchemaAsync(connection, transaction, this._telemetryProps, this._logger, cancellationToken);
                         createGlobalStateTableDurationMs = await CreateGlobalStateTableAsync(connection, transaction, this._telemetryProps, this._logger, cancellationToken);
-                        insertGlobalStateTableRowDurationMs = await InsertGlobalStateTableRowAsync(connection, transaction, userTableId, this._userTable, this._oldUserFunctionId, this._userFunctionId, this._logger, cancellationToken);
-                        createLeasesTableDurationMs = await CreateLeasesTableAsync(connection, transaction, bracketedLeasesTableName, primaryKeyColumns, this._oldUserFunctionId, this._userFunctionId, this._telemetryProps, this._logger, cancellationToken);
+                        insertGlobalStateTableRowDurationMs = await InsertGlobalStateTableRowAsync(connection, transaction, userTableId, this._userTable, this._hostIdFunctionId, this._userFunctionId, this._logger, cancellationToken);
+                        createLeasesTableDurationMs = await CreateLeasesTableAsync(connection, transaction, bracketedLeasesTableName, primaryKeyColumns, this._hostIdFunctionId, this._userFunctionId, this._telemetryProps, this._logger, cancellationToken);
                         transaction.Commit();
                     }
 

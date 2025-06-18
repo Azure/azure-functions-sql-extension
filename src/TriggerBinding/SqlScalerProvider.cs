@@ -93,7 +93,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 await VerifyDatabaseSupported(connection, this._logger, cancellationToken);
 
                 int userTableId = await GetUserTableIdAsync(connection, this._userTable, this._logger, cancellationToken);
-                IReadOnlyList<(string name, string type)> primaryKeyColumns = GetPrimaryKeyColumnsAsync(connection, userTableId, this._logger, this._userTable.FullName, cancellationToken);
+                IReadOnlyList<(string name, string type)> primaryKeyColumns = GetPrimaryKeyColumns(connection, userTableId, this._logger, this._userTable.FullName, cancellationToken);
 
                 string bracketedLeasesTableName = GetBracketedLeasesTableName(null, this._userFunctionId, userTableId);
                 this._telemetryProps[TelemetryPropertyName.LeasesTableName] = bracketedLeasesTableName;
