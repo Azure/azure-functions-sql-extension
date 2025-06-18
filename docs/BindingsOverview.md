@@ -20,6 +20,7 @@
       - [Sql\_Trigger\_MaxBatchSize](#sql_trigger_maxbatchsize)
       - [Sql\_Trigger\_PollingIntervalMs](#sql_trigger_pollingintervalms)
       - [Sql\_Trigger\_MaxChangesPerWorker](#sql_trigger_maxchangesperworker)
+      - [WEBSITE\_SITE\_NAME](#website_site_name)
     - [Scaling for Trigger Bindings](#scaling-for-trigger-bindings)
     - [Retry support for Trigger Bindings](#retry-support-for-trigger-bindings)
       - [Startup retries](#startup-retries)
@@ -154,11 +155,10 @@ The upper limit on the number of pending changes in the user table that are allo
 
 #### WEBSITE_SITE_NAME
 
-The unique name used in creating the lease tables. The local apps depend on this setting for creating unique leases tables, please give a unique name for each app.
+If this setting exists, it will be used to generate a unique identifier for the function that is used for tracking function state. If not specified, this unique identifier will be generated from the [IHostIdProvider.GetHostIdAsync](https://github.com/Azure/azure-webjobs-sdk/blob/dev/src/Microsoft.Azure.WebJobs.Host/Executors/IHostIdProvider.cs#L14).
 
 > **NOTE:**
 > * If the setting is re-used across apps, having the same function name could cause the functions to use the same lease tables and the function runs to not work as expected.
-> * If you have 2 different SQL trigger functions with same functionName locally, not having WEBSITE_SITE_NAME would mean that the same leasees table would be used for both triggers resulting in only one of the functions being triggered.
 > * This is a read-only variable that is provided by the Azure App service for deployed functions and the user provided value will be overridden. Refer to [Environment variables](https://learn.microsoft.com/azure/app-service/reference-app-settings?tabs=kudu%2Cdotnet#app-environment) for apps.
 
 ### Scaling for Trigger Bindings

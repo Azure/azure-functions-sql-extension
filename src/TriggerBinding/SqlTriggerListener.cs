@@ -35,8 +35,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly SqlObject _userTable;
         private readonly string _connectionString;
         private readonly string _userDefinedLeasesTableName;
+        /// <summary>
+        /// The unique ID we'll use to identify this function in our global state tables
+        /// </summary>
         private readonly string _userFunctionId;
-        private readonly string _oldUserFunctionId;
+        /// <summary>
+        /// The unique function ID based on the host ID - this is used for backwards compatibility to
+        /// ensure that users upgrading to the new WEBSITE_SITE_NAME based ID don't lose their state
+        /// </summary>
+        private readonly string _hostIdFunctionId;
         private readonly ITriggeredFunctionExecutor _executor;
         private readonly SqlOptions _sqlOptions;
         private readonly ILogger _logger;
@@ -59,19 +66,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="connectionString">SQL connection string used to connect to user database</param>
         /// <param name="tableName">Name of the user table</param>
         /// <param name="userDefinedLeasesTableName">Optional - Name of the leases table</param>
-        /// <param name="userFunctionId">Unique identifier for the user function</param>
-        /// <param name="oldUserFunctionId">deprecated user function id value created using hostId for the user function</param>
+        /// <param name="websiteSiteNameFunctionId">Unique identifier for the user function based on the WEBSITE_SITE_NAME configuration value</param>
+        /// <param name="hostIdFunctionId">Unique identifier for the user function based on the hostId for the function</param>
         /// <param name="executor">Defines contract for triggering user function</param>
         /// <param name="sqlOptions"></param>
         /// <param name="logger">Facilitates logging of messages</param>
         /// <param name="configuration">Provides configuration values</param>
-        public SqlTriggerListener(string connectionString, string tableName, string userDefinedLeasesTableName, string userFunctionId, string oldUserFunctionId, ITriggeredFunctionExecutor executor, SqlOptions sqlOptions, ILogger logger, IConfiguration configuration)
+        public SqlTriggerListener(string connectionString, string tableName, string userDefinedLeasesTableName, string websiteSiteNameFunctionId, string hostIdFunctionId, ITriggeredFunctionExecutor executor, SqlOptions sqlOptions, ILogger logger, IConfiguration configuration)
         {
             this._connectionString = !string.IsNullOrEmpty(connectionString) ? connectionString : throw new ArgumentNullException(nameof(connectionString));
             this._userTable = !string.IsNullOrEmpty(tableName) ? new SqlObject(tableName) : throw new ArgumentNullException(nameof(tableName));
             this._userDefinedLeasesTableName = userDefinedLeasesTableName;
-            this._userFunctionId = !string.IsNullOrEmpty(userFunctionId) ? userFunctionId : throw new ArgumentNullException(nameof(userFunctionId));
-            this._oldUserFunctionId = oldUserFunctionId;
+            // We'll use the WEBSITE_SITE_NAME based ID if we have it, but some environments (like running locally) may not have it
+            // so we'll just fall back to the host ID version instead
+            this._userFunctionId = string.IsNullOrEmpty(websiteSiteNameFunctionId) ? hostIdFunctionId : websiteSiteNameFunctionId;
+            this._hostIdFunctionId = hostIdFunctionId;
             this._executor = executor ?? throw new ArgumentNullException(nameof(executor));
             this._sqlOptions = sqlOptions ?? throw new ArgumentNullException(nameof(sqlOptions));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -124,7 +133,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     await VerifyDatabaseSupported(connection, this._logger, cancellationToken);
 
                     int userTableId = await GetUserTableIdAsync(connection, this._userTable, this._logger, cancellationToken);
-                    IReadOnlyList<(string name, string type)> primaryKeyColumns = GetPrimaryKeyColumnsAsync(connection, userTableId, this._logger, this._userTable.FullName, cancellationToken);
+                    IReadOnlyList<(string name, string type)> primaryKeyColumns = GetPrimaryKeyColumns(connection, userTableId, this._logger, this._userTable.FullName, cancellationToken);
                     IReadOnlyList<string> userTableColumns = this.GetUserTableColumns(connection, userTableId, cancellationToken);
 
                     string bracketedLeasesTableName = GetBracketedLeasesTableName(this._userDefinedLeasesTableName, this._userFunctionId, userTableId);
@@ -132,7 +141,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                     var transactionSw = Stopwatch.StartNew();
                     long createdSchemaDurationMs = 0L, createGlobalStateTableDurationMs = 0L, insertGlobalStateTableRowDurationMs = 0L, createLeasesTableDurationMs = 0L;
-
                     using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
                     {
                         createdSchemaDurationMs = await CreateSchemaAsync(connection, transaction, this._telemetryProps, this._logger, cancellationToken);
