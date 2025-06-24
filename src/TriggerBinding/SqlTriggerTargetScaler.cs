@@ -1,9 +1,12 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.Scale;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlTriggerUtils;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -14,24 +17,59 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     {
         private readonly SqlTriggerMetricsProvider _metricsProvider;
         private readonly int _maxChangesPerWorker;
+        private readonly ILogger _logger;
+        private readonly string _connectionString;
+        private readonly SqlObject _userTable;
 
         public SqlTriggerTargetScaler(string userFunctionId, SqlObject userTable, string userDefinedLeasesTableName, string connectionString, int maxChangesPerWorker, ILogger logger)
         {
             this._metricsProvider = new SqlTriggerMetricsProvider(connectionString, logger, userTable, userFunctionId, userDefinedLeasesTableName);
             this.TargetScalerDescriptor = new TargetScalerDescriptor(userFunctionId);
             this._maxChangesPerWorker = maxChangesPerWorker;
+            this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            this._connectionString = !string.IsNullOrEmpty(connectionString) ? connectionString : throw new ArgumentNullException(nameof(connectionString));
+            this._userTable = userTable ?? throw new ArgumentNullException(nameof(userTable));
         }
 
         public TargetScalerDescriptor TargetScalerDescriptor { get; }
 
         public async Task<TargetScalerResult> GetScaleResultAsync(TargetScalerContext context)
         {
-            SqlTriggerMetrics metrics = await this._metricsProvider.GetMetricsAsync();
+            try
+            {
+                SqlTriggerMetrics metrics = await this._metricsProvider.GetMetricsAsync();
 
-            // Instance concurrency value is set by the functions host when dynamic concurrency is enabled. See https://learn.microsoft.com/en-us/azure/azure-functions/functions-concurrency for more details.
-            int concurrency = context.InstanceConcurrency ?? this._maxChangesPerWorker;
+                // Instance concurrency value is set by the functions host when dynamic concurrency is enabled. See https://learn.microsoft.com/en-us/azure/azure-functions/functions-concurrency for more details.
+                int concurrency = context.InstanceConcurrency ?? this._maxChangesPerWorker;
 
-            return GetScaleResultInternal(concurrency, metrics.UnprocessedChangeCount);
+                return GetScaleResultInternal(concurrency, metrics.UnprocessedChangeCount);
+            }
+            catch (Exception ex)
+            {
+                if (ex is SqlException sqlEx && sqlEx.InnerException.Message.Contains("Invalid object name"))
+                {
+                    // If the SQL exception indicates that the object name is invalid and there are no changes in the user table,
+                    // we do not have the global state and leases table created.
+                    // Spin up the worker that starts the listener which will create those tables.
+                    this._logger.LogWarning("Invalid object name detected. Spinning up a worker to create global state and leases table.");
+                    int changes = await GetNumberOfChangesAsync(this._connectionString, this._userTable, this._logger, CancellationToken.None);
+                    if (changes > 0)
+                    {
+                        this._logger.LogWarning("There are changes in the user table, but the global state and leases table are not created. Spinning up a worker to create those tables.");
+                        return new TargetScalerResult
+                        {
+                            TargetWorkerCount = 1
+                        };
+                    }
+                }
+                // If the SQL exception indicates that the object name is invalid, we do not have the global state and leases table created.
+                // Spin up the worker that starts the listenr which will create those tables.
+                return new TargetScalerResult
+                {
+                    TargetWorkerCount = 0
+                };
+            }
+
         }
 
         internal static TargetScalerResult GetScaleResultInternal(int concurrency, long unprocessedChangeCount)
