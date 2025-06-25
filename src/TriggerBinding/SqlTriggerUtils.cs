@@ -137,7 +137,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <exception cref="InvalidOperationException">Thrown in case of error when querying the object ID for the user table</exception>
         internal static async Task<int> GetNumberOfChangesAsync(string connectionString, SqlObject userTable, ILogger logger, CancellationToken cancellationToken)
         {
-            string getChangeCountCommand = $"SELECT COUNT_BIG(*) FROM CHANGETABLE(CHANGES OBJECT_ID(N{userTable.QuotedFullName}, 'U'), null);";
+            string getChangeCountCommand = $"SELECT COUNT_BIG(*) FROM CHANGETABLE(CHANGES N{userTable.BracketQuotedFullName}, null) AS ChTbl;";
             using (var connection = new SqlConnection(connectionString))
             {
                 using (var getObjectIdCommand = new SqlCommand(getChangeCountCommand, connection))
