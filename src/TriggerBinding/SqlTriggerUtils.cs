@@ -145,7 +145,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     object result = await getObjectIdCommand.ExecuteScalarAsyncWithLogging(logger, cancellationToken, true);
                     if (result is DBNull)
                     {
-                        throw new InvalidOperationException($"Could not find table: '{userTable.FullName}' or no changes found.");
+                        logger.LogError($"GetNumberOfChangesAsync: Could not find table: '{userTable.FullName}' or no changes found.");
+                        return 0;
                     }
                     int changeCount = Convert.ToInt32(result, CultureInfo.InvariantCulture);
                     logger.LogDebug($"GetNumberOfChanges ChangeCount={changeCount}");
