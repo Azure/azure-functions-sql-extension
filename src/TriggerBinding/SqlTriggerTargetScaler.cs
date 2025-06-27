@@ -50,17 +50,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 // If the exception is SQL exception and indicates that the object name is invalid, it means that the global state and leases table are not created
                 // Check for the error number 208 or the error message https://learn.microsoft.com/en-us/sql/relational-databases/errors-events/mssqlserver-208-database-engine-error?view=sql-server-ver17
-                if (ex is SqlException sqlEx && (sqlEx.Number == 208 || sqlEx.Message.Contains("Invalid object name") ||
-                                   (sqlEx.InnerException != null &&
-                                    sqlEx.InnerException.Message.Contains("Invalid object name"))))
+                if (ex is SqlException sqlEx && sqlEx.Number == 208)
                 {
                     // Check if we already tried to spin up the worker that starts the listener which will create those tables.
                     // If we have already tried, we will return 0 as the target worker count.
                     this._logger.LogWarning("Invalid object name detected. SQL trigger tables not found.");
                     if (_lastTableCheck != DateTime.MinValue && DateTime.UtcNow - _lastTableCheck < TimeSpan.FromMinutes(2))
                     {
-                        // If we have already checked within the last 5 minutes, we will return 0 as the target worker count.
-                        this._logger.LogWarning("Returning 0 as the target worker count since we have already checked for the SQL trigger tables within the last 5 minutes.");
+                        // If we have already checked within the last 2 minutes, we will return 0 as the target worker count.
+                        this._logger.LogWarning("Returning 0 as the target worker count since we have already checked for the SQL trigger tables within the last 2 minutes.");
                         return new TargetScalerResult
                         {
                             TargetWorkerCount = 0
