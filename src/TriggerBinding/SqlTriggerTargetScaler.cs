@@ -83,7 +83,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 // If the exception is not related to the invalid object name Or if there are no changes in the change tracking table for the user table yet.
                 // We can safely return 0 as the target worker count, indicating that no workers are needed at this time.
-                this._logger.LogWarning("An error occurred while getting the scale result for SQL trigger. Returning 0 as the target worker count. Exception: {ExceptionMessage}", ex.Message);
+                this._logger.LogWarning("An error occurred while getting the scale result for SQL trigger. Exception: {ExceptionMessage}", ex.Message);
                 throw;
             }
         }
