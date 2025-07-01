@@ -135,14 +135,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="logger">Facilitates logging of messages</param>
         /// <param name="cancellationToken">Cancellation token to pass to the command</param>
         /// <exception cref="InvalidOperationException">Thrown in case of error when querying the object ID for the user table</exception>
-        internal static async Task<int> GetNumberOfChangesAsync(string connectionString, SqlObject userTable, ILogger logger, CancellationToken cancellationToken)
+        internal static async Task<int> GetChangeCountFromChangeTrackingAsync(string connectionString, SqlObject userTable, ILogger logger, CancellationToken cancellationToken)
         {
-            string getChangeCountCommand = $"SELECT COUNT_BIG(*) FROM CHANGETABLE(CHANGES N{userTable.BracketQuotedFullName}, null) AS ChTbl;";
+            string getChangeCountCommand = $"SELECT COUNT_BIG(*) FROM CHANGETABLE(CHANGES {userTable.FullName}, null) AS ChTbl;";
             using (var connection = new SqlConnection(connectionString))
             {
-                using (var getObjectIdCommand = new SqlCommand(getChangeCountCommand, connection))
+                connection.Open();
+                using (var getChangesCount = new SqlCommand(getChangeCountCommand, connection))
                 {
-                    object result = await getObjectIdCommand.ExecuteScalarAsyncWithLogging(logger, cancellationToken, true);
+                    object result = await getChangesCount.ExecuteScalarAsyncWithLogging(logger, cancellationToken, true);
                     if (result is DBNull)
                     {
                         logger.LogError($"GetNumberOfChangesAsync: Could not find table: '{userTable.FullName}' or no changes found.");
@@ -150,6 +151,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     }
                     int changeCount = Convert.ToInt32(result, CultureInfo.InvariantCulture);
                     logger.LogDebug($"GetNumberOfChanges ChangeCount={changeCount}");
+                    connection.Close();
                     return changeCount;
                 }
             }
