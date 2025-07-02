@@ -258,10 +258,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
             IFunctionInstance instanceFactory = CreateFunctionInstance(function, arguments);
             IDelayedException exception = await this._context.Executor.TryExecuteAsync(instanceFactory, cancellationToken);
 
-            if (exception != null)
-            {
-                exception.Throw();
-            }
+            exception?.Throw();
         }
 
         /// <summary>
@@ -281,10 +278,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 
                 this._stoppingTokenSource.Dispose();
 
-                if (this._context != null)
-                {
-                    this._context.Dispose();
-                }
+                this._context?.Dispose();
 
                 this._disposed = true;
             }
@@ -428,6 +422,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
     }
 
     // Original code here: https://github.com/aspnet/Common/blob/dev/src/Microsoft.Extensions.PropertyHelper.Sources/PropertyHelper.cs
+    [SuppressMessage("Performance", "CA1852:Seal internal types", Justification = "This class is designed for extensibility and has virtual members.")]
     internal class PropertyHelper
     {
         private static readonly MethodInfo CallPropertyGetterOpenGenericMethod =

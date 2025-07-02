@@ -7,7 +7,7 @@ using Xunit.Sdk;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 {
-    internal class LogTestNameAttribute : BeforeAfterTestAttribute
+    internal sealed class LogTestNameAttribute : BeforeAfterTestAttribute
     {
         public override void Before(MethodInfo methodUnderTest)
         {

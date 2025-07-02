@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.Common;
 using Microsoft.Azure.Functions.Worker.Extensions.Sql;
@@ -26,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.MultipleBindin
                 parameters: "@Cost={cost}")]
             IEnumerable<Product> products)
         {
-            return products.ToArray();
+            return products;
         }
     }
 }

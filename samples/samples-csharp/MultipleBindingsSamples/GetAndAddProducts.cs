@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs.Extensions.Http;
@@ -26,9 +25,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.MultipleBindingsSamples
             IEnumerable<Product> products,
             [Sql("ProductsWithIdentity",
                 "SqlConnectionString")]
-            out Product[] productsWithIdentity)
+            out IEnumerable<Product> productsWithIdentity)
         {
-            productsWithIdentity = products.ToArray();
+            productsWithIdentity = products;
 
             return new OkObjectResult(products);
         }

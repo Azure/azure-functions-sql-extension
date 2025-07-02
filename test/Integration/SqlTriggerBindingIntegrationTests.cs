@@ -28,12 +28,8 @@ using System.Text;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 {
     [Collection(IntegrationTestsCollection.Name)]
-    public class SqlTriggerBindingIntegrationTests : SqlTriggerBindingIntegrationTestBase
+    public class SqlTriggerBindingIntegrationTests(ITestOutputHelper output = null) : SqlTriggerBindingIntegrationTestBase(output)
     {
-        public SqlTriggerBindingIntegrationTests(ITestOutputHelper output = null) : base(output)
-        {
-        }
-
         /// <summary>
         /// Ensures that the user function gets invoked for each of the insert, update and delete operation.
         /// </summary>

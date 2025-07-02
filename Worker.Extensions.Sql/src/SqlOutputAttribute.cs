@@ -6,18 +6,13 @@ using Microsoft.Azure.Functions.Worker.Extensions.Abstractions;
 
 namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
 {
-    public class SqlOutputAttribute : OutputBindingAttribute
+    /// <summary>
+    /// Creates an instance of the <see cref="SqlOutputAttribute"/>, which takes a list of rows and upserts them into the target table.
+    /// </summary>
+    /// <param name="commandText">The table name to upsert the values to.</param>
+    /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored</param>
+    public class SqlOutputAttribute(string commandText, string connectionStringSetting) : OutputBindingAttribute
     {
-        /// <summary>
-        /// Creates an instance of the <see cref="SqlOutputAttribute"/>, which takes a list of rows and upserts them into the target table.
-        /// </summary>
-        /// <param name="commandText">The table name to upsert the values to.</param>
-        /// <param name="connectionStringSetting">The name of the app setting where the SQL connection string is stored</param>
-        public SqlOutputAttribute(string commandText, string connectionStringSetting)
-        {
-            this.CommandText = commandText ?? throw new ArgumentNullException(nameof(commandText));
-            this.ConnectionStringSetting = connectionStringSetting ?? throw new ArgumentNullException(nameof(connectionStringSetting));
-        }
 
         /// <summary>
         /// The name of the app setting where the SQL connection string is stored
@@ -28,11 +23,11 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
         /// create a ConnectionStringSetting with a name like SqlServerAuthentication. The value of the SqlServerAuthentication app setting
         /// would look like "Data Source=test.database.windows.net;Database=TestDB;User ID={userid};Password={password}".
         /// </summary>
-        public string ConnectionStringSetting { get; }
+        public string ConnectionStringSetting { get; } = connectionStringSetting ?? throw new ArgumentNullException(nameof(connectionStringSetting));
 
         /// <summary>
         /// The table name to upsert the values to.
         /// </summary>
-        public string CommandText { get; }
+        public string CommandText { get; } = commandText ?? throw new ArgumentNullException(nameof(commandText));
     }
 }

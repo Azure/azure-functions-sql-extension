@@ -24,7 +24,7 @@ namespace DotnetIsolatedTests
                 ProductId = 1,
                 TextCol = "test",
                 NtextCol = "test",
-                ImageCol = new byte[] { 1, 2, 3 }
+                ImageCol = [1, 2, 3]
             };
             return product;
         }

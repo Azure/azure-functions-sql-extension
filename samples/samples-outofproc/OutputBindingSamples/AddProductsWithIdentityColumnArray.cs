@@ -24,20 +24,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.SamplesOutOfProc.OutputBindingS
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")]
             HttpRequestData req)
         {
-            ProductWithoutId[] products = new[]
-            {
-                new ProductWithoutId
+            return
+            [
+                new()
                 {
                     Name = "Cup",
                     Cost = 2
                 },
-                new ProductWithoutId
+                new()
                 {
                     Name = "Glasses",
                     Cost = 12
                 }
-            };
-            return products;
+            ];
         }
     }
 }

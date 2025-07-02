@@ -8,7 +8,7 @@ using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 {
-    internal class TestConfigurationSection : IConfigurationSection
+    internal sealed class TestConfigurationSection : IConfigurationSection
     {
         string IConfiguration.this[string key] { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 

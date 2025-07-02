@@ -24,19 +24,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Samples.OutputBindingSamples
             HttpRequest req,
             [Sql("dbo.ProductsWithIdentity", "SqlConnectionString")] out ProductWithoutId[] products)
         {
-            products = new[]
-            {
-                new ProductWithoutId
+            products =
+            [
+                new()
                 {
                     Name = "Cup",
                     Cost = 2
                 },
-                new ProductWithoutId
+                new()
                 {
                     Name = "Glasses",
                     Cost = 12
                 }
-            };
+            ];
             return new CreatedResult($"/api/addproductswithidentitycolumnarray", products);
         }
     }

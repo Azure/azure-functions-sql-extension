@@ -17,6 +17,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     internal static class SqlBindingUtilities
     {
+        internal static readonly char[] ParameterSeparator = new[] { ',' };
         /// <summary>
         /// Builds a connection using the connection string attached to the app setting with name ConnectionStringSetting
         /// </summary>
@@ -81,7 +82,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // Because we remove empty entries, we will ignore any commas that appear at the beginning/end of the parameter list,
                 // as well as extra commas that appear between parameter pairs.
                 // I.e., ",,@param1=param1,,@param2=param2,,," will be parsed just like "@param1=param1,@param2=param2" is.
-                string[] paramPairs = parameters.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] paramPairs = parameters.Split(ParameterSeparator, StringSplitOptions.RemoveEmptyEntries);
 
                 foreach (string pair in paramPairs)
                 {

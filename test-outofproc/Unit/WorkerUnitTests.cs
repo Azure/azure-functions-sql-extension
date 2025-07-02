@@ -30,7 +30,11 @@ namespace WorkerUnitTests
         public void TestNullBuilder()
         {
             HostBuilder builder = null;
+            // The lambda is necessary here to correctly trigger the NullReferenceException
+            // when the extension method is invoked on a null instance.
+#pragma warning disable IDE0200 // Suppress "Remove lambda expression" as it's needed here.
             Assert.Throws<NullReferenceException>(() => builder.ConfigureFunctionsWorkerDefaults());
+#pragma warning restore IDE0200
         }
 
     }

@@ -185,23 +185,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
             }
             message ??= $"Executing non-query {commandText}";
 
-            using (IDbCommand cmd = connection.CreateCommand())
+            using IDbCommand cmd = connection.CreateCommand();
+            try
             {
-                try
-                {
 
-                    cmd.CommandText = commandText;
-                    cmd.CommandType = CommandType.Text;
-                    cmd.CommandTimeout = 60; // Increase from default 30s to prevent timeouts while connecting to Azure SQL DB
-                    logger.Invoke(message);
-                    return cmd.ExecuteNonQuery();
-                }
-                catch (Exception ex)
+                cmd.CommandText = commandText;
+                cmd.CommandType = CommandType.Text;
+                cmd.CommandTimeout = 60; // Increase from default 30s to prevent timeouts while connecting to Azure SQL DB
+                logger.Invoke(message);
+                return cmd.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                if (catchException == null || !catchException(ex))
                 {
-                    if (catchException == null || !catchException(ex))
-                    {
-                        throw;
-                    }
+                    throw;
                 }
             }
 
@@ -232,23 +230,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
                 throw new ArgumentNullException(nameof(commandText));
             }
 
-            using (IDbCommand cmd = connection.CreateCommand())
+            using IDbCommand cmd = connection.CreateCommand();
+            try
             {
-                try
+                cmd.CommandText = commandText;
+                cmd.CommandType = CommandType.Text;
+                logger.Invoke($"Executing scalar {commandText}");
+                return cmd.ExecuteScalar();
+            }
+            catch (Exception ex)
+            {
+                if (catchException == null || !catchException(ex))
                 {
-                    cmd.CommandText = commandText;
-                    cmd.CommandType = CommandType.Text;
-                    logger.Invoke($"Executing scalar {commandText}");
-                    return cmd.ExecuteScalar();
+                    throw;
                 }
-                catch (Exception ex)
-                {
-                    if (catchException == null || !catchException(ex))
-                    {
-                        throw;
-                    }
-                }
-
             }
 
             return null;

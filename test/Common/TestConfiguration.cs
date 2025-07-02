@@ -8,7 +8,7 @@ using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 {
-    internal class TestConfiguration : IConfiguration
+    internal sealed class TestConfiguration : IConfiguration
     {
         private readonly IDictionary<string, IConfigurationSection> _sections = new Dictionary<string, IConfigurationSection>();
         public void AddSection(string key, IConfigurationSection section)

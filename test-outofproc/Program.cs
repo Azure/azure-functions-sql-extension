@@ -5,7 +5,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace DotnetIsolatedTests
 {
-    internal class Program
+    internal sealed class Program
     {
         public static void Main()
         {

@@ -7,30 +7,18 @@ namespace Microsoft.Azure.Functions.Worker.Extensions.Sql
     /// Represents the changed row in the user table.
     /// </summary>
     /// <typeparam name="T">POCO class representing the row in the user table</typeparam>
-    public sealed class SqlChange<T>
+    public class SqlChange<T>(SqlChangeOperation operation, T item)
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SqlChange{T}"/> class.
-        /// </summary>
-        /// <param name="operation">Change operation</param>
-        /// <param name="item">POCO representing the row in the user table on which the change operation took place</param>
-        public SqlChange(SqlChangeOperation operation, T item)
-        {
-            this.Operation = operation;
-            this.Item = item;
-        }
-
         /// <summary>
         /// Change operation (insert, update, or delete).
         /// </summary>
-        public SqlChangeOperation Operation { get; }
-
+        public SqlChangeOperation Operation { get; } = operation;
         /// <summary>
         /// POCO representing the row in the user table on which the change operation took place. If the change
         /// operation is <see cref="SqlChangeOperation.Delete" />, then only the properties corresponding to the primary
         /// keys will be populated.
         /// </summary>
-        public T Item { get; }
+        public T Item { get; } = item;
     }
 
     /// <summary>
