@@ -52,12 +52,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // Check for the error number 208 https://learn.microsoft.com/en-us/sql/relational-databases/errors-events/mssqlserver-208-database-engine-error?view=sql-server-ver17
                 if (ex is SqlException sqlEx && sqlEx.Number == 208)
                 {
-                    // Check if we already tried to spin up the worker that starts the listener which will create those tables.
-                    // If we have already tried, we will return 0 as the target worker count.
+                    // If it's been 2 minutes since we first spun up the worker and the table still isn't created then stop trying
+                    // since it likely means something else is wrong we can't fix automatically, and we don't want to leave an
+                    // instance running forever.
                     this._logger.LogWarning("Invalid object name detected. SQL trigger tables not found.");
                     if (_firstTableCreationWarmupAttempt != DateTime.MinValue && DateTime.UtcNow - _firstTableCreationWarmupAttempt > TimeSpan.FromMinutes(2))
                     {
-                        // If we have already checked within the last 2 minutes, we will return 0 as the target worker count.
                         this._logger.LogWarning("Returning 0 as the target worker count since the GetMetrics query threw an 'Invalid object name detected' error and we've exceeded the warmup period for scaling up a new instance to create the required state tables.");
                         return new TargetScalerResult
                         {
@@ -66,13 +66,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     }
                     else
                     {
-                        // Check if there are any changes in the user table.
+                        // Check if there are any changes in the user table. Since we don't have a leases table that means
+                        // we haven't processed any of the changes yet so we can just check if there's any changes
+                        // for the table at all (no last sync point)
                         int changes = await GetChangeCountFromChangeTrackingAsync(this._connectionString, this._userTable, this._logger, CancellationToken.None);
-                        // If there are changes in the user table, we need to spin up a worker to create the global state and leases table.
+                        // If there are changes in the user table, we spin up worker(s) to start handling those changes.  
+                        // This will also create the global state and leases table, which will allow the scaling logic to start working as intended.
                         if (changes > 0)
                         {
-                            this._logger.LogWarning("There are changes in the change-tracking table for the user table, but the global state and leases table are not created. Spinning up a worker to create those tables.");
-                            _firstTableCreationWarmupAttempt = DateTime.UtcNow;
+                            this._logger.LogWarning("There are changes in the change-tracking table for the user table, but the global state and leases table are not created. Spinning up worker instances to create those tables and start processing changes.");
                             return new TargetScalerResult
                             {
                                 TargetWorkerCount = (int)Math.Ceiling(changes / (decimal)(context.InstanceConcurrency ?? this._maxChangesPerWorker))
