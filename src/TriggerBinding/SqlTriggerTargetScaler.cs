@@ -75,7 +75,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                             _firstTableCreationWarmupAttempt = DateTime.UtcNow;
                             return new TargetScalerResult
                             {
-                                TargetWorkerCount = 1
+                                TargetWorkerCount = (int)Math.Ceiling(changes / (decimal)(context.InstanceConcurrency ?? this._maxChangesPerWorker))
                             };
                         }
                     }
