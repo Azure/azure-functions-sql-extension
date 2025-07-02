@@ -20,7 +20,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly ILogger _logger;
         private readonly string _connectionString;
         private readonly SqlObject _userTable;
-        private static DateTime _firstTableCreationWarmupAttempt = DateTime.MinValue;
+        private static readonly DateTime _firstTableCreationWarmupAttempt = DateTime.MinValue;
 
 
         public SqlTriggerTargetScaler(string userFunctionId, SqlObject userTable, string userDefinedLeasesTableName, string connectionString, int maxChangesPerWorker, ILogger logger)
