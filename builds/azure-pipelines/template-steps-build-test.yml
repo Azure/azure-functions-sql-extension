@@ -13,12 +13,12 @@ steps:
   inputs:
     useGlobalJson: true
 
-# Install .Net Core 3.1.0 as PowerShell tests are unable to find 3.1.0 framework to run tests
+# Install .Net Core 8.0.0 as PowerShell tests are unable to find 8.0.0 framework to run tests
 - task: UseDotNet@2
-  displayName: 'Install .NET Core 3.1 sdk'
+  displayName: 'Install .NET Core 8.0 sdk'
   inputs:
     packageType: sdk
-    version: '3.1.x'
+    version: '8.0.x'
 
 - task: npmAuthenticate@0
   displayName: 'npm Authenticate for project'
