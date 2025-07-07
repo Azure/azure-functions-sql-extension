@@ -2,6 +2,20 @@
 
 [*.cs]
 
+
+# Temporarily disabled after update to .NET 8.0, should be reviewed and fixed or moved below to permanently disable
+dotnet_diagnostic.CA1510.severity = silent
+dotnet_diagnostic.CA1513.severity = silent
+dotnet_diagnostic.CA1859.severity = silent
+dotnet_diagnostic.CA1852.severity = silent
+dotnet_diagnostic.IDE0290.severity = silent
+dotnet_diagnostic.IDE0330.severity = silent
+dotnet_diagnostic.IDE0305.severity = silent
+dotnet_diagnostic.CA2263.severity = silent
+dotnet_diagnostic.IDE0028.severity = silent
+dotnet_diagnostic.IDE0300.severity = silent
+dotnet_diagnostic.CA1861.severity = silent
+
 # Disabled
 dotnet_diagnostic.CA1309.severity = silent # Use ordinal StringComparison - this isn't important for tests and just adds clutter
 dotnet_diagnostic.CA1305.severity = silent # Specify IFormatProvider - this isn't important for tests and just adds clutter
