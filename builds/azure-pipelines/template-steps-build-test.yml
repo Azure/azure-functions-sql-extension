@@ -258,7 +258,6 @@ steps:
     docker rm sql1
   displayName: 'Stop and Remove SQL Server Image'
   condition: and(always(), eq(variables['Agent.OS'], 'linux'))
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
 # Don't run for PRs since this currently breaks on runs from forks. We run this daily ourselves anyways.
 - task: securedevelopmentteam.vss-secure-development-tools.build-task-roslynanalyzers.RoslynAnalyzers@3
