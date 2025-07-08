@@ -36,7 +36,7 @@ stages:
   - job: Linux
     timeoutInMinutes: 90
     pool:
-      vmImage: ubuntu-22.04 # Ubuntu 24.04 causes an error about missing libssl - using 22.04 for now
+      vmImage: ubuntu-latest
     workspace:
       clean: all
     steps:
