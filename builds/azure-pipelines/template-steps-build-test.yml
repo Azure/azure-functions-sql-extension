@@ -62,58 +62,9 @@ steps:
   displayName: Start Server in Docker Container
   condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
-- script: |
-    echo "Waiting for SQL Server container to start..."
-    sleep 10
-    
-    echo "Checking container status..."
-    docker ps -a --filter name=sql1
-    
-    echo "Checking container logs..."
-    docker logs sql1
-    
-    echo "Waiting for SQL Server to be ready..."
-    for i in {1..30}; do
-      if docker exec sql1 /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$(serverPassword)" -Q "SELECT 1" > /dev/null 2>&1; then
-        echo "SQL Server is ready!"
-        break
-      fi
-      echo "Attempt $i: SQL Server not ready yet, waiting 5 seconds..."
-      if [ $i -eq 30 ]; then
-        echo "SQL Server failed to start within timeout period"
-        echo "Final container logs:"
-        docker logs sql1
-        exit 1
-      fi
-      sleep 5
-    done
-    
-    # Final check to ensure connection is working
-    echo "Testing SQL Server connection..."
-    docker exec sql1 /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$(serverPassword)" -Q "SELECT @@VERSION"
-  displayName: Wait for SQL Server to be ready
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
-
-- script: |
-    echo "Environment variables for testing:"
-    echo "SA_PASSWORD: $(if [ -z "$(serverPassword)" ]; then echo "NOT SET"; else echo "SET"; fi)"
-    echo "TEST_SERVER: localhost"
-    echo "SqlConnectionString environment variable:"
-    echo $SqlConnectionString
-    
-    # Show the connection string that should be generated
-    echo "Expected connection string format:"
-    echo "Server=localhost;Initial Catalog=<dbname>;User ID=SA;Password=<password>;Pooling=false;Encrypt=Optional"
-    
-    echo "Testing connection from host machine..."
-    sqlcmd -S localhost -U sa -P "$(serverPassword)" -Q "SELECT 'Connection successful' as Status" || echo "Host connection failed, this is expected - using container connection"
-  displayName: 'Validate test environment'
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
-
 - powershell: $(System.DefaultWorkingDirectory)/builds/scripts/UpdateLogLevel.ps1
   displayName: Set logging level
   condition: and(succeeded(), ne(variables['AFSQLEXT_TEST_LOGLEVEL'], ''))
-
 
 - script: |
     npm install --userconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --loglevel verbose
