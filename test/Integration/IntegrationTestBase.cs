@@ -216,7 +216,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             var client = new HttpClient();
             HttpResponseMessage response = await client.GetAsync(requestUri);
 
-            if (verifySuccess)
+            if (!response.IsSuccessStatusCode)
+            {
+                string error = await response.Content.ReadAsStringAsync();
+                this.LogOutput($"Request to {requestUri} failed with status code {response.StatusCode}. Response: {error}");
+                Assert.True(response.IsSuccessStatusCode, $"Http request failed with code {response.StatusCode}. Please check output for more detailed message. Full response is: {error}");
+            }
+            else if (verifySuccess)
             {
                 Assert.True(response.IsSuccessStatusCode, $"Http request failed with code {response.StatusCode}. Please check output for more detailed message.");
             }
