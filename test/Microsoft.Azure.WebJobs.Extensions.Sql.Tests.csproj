@@ -48,7 +48,8 @@
     <Copy SourceFiles="@(_DatabaseItems)" DestinationFolder="$(OutDir)\Database\%(RecursiveDir)" />
     <Message Text="Copied SQL Scripts to $(OutDir)\Database" Importance="high" />
     <ItemGroup>
-      <_CSharpCopyItems Include="..\samples\samples-csharp\bin\$(Configuration)\$(TargetFramework)\**\*.*" />
+      <!-- .NET 8 is last supported version of .NET to be supported for in-proc functions -->
+      <_CSharpCopyItems Include="..\samples\samples-csharp\bin\$(Configuration)\net8.0\**\*.*" />
     </ItemGroup>
     <Copy SourceFiles="@(_CSharpCopyItems)" DestinationFolder="$(OutDir)\SqlExtensionSamples\CSharp\%(RecursiveDir)" />
     <Message Text="Copied C# Samples output to $(OutDir)\SqlExtensionSamples\CSharp" Importance="high" />
