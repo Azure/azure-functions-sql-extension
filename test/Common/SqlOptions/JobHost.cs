@@ -258,10 +258,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
             IFunctionInstance instanceFactory = CreateFunctionInstance(function, arguments);
             IDelayedException exception = await this._context.Executor.TryExecuteAsync(instanceFactory, cancellationToken);
 
-            if (exception != null)
-            {
-                exception.Throw();
-            }
+            exception?.Throw();
         }
 
         /// <summary>
@@ -281,10 +278,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
 
                 this._stoppingTokenSource.Dispose();
 
-                if (this._context != null)
-                {
-                    this._context.Dispose();
-                }
+                this._context?.Dispose();
 
                 this._disposed = true;
             }

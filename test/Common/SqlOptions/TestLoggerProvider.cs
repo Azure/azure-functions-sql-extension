@@ -111,7 +111,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
                 State = state as IEnumerable<KeyValuePair<string, object>>,
                 Exception = exception,
                 FormattedMessage = formatter(state, exception),
-                Category = Category,
+                Category = this.Category,
                 Timestamp = DateTime.UtcNow
             };
 

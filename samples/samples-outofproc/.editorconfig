@@ -1,0 +1,8 @@
+# See https://github.com/dotnet/roslyn-analyzers/blob/main/.editorconfig for an example on different settings and how they're used
+
+[*.cs]
+
+# Temporarily disabled after update to .NET 9, should be reviewed and fixed or moved below to permanently disable
+dotnet_diagnostic.IDE0305.severity = silent
+dotnet_diagnostic.IDE0300.severity = silent
+dotnet_diagnostic.CA1852.severity = silent

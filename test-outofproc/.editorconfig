@@ -2,6 +2,12 @@
 
 [*.cs]
 
+# Temporarily disabled after update to .NET 9, should be reviewed and fixed or moved below to permanently disable
+dotnet_diagnostic.IDE0300.severity = silent
+dotnet_diagnostic.IDE0200.severity = silent
+dotnet_diagnostic.CA1852.severity = silent
+
+# Disabled
 dotnet_diagnostic.CS0659.severity = silent # overrides Object.Equals but does not override Object.GetHashCode() - not necessary for our samples
 dotnet_diagnostic.CA1711.severity = silent # Identifiers should not have incorrect suffix - Fine for tests
 dotnet_diagnostic.CA1848.severity = silent # For improved performance, use the LoggerMessage delegates instead of calling - Fine for tests

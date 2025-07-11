@@ -80,11 +80,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Rows that are currently being processed
         /// </summary>
-        private IReadOnlyList<IReadOnlyDictionary<string, object>> _rowsToProcess = new List<IReadOnlyDictionary<string, object>>();
+        private List<IReadOnlyDictionary<string, object>> _rowsToProcess = new List<IReadOnlyDictionary<string, object>>();
         /// <summary>
         /// Rows that have been processed and now need to have their leases released
         /// </summary>
-        private IReadOnlyList<IReadOnlyDictionary<string, object>> _rowsToRelease = new List<IReadOnlyDictionary<string, object>>();
+        private List<IReadOnlyDictionary<string, object>> _rowsToRelease = new List<IReadOnlyDictionary<string, object>>();
         private int _leaseRenewalCount = 0;
         private State _state = State.CheckingForChanges;
 
@@ -775,7 +775,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 case "U": return SqlChangeOperation.Update;
                 case "D": return SqlChangeOperation.Delete;
                 default: throw new InvalidDataException($"Invalid change type encountered in change table row: {row}");
-            };
+            }
+            ;
         }
 
         /// <summary>
@@ -1107,7 +1108,7 @@ WHERE l.{LeasesTableChangeVersionColumnName} <= cte.{SysChangeVersionColumnName}
         /// rebuild the SqlParameters each time.
         /// </remarks>
         private SqlCommand GetSqlCommandWithParameters(string commandText, SqlConnection connection,
-            SqlTransaction transaction, IReadOnlyList<IReadOnlyDictionary<string, object>> rows)
+            SqlTransaction transaction, List<IReadOnlyDictionary<string, object>> rows)
         {
             var command = new SqlCommand(commandText, connection, transaction);
 

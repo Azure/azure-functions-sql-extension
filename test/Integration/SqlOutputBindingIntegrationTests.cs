@@ -9,7 +9,6 @@ using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Xunit;
 using Xunit.Abstractions;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
-using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
 
@@ -394,7 +393,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET COMPATIBILITY_LEVEL = 120;");
 
             var foundExpectedMessageSource = new TaskCompletionSource<bool>();
-            this.StartFunctionHost(nameof(AddProductParams), lang, false, (object sender, DataReceivedEventArgs e) =>
+            this.StartFunctionHost(nameof(AddProductParams), lang, false, (sender, e) =>
             {
                 if (e.Data.Contains("SQL bindings require a database compatibility level of 130 or higher to function. Current compatibility level = 120"))
                 {
@@ -501,7 +500,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public async Task NoPropertiesThrows(SupportedLanguages lang)
         {
             var foundExpectedMessageSource = new TaskCompletionSource<bool>();
-            this.StartFunctionHost(nameof(AddProductParams), lang, false, (object sender, DataReceivedEventArgs e) =>
+            this.StartFunctionHost(nameof(AddProductParams), lang, false, (sender, e) =>
             {
                 if (e.Data.Contains("No property values found in item to upsert. If using query parameters, ensure that the casing of the parameter names and the property names match."))
                 {
@@ -527,7 +526,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         public async Task AddProductUnsupportedTypesTest(SupportedLanguages lang)
         {
             var foundExpectedMessageSource = new TaskCompletionSource<bool>();
-            this.StartFunctionHost(nameof(AddProductUnsupportedTypes), lang, true, (object sender, DataReceivedEventArgs e) =>
+            this.StartFunctionHost(nameof(AddProductUnsupportedTypes), lang, true, (sender, e) =>
             {
                 if (e.Data.Contains("The type(s) of the following column(s) are not supported: TextCol, NtextCol, ImageCol. See https://github.com/Azure/azure-functions-sql-extension#output-bindings for more details."))
                 {

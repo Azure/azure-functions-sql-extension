@@ -5,6 +5,7 @@
 		<RootNamespace>Microsoft.Azure.Functions.Worker.Extensions.Sql</RootNamespace>
 		<Description>Sql extension for .NET isolated Azure Functions</Description>
 		<Product>SQL Binding Worker</Product>
+		<TargetFramework>net6</TargetFramework>
 		<!-- Default Version for dev -->
 		<Version>99.99.99</Version>
 		<OOPWorkerSupportedExtensionVersion>99.99.99</OOPWorkerSupportedExtensionVersion>

@@ -168,7 +168,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="rows"> The rows to be upserted </param>
         /// <param name="attribute"> Contains the name of the table to be modified and SQL connection information </param>
         /// <param name="configuration"> Used to build up the connection </param>
-        private async Task UpsertRowsAsync(IList<T> rows, SqlAttribute attribute, IConfiguration configuration)
+        private async Task UpsertRowsAsync(List<T> rows, SqlAttribute attribute, IConfiguration configuration)
         {
             var upsertRowsAsyncSw = Stopwatch.StartNew();
             using (SqlConnection connection = BuildConnection(attribute.ConnectionStringSetting, configuration))
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // Include the connection string hash as part of the key in case this customer has the same table in two different Sql Servers
                 string cacheKey = $"{connection.ConnectionString.GetHashCode()}-{fullTableName}";
 
-                ObjectCache cachedTables = MemoryCache.Default;
+                MemoryCache cachedTables = MemoryCache.Default;
 
                 int timeout = AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES;
                 string timeoutEnvVar = Environment.GetEnvironmentVariable("AZ_FUNC_TABLE_INFO_CACHE_TIMEOUT_MINUTES");
@@ -361,7 +361,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <returns>T-SQL containing data for merge</returns>
         private static void GenerateDataQueryForMerge(TableInformation table, IEnumerable<T> rows, out string newDataQuery, out string rowData)
         {
-            IList<T> rowsToUpsert = new List<T>();
+            var rowsToUpsert = new List<T>();
 
             var uniqueUpdatedPrimaryKeys = new HashSet<string>();
 
@@ -527,7 +527,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             /// </summary>
             public static string GetMergeQuery(IList<PrimaryKey> primaryKeys, SqlObject table, IEnumerable<string> bracketedColumnNamesFromItem)
             {
-                IList<string> bracketedPrimaryKeys = primaryKeys.Select(p => p.Name.AsBracketQuotedString()).ToList();
+                var bracketedPrimaryKeys = primaryKeys.Select(p => p.Name.AsBracketQuotedString()).ToList();
                 // Generate the ON part of the merge query (compares new data against existing data)
                 var primaryKeyMatchingQuery = new StringBuilder($"ExistingData.{bracketedPrimaryKeys[0]} = NewData.{bracketedPrimaryKeys[0]}");
                 foreach (string primaryKey in bracketedPrimaryKeys.Skip(1))
@@ -679,7 +679,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 // Make sure the ordering of columns matches that of SQL
                 // Necessary for proper matching of column names to JSON that is generated for each batch of data
-                IList<JsonProperty> propertiesToSerialize = new List<JsonProperty>(properties.Count);
+                var propertiesToSerialize = new List<JsonProperty>(properties.Count);
                 foreach (KeyValuePair<string, string> column in this._propertiesToSerialize)
                 {
                     if (properties.TryGetValue(column.Key, out JsonProperty value))
