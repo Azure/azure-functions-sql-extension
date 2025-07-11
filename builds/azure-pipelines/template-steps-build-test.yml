@@ -175,7 +175,7 @@ steps:
     projects: '${{ parameters.solution }}'
     # Skip any non .NET In-Proc integration tests. Otherwise, the following error will be thrown:
     # System.InvalidOperationException : No data found for Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration.SqlOutputBindingIntegrationTests.NoPropertiesThrows
-    arguments: --configuration ${{ parameters.configuration }} --filter "FullyQualifiedName!~NoPropertiesThrows & FullyQualifiedName!~AddProductWithSlashInColumnName" --collect "Code Coverage" -s $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/test/coverage.runsettings --no-build
+    arguments: --configuration ${{ parameters.configuration }} --framework "net8.0" --filter "FullyQualifiedName!~NoPropertiesThrows & FullyQualifiedName!~AddProductWithSlashInColumnName" --collect "Code Coverage" -s $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/test/coverage.runsettings --no-build
   condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: DotNetCoreCLI@2
@@ -193,15 +193,29 @@ steps:
   condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: DotNetCoreCLI@2
-  displayName: '.NET Test on Linux (both unit and integration tests)'
+  displayName: '.NET Test on Linux (both unit and integration tests, excluding CSharp In-Proc tests)'
   env:
     SA_PASSWORD: '$(serverPassword)'
     NODE_MODULES_PATH: '$(nodeModulesPath)'
     AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
+    LANGUAGES_TO_TEST: 'Java,JavaScript,OutOfProc,PowerShell,Python,Csx'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
     arguments: --configuration ${{ parameters.configuration }} --no-build
+  condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'linux'))
+
+- task: DotNetCoreCLI@2
+  displayName: '.NET Test on Linux (CSharp In-Proc tests)'
+  env:
+    SA_PASSWORD: '$(serverPassword)'
+    NODE_MODULES_PATH: '$(nodeModulesPath)'
+    AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
+    LANGUAGES_TO_TEST: 'CSharp'
+  inputs:
+    command: test
+    projects: '${{ parameters.solution }}'
+    arguments: --configuration ${{ parameters.configuration }} --framework "net8.0" --filter "FullyQualifiedName!~NoPropertiesThrows & FullyQualifiedName!~AddProductWithSlashInColumnName" --no-build
   condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'linux'))
 
 - script: |
