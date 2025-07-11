@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Samples.Common;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common;
 using Microsoft.Data.SqlClient;
+using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
@@ -154,7 +155,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 {
                     taskCompletionSource.SetResult(true);
                 }
-            };
+            }
+            ;
             functionHost.OutputDataReceived += SignalStartupHandler;
             functionHost.OutputDataReceived += customOutputHandler;
 
@@ -216,12 +218,59 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             var client = new HttpClient();
             HttpResponseMessage response = await client.GetAsync(requestUri);
 
+            if (!response.IsSuccessStatusCode)
+            {
+                // Unwrap the response and throw as an Api Exception:
+                Exception ex = CreateExceptionFromResponseErrors(response);
+                throw ex;
+            }
             if (verifySuccess)
             {
                 Assert.True(response.IsSuccessStatusCode, $"Http request failed with code {response.StatusCode}. Reason: {response.ReasonPhrase}. Please check output for more detailed message.");
             }
 
             return response;
+        }
+
+        private static Exception CreateExceptionFromResponseErrors(HttpResponseMessage response)
+        {
+            string httpErrorObject = response.Content.ReadAsStringAsync().Result;
+
+            // Create an anonymous object to use as the template for deserialization:
+            var anonymousErrorObject =
+                new { message = "", ModelState = new Dictionary<string, string[]>() };
+
+            // Deserialize:
+            var deserializedErrorObject =
+                JsonConvert.DeserializeAnonymousType(httpErrorObject, anonymousErrorObject);
+
+            // Now wrap into an exception which best fullfills the needs of your application:
+            var ex = new Exception();
+
+            // Sometimes, there may be Model Errors:
+            if (deserializedErrorObject.ModelState != null)
+            {
+                IEnumerable<string> errors =
+                    deserializedErrorObject.ModelState
+                                            .Select(kvp => string.Join(". ", kvp.Value));
+                for (int i = 0; i < errors.Count(); i++)
+                {
+                    // Wrap the errors up into the base Exception.Data Dictionary:
+                    ex.Data.Add(i, errors.ElementAt(i));
+                }
+            }
+            // Othertimes, there may not be Model Errors:
+            else
+            {
+                Dictionary<string, string> error =
+                    JsonConvert.DeserializeObject<Dictionary<string, string>>(httpErrorObject);
+                foreach (KeyValuePair<string, string> kvp in error)
+                {
+                    // Wrap the errors up into the base Exception.Data Dictionary:
+                    ex.Data.Add(kvp.Key, kvp.Value);
+                }
+            }
+            return ex;
         }
 
         protected async Task<HttpResponseMessage> SendPostRequest(string requestUri, string json, bool verifySuccess = true)
