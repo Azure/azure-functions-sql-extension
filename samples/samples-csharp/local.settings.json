@@ -5,6 +5,7 @@
     "FUNCTIONS_WORKER_RUNTIME": "dotnet",
     "SqlConnectionString": "",
     "Sp_SelectCost": "SelectProductsCost",
-    "ProductCost": 100
+    "ProductCost": 100,
+    "FUNCTIONS_INPROC_NET8_ENABLED": 1
   }
 }
