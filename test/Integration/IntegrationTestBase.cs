@@ -219,7 +219,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             if (verifySuccess)
             {
-                Assert.True(response.IsSuccessStatusCode, $"Http request failed with code {response.StatusCode}. Please check output for more detailed message.");
+                // Enhanced error message with actual response details
+                if (!response.IsSuccessStatusCode)
+                {
+                    string responseContent = await response.Content.ReadAsStringAsync();
+                    this.LogOutput($"HTTP Request Failed. Status: {response.StatusCode}, URL: {requestUri}, Response: {responseContent}");
+                }
+                Assert.True(response.IsSuccessStatusCode, $"Http request failed with code {response.StatusCode}. URL: {requestUri}. Please check output for more detailed message.");
             }
 
             return response;
@@ -240,6 +246,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
 
             if (verifySuccess)
             {
+                // Enhanced error message with actual response details
+                if (!response.IsSuccessStatusCode)
+                {
+                    string responseContent = await response.Content.ReadAsStringAsync();
+                    this.LogOutput($"HTTP Request Failed. Status: {response.StatusCode}, URL: {requestUri}, Response: {responseContent}");
+                }
                 Assert.True(response.IsSuccessStatusCode, $"Http request failed with code {response.StatusCode}. Please check output for more detailed message.");
             }
 
@@ -306,36 +318,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.FunctionHostList.Clear();
         }
 
-        /// <summary>
-        /// Sends a GET request to a function endpoint with optional query or path parameters.
-        /// </summary>
-        /// <param name="functionName">The name of the function to call</param>
-        /// <param name="query">Either a query string (starting with '?') or a path parameter</param>
-        /// <param name="port">The port number where the function host is running</param>
-        /// <returns>The HTTP response from the function</returns>
-        /// <remarks>
-        /// This method handles URL construction differently based on the query parameter format:
-        /// - If query starts with '?': Treats as query parameters (e.g., "?culture=en-US")
-        /// - Otherwise: Treats as path parameters (e.g., "100" for /api/function/100)
-        /// 
-        /// This distinction is critical for .NET 8 compatibility, which has stricter HTTP URL parsing
-        /// that rejects malformed URLs with HTTP 404. The previous implementation would create
-        /// invalid URLs like "/api/function/?param=value" (extra slash before query) which
-        /// .NET 8 rejects but .NET 6 accepted.
-        /// </remarks>
         protected async Task<HttpResponseMessage> SendInputRequest(string functionName, string query = "", int port = TestUtils.DefaultPort)
         {
             string requestUri;
             if (query.StartsWith('?'))
             {
-                // Query parameter case: construct URL without extra slash before '?'
-                // Correct: http://localhost:7071/api/function?param=value
+                // Query parameter: don't add extra slash before '?'
                 requestUri = $"http://localhost:{port}/api/{functionName}{query}";
             }
             else
             {
-                // Path parameter case: add slash to separate path segments
-                // Correct: http://localhost:7071/api/function/pathvalue
+                // Path parameter: add slash
                 requestUri = $"http://localhost:{port}/api/{functionName}/{query}";
             }
 
