@@ -20,6 +20,13 @@ steps:
     packageType: sdk
     version: '6.0.x'
 
+# Install .NET 8.0 runtime as it is required to run the tests; .NET 8 runtime is not installed by default on agents
+- task: UseDotNet@2
+  displayName: 'Install .NET 8.0 runtime'
+  inputs:
+    packageType: 'runtime'
+    version: '8.0.x'
+
 - task: npmAuthenticate@0
   displayName: 'npm Authenticate for project'
   inputs:
