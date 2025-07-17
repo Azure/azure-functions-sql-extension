@@ -118,7 +118,7 @@ To debug either any core extension code (anything under the `src` folder) OR fun
 To do this and be able to set breakpoints before the test runs you will need to follow these steps :
 
 1. Go to [IntegrationTestBase.cs](./Integration/IntegrationTestBase.cs) and in `StartFunctionHost` add a `return;` on the first line - this is to skip having the test start up the function host itself (since you'll be doing it manually)
-2. `cd` to the directory containing the functions to run - this will be in the `test/bin/Debug/net6/SqlExtensionSamples/<LANG>` folder (e.g. `test/bin/Debug/net6/SqlExtensionSamples/CSharp`)
+2. `cd` to the directory containing the functions to run - this will be in the `test/bin/Debug/net8.0/SqlExtensionSamples/<LANG>` folder (e.g. `test/bin/Debug/net8.0/SqlExtensionSamples/CSharp`)
 3. Run `func host start --functions <FUNCTION_NAME>` - replacing `<FUNCTION_NAME>` with the name of the function you want to debug (e.g. `func host start --functions AddProduct`)
 4. Attach to the Function Host process
    * Visual Studio : Use `Attach to Process...`.

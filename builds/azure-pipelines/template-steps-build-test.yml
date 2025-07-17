@@ -13,19 +13,28 @@ steps:
   inputs:
     useGlobalJson: true
 
-# Install .Net Core 3.1.0 as PowerShell tests are unable to find 3.1.0 framework to run tests
+# Install .Net Core 6.0.0 as PowerShell tests are unable to find 6.0.0 framework to run tests
 - task: UseDotNet@2
-  displayName: 'Install .NET Core 3.1 sdk'
+  displayName: 'Install .NET Core 6.0 sdk'
   inputs:
     packageType: sdk
-    version: '3.1.x'
+    version: '6.0.x'
+
+# Install .NET 8.0 runtime as it is required to run the tests; .NET 8 runtime is not installed by default on agents
+- task: UseDotNet@2
+  displayName: 'Install .NET 8.0 runtime'
+  inputs:
+    packageType: 'runtime'
+    version: '8.0.x'
 
 - task: npmAuthenticate@0
   displayName: 'npm Authenticate for project'
   inputs:
     workingFile: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc
 
-- script: npm install azure-functions-core-tools --global --globalconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --loglevel verbose
+# Temporarily install Azure Functions Core Tools 4.0.7317 as the latest version (4.0.7512) causes 11 Python tests to fail
+# Tracking issue: https://github.com/Azure/azure-functions-sql-extension/issues/1193
+- script: npm install azure-functions-core-tools@4.0.7317 --global --globalconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --loglevel verbose
   displayName: 'Install Azure Functions Core Tools'
 
 - script: npm install azurite --global --globalconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --loglevel verbose
