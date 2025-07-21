@@ -828,7 +828,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                 {
                     taskCompletionSource.TrySetResult();
                 }
-            };
+            }
+            ;
             this.FunctionHost.OutputDataReceived += TestExceptionMessageSeen;
             int firstId = 1;
             int lastId = 30;
@@ -931,7 +932,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     Assert.Equal(expectedResponse, user); // user has the expected values
                     taskCompletion.SetResult(true);
                 }
-            };
+            }
+            ;
 
             // Set up listener for the changes coming in
             foreach (Process functionHost in this.FunctionHostList)
@@ -995,7 +997,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     Assert.Equal(expectedResponse, product); // The product has the expected values
                     taskCompletion.SetResult(true);
                 }
-            };
+            }
+            ;
 
             // Set up listener for the changes coming in
             foreach (Process functionHost in this.FunctionHostList)

@@ -54,6 +54,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             return connectionString;
         }
 
+        internal static readonly char[] ParameterSeparator = new[] { ',' };
+
         /// <summary>
         /// Parses the parameter string into a list of parameters, where each parameter is separated by "," and has the form
         /// "@param1=param2". "@param1" is the parameter name to be used in the query or stored procedure, and param1 is the
@@ -81,7 +83,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 // Because we remove empty entries, we will ignore any commas that appear at the beginning/end of the parameter list,
                 // as well as extra commas that appear between parameter pairs.
                 // I.e., ",,@param1=param1,,@param2=param2,,," will be parsed just like "@param1=param1,@param2=param2" is.
-                string[] paramPairs = parameters.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] paramPairs = parameters.Split(ParameterSeparator, StringSplitOptions.RemoveEmptyEntries);
 
                 foreach (string pair in paramPairs)
                 {

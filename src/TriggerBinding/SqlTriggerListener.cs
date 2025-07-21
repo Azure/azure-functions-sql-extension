@@ -49,7 +49,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly ILogger _logger;
         private readonly IConfiguration _configuration;
 
-        private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps = new Dictionary<TelemetryPropertyName, string>();
+        private readonly Dictionary<TelemetryPropertyName, string> _telemetryProps = new Dictionary<TelemetryPropertyName, string>();
         private readonly int _maxChangesPerWorker;
         private readonly bool _hasConfiguredMaxChangesPerWorker = false;
 
@@ -219,7 +219,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Gets the column names of the user table.
         /// </summary>
-        private IReadOnlyList<string> GetUserTableColumns(SqlConnection connection, int userTableId, CancellationToken cancellationToken)
+        private List<string> GetUserTableColumns(SqlConnection connection, int userTableId, CancellationToken cancellationToken)
         {
             const int NameIndex = 0, TypeIndex = 1, IsAssemblyTypeIndex = 2;
             string getUserTableColumnsQuery = $@"
