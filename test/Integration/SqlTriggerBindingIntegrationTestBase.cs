@@ -115,7 +115,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                         taskCompletion.SetResult(true);
                     }
                 }
-            };
+            }
+            ;
             // Set up listener for the changes coming in
             foreach (Process functionHost in this.FunctionHostList)
             {
@@ -161,7 +162,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
                     errorMessage = e.Data[(index + exceptionPrefix.Length)..];
                     tcs.SetResult(true);
                 }
-            };
+            }
+            ;
 
             // All trigger integration tests are only using C# functions for testing at the moment.
             this.StartFunctionHost(functionName, lang, useTestFolder, OutputHandler);

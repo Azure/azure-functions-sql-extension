@@ -2,8 +2,7 @@
 
 [*.cs]
 
-
-# Temporarily disabled after update to .NET 8.0, should be reviewed and fixed or moved below to permanently disable
+# Temporarily disabled after update to .NET 9, should be reviewed and fixed or moved below to permanently disable
 dotnet_diagnostic.CA1510.severity = silent
 dotnet_diagnostic.CA1513.severity = silent
 dotnet_diagnostic.CA1859.severity = silent

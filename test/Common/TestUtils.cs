@@ -351,7 +351,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
         /// <returns>The event handler</returns>
         public static DataReceivedEventHandler CreateOutputReceievedHandler(TaskCompletionSource<bool> taskCompletionSource, string regex, string valueName, string expectedValue)
         {
-            return (object sender, DataReceivedEventArgs e) =>
+            return (sender, e) =>
             {
                 if (e != null && e.Data != null)
                 {
