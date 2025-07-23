@@ -5,6 +5,7 @@
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "AzureWebJobsFeatureFlags": "EnableWorkerIndexing",
     "SqlConnectionString": "",
-    "PYTHON_ISOLATE_WORKER_DEPENDENCIES": "1"
+    "PYTHON_ISOLATE_WORKER_DEPENDENCIES": "1",
+    "FUNCTIONS_INPROC_NET8_ENABLED": "1"
   }
 }
