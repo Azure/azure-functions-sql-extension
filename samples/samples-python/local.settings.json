@@ -6,5 +6,5 @@
     "SqlConnectionString": "",
     "Sp_SelectCost": "SelectProductsCost",
     "ProductCost": 100
-    }
+  }
 }
