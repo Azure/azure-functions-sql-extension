@@ -126,5 +126,35 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             return string.IsNullOrEmpty(userDefinedLeasesTableName) ? string.Format(CultureInfo.InvariantCulture, LeasesTableNameFormat, $"{userFunctionId}_{userTableId}") :
                 string.Format(CultureInfo.InvariantCulture, UserDefinedLeasesTableNameFormat, $"{userDefinedLeasesTableName.AsBracketQuotedString()}");
         }
+
+        /// <summary>
+        /// Returns the number of changes in the change tracking table of ID of the user table.
+        /// </summary>
+        /// <param name="connectionString">SQL connection string used to connect to user database</param>
+        /// <param name="userTable">SqlObject user table</param>
+        /// <param name="logger">Facilitates logging of messages</param>
+        /// <param name="cancellationToken">Cancellation token to pass to the command</param>
+        /// <exception cref="InvalidOperationException">Thrown in case of error when querying the object ID for the user table</exception>
+        internal static async Task<int> GetChangeCountFromChangeTrackingAsync(string connectionString, SqlObject userTable, ILogger logger, CancellationToken cancellationToken)
+        {
+            string getChangeCountCommand = $"SELECT COUNT_BIG(*) FROM CHANGETABLE(CHANGES {userTable.BracketQuotedFullName}, null) AS ChTbl;";
+            using (var connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+                using (var getChangesCount = new SqlCommand(getChangeCountCommand, connection))
+                {
+                    object result = await getChangesCount.ExecuteScalarAsyncWithLogging(logger, cancellationToken, true);
+                    if (result is DBNull)
+                    {
+                        logger.LogError($"GetNumberOfChangesAsync: Could not find table: '{userTable.FullName}' or no changes found.");
+                        return 0;
+                    }
+                    int changeCount = Convert.ToInt32(result, CultureInfo.InvariantCulture);
+                    logger.LogDebug($"GetNumberOfChanges ChangeCount={changeCount}");
+                    connection.Close();
+                    return changeCount;
+                }
+            }
+        }
     }
 }
