@@ -51,7 +51,7 @@ stages:
   - job: Windows
     timeoutInMinutes: 90
     pool:
-      vmImage: windows-latest
+      vmImage: windows-2022
     workspace:
       clean: all
     steps:
