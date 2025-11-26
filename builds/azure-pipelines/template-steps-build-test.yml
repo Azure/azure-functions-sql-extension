@@ -32,9 +32,7 @@ steps:
   inputs:
     workingFile: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc
 
-# Temporarily install Azure Functions Core Tools 4.0.7317 as the latest version (4.0.7512) causes 11 Python tests to fail
-# Tracking issue: https://github.com/Azure/azure-functions-sql-extension/issues/1193
-- script: npm install azure-functions-core-tools@4.0.7317 --global --globalconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --loglevel verbose
+- script: npm install azure-functions-core-tools --global --globalconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --loglevel verbose
   displayName: 'Install Azure Functions Core Tools'
 
 - script: npm install azurite --global --globalconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --loglevel verbose
