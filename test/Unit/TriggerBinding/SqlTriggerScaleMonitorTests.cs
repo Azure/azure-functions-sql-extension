@@ -8,7 +8,6 @@ using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Internal;
 using Moq;
 using Xunit;
 
@@ -283,7 +282,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
             // setup callback on an inner class method that gets eventually called by these methods in order to extract
             // the log message.
             mockLogger
-                .Setup(logger => logger.Log(It.IsAny<LogLevel>(), 0, It.IsAny<FormattedLogValues>(), null, It.IsAny<Func<object, Exception, string>>()))
+                .Setup(logger => logger.Log(It.IsAny<LogLevel>(), 0, It.IsAny<EventId>(), null, It.IsAny<Func<object, Exception, string>>()))
                 .Callback((LogLevel logLevel, EventId eventId, object state, Exception exception, Func<object, Exception, string> formatter) =>
                 {
                     logMessages.Add(state.ToString());
