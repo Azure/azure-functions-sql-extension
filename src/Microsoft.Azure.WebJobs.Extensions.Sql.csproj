@@ -12,19 +12,23 @@
     <PackageId>Microsoft.Azure.WebJobs.Extensions.Sql</PackageId>
     <PackageTags>Microsoft Azure WebJobs AzureFunctions SQL AzureSQL</PackageTags>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <!-- The extension dependencies need to be very carefully updated, so don't manage these
+     centrally so that we can keep our test/samples up to date more easily without impacting
+     the extension dependencies themselves -->
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.ApplicationInsights" />
-    <PackageReference Include="Microsoft.Azure.WebJobs" />
-    <PackageReference Include="Microsoft.Data.SqlClient" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.SqlServer.TransactSql.ScriptDom" />
-    <PackageReference Include="System.Runtime.Caching" />
+    <PackageReference Include="Microsoft.ApplicationInsights" Version="2.23.0" />
+    <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.41" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SqlServer.TransactSql.ScriptDom" Version="161.9135.0" />
+    <PackageReference Include="System.Runtime.Caching" Version="8.0.1" />
     <!-- This isn't directly needed, but pinning it to v6 since v5 is deprecated and our transitive dependencies currently only ask for v5 -->
-    <PackageReference Include="System.Security.AccessControl" />
-    <PackageReference Include="Newtonsoft.Json" />
-    <PackageReference Include="Microsoft.AspNetCore.Http" />
+    <PackageReference Include="System.Security.AccessControl" Version="6.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.2" />
     <InternalsVisibleTo Include="Microsoft.Azure.WebJobs.Extensions.Sql.Tests" Key="0024000004800000940000000602000000240000525341310004000001000100272736ad6e5f9586bac2d531eabc3acc666c2f8ec879fa94f8f7b0327d2ff2ed523448f83c3d5c5dd2dfc7bc99c5286b2c125117bf5cbe242b9d41750732b2bdffe649c6efb8e5526d526fdd130095ecdb7bf210809c6cdad8824faa9ac0310ac3cba2aa0523567b2dfa7fe250b30facbd62d4ec99b94ac47c7d3b28f1f6e4c8" />
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" Key="0024000004800000940000000602000000240000525341310004000001000100c547cac37abd99c8db225ef2f6c8a3602f3b3606cc9891605d02baa56104f4cfc0734aa39b93bf7852f7d9266654753cc297e7d2edfe0bac1cdcf9f717241550e0a7b191195b7667bb4f64bcb8e2121380fd1d9d46ad2d92d2d15605093924cceaf74c4861eff62abf69b9291ed0a340e113be11e6a7d3113e92484cf7045cc7" />
     <InternalsVisibleTo Include="Microsoft.Azure.WebJobs.Extensions.Sql.Performance" Key="0024000004800000940000000602000000240000525341310004000001000100272736ad6e5f9586bac2d531eabc3acc666c2f8ec879fa94f8f7b0327d2ff2ed523448f83c3d5c5dd2dfc7bc99c5286b2c125117bf5cbe242b9d41750732b2bdffe649c6efb8e5526d526fdd130095ecdb7bf210809c6cdad8824faa9ac0310ac3cba2aa0523567b2dfa7fe250b30facbd62d4ec99b94ac47c7d3b28f1f6e4c8" />
