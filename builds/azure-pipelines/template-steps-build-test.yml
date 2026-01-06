@@ -51,6 +51,11 @@ steps:
   displayName: 'Set Azure Functions extension bundle path'
   workingDirectory: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/samples/samples-js
 
+- bash: |
+    echo "Node Modules Path: $(nodeModulesPath)"
+    echo "Azure Functions Extension Bundle Path: $(azureFunctionsExtensionBundlePath)"
+  displayName: 'Print variables'
+
 - task: DockerInstaller@0
   displayName: Docker Installer
   inputs:
