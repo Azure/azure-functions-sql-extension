@@ -45,9 +45,7 @@ steps:
   displayName: 'Set npm installation path'
 
 # GetExtensionBundlePath will output multiple lines of content - the last one contains the actual path to the bundle
-- bash: |
-    echo "##vso[task.setvariable variable=azureFunctionsExtensionBundlePath]$(func GetExtensionBundlePath | tail -n 1)"
-    echo "Azure Functions Extension Bundle Path: $(azureFunctionsExtensionBundlePath)"
+- bash: echo "##vso[task.setvariable variable=azureFunctionsExtensionBundlePath]$(func GetExtensionBundlePath | tail -n 1)"
   displayName: 'Set Azure Functions extension bundle path'
   workingDirectory: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/samples/samples-js
 
@@ -55,6 +53,16 @@ steps:
     echo "Node Modules Path: $(nodeModulesPath)"
     echo "Azure Functions Extension Bundle Path: $(azureFunctionsExtensionBundlePath)"
   displayName: 'Print variables'
+
+- pwsh: |
+    $binPath = "$(azureFunctionsExtensionBundlePath)/bin"
+    if (Test-Path $binPath) {
+      Write-Host "Files in extension bundle bin directory:"
+      Get-ChildItem -Path $binPath -File | ForEach-Object { Write-Host $_.Name }
+    } else {
+      Write-Host "Extension bundle bin directory not found at: $binPath"
+    }
+  displayName: 'Print extension bundle bin files'
 
 - pwsh: |
     $dllPath = "$(azureFunctionsExtensionBundlePath)/bin/Microsoft.Data.SqlClient.dll"
@@ -184,6 +192,16 @@ steps:
       Write-Host "Microsoft.Data.SqlClient.dll not found at: $dllPath"
     }
   displayName: 'Print Microsoft.Data.SqlClient.dll version'
+
+- pwsh: |
+    $binPath = "$(azureFunctionsExtensionBundlePath)/bin"
+    if (Test-Path $binPath) {
+      Write-Host "Files in extension bundle bin directory:"
+      Get-ChildItem -Path $binPath -File | ForEach-Object { Write-Host $_.Name }
+    } else {
+      Write-Host "Extension bundle bin directory not found at: $binPath"
+    }
+  displayName: 'Print extension bundle bin files'
 
 - task: DotNetCoreCLI@2
   displayName: '.NET Test on Mac (unit tests only)'
