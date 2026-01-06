@@ -56,6 +56,16 @@ steps:
     echo "Azure Functions Extension Bundle Path: $(azureFunctionsExtensionBundlePath)"
   displayName: 'Print variables'
 
+- pwsh: |
+    $dllPath = "$(azureFunctionsExtensionBundlePath)/bin/Microsoft.Data.SqlClient.dll"
+    if (Test-Path $dllPath) {
+      $fileVersion = (Get-Item $dllPath).VersionInfo.FileVersion
+      Write-Host "Microsoft.Data.SqlClient.dll File Version: $fileVersion"
+    } else {
+      Write-Host "Microsoft.Data.SqlClient.dll not found at: $dllPath"
+    }
+  displayName: 'Print Microsoft.Data.SqlClient.dll version'
+
 - task: DockerInstaller@0
   displayName: Docker Installer
   inputs:
@@ -164,6 +174,16 @@ steps:
     contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
     targetFolder: $(azureFunctionsExtensionBundlePath)/bin
     overWrite: true
+
+- pwsh: |
+    $dllPath = "$(azureFunctionsExtensionBundlePath)/bin/Microsoft.Data.SqlClient.dll"
+    if (Test-Path $dllPath) {
+      $fileVersion = (Get-Item $dllPath).VersionInfo.FileVersion
+      Write-Host "Microsoft.Data.SqlClient.dll File Version: $fileVersion"
+    } else {
+      Write-Host "Microsoft.Data.SqlClient.dll not found at: $dllPath"
+    }
+  displayName: 'Print Microsoft.Data.SqlClient.dll version'
 
 - task: DotNetCoreCLI@2
   displayName: '.NET Test on Mac (unit tests only)'
