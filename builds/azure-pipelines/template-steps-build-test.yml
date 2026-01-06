@@ -44,9 +44,10 @@ steps:
 - bash: echo "##vso[task.setvariable variable=nodeModulesPath]$(npm root -g)"
   displayName: 'Set npm installation path'
 
+# GetExtensionBundlePath will output multiple lines of content - the last one contains the actual path to the bundle
 - bash: |
     echo "##vso[task.setvariable variable=azureFunctionsExtensionBundlePath]$(func GetExtensionBundlePath | tail -n 1)"
-    echo $(azureFunctionsExtensionBundlePath)
+    echo "Azure Functions Extension Bundle Path: $(azureFunctionsExtensionBundlePath)"
   displayName: 'Set Azure Functions extension bundle path'
   workingDirectory: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/samples/samples-js
 
