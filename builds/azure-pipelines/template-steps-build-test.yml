@@ -168,26 +168,6 @@ steps:
     targetFolder: $(azureFunctionsExtensionBundlePath)/bin
     overWrite: true
 
-- pwsh: |
-    $dllPath = "$(azureFunctionsExtensionBundlePath)/bin/Microsoft.Data.SqlClient.dll"
-    if (Test-Path $dllPath) {
-      $fileVersion = (Get-Item $dllPath).VersionInfo.FileVersion
-      Write-Host "Microsoft.Data.SqlClient.dll File Version: $fileVersion"
-    } else {
-      Write-Host "Microsoft.Data.SqlClient.dll not found at: $dllPath"
-    }
-  displayName: 'Print Microsoft.Data.SqlClient.dll version'
-
-- pwsh: |
-    $binPath = "$(azureFunctionsExtensionBundlePath)/bin"
-    if (Test-Path $binPath) {
-      Write-Host "Files in extension bundle bin directory:"
-      Get-ChildItem -Path $binPath -File | ForEach-Object { Write-Host $_.Name }
-    } else {
-      Write-Host "Extension bundle bin directory not found at: $binPath"
-    }
-  displayName: 'Print extension bundle bin files'
-
 - task: DotNetCoreCLI@2
   displayName: '.NET Test on Mac (unit tests only)'
   env:
