@@ -32,23 +32,27 @@ steps:
   inputs:
     workingFile: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc
 
-# Temporarily install Azure Functions Core Tools 4.0.7317 as the latest version (4.0.7512) causes 11 Python tests to fail
-# Tracking issue: https://github.com/Azure/azure-functions-sql-extension/issues/1193
-- script: npm install azure-functions-core-tools@4.0.7317 --global --globalconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --loglevel verbose
+- script: npm install azure-functions-core-tools --global --globalconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --loglevel verbose
   displayName: 'Install Azure Functions Core Tools'
 
 - script: npm install azurite --global --globalconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --loglevel verbose
   displayName: 'Install Azurite Local Storage Emulator'
-  
+
 # This step is necessary because npm installs to a non-traditional location on Windows hosted agents
 # For non-Windows agents we still want to ensure that we always get the correct location where the tools are installed
 # This sets the path to npm global installations as a variable which then gets passed to .NET test task
 - bash: echo "##vso[task.setvariable variable=nodeModulesPath]$(npm root -g)"
   displayName: 'Set npm installation path'
 
-- bash: echo "##vso[task.setvariable variable=azureFunctionsExtensionBundlePath]$(func GetExtensionBundlePath)"
+# GetExtensionBundlePath will output multiple lines of content - the last one contains the actual path to the bundle
+- bash: echo "##vso[task.setvariable variable=azureFunctionsExtensionBundlePath]$(func GetExtensionBundlePath | tail -n 1)"
   displayName: 'Set Azure Functions extension bundle path'
   workingDirectory: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/samples/samples-js
+
+- bash: |
+    echo "Node Modules Path: $(nodeModulesPath)"
+    echo "Azure Functions Extension Bundle Path: $(azureFunctionsExtensionBundlePath)"
+  displayName: 'Print variables'
 
 - task: DockerInstaller@0
   displayName: Docker Installer
@@ -150,6 +154,11 @@ steps:
     contents: '*.nupkg'
     targetFolder: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/local-packages
     overWrite: true
+
+# We want to predownload the bundle so that we can replace the SQL extension version with our local copy for testing purposes, use "templates list" for that since it forces a bundle download
+- bash: func templates list
+  displayName: 'Download bundle'
+  workingDirectory: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/samples/samples-js
 
 - task: CopyFiles@2
   displayName: 'Copy Sql extension dll to Azure Functions extension bundle'
