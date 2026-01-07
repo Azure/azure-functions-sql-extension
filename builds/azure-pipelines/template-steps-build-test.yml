@@ -54,39 +54,6 @@ steps:
     echo "Azure Functions Extension Bundle Path: $(azureFunctionsExtensionBundlePath)"
   displayName: 'Print variables'
 
-# We want to predownload the bundle so that we can replace the SQL extension version with our local copy for testing purposes, use "templates list" for that since it forces a bundle download
-- bash: func templates list
-  displayName: 'Download bundle'
-  workingDirectory: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/samples/samples-js
-
-- task: CopyFiles@2
-  displayName: 'Copy Sql extension dll to Azure Functions extension bundle'
-  inputs:
-    sourceFolder: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/src/bin/${{ parameters.configuration }}/netstandard2.0
-    contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
-    targetFolder: $(azureFunctionsExtensionBundlePath)/bin
-    overWrite: true
-
-- pwsh: |
-    $dllPath = "$(azureFunctionsExtensionBundlePath)/bin/Microsoft.Data.SqlClient.dll"
-    if (Test-Path $dllPath) {
-      $fileVersion = (Get-Item $dllPath).VersionInfo.FileVersion
-      Write-Host "Microsoft.Data.SqlClient.dll File Version: $fileVersion"
-    } else {
-      Write-Host "Microsoft.Data.SqlClient.dll not found at: $dllPath"
-    }
-  displayName: 'Print Microsoft.Data.SqlClient.dll version'
-
-- pwsh: |
-    $binPath = "$(azureFunctionsExtensionBundlePath)/bin"
-    if (Test-Path $binPath) {
-      Write-Host "Files in extension bundle bin directory:"
-      Get-ChildItem -Path $binPath -File | ForEach-Object { Write-Host $_.Name }
-    } else {
-      Write-Host "Extension bundle bin directory not found at: $binPath"
-    }
-  displayName: 'Print extension bundle bin files'
-
 - task: DockerInstaller@0
   displayName: Docker Installer
   inputs:
@@ -187,6 +154,39 @@ steps:
     contents: '*.nupkg'
     targetFolder: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/local-packages
     overWrite: true
+
+# We want to predownload the bundle so that we can replace the SQL extension version with our local copy for testing purposes, use "templates list" for that since it forces a bundle download
+- bash: func templates list
+  displayName: 'Download bundle'
+  workingDirectory: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/samples/samples-js
+
+- task: CopyFiles@2
+  displayName: 'Copy Sql extension dll to Azure Functions extension bundle'
+  inputs:
+    sourceFolder: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/src/bin/${{ parameters.configuration }}/netstandard2.0
+    contents: Microsoft.Azure.WebJobs.Extensions.Sql.dll
+    targetFolder: $(azureFunctionsExtensionBundlePath)/bin
+    overWrite: true
+
+- pwsh: |
+    $dllPath = "$(azureFunctionsExtensionBundlePath)/bin/Microsoft.Data.SqlClient.dll"
+    if (Test-Path $dllPath) {
+      $fileVersion = (Get-Item $dllPath).VersionInfo.FileVersion
+      Write-Host "Microsoft.Data.SqlClient.dll File Version: $fileVersion"
+    } else {
+      Write-Host "Microsoft.Data.SqlClient.dll not found at: $dllPath"
+    }
+  displayName: 'Print Microsoft.Data.SqlClient.dll version'
+
+- pwsh: |
+    $binPath = "$(azureFunctionsExtensionBundlePath)/bin"
+    if (Test-Path $binPath) {
+      Write-Host "Files in extension bundle bin directory:"
+      Get-ChildItem -Path $binPath -File | ForEach-Object { Write-Host $_.Name }
+    } else {
+      Write-Host "Extension bundle bin directory not found at: $binPath"
+    }
+  displayName: 'Print extension bundle bin files'
 
 - task: DotNetCoreCLI@2
   displayName: '.NET Test on Mac (unit tests only)'
