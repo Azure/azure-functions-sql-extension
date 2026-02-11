@@ -237,6 +237,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
                 "testUserDefinedLeasesTableName",
                 "testConnectionString",
                 SqlOptions.DefaultMaxChangesPerWorker,
+                SqlOptions.DefaultAppLockTimeoutMs,
                 Mock.Of<ILogger>());
         }
 
@@ -250,6 +251,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
                 "testUserDefinedLeasesTableName",
                 "testConnectionString",
                 maxChangesPerWorker,
+                SqlOptions.DefaultAppLockTimeoutMs,
                 mockLogger.Object);
 
             return (monitor, logMessages);

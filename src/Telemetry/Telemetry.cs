@@ -365,6 +365,7 @@ To learn more about our Privacy Statement visit this link: https://go.microsoft.
         HasConfiguredMaxBatchSize,
         HasConfiguredMaxChangesPerWorker,
         HasConfiguredPollingInterval,
+        HasConfiguredAppLockTimeout,
         LeasesTableName,
         QueryType,
         ScaleRecommendation,
@@ -384,6 +385,7 @@ To learn more about our Privacy Statement visit this link: https://go.microsoft.
     public enum TelemetryMeasureName
     {
         AcquireLeasesDurationMs,
+        AppLockTimeoutMs,
         BatchCount,
         BatchSize,
         CommandDurationMs,
