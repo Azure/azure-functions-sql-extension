@@ -20,6 +20,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public const int DefaultPollingIntervalMs = 1000;
         private const int DefaultMinimumPollingIntervalMs = 100;
         public const int DefaultMaxChangesPerWorker = 1000;
+        public const int DefaultAppLockTimeoutMs = 30000;
+        private const int DefaultMinimumAppLockTimeoutMs = 1000;
         /// <summary>
         /// Maximum number of changes to process in each iteration of the loop
         /// </summary>
@@ -30,6 +32,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private int _pollingIntervalMs = DefaultPollingIntervalMs;
         private readonly int _minPollingInterval = DefaultMinimumPollingIntervalMs;
         private int _maxChangesPerWorker = DefaultMaxChangesPerWorker;
+        private int _appLockTimeoutMs = DefaultAppLockTimeoutMs;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SqlOptions"/> class.
@@ -97,6 +100,27 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
         }
 
+        /// <summary>
+        /// Gets or sets the timeout in milliseconds for acquiring the application lock.
+        /// The default is 30000 (30 seconds).
+        /// </summary>
+        public int AppLockTimeoutMs
+        {
+            get => this._appLockTimeoutMs;
+
+            set
+            {
+                if (value < DefaultMinimumAppLockTimeoutMs)
+                {
+                    string message = string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                        "AppLockTimeoutMs must not be less than {0}Ms.", DefaultMinimumAppLockTimeoutMs);
+                    throw new ArgumentException(message, nameof(value));
+                }
+
+                this._appLockTimeoutMs = value;
+            }
+        }
+
         /// <inheritdoc/>
         [EditorBrowsable(EditorBrowsableState.Never)]
         string IOptionsFormatter.Format()
@@ -105,7 +129,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 { nameof(this.MaxBatchSize), this.MaxBatchSize },
                 { nameof(this.PollingIntervalMs), this.PollingIntervalMs },
-                { nameof(this.MaxChangesPerWorker), this.MaxChangesPerWorker }
+                { nameof(this.MaxChangesPerWorker), this.MaxChangesPerWorker },
+                { nameof(this.AppLockTimeoutMs), this.AppLockTimeoutMs }
             };
 
             return options.ToString(Formatting.Indented);
@@ -117,7 +142,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 _maxBatchSize = this._maxBatchSize,
                 _pollingIntervalMs = this._pollingIntervalMs,
-                _maxChangesPerWorker = this._maxChangesPerWorker
+                _maxChangesPerWorker = this._maxChangesPerWorker,
+                _appLockTimeoutMs = this._appLockTimeoutMs
             };
             return copy;
         }

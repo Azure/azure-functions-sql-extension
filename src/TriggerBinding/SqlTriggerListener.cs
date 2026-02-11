@@ -52,6 +52,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly Dictionary<TelemetryPropertyName, string> _telemetryProps = new Dictionary<TelemetryPropertyName, string>();
         private readonly int _maxChangesPerWorker;
         private readonly bool _hasConfiguredMaxChangesPerWorker = false;
+        private readonly int _appLockTimeoutMs;
+        private readonly string _appLockStatements;
 
         private SqlTableChangeMonitor<T> _changeMonitor;
         private readonly IScaleMonitor<SqlTriggerMetrics> _scaleMonitor;
@@ -95,8 +97,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             this._hasConfiguredMaxChangesPerWorker = configuredMaxChangesPerWorker != null;
 
-            this._scaleMonitor = new SqlTriggerScaleMonitor(this._userFunctionId, this._userTable, this._userDefinedLeasesTableName, this._connectionString, this._maxChangesPerWorker, this._logger);
-            this._targetScaler = new SqlTriggerTargetScaler(this._userFunctionId, this._userTable, this._userDefinedLeasesTableName, this._connectionString, this._maxChangesPerWorker, this._logger);
+            int? configuredAppLockTimeout = configuration.GetValue<int?>(ConfigKey_SqlTrigger_AppLockTimeoutMs);
+            this._appLockTimeoutMs = configuredAppLockTimeout ?? this._sqlOptions.AppLockTimeoutMs;
+            if (this._appLockTimeoutMs <= 0)
+            {
+                throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_AppLockTimeoutMs}'. Ensure that the value is a positive integer.");
+            }
+            this._appLockStatements = GetAppLockStatements(this._appLockTimeoutMs);
+
+            this._scaleMonitor = new SqlTriggerScaleMonitor(this._userFunctionId, this._userTable, this._userDefinedLeasesTableName, this._connectionString, this._maxChangesPerWorker, this._appLockTimeoutMs, this._logger);
+            this._targetScaler = new SqlTriggerTargetScaler(this._userFunctionId, this._userTable, this._userDefinedLeasesTableName, this._connectionString, this._maxChangesPerWorker, this._appLockTimeoutMs, this._logger);
         }
 
         public void Cancel()
@@ -283,7 +293,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private async Task<long> CreateSchemaAsync(SqlConnection connection, SqlTransaction transaction, CancellationToken cancellationToken)
         {
             string createSchemaQuery = $@"
-                {AppLockStatements}
+                {this._appLockStatements}
 
                 IF SCHEMA_ID(N'{SchemaName}') IS NULL
                     EXEC ('CREATE SCHEMA {SchemaName}');
@@ -328,7 +338,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private async Task<long> CreateGlobalStateTableAsync(SqlConnection connection, SqlTransaction transaction, CancellationToken cancellationToken)
         {
             string createGlobalStateTableQuery = $@"
-                {AppLockStatements}
+                {this._appLockStatements}
 
                 IF OBJECT_ID(N'{GlobalStateTableName}', 'U') IS NULL
                     CREATE TABLE {GlobalStateTableName} (
@@ -401,7 +411,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             string insertRowGlobalStateTableQuery = $@"
-                {AppLockStatements}
+                {this._appLockStatements}
                 -- For back compatibility copy the lastSyncVersion from _hostIdFunctionId if it exists.
                 IF NOT EXISTS (
                     SELECT * FROM {GlobalStateTableName}
@@ -456,7 +466,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // we're actually using the WEBSITE_SITE_NAME one (e.g. leasesTableName is different)
             bool shouldMigrateOldLeasesTable = !string.IsNullOrEmpty(oldLeasesTableName) && oldLeasesTableName != leasesTableName;
             string createLeasesTableQuery = shouldMigrateOldLeasesTable ? $@"
-                {AppLockStatements}
+                {this._appLockStatements}
 
                 IF OBJECT_ID(N'{leasesTableName}', 'U') IS NULL
                 BEGIN
@@ -479,7 +489,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 End
             " :
             $@"
-                {AppLockStatements}
+                {this._appLockStatements}
 
                 IF OBJECT_ID(N'{leasesTableName}', 'U') IS NULL
                     CREATE TABLE {leasesTableName} (

@@ -65,6 +65,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Delay in ms between processing each batch of changes
         /// </summary>
         private readonly int _pollingIntervalInMs;
+        private readonly string _appLockStatements;
         private readonly CancellationTokenSource _cancellationTokenSourceCheckForChanges = new CancellationTokenSource();
         private readonly CancellationTokenSource _cancellationTokenSourceRenewLeases = new CancellationTokenSource();
         private CancellationTokenSource _cancellationTokenSourceExecutor = new CancellationTokenSource();
@@ -144,15 +145,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_PollingInterval}'. Ensure that the value is a positive integer.");
             }
+            int? configuredAppLockTimeout = configuration.GetValue<int?>(ConfigKey_SqlTrigger_AppLockTimeoutMs);
+            int appLockTimeoutMs = configuredAppLockTimeout ?? this._sqlOptions.AppLockTimeoutMs;
+            if (appLockTimeoutMs <= 0)
+            {
+                throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_AppLockTimeoutMs}'. Ensure that the value is a positive integer.");
+            }
+            this._appLockStatements = GetAppLockStatements(appLockTimeoutMs);
             TelemetryInstance.TrackEvent(
                 TelemetryEventName.TriggerMonitorStart,
                 new Dictionary<TelemetryPropertyName, string>(telemetryProps) {
                         { TelemetryPropertyName.HasConfiguredMaxBatchSize, (configuredMaxBatchSize != null).ToString() },
                         { TelemetryPropertyName.HasConfiguredPollingInterval, (configuredPollingInterval != null).ToString() },
+                        { TelemetryPropertyName.HasConfiguredAppLockTimeout, (configuredAppLockTimeout != null).ToString() },
                 },
                 new Dictionary<TelemetryMeasureName, double>() {
                     { TelemetryMeasureName.MaxBatchSize, this._maxBatchSize },
-                    { TelemetryMeasureName.PollingIntervalMs, this._pollingIntervalInMs }
+                    { TelemetryMeasureName.PollingIntervalMs, this._pollingIntervalInMs },
+                    { TelemetryMeasureName.AppLockTimeoutMs, appLockTimeoutMs }
                 }
             );
 
@@ -789,7 +799,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private SqlCommand BuildUpdateTablesPreInvocation(SqlConnection connection, SqlTransaction transaction)
         {
             string updateTablesPreInvocationQuery = $@"
-                {AppLockStatements}
+                {this._appLockStatements}
 
                 DECLARE @min_valid_version bigint;
                 SET @min_valid_version = CHANGE_TRACKING_MIN_VALID_VERSION({this._userTableId});
@@ -834,7 +844,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // up regardless since we know it should be processed - no need to check the change version.
             // Once a row is successfully processed the LeaseExpirationTime column is set to NULL.
             string getChangesQuery = $@"
-                {AppLockStatements}
+                {this._appLockStatements}
 
                 DECLARE @last_sync_version bigint;
                 SELECT @last_sync_version = LastSyncVersion
@@ -882,7 +892,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             //  * NULL LeaseExpirationTime OR LeaseExpirationTime <= Current Time
             //  * No attempts remaining (Attempt count = Max attempts)
             string getLeaseLockedOrMaxAttemptRowCountQuery = $@"
-                {AppLockStatements}
+                {this._appLockStatements}
 
                 DECLARE @last_sync_version bigint;
                 SELECT @last_sync_version = LastSyncVersion
@@ -948,7 +958,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             const string rowDataParameter = "@rowData";
             // Create the merge query that will either update the rows that already exist or insert a new one if it doesn't exist
             string query = $@"
-                    {AppLockStatements}
+                    {this._appLockStatements}
 
                     WITH {acquireLeasesCte} AS ( SELECT * FROM OPENJSON(@rowData) WITH ({string.Join(",", cteColumnDefinitions)}) )
                     MERGE INTO {this._bracketedLeasesTableName}
@@ -989,7 +999,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 return null;
             }
             string renewLeasesQuery = $@"
-                {AppLockStatements}
+                {this._appLockStatements}
 
                 UPDATE {this._bracketedLeasesTableName}
                 SET {LeasesTableLeaseExpirationTimeColumnName} = DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME())
@@ -1021,7 +1031,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             const string rowDataParameter = "@rowData";
 
             string releaseLeasesQuery =
-$@"{AppLockStatements}
+$@"{this._appLockStatements}
 
 WITH {releaseLeasesCte} AS ( SELECT * FROM OPENJSON(@rowData) WITH ({string.Join(",", cteColumnDefinitions)}) )
 UPDATE {this._bracketedLeasesTableName}
@@ -1053,7 +1063,7 @@ WHERE l.{LeasesTableChangeVersionColumnName} <= cte.{SysChangeVersionColumnName}
             string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
 
             string updateTablesPostInvocationQuery = $@"
-                {AppLockStatements}
+                {this._appLockStatements}
 
                 DECLARE @current_last_sync_version bigint;
                 SELECT @current_last_sync_version = LastSyncVersion

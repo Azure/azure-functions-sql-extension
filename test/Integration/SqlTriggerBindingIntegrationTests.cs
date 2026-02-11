@@ -587,7 +587,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             await listener.StartAsync(CancellationToken.None);
             // Cancel immediately so the listener doesn't start processing the changes
             await listener.StopAsync(CancellationToken.None);
-            var metricsProvider = new SqlTriggerMetricsProvider(this.DbConnectionString, Mock.Of<ILogger>(), new SqlObject("dbo.Products"), userFunctionId, "");
+            var metricsProvider = new SqlTriggerMetricsProvider(this.DbConnectionString, Mock.Of<ILogger>(), new SqlObject("dbo.Products"), userFunctionId, "", SqlOptions.DefaultAppLockTimeoutMs);
             SqlTriggerMetrics metrics = await metricsProvider.GetMetricsAsync();
             Assert.True(metrics.UnprocessedChangeCount == 0, "There should initially be 0 unprocessed changes");
             this.InsertProducts(1, 5);

@@ -38,11 +38,14 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             int configAppSettingsMaxChangesPerWorker = config.GetValue<int>(SqlTriggerConstants.ConfigKey_SqlTrigger_MaxChangesPerWorker);
             // Override the maxChangesPerWorker value from config if the value is set in the trigger appsettings
             int maxChangesPerWorker = configAppSettingsMaxChangesPerWorker != 0 ? configAppSettingsMaxChangesPerWorker : configOptionsMaxChangesPerWorker != 0 ? configOptionsMaxChangesPerWorker : SqlOptions.DefaultMaxChangesPerWorker;
+            int configOptionsAppLockTimeoutMs = options.Value.AppLockTimeoutMs;
+            int configAppSettingsAppLockTimeoutMs = config.GetValue<int>(SqlTriggerConstants.ConfigKey_SqlTrigger_AppLockTimeoutMs);
+            int appLockTimeoutMs = configAppSettingsAppLockTimeoutMs != 0 ? configAppSettingsAppLockTimeoutMs : configOptionsAppLockTimeoutMs != 0 ? configOptionsAppLockTimeoutMs : SqlOptions.DefaultAppLockTimeoutMs;
             string userDefinedLeasesTableName = sqlMetadata.LeasesTableName;
             string userFunctionId = sqlMetadata.UserFunctionId;
 
-            this._scaleMonitor = new SqlTriggerScaleMonitor(userFunctionId, userTable, userDefinedLeasesTableName, connectionString, maxChangesPerWorker, logger);
-            this._targetScaler = new SqlTriggerTargetScaler(userFunctionId, userTable, userDefinedLeasesTableName, connectionString, maxChangesPerWorker, logger);
+            this._scaleMonitor = new SqlTriggerScaleMonitor(userFunctionId, userTable, userDefinedLeasesTableName, connectionString, maxChangesPerWorker, appLockTimeoutMs, logger);
+            this._targetScaler = new SqlTriggerTargetScaler(userFunctionId, userTable, userDefinedLeasesTableName, connectionString, maxChangesPerWorker, appLockTimeoutMs, logger);
         }
 
         public IScaleMonitor GetMonitor()

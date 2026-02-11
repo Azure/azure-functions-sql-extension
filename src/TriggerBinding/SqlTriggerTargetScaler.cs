@@ -23,9 +23,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private static readonly DateTime _firstTableCreationWarmupAttempt = DateTime.MinValue;
 
 
-        public SqlTriggerTargetScaler(string userFunctionId, SqlObject userTable, string userDefinedLeasesTableName, string connectionString, int maxChangesPerWorker, ILogger logger)
+        public SqlTriggerTargetScaler(string userFunctionId, SqlObject userTable, string userDefinedLeasesTableName, string connectionString, int maxChangesPerWorker, int appLockTimeoutMs, ILogger logger)
         {
-            this._metricsProvider = new SqlTriggerMetricsProvider(connectionString, logger, userTable, userFunctionId, userDefinedLeasesTableName);
+            this._metricsProvider = new SqlTriggerMetricsProvider(connectionString, logger, userTable, userFunctionId, userDefinedLeasesTableName, appLockTimeoutMs);
             this.TargetScalerDescriptor = new TargetScalerDescriptor(userFunctionId);
             this._maxChangesPerWorker = maxChangesPerWorker;
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
