@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.Telemetry.Telemetry;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlTriggerConstants;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlTriggerUtils;
 using Microsoft.Azure.WebJobs.Host.Executors;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
@@ -285,6 +286,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     try
                     {
+                        await AcquireAppLockAsync(connection, transaction, this._logger, token);
+
                         // Update the version number stored in the global state table if necessary before using it.
                         using (SqlCommand updateTablesPreInvocationCommand = this.BuildUpdateTablesPreInvocation(connection, transaction))
                         {
@@ -525,6 +528,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     try
                     {
+                        await AcquireAppLockAsync(connection, transaction, this._logger, token);
+
                         SqlCommand renewLeasesCommand = this.BuildRenewLeasesCommand(connection, transaction);
                         if (renewLeasesCommand != null)
                         {
@@ -634,6 +639,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         try
                         {
+                            await AcquireAppLockAsync(connection, transaction, this._logger, token);
+
                             // Release the leases held on "_rowsToRelease".
                             using (SqlCommand releaseLeasesCommand = this.BuildReleaseLeasesCommand(connection, transaction))
                             {
@@ -789,8 +796,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private SqlCommand BuildUpdateTablesPreInvocation(SqlConnection connection, SqlTransaction transaction)
         {
             string updateTablesPreInvocationQuery = $@"
-                {AppLockStatements}
-
                 DECLARE @min_valid_version bigint;
                 SET @min_valid_version = CHANGE_TRACKING_MIN_VALID_VERSION({this._userTableId});
 
@@ -834,8 +839,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // up regardless since we know it should be processed - no need to check the change version.
             // Once a row is successfully processed the LeaseExpirationTime column is set to NULL.
             string getChangesQuery = $@"
-                {AppLockStatements}
-
                 DECLARE @last_sync_version bigint;
                 SELECT @last_sync_version = LastSyncVersion
                 FROM {GlobalStateTableName}
@@ -882,8 +885,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             //  * NULL LeaseExpirationTime OR LeaseExpirationTime <= Current Time
             //  * No attempts remaining (Attempt count = Max attempts)
             string getLeaseLockedOrMaxAttemptRowCountQuery = $@"
-                {AppLockStatements}
-
                 DECLARE @last_sync_version bigint;
                 SELECT @last_sync_version = LastSyncVersion
                 FROM {GlobalStateTableName}
@@ -948,8 +949,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             const string rowDataParameter = "@rowData";
             // Create the merge query that will either update the rows that already exist or insert a new one if it doesn't exist
             string query = $@"
-                    {AppLockStatements}
-
                     WITH {acquireLeasesCte} AS ( SELECT * FROM OPENJSON(@rowData) WITH ({string.Join(",", cteColumnDefinitions)}) )
                     MERGE INTO {this._bracketedLeasesTableName}
                         AS ExistingData
@@ -989,8 +988,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 return null;
             }
             string renewLeasesQuery = $@"
-                {AppLockStatements}
-
                 UPDATE {this._bracketedLeasesTableName}
                 SET {LeasesTableLeaseExpirationTimeColumnName} = DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME())
                 WHERE {matchCondition};
@@ -1021,9 +1018,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             const string rowDataParameter = "@rowData";
 
             string releaseLeasesQuery =
-$@"{AppLockStatements}
-
-WITH {releaseLeasesCte} AS ( SELECT * FROM OPENJSON(@rowData) WITH ({string.Join(",", cteColumnDefinitions)}) )
+$@"WITH {releaseLeasesCte} AS ( SELECT * FROM OPENJSON(@rowData) WITH ({string.Join(",", cteColumnDefinitions)}) )
 UPDATE {this._bracketedLeasesTableName}
 SET
     {LeasesTableChangeVersionColumnName} = cte.{SysChangeVersionColumnName},
@@ -1053,8 +1048,6 @@ WHERE l.{LeasesTableChangeVersionColumnName} <= cte.{SysChangeVersionColumnName}
             string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
 
             string updateTablesPostInvocationQuery = $@"
-                {AppLockStatements}
-
                 DECLARE @current_last_sync_version bigint;
                 SELECT @current_last_sync_version = LastSyncVersion
                 FROM {GlobalStateTableName}
