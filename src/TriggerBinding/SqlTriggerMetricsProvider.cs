@@ -63,6 +63,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         try
                         {
+                            await AcquireAppLockAsync(connection, transaction, this._logger, CancellationToken.None);
+
                             using (SqlCommand getUnprocessedChangesCommand = this.BuildGetUnprocessedChangesCommand(connection, transaction, primaryKeyColumns, userTableId))
                             {
                                 var commandSw = Stopwatch.StartNew();
@@ -102,8 +104,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string leasesTableJoinCondition = string.Join(" AND ", primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
             string bracketedLeasesTableName = GetBracketedLeasesTableName(this._userDefinedLeasesTableName, this._userFunctionId, userTableId);
             string getUnprocessedChangesQuery = $@"
-                {AppLockStatements}
-
                 DECLARE @last_sync_version bigint;
                 SELECT @last_sync_version = LastSyncVersion
                 FROM {GlobalStateTableName}
