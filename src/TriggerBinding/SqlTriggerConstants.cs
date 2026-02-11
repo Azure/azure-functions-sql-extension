@@ -38,12 +38,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public const string ConfigKey_SqlTrigger_MaxChangesPerWorker = "Sql_Trigger_MaxChangesPerWorker";
 
         /// <summary>
-        /// The resource name to use for getting the application lock. We use the same resource name for all instances
-        /// of the function because there is some shared state across all the functions.
+        /// The resource name to use for getting the global application lock. This is used for DDL operations
+        /// during startup that touch shared objects (schema creation, GlobalState table creation).
         /// </summary>
-        /// <remarks>A future improvement could be to make unique application locks for each FuncId/TableId combination so that functions
-        /// working on different tables aren't blocking each other</remarks>
-        public const string AppLockResource = "_az_func_Trigger";
+        public const string GlobalAppLockResource = "_az_func_Trigger";
+        /// <summary>
+        /// The prefix for per-table scoped application locks. The full resource name is formed by appending
+        /// the user table ID, e.g. "_az_func_TT_12345". This allows functions monitoring different tables
+        /// to execute their transactions in parallel without blocking each other, while still preventing
+        /// deadlocks between functions (or scaled-out instances) that monitor the same table.
+        /// </summary>
+        public const string TableAppLockResourcePrefix = "_az_func_TT_";
         /// <summary>
         /// Timeout for acquiring the application lock - 30sec chosen as a reasonable value to ensure we aren't
         /// hanging infinitely while also giving plenty of time for the blocking transaction to complete.
@@ -51,33 +56,47 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public const int AppLockTimeoutMs = 30000;
 
         /// <summary>
-        /// T-SQL statements for getting an application lock. This is used to prevent deadlocks - primarily when multiple instances
-        /// of a function are running in parallel.
-        ///
-        /// The trigger heavily uses transactions to ensure atomic changes, that way if an error occurs during any step of a process we aren't left
-        /// with an incomplete state. Because of this, locks are placed on rows that are read/modified during the transaction, but the lock isn't
-        /// applied until the statement itself is executed. Some transactions have many statements executed in a row that touch a number of different
-        /// tables so it's very easy for two transactions to get in a deadlock depending on the speed they execute their statements and the order they
-        /// are processed in.
-        ///
-        /// So to avoid this we use application locks to ensure that anytime we enter a transaction we first guarantee that we're the only transaction
-        /// currently making any changes to the tables, which means that we're guaranteed not to have any deadlocks - albeit at the cost of speed. This
-        /// is acceptable for now, although further investigation could be done into using multiple resources to lock on (such as a different one for each
-        /// table) to increase the parallelization of the transactions.
+        /// T-SQL statements for getting the global application lock. This is used only for startup DDL operations
+        /// that create shared objects (the az_func schema and the GlobalState table).
         ///
         /// See the following articles for more information on locking in MSSQL
         /// https://learn.microsoft.com/sql/relational-databases/sql-server-transaction-locking-and-row-versioning-guide
         /// https://learn.microsoft.com/sql/t-sql/statements/set-transaction-isolation-level-transact-sql
         /// https://learn.microsoft.com/sql/relational-databases/system-stored-procedures/sp-getapplock-transact-sql
         /// </summary>
-        public static readonly string AppLockStatements = $@"DECLARE @result int;
-                EXEC @result = sp_getapplock @Resource = '{AppLockResource}',
+        public static readonly string GlobalAppLockStatements = $@"DECLARE @result int;
+                EXEC @result = sp_getapplock @Resource = '{GlobalAppLockResource}',
                             @LockMode = 'Exclusive',
                             @LockTimeout = {AppLockTimeoutMs}
                 IF @result < 0
                 BEGIN
-                    RAISERROR('Unable to acquire exclusive lock on {AppLockResource}. Result = %d', 16, 1, @result)
+                    RAISERROR('Unable to acquire exclusive lock on {GlobalAppLockResource}. Result = %d', 16, 1, @result)
                 END;";
+
+        /// <summary>
+        /// Generates T-SQL statements for getting a per-table scoped application lock. This is used for all
+        /// runtime operations that only touch data specific to a single table (GlobalState row, leases table,
+        /// change tracking queries). By scoping the lock to the table level, functions monitoring different
+        /// tables can process changes in parallel without blocking each other.
+        ///
+        /// The lock is still needed at the table level to prevent deadlocks when multiple scaled-out instances
+        /// or multiple functions monitor the same table, since they share GlobalState rows and may access
+        /// overlapping change tracking data.
+        /// </summary>
+        /// <param name="userTableId">The SQL Server object ID of the user table</param>
+        /// <returns>T-SQL statements that acquire an exclusive app lock scoped to the given table</returns>
+        public static string GetTableScopedAppLockStatements(int userTableId)
+        {
+            string resource = $"{TableAppLockResourcePrefix}{userTableId}";
+            return $@"DECLARE @result int;
+                EXEC @result = sp_getapplock @Resource = '{resource}',
+                            @LockMode = 'Exclusive',
+                            @LockTimeout = {AppLockTimeoutMs}
+                IF @result < 0
+                BEGIN
+                    RAISERROR('Unable to acquire exclusive lock on {resource}. Result = %d', 16, 1, @result)
+                END;";
+        }
 
         /// <summary>
         /// There is already an object named '%.*ls' in the database.

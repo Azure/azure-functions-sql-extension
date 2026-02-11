@@ -78,6 +78,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly IDictionary<TelemetryPropertyName, string> _telemetryProps;
 
         /// <summary>
+        /// Pre-computed T-SQL statements for acquiring a table-scoped application lock.
+        /// </summary>
+        private readonly string _tableScopedAppLockStatements;
+
+        /// <summary>
         /// Rows that are currently being processed
         /// </summary>
         private List<IReadOnlyDictionary<string, object>> _rowsToProcess = new List<IReadOnlyDictionary<string, object>>();
@@ -129,6 +134,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             this._userTableId = userTableId;
             this._telemetryProps = telemetryProps ?? new Dictionary<TelemetryPropertyName, string>();
+            this._tableScopedAppLockStatements = GetTableScopedAppLockStatements(userTableId);
 
             // TODO: when we move to reading them exclusively from the host options, remove reading from settings.(https://github.com/Azure/azure-functions-sql-extension/issues/961)
             // Check if there's config settings to override the default max batch size/polling interval values
@@ -789,7 +795,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private SqlCommand BuildUpdateTablesPreInvocation(SqlConnection connection, SqlTransaction transaction)
         {
             string updateTablesPreInvocationQuery = $@"
-                {AppLockStatements}
+                {this._tableScopedAppLockStatements}
 
                 DECLARE @min_valid_version bigint;
                 SET @min_valid_version = CHANGE_TRACKING_MIN_VALID_VERSION({this._userTableId});
@@ -834,7 +840,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // up regardless since we know it should be processed - no need to check the change version.
             // Once a row is successfully processed the LeaseExpirationTime column is set to NULL.
             string getChangesQuery = $@"
-                {AppLockStatements}
+                {this._tableScopedAppLockStatements}
 
                 DECLARE @last_sync_version bigint;
                 SELECT @last_sync_version = LastSyncVersion
@@ -882,7 +888,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             //  * NULL LeaseExpirationTime OR LeaseExpirationTime <= Current Time
             //  * No attempts remaining (Attempt count = Max attempts)
             string getLeaseLockedOrMaxAttemptRowCountQuery = $@"
-                {AppLockStatements}
+                {this._tableScopedAppLockStatements}
 
                 DECLARE @last_sync_version bigint;
                 SELECT @last_sync_version = LastSyncVersion
@@ -948,7 +954,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             const string rowDataParameter = "@rowData";
             // Create the merge query that will either update the rows that already exist or insert a new one if it doesn't exist
             string query = $@"
-                    {AppLockStatements}
+                    {this._tableScopedAppLockStatements}
 
                     WITH {acquireLeasesCte} AS ( SELECT * FROM OPENJSON(@rowData) WITH ({string.Join(",", cteColumnDefinitions)}) )
                     MERGE INTO {this._bracketedLeasesTableName}
@@ -989,7 +995,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 return null;
             }
             string renewLeasesQuery = $@"
-                {AppLockStatements}
+                {this._tableScopedAppLockStatements}
 
                 UPDATE {this._bracketedLeasesTableName}
                 SET {LeasesTableLeaseExpirationTimeColumnName} = DATEADD(second, {LeaseIntervalInSeconds}, SYSDATETIME())
@@ -1021,7 +1027,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             const string rowDataParameter = "@rowData";
 
             string releaseLeasesQuery =
-$@"{AppLockStatements}
+$@"{this._tableScopedAppLockStatements}
 
 WITH {releaseLeasesCte} AS ( SELECT * FROM OPENJSON(@rowData) WITH ({string.Join(",", cteColumnDefinitions)}) )
 UPDATE {this._bracketedLeasesTableName}
@@ -1053,7 +1059,7 @@ WHERE l.{LeasesTableChangeVersionColumnName} <= cte.{SysChangeVersionColumnName}
             string leasesTableJoinCondition = string.Join(" AND ", this._primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
 
             string updateTablesPostInvocationQuery = $@"
-                {AppLockStatements}
+                {this._tableScopedAppLockStatements}
 
                 DECLARE @current_last_sync_version bigint;
                 SELECT @current_last_sync_version = LastSyncVersion
