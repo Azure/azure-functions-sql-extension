@@ -57,7 +57,7 @@ steps:
 - task: DockerInstaller@0
   displayName: Docker Installer
   inputs:
-    dockerVersion: 17.09.0-ce
+    dockerVersion: 29.1.5
     releaseType: stable
   condition: and(succeeded(), eq(variables['Agent.OS'], 'linux'))
 
