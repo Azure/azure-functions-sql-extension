@@ -17,6 +17,24 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     {
 
         /// <summary>
+        /// Acquires an exclusive application lock on the transaction to prevent deadlocks.
+        /// This should be called once at the beginning of each transaction rather than
+        /// being included in every individual query, since the lock is transaction-scoped
+        /// and subsequent acquisitions within the same transaction are no-ops.
+        /// </summary>
+        /// <param name="connection">The SQL connection</param>
+        /// <param name="transaction">The transaction to acquire the lock on</param>
+        /// <param name="logger">Logger for logging the command</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        public static async Task AcquireAppLockAsync(SqlConnection connection, SqlTransaction transaction, ILogger logger, CancellationToken cancellationToken)
+        {
+            using (var command = new SqlCommand(AppLockStatements, connection, transaction))
+            {
+                await command.ExecuteNonQueryAsyncWithLogging(logger, cancellationToken, true);
+            }
+        }
+
+        /// <summary>
         /// Gets the names and types of primary key columns of the user table.
         /// </summary>
         /// <param name="connection">SQL connection used to connect to user database</param>

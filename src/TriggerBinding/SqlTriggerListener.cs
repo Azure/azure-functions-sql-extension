@@ -143,6 +143,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     long createdSchemaDurationMs = 0L, createGlobalStateTableDurationMs = 0L, insertGlobalStateTableRowDurationMs = 0L, createLeasesTableDurationMs = 0L;
                     using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
                     {
+                        await AcquireAppLockAsync(connection, transaction, this._logger, cancellationToken);
+
                         createdSchemaDurationMs = await this.CreateSchemaAsync(connection, transaction, cancellationToken);
                         createGlobalStateTableDurationMs = await this.CreateGlobalStateTableAsync(connection, transaction, cancellationToken);
                         insertGlobalStateTableRowDurationMs = await this.InsertGlobalStateTableRowAsync(connection, transaction, userTableId, cancellationToken);
@@ -283,8 +285,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private async Task<long> CreateSchemaAsync(SqlConnection connection, SqlTransaction transaction, CancellationToken cancellationToken)
         {
             string createSchemaQuery = $@"
-                {AppLockStatements}
-
                 IF SCHEMA_ID(N'{SchemaName}') IS NULL
                     EXEC ('CREATE SCHEMA {SchemaName}');
             ";
@@ -328,8 +328,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private async Task<long> CreateGlobalStateTableAsync(SqlConnection connection, SqlTransaction transaction, CancellationToken cancellationToken)
         {
             string createGlobalStateTableQuery = $@"
-                {AppLockStatements}
-
                 IF OBJECT_ID(N'{GlobalStateTableName}', 'U') IS NULL
                     CREATE TABLE {GlobalStateTableName} (
                         UserFunctionID char(16) NOT NULL,
@@ -401,7 +399,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             string insertRowGlobalStateTableQuery = $@"
-                {AppLockStatements}
                 -- For back compatibility copy the lastSyncVersion from _hostIdFunctionId if it exists.
                 IF NOT EXISTS (
                     SELECT * FROM {GlobalStateTableName}
@@ -456,8 +453,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // we're actually using the WEBSITE_SITE_NAME one (e.g. leasesTableName is different)
             bool shouldMigrateOldLeasesTable = !string.IsNullOrEmpty(oldLeasesTableName) && oldLeasesTableName != leasesTableName;
             string createLeasesTableQuery = shouldMigrateOldLeasesTable ? $@"
-                {AppLockStatements}
-
                 IF OBJECT_ID(N'{leasesTableName}', 'U') IS NULL
                 BEGIN
                     CREATE TABLE {leasesTableName} (
@@ -479,8 +474,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 End
             " :
             $@"
-                {AppLockStatements}
-
                 IF OBJECT_ID(N'{leasesTableName}', 'U') IS NULL
                     CREATE TABLE {leasesTableName} (
                         {primaryKeysWithTypes},
