@@ -101,8 +101,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             string leasesTableJoinCondition = string.Join(" AND ", primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
             string bracketedLeasesTableName = GetBracketedLeasesTableName(this._userDefinedLeasesTableName, this._userFunctionId, userTableId);
+            string tableScopedAppLockStatements = GetTableScopedAppLockStatements(userTableId);
             string getUnprocessedChangesQuery = $@"
-                {AppLockStatements}
+                {tableScopedAppLockStatements}
 
                 DECLARE @last_sync_version bigint;
                 SELECT @last_sync_version = LastSyncVersion
