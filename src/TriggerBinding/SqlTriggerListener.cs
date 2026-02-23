@@ -99,9 +99,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             int? configuredAppLockTimeout = configuration.GetValue<int?>(ConfigKey_SqlTrigger_AppLockTimeoutMs);
             this._appLockTimeoutMs = configuredAppLockTimeout ?? this._sqlOptions.AppLockTimeoutMs;
-            if (this._appLockTimeoutMs <= 0)
+            if (this._appLockTimeoutMs < SqlOptions.MinimumAppLockTimeoutMs)
             {
-                throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_AppLockTimeoutMs}'. Ensure that the value is a positive integer.");
+                throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_AppLockTimeoutMs}'. Value must not be less than {SqlOptions.MinimumAppLockTimeoutMs}ms.");
             }
             this._appLockStatements = GetAppLockStatements(this._appLockTimeoutMs);
 

@@ -21,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private const int DefaultMinimumPollingIntervalMs = 100;
         public const int DefaultMaxChangesPerWorker = 1000;
         public const int DefaultAppLockTimeoutMs = 30000;
-        private const int DefaultMinimumAppLockTimeoutMs = 1000;
+        public const int MinimumAppLockTimeoutMs = 1000;
         /// <summary>
         /// Maximum number of changes to process in each iteration of the loop
         /// </summary>
@@ -110,10 +110,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             set
             {
-                if (value < DefaultMinimumAppLockTimeoutMs)
+                if (value < MinimumAppLockTimeoutMs)
                 {
                     string message = string.Format(System.Globalization.CultureInfo.CurrentCulture,
-                        "AppLockTimeoutMs must not be less than {0}Ms.", DefaultMinimumAppLockTimeoutMs);
+                        "AppLockTimeoutMs must not be less than {0}Ms.", MinimumAppLockTimeoutMs);
                     throw new ArgumentException(message, nameof(value));
                 }
 
