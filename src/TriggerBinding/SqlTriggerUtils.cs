@@ -26,7 +26,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <param name="transaction">The transaction to acquire the lock on</param>
         /// <param name="logger">Logger for logging the command</param>
         /// <param name="cancellationToken">Cancellation token</param>
-        public static async Task AcquireAppLockAsync(SqlConnection connection, SqlTransaction transaction, ILogger logger, CancellationToken cancellationToken)
+        internal static async Task AcquireAppLockAsync(SqlConnection connection, SqlTransaction transaction, ILogger logger, CancellationToken cancellationToken)
         {
             using (var command = new SqlCommand(AppLockStatements, connection, transaction))
             {
