@@ -52,7 +52,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public const int DefaultAppLockTimeoutMs = 30000;
 
         /// <summary>
-        /// T-SQL statements for getting an application lock. This is used to prevent deadlocks - primarily when multiple instances
+        /// Generates T-SQL statements for getting an application lock with the specified timeout.
+        ///
+        /// This is used to prevent deadlocks - primarily when multiple instances
         /// of a function are running in parallel.
         ///
         /// The trigger heavily uses transactions to ensure atomic changes, that way if an error occurs during any step of a process we aren't left
@@ -70,9 +72,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// https://learn.microsoft.com/sql/relational-databases/sql-server-transaction-locking-and-row-versioning-guide
         /// https://learn.microsoft.com/sql/t-sql/statements/set-transaction-isolation-level-transact-sql
         /// https://learn.microsoft.com/sql/relational-databases/system-stored-procedures/sp-getapplock-transact-sql
-        /// </summary>
-        /// <summary>
-        /// Generates T-SQL statements for getting an application lock with the specified timeout.
         /// </summary>
         /// <param name="appLockTimeoutMs">Timeout in milliseconds for acquiring the application lock</param>
         /// <returns>T-SQL statements for acquiring the application lock</returns>

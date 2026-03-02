@@ -39,8 +39,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             // Override the maxChangesPerWorker value from config if the value is set in the trigger appsettings
             int maxChangesPerWorker = configAppSettingsMaxChangesPerWorker != 0 ? configAppSettingsMaxChangesPerWorker : configOptionsMaxChangesPerWorker != 0 ? configOptionsMaxChangesPerWorker : SqlOptions.DefaultMaxChangesPerWorker;
             int configOptionsAppLockTimeoutMs = options.Value.AppLockTimeoutMs;
-            int configAppSettingsAppLockTimeoutMs = config.GetValue<int>(SqlTriggerConstants.ConfigKey_SqlTrigger_AppLockTimeoutMs);
-            int appLockTimeoutMs = configAppSettingsAppLockTimeoutMs != 0 ? configAppSettingsAppLockTimeoutMs : configOptionsAppLockTimeoutMs != 0 ? configOptionsAppLockTimeoutMs : SqlOptions.DefaultAppLockTimeoutMs;
+            int? configAppSettingsAppLockTimeoutMs = config.GetValue<int?>(SqlTriggerConstants.ConfigKey_SqlTrigger_AppLockTimeoutMs);
+            int appLockTimeoutMs = configAppSettingsAppLockTimeoutMs ?? (configOptionsAppLockTimeoutMs != 0 ? configOptionsAppLockTimeoutMs : SqlOptions.DefaultAppLockTimeoutMs);
             if (appLockTimeoutMs < SqlOptions.MinimumAppLockTimeoutMs)
             {
                 throw new InvalidOperationException($"Invalid value for configuration setting '{SqlTriggerConstants.ConfigKey_SqlTrigger_AppLockTimeoutMs}'. Value must not be less than {SqlOptions.MinimumAppLockTimeoutMs}ms.");

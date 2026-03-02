@@ -68,6 +68,13 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         }
 
         [Fact]
+        public void AppLockTimeoutMs_ThrowsOnNegativeValue()
+        {
+            var options = new SqlOptions();
+            Assert.Throws<ArgumentException>(() => options.AppLockTimeoutMs = -1);
+        }
+
+        [Fact]
         public void AppLockTimeoutMs_AcceptsMinimumValue()
         {
             var options = new SqlOptions

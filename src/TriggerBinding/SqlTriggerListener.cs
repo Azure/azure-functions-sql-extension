@@ -52,6 +52,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly Dictionary<TelemetryPropertyName, string> _telemetryProps = new Dictionary<TelemetryPropertyName, string>();
         private readonly int _maxChangesPerWorker;
         private readonly bool _hasConfiguredMaxChangesPerWorker = false;
+        private readonly bool _hasConfiguredAppLockTimeout = false;
         private readonly int _appLockTimeoutMs;
         private readonly string _appLockStatements;
 
@@ -103,6 +104,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 throw new InvalidOperationException($"Invalid value for configuration setting '{ConfigKey_SqlTrigger_AppLockTimeoutMs}'. Value must not be less than {SqlOptions.MinimumAppLockTimeoutMs}ms.");
             }
+            this._hasConfiguredAppLockTimeout = configuredAppLockTimeout != null;
             this._appLockStatements = GetAppLockStatements(this._appLockTimeoutMs);
 
             this._scaleMonitor = new SqlTriggerScaleMonitor(this._userFunctionId, this._userTable, this._userDefinedLeasesTableName, this._connectionString, this._maxChangesPerWorker, this._appLockTimeoutMs, this._logger);
@@ -184,13 +186,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         [TelemetryMeasureName.InsertGlobalStateTableRowDurationMs] = insertGlobalStateTableRowDurationMs,
                         [TelemetryMeasureName.CreateLeasesTableDurationMs] = createLeasesTableDurationMs,
                         [TelemetryMeasureName.TransactionDurationMs] = transactionSw.ElapsedMilliseconds,
-                        [TelemetryMeasureName.MaxChangesPerWorker] = this._maxChangesPerWorker
+                        [TelemetryMeasureName.MaxChangesPerWorker] = this._maxChangesPerWorker,
+                        [TelemetryMeasureName.AppLockTimeoutMs] = this._appLockTimeoutMs
                     };
 
                     TelemetryInstance.TrackEvent(
                         TelemetryEventName.StartListener,
                         new Dictionary<TelemetryPropertyName, string>(this._telemetryProps) {
-                            { TelemetryPropertyName.HasConfiguredMaxChangesPerWorker, this._hasConfiguredMaxChangesPerWorker.ToString() }
+                            { TelemetryPropertyName.HasConfiguredMaxChangesPerWorker, this._hasConfiguredMaxChangesPerWorker.ToString() },
+                            { TelemetryPropertyName.HasConfiguredAppLockTimeout, this._hasConfiguredAppLockTimeout.ToString() }
                         },
                         measures);
                 }
