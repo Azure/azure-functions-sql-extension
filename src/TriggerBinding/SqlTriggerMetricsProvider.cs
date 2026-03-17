@@ -27,14 +27,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly SqlObject _userTable;
         private readonly string _userFunctionId;
         private readonly string _userDefinedLeasesTableName;
+        private readonly string _appLockStatements;
 
-        public SqlTriggerMetricsProvider(string connectionString, ILogger logger, SqlObject userTable, string userFunctionId, string userDefinedLeasesTableName)
+        public SqlTriggerMetricsProvider(string connectionString, ILogger logger, SqlObject userTable, string userFunctionId, string userDefinedLeasesTableName, int appLockTimeoutMs)
         {
             this._connectionString = !string.IsNullOrEmpty(connectionString) ? connectionString : throw new ArgumentNullException(nameof(connectionString));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this._userTable = userTable ?? throw new ArgumentNullException(nameof(userTable));
             this._userFunctionId = !string.IsNullOrEmpty(userFunctionId) ? userFunctionId : throw new ArgumentNullException(nameof(userFunctionId));
             this._userDefinedLeasesTableName = userDefinedLeasesTableName;
+            this._appLockStatements = GetAppLockStatements(appLockTimeoutMs);
         }
         public async Task<SqlTriggerMetrics> GetMetricsAsync()
         {
@@ -102,7 +104,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string leasesTableJoinCondition = string.Join(" AND ", primaryKeyColumns.Select(col => $"c.{col.name.AsBracketQuotedString()} = l.{col.name.AsBracketQuotedString()}"));
             string bracketedLeasesTableName = GetBracketedLeasesTableName(this._userDefinedLeasesTableName, this._userFunctionId, userTableId);
             string getUnprocessedChangesQuery = $@"
-                {AppLockStatements}
+                {this._appLockStatements}
 
                 DECLARE @last_sync_version bigint;
                 SELECT @last_sync_version = LastSyncVersion

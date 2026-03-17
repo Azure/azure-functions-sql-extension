@@ -36,6 +36,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         public const string ConfigKey_SqlTrigger_MaxBatchSize = "Sql_Trigger_MaxBatchSize";
         public const string ConfigKey_SqlTrigger_PollingInterval = "Sql_Trigger_PollingIntervalMs";
         public const string ConfigKey_SqlTrigger_MaxChangesPerWorker = "Sql_Trigger_MaxChangesPerWorker";
+        public const string ConfigKey_SqlTrigger_AppLockTimeoutMs = "Sql_Trigger_AppLockTimeoutMs";
 
         /// <summary>
         /// The resource name to use for getting the application lock. We use the same resource name for all instances
@@ -45,13 +46,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// working on different tables aren't blocking each other</remarks>
         public const string AppLockResource = "_az_func_Trigger";
         /// <summary>
-        /// Timeout for acquiring the application lock - 30sec chosen as a reasonable value to ensure we aren't
+        /// Default timeout for acquiring the application lock - 30sec chosen as a reasonable value to ensure we aren't
         /// hanging infinitely while also giving plenty of time for the blocking transaction to complete.
         /// </summary>
-        public const int AppLockTimeoutMs = 30000;
+        public const int DefaultAppLockTimeoutMs = 30000;
 
         /// <summary>
-        /// T-SQL statements for getting an application lock. This is used to prevent deadlocks - primarily when multiple instances
+        /// Generates T-SQL statements for getting an application lock with the specified timeout.
+        ///
+        /// This is used to prevent deadlocks - primarily when multiple instances
         /// of a function are running in parallel.
         ///
         /// The trigger heavily uses transactions to ensure atomic changes, that way if an error occurs during any step of a process we aren't left
@@ -70,14 +73,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// https://learn.microsoft.com/sql/t-sql/statements/set-transaction-isolation-level-transact-sql
         /// https://learn.microsoft.com/sql/relational-databases/system-stored-procedures/sp-getapplock-transact-sql
         /// </summary>
-        public static readonly string AppLockStatements = $@"DECLARE @result int;
+        /// <param name="appLockTimeoutMs">Timeout in milliseconds for acquiring the application lock</param>
+        /// <returns>T-SQL statements for acquiring the application lock</returns>
+        public static string GetAppLockStatements(int appLockTimeoutMs)
+        {
+            return $@"DECLARE @result int;
                 EXEC @result = sp_getapplock @Resource = '{AppLockResource}',
                             @LockMode = 'Exclusive',
-                            @LockTimeout = {AppLockTimeoutMs}
+                            @LockTimeout = {appLockTimeoutMs}
                 IF @result < 0
                 BEGIN
                     RAISERROR('Unable to acquire exclusive lock on {AppLockResource}. Result = %d', 16, 1, @result)
                 END;";
+        }
 
         /// <summary>
         /// There is already an object named '%.*ls' in the database.

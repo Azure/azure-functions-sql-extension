@@ -20,6 +20,7 @@
       - [Sql\_Trigger\_MaxBatchSize](#sql_trigger_maxbatchsize)
       - [Sql\_Trigger\_PollingIntervalMs](#sql_trigger_pollingintervalms)
       - [Sql\_Trigger\_MaxChangesPerWorker](#sql_trigger_maxchangesperworker)
+      - [Sql\_Trigger\_AppLockTimeoutMs](#sql_trigger_applocktimeoutms)
       - [WEBSITE\_SITE\_NAME](#website_site_name)
     - [Scaling for Trigger Bindings](#scaling-for-trigger-bindings)
     - [Retry support for Trigger Bindings](#retry-support-for-trigger-bindings)
@@ -152,6 +153,10 @@ The delay in milliseconds between processing each batch of changes.
 #### Sql_Trigger_MaxChangesPerWorker
 
 The upper limit on the number of pending changes in the user table that are allowed per application-worker. If the count of changes exceeds this limit, it may result in a scale out. The setting only applies for Azure Function Apps with runtime driven scaling enabled. See the [Scaling](#scaling-for-trigger-bindings) section for more information.
+
+#### Sql_Trigger_AppLockTimeoutMs
+
+The timeout in milliseconds for acquiring the application lock used to prevent deadlocks when processing changes. The default value is 30000 (30 seconds). The minimum allowed value is 1000 (1 second).
 
 #### WEBSITE_SITE_NAME
 
