@@ -32,7 +32,8 @@ steps:
   inputs:
     workingFile: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc
 
-- script: npm install azure-functions-core-tools --global --globalconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --loglevel verbose
+# Override ignore-scripts for Azure Functions Core Tools installation
+- script: npm install azure-functions-core-tools --global --globalconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --ignore-scripts=false --loglevel verbose
   displayName: 'Install Azure Functions Core Tools'
 
 - script: npm install azurite --global --globalconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --loglevel verbose
