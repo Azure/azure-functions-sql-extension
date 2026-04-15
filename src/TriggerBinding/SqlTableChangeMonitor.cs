@@ -622,6 +622,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     }
                 }
             }
+            catch (Exception e)
+            {
+                this._logger.LogError($"Failed to begin transaction for lease renewal due to exception: {e.GetType()}. Exception message: {e.Message}");
+                TelemetryInstance.TrackException(TelemetryErrorName.RenewLeases, e, this._telemetryProps);
+            }
             finally
             {
                 this._rowsToProcessLock.Release();
