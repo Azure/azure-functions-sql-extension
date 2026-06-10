@@ -70,5 +70,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
             string result = s.AsBracketQuotedString();
             Assert.Equal(expectedResult, result);
         }
+
+        /// <summary>
+        /// Verifies that the column definitions query maps JSON columns to nvarchar(max) instead of
+        /// the invalid json(max) syntax. The native json data type does not accept a length specifier.
+        /// See: https://learn.microsoft.com/en-us/sql/t-sql/data-types/json-data-type
+        /// </summary>
+        [Fact]
+        public void TestGetColumnDefinitionsQueryMapsJsonToNvarcharMax()
+        {
+            var table = new SqlObject("dbo.TestTable");
+            string query = SqlAsyncCollector<string>.TableInformation.GetColumnDefinitionsQuery(table);
+
+            // The query should map json columns to nvarchar(max)
+            Assert.Contains("when DATA_TYPE = 'json' then 'nvarchar(max)'", query);
+            // The query should not produce 'json(max)' which is invalid SQL syntax
+            Assert.DoesNotContain("json(max)", query);
+        }
     }
 }
