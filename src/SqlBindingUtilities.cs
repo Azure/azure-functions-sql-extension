@@ -255,8 +255,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             var stopwatch = Stopwatch.StartNew();
             logger?.LogDebug("Starting to open SQL connection.");
-            await connection.OpenAsync(cancellationToken);
-            logger?.LogDebug($"Completed opening SQL connection in {stopwatch.ElapsedMilliseconds}ms.");
+            try
+            {
+                await connection.OpenAsync(cancellationToken);
+                logger?.LogDebug($"Completed opening SQL connection in {stopwatch.ElapsedMilliseconds}ms.");
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                logger?.LogDebug($"Canceled opening SQL connection after {stopwatch.ElapsedMilliseconds}ms.");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError(ex, $"Failed to open SQL connection after {stopwatch.ElapsedMilliseconds}ms.");
+                throw;
+            }
         }
 
         /// <summary>
@@ -268,8 +281,16 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             var stopwatch = Stopwatch.StartNew();
             logger?.LogDebug("Starting to open SQL connection.");
-            connection.Open();
-            logger?.LogDebug($"Completed opening SQL connection in {stopwatch.ElapsedMilliseconds}ms.");
+            try
+            {
+                connection.Open();
+                logger?.LogDebug($"Completed opening SQL connection in {stopwatch.ElapsedMilliseconds}ms.");
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError(ex, $"Failed to open SQL connection after {stopwatch.ElapsedMilliseconds}ms.");
+                throw;
+            }
         }
 
         /// <summary>

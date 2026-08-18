@@ -28,7 +28,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             catch (Exception ex)
             {
-                logger.LogError($"SQL trigger startup phase '{phaseName}' failed for table: '{tableName}'{functionIdLog} after {stopwatch.ElapsedMilliseconds}ms. Exception: {ex}");
+                logger.LogError(ex, $"SQL trigger startup phase '{phaseName}' failed for table: '{tableName}'{functionIdLog} after {stopwatch.ElapsedMilliseconds}ms.");
                 throw;
             }
         }

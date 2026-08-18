@@ -220,7 +220,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             catch (Exception ex)
             {
                 this._listenerState = ListenerNotStarted;
-                this._logger.LogError($"Failed to start SQL trigger listener for table: '{this._userTable.FullName}', function ID: '{this._userFunctionId}' after {startupStopwatch.ElapsedMilliseconds}ms. Exception: {ex}");
+                this._logger.LogError(ex, $"Failed to start SQL trigger listener for table: '{this._userTable.FullName}', function ID: '{this._userFunctionId}' after {startupStopwatch.ElapsedMilliseconds}ms.");
                 TelemetryInstance.TrackException(TelemetryErrorName.StartListener, ex, this._telemetryProps);
 
                 throw;
