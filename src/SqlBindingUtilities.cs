@@ -245,6 +245,31 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
+        /// Opens a connection synchronously and handles some specific errors if they occur.
+        /// </summary>
+        /// <param name="connection">The connection to open</param>
+        /// <param name="logger">The logger used to record the operation</param>
+        /// <exception cref="InvalidOperationException">Thrown if an error occurred that we want to wrap with more information</exception>
+        internal static void OpenWithSqlErrorHandling(this SqlConnection connection, ILogger logger)
+        {
+            try
+            {
+                connection.OpenWithLogging(logger);
+            }
+            catch (Exception e)
+            {
+                SqlException sqlEx = e is AggregateException a ? a.InnerExceptions.OfType<SqlException>().First() :
+                    e is SqlException s ? s :
+                    null;
+                if (sqlEx?.Number == -2146893019)
+                {
+                    throw new InvalidOperationException("The default values for encryption on connections have been changed, please review your configuration to ensure you have the correct values for your server. See https://aka.ms/afsqlext-connection for more details.", e);
+                }
+                throw;
+            }
+        }
+
+        /// <summary>
         /// Opens a connection and logs the start and completion of the operation.
         /// </summary>
         /// <param name="connection">The connection to open</param>
@@ -254,9 +279,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         internal static async Task OpenAsyncWithLogging(this SqlConnection connection, ILogger logger, CancellationToken cancellationToken)
         {
             var stopwatch = Stopwatch.StartNew();
-            logger?.LogInformation("Starting to open SQL connection.");
+            logger?.LogDebug("Starting to open SQL connection.");
             await connection.OpenAsync(cancellationToken);
-            logger?.LogInformation($"Completed opening SQL connection in {stopwatch.ElapsedMilliseconds}ms.");
+            logger?.LogDebug($"Completed opening SQL connection in {stopwatch.ElapsedMilliseconds}ms.");
+        }
+
+        /// <summary>
+        /// Opens a connection synchronously and logs the start and completion of the operation.
+        /// </summary>
+        /// <param name="connection">The connection to open</param>
+        /// <param name="logger">The logger used to record the operation</param>
+        internal static void OpenWithLogging(this SqlConnection connection, ILogger logger)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            logger?.LogDebug("Starting to open SQL connection.");
+            connection.Open();
+            logger?.LogDebug($"Completed opening SQL connection in {stopwatch.ElapsedMilliseconds}ms.");
         }
 
         /// <summary>

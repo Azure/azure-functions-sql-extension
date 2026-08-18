@@ -30,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         {
             this.Connection = connection ?? throw new ArgumentNullException(nameof(connection));
             this._attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
-            this.Connection.OpenAsyncWithSqlErrorHandling(logger, CancellationToken.None).GetAwaiter().GetResult();
+            this.Connection.OpenWithSqlErrorHandling(logger);
         }
         /// <summary>
         /// Returns the enumerator associated with this enumerable. The enumerator will execute the query specified

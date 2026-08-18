@@ -139,7 +139,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 using (var connection = new SqlConnection(this._connectionString))
                 {
-                    await connection.OpenAsyncWithSqlErrorHandling(this._logger, cancellationToken);
+                    await RunStartupPhaseAsync("OpenConnection", this._userTable.FullName, this._userFunctionId, this._logger, async () =>
+                    {
+                        await connection.OpenAsyncWithSqlErrorHandling(this._logger, cancellationToken);
+                    });
 
                     int userTableId = 0;
                     IReadOnlyList<(string name, string type)> primaryKeyColumns = null;
