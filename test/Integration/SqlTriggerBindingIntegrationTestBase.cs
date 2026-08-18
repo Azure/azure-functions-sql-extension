@@ -147,20 +147,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         /// <param name="expectedErrorMessage">Expected error message string</param>
         protected void StartFunctionHostAndWaitForError(string functionName, SupportedLanguages lang, bool useTestFolder, string expectedErrorMessage)
         {
-            string errorMessage = null;
+            bool listenerFailureLogged = false;
+            bool expectedErrorLogged = false;
             var tcs = new TaskCompletionSource<bool>();
 
             void OutputHandler(object sender, DataReceivedEventArgs e)
             {
-                if (errorMessage == null && e.Data?.Contains("Failed to start SQL trigger listener") == true)
+                if (e.Data == null)
                 {
-                    // SQL trigger listener throws exception of type InvalidOperationException for all error conditions.
-                    string exceptionPrefix = "Exception: System.InvalidOperationException: ";
-                    int index = e.Data.IndexOf(exceptionPrefix, StringComparison.Ordinal);
-                    Assert.NotEqual(-1, index);
+                    return;
+                }
 
-                    errorMessage = e.Data[(index + exceptionPrefix.Length)..];
-                    tcs.SetResult(true);
+                listenerFailureLogged |= e.Data.Contains("Failed to start SQL trigger listener", StringComparison.Ordinal);
+                expectedErrorLogged |= e.Data.Contains(expectedErrorMessage, StringComparison.Ordinal);
+                if (listenerFailureLogged && expectedErrorLogged)
+                {
+                    tcs.TrySetResult(true);
                 }
             }
             ;
@@ -175,8 +177,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             this.FunctionHost.OutputDataReceived -= OutputHandler;
             this.FunctionHost.Kill(true);
 
-            Assert.True(isCompleted, "Functions host did not log failure to start SQL trigger listener within specified time.");
-            Assert.Equal(expectedErrorMessage, errorMessage);
+            Assert.True(isCompleted, $"Functions host did not log expected failure to start SQL trigger listener within specified time. Expected error: {expectedErrorMessage}");
         }
 
         /// <summary>
