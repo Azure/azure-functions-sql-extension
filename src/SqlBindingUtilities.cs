@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
@@ -216,14 +217,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Opens a connection and handles some specific errors if they occur.
         /// </summary>
         /// <param name="connection">The connection to open</param>
+        /// <param name="logger">The logger used to record the operation</param>
         /// <param name="cancellationToken">The cancellation token to pass to the OpenAsync call</param>
         /// <returns>The task that will be completed when the connection is made</returns>
         /// <exception cref="InvalidOperationException">Thrown if an error occurred that we want to wrap with more information</exception>
-        internal static async Task OpenAsyncWithSqlErrorHandling(this SqlConnection connection, CancellationToken cancellationToken)
+        internal static async Task OpenAsyncWithSqlErrorHandling(this SqlConnection connection, ILogger logger, CancellationToken cancellationToken)
         {
             try
             {
-                await connection.OpenAsync(cancellationToken);
+                await connection.OpenAsyncWithLogging(logger, cancellationToken);
             }
             catch (Exception e)
             {
@@ -240,6 +242,21 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 }
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Opens a connection and logs the start and completion of the operation.
+        /// </summary>
+        /// <param name="connection">The connection to open</param>
+        /// <param name="logger">The logger used to record the operation</param>
+        /// <param name="cancellationToken">The cancellation token to pass to the OpenAsync call</param>
+        /// <returns>The task that will be completed when the connection is made</returns>
+        internal static async Task OpenAsyncWithLogging(this SqlConnection connection, ILogger logger, CancellationToken cancellationToken)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            logger?.LogInformation("Starting to open SQL connection.");
+            await connection.OpenAsync(cancellationToken);
+            logger?.LogInformation($"Completed opening SQL connection in {stopwatch.ElapsedMilliseconds}ms.");
         }
 
         /// <summary>
@@ -315,7 +332,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         conn.Close();
                     }
-                    await conn.OpenAsync(token);
+                    await conn.OpenAsyncWithSqlErrorHandling(logger, token);
                     logger.LogInformation($"Successfully re-established {connectionName}!");
                     return true;
                 }

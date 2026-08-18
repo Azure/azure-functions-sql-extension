@@ -133,51 +133,66 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
 
             this.InitializeTelemetryProps();
+            var startupStopwatch = Stopwatch.StartNew();
 
             try
             {
                 using (var connection = new SqlConnection(this._connectionString))
                 {
-                    await connection.OpenAsyncWithSqlErrorHandling(cancellationToken);
-                    ServerProperties serverProperties = await GetServerTelemetryProperties(connection, this._logger, cancellationToken);
-                    this._telemetryProps.AddConnectionProps(connection, serverProperties);
+                    await connection.OpenAsyncWithSqlErrorHandling(this._logger, cancellationToken);
 
-                    await VerifyDatabaseSupported(connection, this._logger, cancellationToken);
+                    int userTableId = 0;
+                    IReadOnlyList<(string name, string type)> primaryKeyColumns = null;
+                    IReadOnlyList<string> userTableColumns = null;
+                    await RunStartupPhaseAsync("ValidateDatabaseMetadata", this._userTable.FullName, this._userFunctionId, this._logger, async () =>
+                    {
+                        ServerProperties serverProperties = await GetServerTelemetryProperties(connection, this._logger, cancellationToken);
+                        this._telemetryProps.AddConnectionProps(connection, serverProperties);
 
-                    int userTableId = await GetUserTableIdAsync(connection, this._userTable, this._logger, cancellationToken);
-                    IReadOnlyList<(string name, string type)> primaryKeyColumns = GetPrimaryKeyColumns(connection, userTableId, this._logger, this._userTable.FullName, cancellationToken);
-                    IReadOnlyList<string> userTableColumns = this.GetUserTableColumns(connection, userTableId, cancellationToken);
+                        await VerifyDatabaseSupported(connection, this._logger, cancellationToken);
+
+                        userTableId = await GetUserTableIdAsync(connection, this._userTable, this._logger, cancellationToken);
+                        primaryKeyColumns = GetPrimaryKeyColumns(connection, userTableId, this._logger, this._userTable.FullName, cancellationToken);
+                        userTableColumns = this.GetUserTableColumns(connection, userTableId, cancellationToken);
+                    });
 
                     string bracketedLeasesTableName = GetBracketedLeasesTableName(this._userDefinedLeasesTableName, this._userFunctionId, userTableId);
                     this._telemetryProps[TelemetryPropertyName.LeasesTableName] = bracketedLeasesTableName;
 
                     var transactionSw = Stopwatch.StartNew();
                     long createdSchemaDurationMs = 0L, createGlobalStateTableDurationMs = 0L, insertGlobalStateTableRowDurationMs = 0L, createLeasesTableDurationMs = 0L;
-                    using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
+                    await RunStartupPhaseAsync("InitializeTriggerState", this._userTable.FullName, this._userFunctionId, this._logger, async () =>
                     {
-                        createdSchemaDurationMs = await this.CreateSchemaAsync(connection, transaction, cancellationToken);
-                        createGlobalStateTableDurationMs = await this.CreateGlobalStateTableAsync(connection, transaction, cancellationToken);
-                        insertGlobalStateTableRowDurationMs = await this.InsertGlobalStateTableRowAsync(connection, transaction, userTableId, cancellationToken);
-                        createLeasesTableDurationMs = await this.CreateLeasesTableAsync(connection, transaction, bracketedLeasesTableName, primaryKeyColumns, cancellationToken);
-                        transaction.Commit();
-                    }
+                        using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
+                        {
+                            createdSchemaDurationMs = await this.CreateSchemaAsync(connection, transaction, cancellationToken);
+                            createGlobalStateTableDurationMs = await this.CreateGlobalStateTableAsync(connection, transaction, cancellationToken);
+                            insertGlobalStateTableRowDurationMs = await this.InsertGlobalStateTableRowAsync(connection, transaction, userTableId, cancellationToken);
+                            createLeasesTableDurationMs = await this.CreateLeasesTableAsync(connection, transaction, bracketedLeasesTableName, primaryKeyColumns, cancellationToken);
+                            transaction.Commit();
+                        }
+                    });
 
-                    this._changeMonitor = new SqlTableChangeMonitor<T>(
-                        this._connectionString,
-                        userTableId,
-                        this._userTable,
-                        this._userFunctionId,
-                        bracketedLeasesTableName,
-                        userTableColumns,
-                        primaryKeyColumns,
-                        this._executor,
-                        this._sqlOptions,
-                        this._logger,
-                        this._configuration,
-                        this._telemetryProps);
+                    await RunStartupPhaseAsync("CreateChangeMonitor", this._userTable.FullName, this._userFunctionId, this._logger, () =>
+                    {
+                        this._changeMonitor = new SqlTableChangeMonitor<T>(
+                            this._connectionString,
+                            userTableId,
+                            this._userTable,
+                            this._userFunctionId,
+                            bracketedLeasesTableName,
+                            userTableColumns,
+                            primaryKeyColumns,
+                            this._executor,
+                            this._sqlOptions,
+                            this._logger,
+                            this._configuration,
+                            this._telemetryProps);
+                        return Task.CompletedTask;
+                    });
 
                     this._listenerState = ListenerStarted;
-                    this._logger.LogDebug($"Started SQL trigger listener for table: '{this._userTable.FullName}' (object ID: {userTableId}), function ID: {this._userFunctionId}, leases table: {bracketedLeasesTableName}");
+                    this._logger.LogInformation($"Started SQL trigger listener for table: '{this._userTable.FullName}' (object ID: {userTableId}), function ID: {this._userFunctionId}, leases table: {bracketedLeasesTableName} in {startupStopwatch.ElapsedMilliseconds}ms.");
 
                     var measures = new Dictionary<TelemetryMeasureName, double>
                     {
@@ -202,7 +217,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             catch (Exception ex)
             {
                 this._listenerState = ListenerNotStarted;
-                this._logger.LogError($"Failed to start SQL trigger listener for table: '{this._userTable.FullName}', function ID: '{this._userFunctionId}'. Exception: {ex}");
+                this._logger.LogError($"Failed to start SQL trigger listener for table: '{this._userTable.FullName}', function ID: '{this._userFunctionId}' after {startupStopwatch.ElapsedMilliseconds}ms. Exception: {ex}");
                 TelemetryInstance.TrackException(TelemetryErrorName.StartListener, ex, this._telemetryProps);
 
                 throw;

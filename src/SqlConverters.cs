@@ -164,7 +164,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 using (SqlCommand command = SqlBindingUtilities.BuildCommand(attribute, connection))
                 {
                     adapter.SelectCommand = command;
-                    await connection.OpenAsyncWithSqlErrorHandling(CancellationToken.None);
+                    await connection.OpenAsyncWithSqlErrorHandling(this._logger, CancellationToken.None);
                     this._serverProperties = await SqlBindingUtilities.GetServerTelemetryProperties(connection, this._logger, CancellationToken.None);
                     Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps(this._serverProperties);
                     TelemetryInstance.TrackConvert(type, props);
@@ -185,7 +185,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 try
                 {
-                    var asyncEnumerable = new SqlAsyncEnumerable<T>(SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, this._configuration), attribute);
+                    var asyncEnumerable = new SqlAsyncEnumerable<T>(SqlBindingUtilities.BuildConnection(attribute.ConnectionStringSetting, this._configuration), attribute, this._logger);
                     Dictionary<TelemetryPropertyName, string> props = asyncEnumerable.Connection.AsConnectionProps(this._serverProperties);
                     TelemetryInstance.TrackConvert(ConvertType.IAsyncEnumerable, props);
                     return asyncEnumerable;

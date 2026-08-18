@@ -99,7 +99,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             TelemetryInstance.TrackCreate(CreateType.SqlAsyncCollector);
             using (SqlConnection connection = BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
-                connection.OpenAsyncWithSqlErrorHandling(CancellationToken.None).Wait();
+                connection.OpenAsyncWithSqlErrorHandling(logger, CancellationToken.None).Wait();
                 VerifyDatabaseSupported(connection, logger, CancellationToken.None).Wait();
             }
         }
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             var upsertRowsAsyncSw = Stopwatch.StartNew();
             using (SqlConnection connection = BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
-                await connection.OpenAsync();
+                await connection.OpenAsyncWithSqlErrorHandling(this._logger, CancellationToken.None);
                 this._serverProperties = await GetServerTelemetryProperties(connection, this._logger, CancellationToken.None);
                 Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps(this._serverProperties);
 
