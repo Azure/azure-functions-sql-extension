@@ -173,7 +173,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             var upsertRowsAsyncSw = Stopwatch.StartNew();
             using (SqlConnection connection = BuildConnection(attribute.ConnectionStringSetting, configuration))
             {
-                await connection.OpenAsyncWithSqlErrorHandling(this._logger, CancellationToken.None);
+                await connection.OpenAsyncWithLogging(this._logger, CancellationToken.None);
                 this._serverProperties = await GetServerTelemetryProperties(connection, this._logger, CancellationToken.None);
                 Dictionary<TelemetryPropertyName, string> props = connection.AsConnectionProps(this._serverProperties);
 

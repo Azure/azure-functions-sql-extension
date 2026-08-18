@@ -157,7 +157,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string getChangeCountCommand = $"SELECT COUNT_BIG(*) FROM CHANGETABLE(CHANGES {userTable.BracketQuotedFullName}, null) AS ChTbl;";
             using (var connection = new SqlConnection(connectionString))
             {
-                await connection.OpenAsyncWithSqlErrorHandling(logger, cancellationToken);
+                await connection.OpenAsyncWithLogging(logger, cancellationToken);
                 using (var getChangesCount = new SqlCommand(getChangeCountCommand, connection))
                 {
                     object result = await getChangesCount.ExecuteScalarAsyncWithLogging(logger, cancellationToken, true);
