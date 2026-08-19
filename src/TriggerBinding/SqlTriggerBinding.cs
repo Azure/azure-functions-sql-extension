@@ -17,6 +17,7 @@ using Microsoft.Azure.WebJobs.Host.Triggers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlTriggerUtils;
 
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
@@ -79,7 +80,11 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             _ = context ?? throw new ArgumentNullException(nameof(context), "Missing listener context");
 
             string websiteSiteNameFunctionId = this.GetWebsiteSiteNameFunctionId();
-            string hostIdFunctionId = await this.GetHostIdFunctionIdAsync();
+            string hostIdFunctionId = null;
+            await RunStartupPhaseAsync("ResolveHostId", this._tableName, null, this._logger, async () =>
+            {
+                hostIdFunctionId = await this.GetHostIdFunctionIdAsync();
+            });
             return new SqlTriggerListener<T>(this._connectionString, this._tableName, this._leasesTableName, websiteSiteNameFunctionId, hostIdFunctionId, context.Executor, this._sqlOptions, this._logger, this._configuration);
         }
 

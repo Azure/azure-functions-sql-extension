@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
@@ -15,6 +16,22 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 {
     public static class SqlTriggerUtils
     {
+        internal static async Task RunStartupPhaseAsync(string phaseName, string tableName, string userFunctionId, ILogger logger, Func<Task> action)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            string functionIdLog = string.IsNullOrEmpty(userFunctionId) ? string.Empty : $", function ID: '{userFunctionId}'";
+            logger.LogInformation($"SQL trigger startup phase '{phaseName}' started for table: '{tableName}'{functionIdLog}.");
+            try
+            {
+                await action();
+                logger.LogInformation($"SQL trigger startup phase '{phaseName}' completed for table: '{tableName}'{functionIdLog} in {stopwatch.ElapsedMilliseconds}ms.");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, $"SQL trigger startup phase '{phaseName}' failed for table: '{tableName}'{functionIdLog} after {stopwatch.ElapsedMilliseconds}ms.");
+                throw;
+            }
+        }
 
         /// <summary>
         /// Gets the names and types of primary key columns of the user table.
@@ -140,7 +157,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             string getChangeCountCommand = $"SELECT COUNT_BIG(*) FROM CHANGETABLE(CHANGES {userTable.BracketQuotedFullName}, null) AS ChTbl;";
             using (var connection = new SqlConnection(connectionString))
             {
-                connection.Open();
+                await connection.OpenAsyncWithLogging(logger, cancellationToken);
                 using (var getChangesCount = new SqlCommand(getChangeCountCommand, connection))
                 {
                     object result = await getChangesCount.ExecuteScalarAsyncWithLogging(logger, cancellationToken, true);

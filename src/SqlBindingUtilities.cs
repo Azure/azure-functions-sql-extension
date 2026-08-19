@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
@@ -216,14 +217,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// Opens a connection and handles some specific errors if they occur.
         /// </summary>
         /// <param name="connection">The connection to open</param>
+        /// <param name="logger">The logger used to record the operation</param>
         /// <param name="cancellationToken">The cancellation token to pass to the OpenAsync call</param>
         /// <returns>The task that will be completed when the connection is made</returns>
         /// <exception cref="InvalidOperationException">Thrown if an error occurred that we want to wrap with more information</exception>
-        internal static async Task OpenAsyncWithSqlErrorHandling(this SqlConnection connection, CancellationToken cancellationToken)
+        internal static async Task OpenAsyncWithSqlErrorHandling(this SqlConnection connection, ILogger logger, CancellationToken cancellationToken)
         {
             try
             {
-                await connection.OpenAsync(cancellationToken);
+                await connection.OpenAsyncWithLogging(logger, cancellationToken);
             }
             catch (Exception e)
             {
@@ -238,6 +240,55 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 {
                     throw new InvalidOperationException("The default values for encryption on connections have been changed, please review your configuration to ensure you have the correct values for your server. See https://aka.ms/afsqlext-connection for more details.", e);
                 }
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Opens a connection and logs the start and completion of the operation.
+        /// </summary>
+        /// <param name="connection">The connection to open</param>
+        /// <param name="logger">The logger used to record the operation</param>
+        /// <param name="cancellationToken">The cancellation token to pass to the OpenAsync call</param>
+        /// <returns>The task that will be completed when the connection is made</returns>
+        internal static async Task OpenAsyncWithLogging(this SqlConnection connection, ILogger logger, CancellationToken cancellationToken)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            logger?.LogDebug("Starting to open SQL connection.");
+            try
+            {
+                await connection.OpenAsync(cancellationToken);
+                logger?.LogDebug($"Completed opening SQL connection in {stopwatch.ElapsedMilliseconds}ms.");
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                logger?.LogDebug($"Canceled opening SQL connection after {stopwatch.ElapsedMilliseconds}ms.");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError(ex, $"Failed to open SQL connection after {stopwatch.ElapsedMilliseconds}ms.");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Opens a connection synchronously and logs the start and completion of the operation.
+        /// </summary>
+        /// <param name="connection">The connection to open</param>
+        /// <param name="logger">The logger used to record the operation</param>
+        internal static void OpenWithLogging(this SqlConnection connection, ILogger logger)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            logger?.LogDebug("Starting to open SQL connection.");
+            try
+            {
+                connection.Open();
+                logger?.LogDebug($"Completed opening SQL connection in {stopwatch.ElapsedMilliseconds}ms.");
+            }
+            catch (Exception ex)
+            {
+                logger?.LogError(ex, $"Failed to open SQL connection after {stopwatch.ElapsedMilliseconds}ms.");
                 throw;
             }
         }
@@ -315,7 +366,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     {
                         conn.Close();
                     }
-                    await conn.OpenAsync(token);
+                    await conn.OpenAsyncWithLogging(logger, token);
                     logger.LogInformation($"Successfully re-established {connectionName}!");
                     return true;
                 }

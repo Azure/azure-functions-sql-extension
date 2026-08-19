@@ -55,7 +55,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 using (var connection = new SqlConnection(this._connectionString))
                 {
-                    await connection.OpenAsync();
+                    await connection.OpenAsyncWithLogging(this._logger, CancellationToken.None);
 
                     int userTableId = await GetUserTableIdAsync(connection, this._userTable, this._logger, CancellationToken.None);
                     IReadOnlyList<(string name, string type)> primaryKeyColumns = GetPrimaryKeyColumns(connection, userTableId, this._logger, this._userTable.FullName, CancellationToken.None);

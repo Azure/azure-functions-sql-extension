@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using static Microsoft.Azure.WebJobs.Extensions.Sql.SqlBindingConstants;
 namespace Microsoft.Azure.WebJobs.Extensions.Sql
@@ -21,14 +22,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// </summary>
         /// <param name="connection">The SqlConnection to be used by the enumerator</param>
         /// <param name="attribute">The attribute containing the query, parameters, and query type</param>
+        /// <param name="logger">The logger used to record the connection operation</param>
         /// <exception cref="ArgumentNullException">
         /// Thrown if either connection or attribute is null
         /// </exception>
-        public SqlAsyncEnumerable(SqlConnection connection, SqlAttribute attribute)
+        public SqlAsyncEnumerable(SqlConnection connection, SqlAttribute attribute, ILogger logger)
         {
             this.Connection = connection ?? throw new ArgumentNullException(nameof(connection));
             this._attribute = attribute ?? throw new ArgumentNullException(nameof(attribute));
-            this.Connection.Open();
+            this.Connection.OpenWithLogging(logger);
         }
         /// <summary>
         /// Returns the enumerator associated with this enumerable. The enumerator will execute the query specified

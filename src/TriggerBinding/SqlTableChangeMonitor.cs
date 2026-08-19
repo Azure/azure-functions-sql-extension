@@ -208,7 +208,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 using (var connection = new SqlConnection(this._connectionString))
                 {
-                    await connection.OpenAsync(token);
+                    await connection.OpenAsyncWithLogging(this._logger, token);
 
                     bool forceReconnect = false;
                     // Check for cancellation request only after a cycle of checking and processing of changes completes.
@@ -495,7 +495,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 using (var connection = new SqlConnection(this._connectionString))
                 {
-                    await connection.OpenAsync(token);
+                    await connection.OpenAsyncWithLogging(this._logger, token);
 
                     bool forceReconnect = false;
                     while (!token.IsCancellationRequested)
