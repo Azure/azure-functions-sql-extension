@@ -501,13 +501,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             {
                 return $@"
                     select
-	                    {ColumnName}, DATA_TYPE +
+	                    {ColumnName},
 		                    case
-			                    when CHARACTER_MAXIMUM_LENGTH = -1 then '(max)'
-			                    when CHARACTER_MAXIMUM_LENGTH <> -1 then '(' + cast(CHARACTER_MAXIMUM_LENGTH as varchar(4)) + ')'
-                                when DATETIME_PRECISION is not null and DATA_TYPE not in ('datetime', 'date', 'smalldatetime') then '(' + cast(DATETIME_PRECISION as varchar(1)) + ')'
-			                    when DATA_TYPE in ('decimal', 'numeric') then '(' + cast(NUMERIC_PRECISION as varchar(9)) + ',' + + cast(NUMERIC_SCALE as varchar(9)) + ')'
-			                    else ''
+			                    when DATA_TYPE = 'json' then 'nvarchar(max)'
+			                    else DATA_TYPE +
+				                    case
+					                    when CHARACTER_MAXIMUM_LENGTH = -1 then '(max)'
+					                    when CHARACTER_MAXIMUM_LENGTH <> -1 then '(' + cast(CHARACTER_MAXIMUM_LENGTH as varchar(4)) + ')'
+					                    when DATETIME_PRECISION is not null and DATA_TYPE not in ('datetime', 'date', 'smalldatetime') then '(' + cast(DATETIME_PRECISION as varchar(1)) + ')'
+					                    when DATA_TYPE in ('decimal', 'numeric') then '(' + cast(NUMERIC_PRECISION as varchar(9)) + ',' + + cast(NUMERIC_SCALE as varchar(9)) + ')'
+					                    else ''
+				                    end
 		                    end as {ColumnDefinition}
                     from
 	                    INFORMATION_SCHEMA.COLUMNS c
