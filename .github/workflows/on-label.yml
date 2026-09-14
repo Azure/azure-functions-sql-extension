@@ -8,9 +8,9 @@ jobs:
     name: Process Label Action
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2.8.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Process Label Action
-        uses: hramos/label-actions@907a3b876f2d94007f0a4009390fd0e3e156450c # v1
+        uses: hramos/label-actions@a366dfe725db739c4522391dd1cb3daa9cb399d5 # v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
     permissions:
