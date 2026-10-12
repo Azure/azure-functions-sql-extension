@@ -18,18 +18,23 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly SqlTriggerMetricsProvider _metricsProvider;
         private readonly int _maxChangesPerWorker;
         private readonly ILogger _logger;
-        private readonly string _connectionString;
+        private readonly SqlConnectionFactory _connectionFactory;
         private readonly SqlObject _userTable;
         private static readonly DateTime _firstTableCreationWarmupAttempt = DateTime.MinValue;
 
 
         public SqlTriggerTargetScaler(string userFunctionId, SqlObject userTable, string userDefinedLeasesTableName, string connectionString, int maxChangesPerWorker, int appLockTimeoutMs, ILogger logger)
+            : this(userFunctionId, userTable, userDefinedLeasesTableName, new SqlConnectionFactory(connectionString), maxChangesPerWorker, appLockTimeoutMs, logger)
         {
-            this._metricsProvider = new SqlTriggerMetricsProvider(connectionString, logger, userTable, userFunctionId, userDefinedLeasesTableName, appLockTimeoutMs);
+        }
+
+        internal SqlTriggerTargetScaler(string userFunctionId, SqlObject userTable, string userDefinedLeasesTableName, SqlConnectionFactory connectionFactory, int maxChangesPerWorker, int appLockTimeoutMs, ILogger logger)
+        {
+            this._connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+            this._metricsProvider = new SqlTriggerMetricsProvider(this._connectionFactory, logger, userTable, userFunctionId, userDefinedLeasesTableName, appLockTimeoutMs);
             this.TargetScalerDescriptor = new TargetScalerDescriptor(userFunctionId);
             this._maxChangesPerWorker = maxChangesPerWorker;
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            this._connectionString = !string.IsNullOrEmpty(connectionString) ? connectionString : throw new ArgumentNullException(nameof(connectionString));
             this._userTable = userTable ?? throw new ArgumentNullException(nameof(userTable));
         }
 
@@ -69,7 +74,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                         // Check if there are any changes in the user table. Since we don't have a leases table that means
                         // we haven't processed any of the changes yet so we can just check if there's any changes
                         // for the table at all (no last sync point)
-                        int changes = await GetChangeCountFromChangeTrackingAsync(this._connectionString, this._userTable, this._logger, CancellationToken.None);
+                        int changes = await GetChangeCountFromChangeTrackingAsync(this._connectionFactory, this._userTable, this._logger, CancellationToken.None);
                         // If there are changes in the user table, we spin up worker(s) to start handling those changes.  
                         // This will also create the global state and leases table, which will allow the scaling logic to start working as intended.
                         if (changes > 0)

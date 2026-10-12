@@ -72,6 +72,14 @@ C --> D
 D --> B
 ```
 
+## Scale Monitoring Authentication
+
+An external WebJobs scale host can supply an `AzureComponentFactory` in `TriggerMetadata.Properties[nameof(AzureComponentFactory)]` when registering a SQL scaler with `AddSqlScaleForTrigger`. The factory must return a non-null `TokenCredential` for the application being scaled. This is a host integration contract, not a function binding setting.
+
+For connection strings using `Authentication=Active Directory Managed Identity` or `Active Directory MSI`, the scaler removes `Authentication` from its private copy and uses `SqlConnection.AccessTokenCallback` to request tokens from the supplied credential. The optional user-assigned identity's `User ID` and all other connection options are preserved. Both the scale monitor and target scaler, including the query used before state tables exist, share the same callback. The callback returns the token expiry to SqlClient and is reused for connection pooling; it is not shared between scaler providers.
+
+Without a metadata override, authentication remains controlled by the original connection string. The in-app listener and input/output bindings are unchanged. Invalid overrides or conflicting authentication settings fail scaler initialization; token acquisition and database errors propagate through the existing SQL connection/scaler error handling rather than falling back to the host process identity or reporting zero changes. The scale host must supply the application's credential for this integration to take effect; updating the extension alone does not fix external managed-identity scaling.
+
 ## Internal State Tables
 
 The trigger functionality creates several tables to use for tracking the current state of the trigger. This allows state to be persisted across sessions and for multiple instances of a trigger binding to execute in parallel (for scaling purposes).

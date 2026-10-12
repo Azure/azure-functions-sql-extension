@@ -147,15 +147,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// <summary>
         /// Returns the number of changes in the change tracking table of ID of the user table.
         /// </summary>
-        /// <param name="connectionString">SQL connection string used to connect to user database</param>
+        /// <param name="connectionFactory">Creates authenticated connections to the user database</param>
         /// <param name="userTable">SqlObject user table</param>
         /// <param name="logger">Facilitates logging of messages</param>
         /// <param name="cancellationToken">Cancellation token to pass to the command</param>
         /// <exception cref="InvalidOperationException">Thrown in case of error when querying the object ID for the user table</exception>
-        internal static async Task<int> GetChangeCountFromChangeTrackingAsync(string connectionString, SqlObject userTable, ILogger logger, CancellationToken cancellationToken)
+        internal static async Task<int> GetChangeCountFromChangeTrackingAsync(SqlConnectionFactory connectionFactory, SqlObject userTable, ILogger logger, CancellationToken cancellationToken)
         {
             string getChangeCountCommand = $"SELECT COUNT_BIG(*) FROM CHANGETABLE(CHANGES {userTable.BracketQuotedFullName}, null) AS ChTbl;";
-            using (var connection = new SqlConnection(connectionString))
+            using (SqlConnection connection = connectionFactory.CreateConnection())
             {
                 await connection.OpenAsyncWithLogging(logger, cancellationToken);
                 using (var getChangesCount = new SqlCommand(getChangeCountCommand, connection))

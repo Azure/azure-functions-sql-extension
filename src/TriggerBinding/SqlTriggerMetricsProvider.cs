@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
     /// </summary>
     internal class SqlTriggerMetricsProvider
     {
-        private readonly string _connectionString;
+        private readonly SqlConnectionFactory _connectionFactory;
         private readonly ILogger _logger;
         private readonly SqlObject _userTable;
         private readonly string _userFunctionId;
@@ -30,14 +30,20 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private readonly string _appLockStatements;
 
         public SqlTriggerMetricsProvider(string connectionString, ILogger logger, SqlObject userTable, string userFunctionId, string userDefinedLeasesTableName, int appLockTimeoutMs)
+            : this(new SqlConnectionFactory(connectionString), logger, userTable, userFunctionId, userDefinedLeasesTableName, appLockTimeoutMs)
         {
-            this._connectionString = !string.IsNullOrEmpty(connectionString) ? connectionString : throw new ArgumentNullException(nameof(connectionString));
+        }
+
+        internal SqlTriggerMetricsProvider(SqlConnectionFactory connectionFactory, ILogger logger, SqlObject userTable, string userFunctionId, string userDefinedLeasesTableName, int appLockTimeoutMs)
+        {
+            this._connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this._userTable = userTable ?? throw new ArgumentNullException(nameof(userTable));
             this._userFunctionId = !string.IsNullOrEmpty(userFunctionId) ? userFunctionId : throw new ArgumentNullException(nameof(userFunctionId));
             this._userDefinedLeasesTableName = userDefinedLeasesTableName;
             this._appLockStatements = GetAppLockStatements(appLockTimeoutMs);
         }
+
         public async Task<SqlTriggerMetrics> GetMetricsAsync()
         {
             return new SqlTriggerMetrics
@@ -53,7 +59,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
             try
             {
-                using (var connection = new SqlConnection(this._connectionString))
+                using (SqlConnection connection = this._connectionFactory.CreateConnection())
                 {
                     await connection.OpenAsyncWithLogging(this._logger, CancellationToken.None);
 
