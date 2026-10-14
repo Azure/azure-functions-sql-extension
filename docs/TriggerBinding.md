@@ -74,6 +74,8 @@ D --> B
 
 ## Scale Monitoring Authentication
 
+By default, the extension passes the connection string referenced by `connectionStringSetting` to `Microsoft.Data.SqlClient`, which handles the configured authentication. For `Authentication=Active Directory Managed Identity` (or `Active Directory MSI`), SqlClient acquires tokens using a managed identity available to the process running the extension. Omitting `User ID` selects the system-assigned identity; specifying it selects a user-assigned identity by client ID. The identity must also have access to the target database. See [SqlClient managed identity authentication](https://learn.microsoft.com/sql/connect/ado-net/sql/azure-active-directory-authentication#use-managed-identity-authentication) for configuration examples.
+
 An external WebJobs scale host can supply an `AzureComponentFactory` in `TriggerMetadata.Properties[nameof(AzureComponentFactory)]` when registering a SQL scaler with `AddSqlScaleForTrigger`. The factory must return a non-null `TokenCredential` for the application being scaled. This is a host integration contract, not a function binding setting.
 
 For connection strings using `Authentication=Active Directory Managed Identity` or `Active Directory MSI`, the scaler removes `Authentication` from its private copy and uses `SqlConnection.AccessTokenCallback` to request tokens from the supplied credential. The optional user-assigned identity's `User ID` and all other connection options are preserved. Both the scale monitor and target scaler, including the query used before state tables exist, share the same callback. The callback returns the token expiry to SqlClient and is reused for connection pooling; it is not shared between scaler providers.

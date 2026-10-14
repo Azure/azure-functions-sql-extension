@@ -22,7 +22,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                 throw new ArgumentNullException(nameof(connectionString));
             }
 
-            this._connectionString = credential == null ? connectionString : NormalizeConnectionString(connectionString);
+            this._connectionString = credential == null ? connectionString : ClearConnectionStringAuthForInjectedToken(connectionString);
             if (credential != null)
             {
                 this._accessTokenCallback = async (authenticationParameters, cancellationToken) =>
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             return connection;
         }
 
-        private static string NormalizeConnectionString(string connectionString)
+        private static string ClearConnectionStringAuthForInjectedToken(string connectionString)
         {
             var connectionStringBuilder = new SqlConnectionStringBuilder(connectionString);
             if (connectionStringBuilder.IntegratedSecurity || !string.IsNullOrEmpty(connectionStringBuilder.Password))
