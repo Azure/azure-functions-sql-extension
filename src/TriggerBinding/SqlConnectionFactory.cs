@@ -30,7 +30,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     string resource = authenticationParameters.Resource;
                     string scope = resource.EndsWith(DefaultScopeSuffix, StringComparison.OrdinalIgnoreCase)
                         ? resource
-                        : $"{resource.TrimEnd('/')}{DefaultScopeSuffix}";
+                        : $"{resource}{DefaultScopeSuffix}";
                     AccessToken accessToken = await credential.GetTokenAsync(
                         new TokenRequestContext(new[] { scope }),
                         cancellationToken).ConfigureAwait(false);

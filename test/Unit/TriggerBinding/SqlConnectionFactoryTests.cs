@@ -60,9 +60,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
 
         [Theory]
         [InlineData("https://database.windows.net", "https://database.windows.net/.default")]
-        [InlineData("https://database.windows.net/", "https://database.windows.net/.default")]
+        [InlineData("https://database.windows.net/", "https://database.windows.net//.default")]
         [InlineData("https://database.windows.net/.default", "https://database.windows.net/.default")]
-        [InlineData("https://database.usgovcloudapi.net/", "https://database.usgovcloudapi.net/.default")]
+        [InlineData("https://database.windows.net//.default", "https://database.windows.net//.default")]
+        [InlineData("https://database.usgovcloudapi.net/", "https://database.usgovcloudapi.net//.default")]
         public async Task AccessTokenCallback_UsesResourceScopeAndReturnsCredentialToken(string resource, string expectedScope)
         {
             DateTimeOffset expiresOn = DateTimeOffset.UtcNow.AddMinutes(30);
