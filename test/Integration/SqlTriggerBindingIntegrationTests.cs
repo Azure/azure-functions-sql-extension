@@ -801,14 +801,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // Change database compat level to unsupported version
             this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET COMPATIBILITY_LEVEL = 120");
 
-            this.StartFunctionHostAndWaitForError(
-                nameof(ProductsTrigger),
-                lang,
-                false,
-                "SQL bindings require a database compatibility level of 130 or higher to function. Current compatibility level = 120");
-
-            // Change database compat level back to supported level
-            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET COMPATIBILITY_LEVEL = 150");
+            try
+            {
+                this.StartFunctionHostAndWaitForError(
+                    nameof(ProductsTrigger),
+                    lang,
+                    false,
+                    "SQL bindings require a database compatibility level of 130 or higher to function. Current compatibility level = 120");
+            }
+            finally
+            {
+                this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET COMPATIBILITY_LEVEL = 150");
+            }
         }
 
         /// <summary>
@@ -824,7 +828,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             TaskCompletionSource taskCompletionSource = new();
             void TestExceptionMessageSeen(object sender, DataReceivedEventArgs e)
             {
-                if (e.Data.Contains(TriggerWithException.ExceptionMessage))
+                if (e.Data?.Contains(TriggerWithException.ExceptionMessage) == true)
                 {
                     taskCompletionSource.TrySetResult();
                 }
