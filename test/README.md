@@ -98,6 +98,19 @@ Our integration tests are based on functions from the samples project. To run in
 
 This section lists some things to try to help troubleshoot test failures
 
+### Host startup failures after CI agent updates
+
+The integration tests previously started per-test Functions hosts on port 7081. Enabling network isolation for CI test jobs introduced a gRPC control listener on that same port. The resulting port conflict caused host startup failures even though the extension source and Azure Functions Core Tools package version had not changed.
+
+Check the captured host output for `Port 7081 is unavailable` or `Failed to bind to address`. In this case, `Functions host did not start within specified time` is a symptom of the port conflict, not a slow startup. HTTP 400 responses can also come from the other service instead of the requested function; a `Host initialized` message alone does not prove the host successfully bound its HTTP port.
+
+Shared fixture hosts use ports 7071-7080. Per-test hosts now use [TestUtils.DefaultPort](./Common/TestUtils.cs) (18081), with consecutive ports for additional hosts. Keep host startup and HTTP requests aligned through this shared constant. Do not disable the agent's network-isolation service or increase the startup timeout to work around a port conflict.
+
+### Cascading failures after a host exits
+
+- Process output callbacks receive `Data == null` at end-of-stream. Dereferencing it without a null check can cause an unhandled `NullReferenceException` that aborts the test runner, leaving only partial test results. Ignore end-of-stream data and tolerate repeated matching diagnostic messages.
+- Unsupported-database tests temporarily set the shared test database's compatibility level to 120. The reset to 150 must run in `finally`, even if startup or an assertion fails. Otherwise, later output-binding tests can fail with HTTP 500 and a message requiring compatibility level 130 or higher.
+
 ### Debug Integration tests
 
 You can debug tests locally by following these steps.
@@ -119,7 +132,7 @@ To do this and be able to set breakpoints before the test runs you will need to 
 
 1. Go to [IntegrationTestBase.cs](./Integration/IntegrationTestBase.cs) and in `StartFunctionHost` add a `return;` on the first line - this is to skip having the test start up the function host itself (since you'll be doing it manually)
 2. `cd` to the directory containing the functions to run - this will be in the `test/bin/Debug/net8.0/SqlExtensionSamples/<LANG>` folder (e.g. `test/bin/Debug/net8.0/SqlExtensionSamples/CSharp`)
-3. Run `func host start --functions <FUNCTION_NAME>` - replacing `<FUNCTION_NAME>` with the name of the function you want to debug (e.g. `func host start --functions AddProduct`)
+3. Run `func host start --port 18081 --functions <FUNCTION_NAME>` - use the current `TestUtils.DefaultPort` for the first per-test host and replace `<FUNCTION_NAME>` with the function you want to debug (e.g. `func host start --port 18081 --functions AddProduct`).
 4. Attach to the Function Host process
    * Visual Studio : Use `Attach to Process...`.
    * VS Code you can use `Attach to Function Host` debug target (at the root level of the project)
@@ -132,7 +145,7 @@ To do this and be able to set breakpoints before the test runs you will need to 
 For all functions that run in a worker process (which is everything other than .NET In-Process functions) if you need to debug the function code itself then you will need to use the native debugger to attach to the process. The easiest way to do that is to follow these steps:
 
 1. Open up a new instance of VS Code into the samples/test folder containing the function you want to debug (e.g. `samples/samples-powershell` or `test/Integration/test-powershell`)
-2. Modify the `.vscode/tasks.json` file for that folder and add `--functions <FUNCTION_NAME>` to the end of the command property for `func: host start`. (e.g. `"command": "host start --functions AddProduct"`)
+2. For a per-test host, add `--port 18081 --functions <FUNCTION_NAME>` to the command property for `func: host start` in that folder's `.vscode/tasks.json` (e.g. `"command": "host start --port 18081 --functions AddProduct"`). If debugging a shared fixture host instead, use its port from [TestUtils.GetPort](./Common/TestUtils.cs).
 3. Update the `local.settings.json` in that folder and fill in the value for `SqlConnectionString` (since the test is no longer controlling the startup of the function host)
 4. Click F5 to run the `Attach to <LANG> Functions` target, this will launch the specified function and attach the debugger to it
 5. Run your test
