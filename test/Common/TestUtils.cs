@@ -421,9 +421,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Common
             return funcPath;
         }
 
-        // Set the default port to 7081 since the function hosts started in
-        // IntegrationTestFixture are already running on ports 7071 - 7080.
-        public const int DefaultPort = 7081;
+        // Keep per-test hosts separate from fixture hosts (7071 - 7080) and
+        // build-agent services such as network isolation (7081).
+        public const int DefaultPort = 18081;
 
         public static int GetPort(SupportedLanguages lang, bool testFolder = false)
         {

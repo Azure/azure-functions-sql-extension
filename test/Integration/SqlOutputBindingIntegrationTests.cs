@@ -392,30 +392,34 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             // Change database compat level to unsupported version
             this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET COMPATIBILITY_LEVEL = 120;");
 
-            var foundExpectedMessageSource = new TaskCompletionSource<bool>();
-            this.StartFunctionHost(nameof(AddProductParams), lang, false, (sender, e) =>
+            try
             {
-                if (e.Data.Contains("SQL bindings require a database compatibility level of 130 or higher to function. Current compatibility level = 120"))
+                var foundExpectedMessageSource = new TaskCompletionSource<bool>();
+                this.StartFunctionHost(nameof(AddProductParams), lang, false, (sender, e) =>
                 {
-                    foundExpectedMessageSource.SetResult(true);
-                }
-            });
+                    if (e.Data?.Contains("SQL bindings require a database compatibility level of 130 or higher to function. Current compatibility level = 120") == true)
+                    {
+                        foundExpectedMessageSource.TrySetResult(true);
+                    }
+                });
 
-            var query = new Dictionary<string, string>()
+                var query = new Dictionary<string, string>()
+                {
+                    { "productId", "1" },
+                    { "name", "test" },
+                    { "cost", "100" }
+                };
+
+                // The upsert should fail since the database compat level is not supported
+                Exception exception = Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-params", query).Wait());
+                // Verify the message contains the expected error so that other errors don't mistakenly make this test pass
+                // Wait 2sec for message to get processed to account for delays reading output
+                await foundExpectedMessageSource.Task.TimeoutAfter(TimeSpan.FromMilliseconds(2000), $"Timed out waiting for expected error message");
+            }
+            finally
             {
-                { "productId", "1" },
-                { "name", "test" },
-                { "cost", "100" }
-            };
-
-            // The upsert should fail since the database compat level is not supported
-            Exception exception = Assert.Throws<AggregateException>(() => this.SendOutputGetRequest("addproduct-params", query).Wait());
-            // Verify the message contains the expected error so that other errors don't mistakenly make this test pass
-            // Wait 2sec for message to get processed to account for delays reading output
-            await foundExpectedMessageSource.Task.TimeoutAfter(TimeSpan.FromMilliseconds(2000), $"Timed out waiting for expected error message");
-
-            // Change database compat level back to supported level
-            this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET COMPATIBILITY_LEVEL = 150;");
+                this.ExecuteNonQuery($"ALTER DATABASE {this.DatabaseName} SET COMPATIBILITY_LEVEL = 150;");
+            }
         }
 
         /// <summary>
@@ -502,9 +506,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             var foundExpectedMessageSource = new TaskCompletionSource<bool>();
             this.StartFunctionHost(nameof(AddProductParams), lang, false, (sender, e) =>
             {
-                if (e.Data.Contains("No property values found in item to upsert. If using query parameters, ensure that the casing of the parameter names and the property names match."))
+                if (e.Data?.Contains("No property values found in item to upsert. If using query parameters, ensure that the casing of the parameter names and the property names match.") == true)
                 {
-                    foundExpectedMessageSource.SetResult(true);
+                    foundExpectedMessageSource.TrySetResult(true);
                 }
             });
 
@@ -528,9 +532,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
             var foundExpectedMessageSource = new TaskCompletionSource<bool>();
             this.StartFunctionHost(nameof(AddProductUnsupportedTypes), lang, true, (sender, e) =>
             {
-                if (e.Data.Contains("The type(s) of the following column(s) are not supported: TextCol, NtextCol, ImageCol. See https://github.com/Azure/azure-functions-sql-extension#output-bindings for more details."))
+                if (e.Data?.Contains("The type(s) of the following column(s) are not supported: TextCol, NtextCol, ImageCol. See https://github.com/Azure/azure-functions-sql-extension#output-bindings for more details.") == true)
                 {
-                    foundExpectedMessageSource.SetResult(true);
+                    foundExpectedMessageSource.TrySetResult(true);
                 }
             });
 
