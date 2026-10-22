@@ -2,9 +2,11 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using Azure.Core;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Host.Scale;
 using Microsoft.Azure.WebJobs.Logging;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -31,6 +33,18 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             ILogger logger = loggerFactory.CreateLogger(LogCategories.CreateTriggerCategory("Sql"));
             SqlMetaData sqlMetadata = JsonConvert.DeserializeObject<SqlMetaData>(triggerMetadata.Metadata.ToString());
             sqlMetadata.ResolveProperties(serviceProvider.GetService<INameResolver>());
+            TokenCredential credential = null;
+            if (triggerMetadata.Properties != null && triggerMetadata.Properties.TryGetValue(nameof(AzureComponentFactory), out object value))
+            {
+                if (!(value is AzureComponentFactory azureComponentFactory))
+                {
+                    throw new InvalidOperationException($"Trigger metadata property '{nameof(AzureComponentFactory)}' must be an {nameof(AzureComponentFactory)}.");
+                }
+
+                credential = azureComponentFactory.CreateTokenCredential(config)
+                    ?? throw new InvalidOperationException($"Trigger metadata property '{nameof(AzureComponentFactory)}' returned a null {nameof(TokenCredential)}.");
+            }
+
             var userTable = new SqlObject(sqlMetadata.TableName);
             string connectionString = SqlBindingUtilities.GetConnectionString(sqlMetadata.ConnectionStringSetting, config);
             IOptions<SqlOptions> options = serviceProvider.GetService<IOptions<SqlOptions>>();
@@ -47,9 +61,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
             string userDefinedLeasesTableName = sqlMetadata.LeasesTableName;
             string userFunctionId = sqlMetadata.UserFunctionId;
+            var connectionFactory = new SqlConnectionFactory(connectionString, credential);
 
-            this._scaleMonitor = new SqlTriggerScaleMonitor(userFunctionId, userTable, userDefinedLeasesTableName, connectionString, maxChangesPerWorker, appLockTimeoutMs, logger);
-            this._targetScaler = new SqlTriggerTargetScaler(userFunctionId, userTable, userDefinedLeasesTableName, connectionString, maxChangesPerWorker, appLockTimeoutMs, logger);
+            this._scaleMonitor = new SqlTriggerScaleMonitor(userFunctionId, userTable, userDefinedLeasesTableName, connectionFactory, maxChangesPerWorker, appLockTimeoutMs, logger);
+            this._targetScaler = new SqlTriggerTargetScaler(userFunctionId, userTable, userDefinedLeasesTableName, connectionFactory, maxChangesPerWorker, appLockTimeoutMs, logger);
         }
 
         public IScaleMonitor GetMonitor()
