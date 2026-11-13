@@ -465,6 +465,56 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             }
         }
 
+        internal static string GetCreateLeasesTableQuery(
+            string leasesTableName,
+            IReadOnlyList<(string name, string type)> primaryKeyColumns,
+            string userFunctionId,
+            string hostIdFunctionId,
+            string appLockStatements)
+        {
+            string primaryKeysWithTypes = string.Join(", ", primaryKeyColumns.Select(col => $"{col.name.AsBracketQuotedString()} {col.type}"));
+            string primaryKeys = string.Join(", ", primaryKeyColumns.Select(col => col.name.AsBracketQuotedString()));
+            string oldLeasesTableName = leasesTableName.Contains(userFunctionId) ? leasesTableName.Replace(userFunctionId, hostIdFunctionId) : string.Empty;
+            // We should only migrate the lease table from the old hostId based one to the newer WEBSITE_SITE_NAME one if
+            // we're actually using the WEBSITE_SITE_NAME one (e.g. leasesTableName is different)
+            bool shouldMigrateOldLeasesTable = !string.IsNullOrEmpty(oldLeasesTableName) && oldLeasesTableName != leasesTableName;
+            return shouldMigrateOldLeasesTable ? $@"
+                {appLockStatements}
+
+                IF OBJECT_ID(N{leasesTableName.AsSingleQuotedString()}, 'U') IS NULL
+                BEGIN
+                    CREATE TABLE {leasesTableName} (
+                        {primaryKeysWithTypes},
+                        {LeasesTableChangeVersionColumnName} bigint NOT NULL,
+                        {LeasesTableAttemptCountColumnName} int NOT NULL,
+                        {LeasesTableLeaseExpirationTimeColumnName} datetime2,
+                        PRIMARY KEY ({primaryKeys})
+                    );
+
+                    -- Migrate all data from OldLeasesTable and delete it.
+                    IF OBJECT_ID(N{oldLeasesTableName.AsSingleQuotedString()}, 'U') IS NOT NULL
+                    BEGIN
+                        INSERT INTO {leasesTableName}
+                        SELECT * FROM {oldLeasesTableName};
+
+                        DROP TABLE {oldLeasesTableName};
+                    END
+                End
+            " :
+            $@"
+                {appLockStatements}
+
+                IF OBJECT_ID(N{leasesTableName.AsSingleQuotedString()}, 'U') IS NULL
+                    CREATE TABLE {leasesTableName} (
+                        {primaryKeysWithTypes},
+                        {LeasesTableChangeVersionColumnName} bigint NOT NULL,
+                        {LeasesTableAttemptCountColumnName} int NOT NULL,
+                        {LeasesTableLeaseExpirationTimeColumnName} datetime2,
+                        PRIMARY KEY ({primaryKeys})
+                    );
+            ";
+        }
+
         /// <summary>
         /// Creates the leases table for the 'user function and table', if one does not already exist.
         /// </summary>
@@ -481,48 +531,8 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             IReadOnlyList<(string name, string type)> primaryKeyColumns,
             CancellationToken cancellationToken)
         {
-            string primaryKeysWithTypes = string.Join(", ", primaryKeyColumns.Select(col => $"{col.name.AsBracketQuotedString()} {col.type}"));
-            string primaryKeys = string.Join(", ", primaryKeyColumns.Select(col => col.name.AsBracketQuotedString()));
-            string oldLeasesTableName = leasesTableName.Contains(this._userFunctionId) ? leasesTableName.Replace(this._userFunctionId, this._hostIdFunctionId) : string.Empty;
-            // We should only migrate the lease table from the old hostId based one to the newer WEBSITE_SITE_NAME one if
-            // we're actually using the WEBSITE_SITE_NAME one (e.g. leasesTableName is different)
-            bool shouldMigrateOldLeasesTable = !string.IsNullOrEmpty(oldLeasesTableName) && oldLeasesTableName != leasesTableName;
-            string createLeasesTableQuery = shouldMigrateOldLeasesTable ? $@"
-                {this._appLockStatements}
-
-                IF OBJECT_ID(N'{leasesTableName}', 'U') IS NULL
-                BEGIN
-                    CREATE TABLE {leasesTableName} (
-                        {primaryKeysWithTypes},
-                        {LeasesTableChangeVersionColumnName} bigint NOT NULL,
-                        {LeasesTableAttemptCountColumnName} int NOT NULL,
-                        {LeasesTableLeaseExpirationTimeColumnName} datetime2,
-                        PRIMARY KEY ({primaryKeys})
-                    );
-
-                    -- Migrate all data from OldLeasesTable and delete it.
-                    IF OBJECT_ID(N'{oldLeasesTableName}', 'U') IS NOT NULL
-                    BEGIN
-                        INSERT INTO {leasesTableName}
-                        SELECT * FROM {oldLeasesTableName};
-
-                        DROP TABLE {oldLeasesTableName};
-                    END
-                End
-            " :
-            $@"
-                {this._appLockStatements}
-
-                IF OBJECT_ID(N'{leasesTableName}', 'U') IS NULL
-                    CREATE TABLE {leasesTableName} (
-                        {primaryKeysWithTypes},
-                        {LeasesTableChangeVersionColumnName} bigint NOT NULL,
-                        {LeasesTableAttemptCountColumnName} int NOT NULL,
-                        {LeasesTableLeaseExpirationTimeColumnName} datetime2,
-                        PRIMARY KEY ({primaryKeys})
-                    );
-            ";
-
+            string createLeasesTableQuery = GetCreateLeasesTableQuery(
+                leasesTableName, primaryKeyColumns, this._userFunctionId, this._hostIdFunctionId, this._appLockStatements);
             using (var createLeasesTableCommand = new SqlCommand(createLeasesTableQuery, connection, transaction))
             {
                 var stopwatch = Stopwatch.StartNew();
