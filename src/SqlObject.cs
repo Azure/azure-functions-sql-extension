@@ -50,7 +50,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         /// A SqlObject which contains information about the name and schema of the given object full name.
         /// </summary>
         /// <param name="fullName">Full name of object, including schema (if it exists).</param>
-        /// <exception cref="InvalidOperationException">If the name can't be parsed</exception>
+        /// <exception cref="InvalidOperationException">If the name can't be parsed or is not a one- or two-part name</exception>
         public SqlObject(string fullName)
         {
             var parser = new TSql150Parser(false);
@@ -65,6 +65,12 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
                     errorMessages += $"{err.Message}\n";
                 }
                 throw new InvalidOperationException(errorMessages);
+            }
+
+            // Do not discard database or server qualifiers when rebuilding the destination.
+            if (tree == null || tree.Identifiers.Count < 1 || tree.Identifiers.Count > 2)
+            {
+                throw new InvalidOperationException("Only one- or two-part SQL object names are supported. Specify a table name, optionally qualified by a schema.");
             }
 
             var visitor = new TSqlObjectFragmentVisitor();

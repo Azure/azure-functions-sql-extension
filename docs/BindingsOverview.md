@@ -53,6 +53,10 @@ There currently is no retry support for errors that occur for input bindings. If
 
 Azure SQL Output bindings take a list of rows and upserts them to the user table. Upserting means that if the primary key values of the row already exists in the table, the row is interpreted as an update, meaning that the values of the other columns in the table for that row are updated. If the primary key values do not exist in the table, the row values are inserted as new values. The upserting of the rows is batched by the output binding code.
 
+Specify the destination as a one-part table name (for example, `Products`) or a two-part schema and table name (for example, `dbo.Products`). Database and server qualifiers are not supported and are rejected. Use brackets for identifiers containing periods, such as `[My.Schema].[My.Table]`.
+
+If a table name uses binding expressions derived from request data, restrict the values to an explicit allowlist of destinations and grant the SQL identity access only to the intended tables.
+
   > **NOTE:** By default the Output binding uses the T-SQL [MERGE](https://docs.microsoft.com/sql/t-sql/statements/merge-transact-sql) statement which requires [SELECT](https://docs.microsoft.com/sql/t-sql/statements/merge-transact-sql#permissions) permissions on the target database.
 
 ### Output Binding columns
@@ -107,6 +111,8 @@ See <https://github.com/Azure/Azure-Functions/issues/891> for further informatio
 ## Trigger Binding
 
 Azure SQL Trigger bindings monitor the user table for changes (i.e., row inserts, updates, and deletes) and invokes the function with updated rows.
+
+Trigger table names follow the same one- or two-part naming rules as [output bindings](#output-binding).
 
 For an in-depth explanation of how the trigger functions see the [Trigger Binding](./TriggerBinding.md) documentation.
 
