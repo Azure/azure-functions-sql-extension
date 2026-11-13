@@ -92,6 +92,8 @@ The login the trigger is configured to use must be given permissions to create t
 
 If the tables are deleted or modified, then unexpected behavior may occur. To reset the state of the triggers, first stop all currently running functions with trigger bindings and then either truncate or delete the tables. The next time a function with a trigger binding is started, it will recreate the tables as necessary.
 
+Primary-key type names read from the SQL catalog, including user-defined alias type names, are escaped as SQL identifiers when creating leases tables. Length and precision arguments for built-in types are added separately.
+
 ### az_func.GlobalState
 
 This table stores information about each function being executed, what table that function is watching and what the [last sync state](https://learn.microsoft.com/sql/relational-databases/track-changes/work-with-change-tracking-sql-server) that has been processed.
