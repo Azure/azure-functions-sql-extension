@@ -30,6 +30,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
         [InlineData("dbo.[Products]", "dbo", "'dbo'", "Products", "'Products'", "dbo.Products", "'[dbo].[Products]'", "[dbo].[Products]")] // Simple full name only name bracket quoted
         [InlineData("[My'Schema].[Prod'ucts]", "My'Schema", "'My''Schema'", "Prod'ucts", "'Prod''ucts'", "My'Schema.Prod'ucts", "'[My''Schema].[Prod''ucts]'", "[My'Schema].[Prod'ucts]")] // Full name with single quotes in schema and name
         [InlineData("[My]]Schema].[My]]Object]", "My]Schema", "'My]Schema'", "My]Object", "'My]Object'", "My]Schema.My]Object", "'[My]]Schema].[My]]Object]'", "[My]]Schema].[My]]Object]")] // Full name with brackets in schema and name
+        [InlineData("[My.Schema].[My.Table]", "My.Schema", "'My.Schema'", "My.Table", "'My.Table'", "My.Schema.My.Table", "'[My.Schema].[My.Table]'", "[My.Schema].[My.Table]")]
+        [InlineData("[dbo.Products]", "SCHEMA_NAME()", "SCHEMA_NAME()", "dbo.Products", "'dbo.Products'", "dbo.Products", "'[dbo.Products]'", "[dbo.Products]")]
+        [InlineData(" dbo . Products ", "dbo", "'dbo'", "Products", "'Products'", "dbo.Products", "'[dbo].[Products]'", "[dbo].[Products]")]
         public void TestSqlObject(string fullName,
             string expectedSchema,
             string expectedQuotedSchema,
@@ -59,6 +62,25 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
             string expectedErrorMessage = "Encountered error(s) while parsing schema and object name:\n" + expectedError;
             string errorMessage = Assert.Throws<InvalidOperationException>(() => new SqlObject(fullName)).Message;
             Assert.Equal(expectedErrorMessage, errorMessage);
+        }
+
+        [Theory]
+        [InlineData("DatabaseName.dbo.Products")]
+        [InlineData("ServerName.DatabaseName.dbo.Products")]
+        [InlineData("[DatabaseName].[dbo].[Products]")]
+        [InlineData("[ServerName].[DatabaseName].[dbo].[Products]")]
+        [InlineData("dbo.Products.dbo.ProtectedTable")]
+        [InlineData("dbo.Products..ProtectedTable")]
+        [InlineData("Products.dbo.ProtectedTable")]
+        [InlineData("Products..ProtectedTable")]
+        [InlineData("DatabaseName..Products")]
+        [InlineData("..Products")]
+        [InlineData("...Products")]
+        [InlineData(".dbo.Products")]
+        public void TestSqlObjectUnsupportedMultipartName(string fullName)
+        {
+            string errorMessage = Assert.Throws<InvalidOperationException>(() => new SqlObject(fullName)).Message;
+            Assert.Equal("Only one- or two-part SQL object names are supported. Specify a table name, optionally qualified by a schema.", errorMessage);
         }
 
         [Theory]
