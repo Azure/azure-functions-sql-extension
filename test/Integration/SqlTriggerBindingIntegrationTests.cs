@@ -34,6 +34,70 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Integration
         {
         }
 
+        [Theory]
+        [InlineData(false, "int); INSERT dbo.AliasRenameProbe VALUES(1); CREATE TABLE dbo.AliasRenameRest(ProductId int")]
+        [InlineData(true, "int); INSERT dbo.AliasRenameProbe VALUES(1); CREATE TABLE dbo.AliasRenameRest(ProductId int")]
+        [InlineData(false, "Alias]Type")]
+        [InlineData(true, "Alias]Type")]
+        public async Task RenamedAliasTypeTriggerTest(bool useMigrationPath, string renamedType)
+        {
+            const string functionId = "aliasFunctionId";
+            string aliasTypeName = "TriggerAliasType";
+            string leasesTableName = null;
+            try
+            {
+                this.ExecuteNonQuery("CREATE TYPE dbo.TriggerAliasType FROM int NOT NULL;");
+                this.ExecuteNonQuery(@"
+                    CREATE TABLE dbo.ProductsWithAliasType (
+                        ProductId dbo.TriggerAliasType PRIMARY KEY,
+                        Name nvarchar(100),
+                        Cost int
+                    );
+                    CREATE TABLE dbo.AliasRenameProbe (Value int);
+                    ALTER TABLE dbo.ProductsWithAliasType ENABLE CHANGE_TRACKING;
+                ");
+                this.ExecuteNonQuery($"EXEC sp_rename N'dbo.TriggerAliasType', N{renamedType.AsSingleQuotedString()}, N'USERDATATYPE';");
+                aliasTypeName = renamedType;
+
+                int tableId = (int)this.ExecuteScalar("SELECT OBJECT_ID(N'dbo.ProductsWithAliasType');");
+                leasesTableName = SqlTriggerUtils.GetBracketedLeasesTableName(null, functionId, tableId);
+                using var listener = new SqlTriggerListener<Product>(
+                    this.DbConnectionString, "dbo.ProductsWithAliasType", "", functionId,
+                    useMigrationPath ? "oldAliasFunctionId" : functionId,
+                    Mock.Of<ITriggeredFunctionExecutor>(), new SqlOptions(), Mock.Of<ILogger>(),
+                    new ConfigurationBuilder().Build());
+                await listener.StartAsync(CancellationToken.None);
+                try
+                {
+                    Assert.Equal(0, (int)this.ExecuteScalar("SELECT COUNT(*) FROM dbo.AliasRenameProbe;"));
+                    Assert.Equal(renamedType, this.ExecuteScalar($@"
+                        SELECT TYPE_NAME(user_type_id) FROM sys.columns
+                        WHERE object_id = OBJECT_ID(N{leasesTableName.AsSingleQuotedString()}) AND name = N'ProductId';
+                    "));
+                    var metricsProvider = new SqlTriggerMetricsProvider(
+                        this.DbConnectionString, Mock.Of<ILogger>(), new SqlObject("dbo.ProductsWithAliasType"), functionId, "", SqlOptions.DefaultAppLockTimeoutMs);
+                    Assert.Equal(0, (await metricsProvider.GetMetricsAsync()).UnprocessedChangeCount);
+                }
+                finally
+                {
+                    await listener.StopAsync(CancellationToken.None);
+                }
+            }
+            finally
+            {
+                if (leasesTableName != null)
+                {
+                    this.ExecuteNonQuery($"DROP TABLE IF EXISTS {leasesTableName};");
+                }
+                this.ExecuteNonQuery($@"
+                    DROP TABLE IF EXISTS dbo.ProductsWithAliasType;
+                    DROP TABLE IF EXISTS dbo.AliasRenameProbe;
+                    DROP TABLE IF EXISTS dbo.AliasRenameRest;
+                    DROP TYPE IF EXISTS dbo.{aliasTypeName.AsBracketQuotedString()};
+                ");
+            }
+        }
+
         /// <summary>
         /// Ensures that the user function gets invoked for each of the insert, update and delete operation.
         /// </summary>

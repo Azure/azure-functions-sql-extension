@@ -3,9 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Internal;
+using Microsoft.SqlServer.TransactSql.ScriptDom;
 using Moq;
 using Xunit;
 
@@ -64,6 +66,51 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql.Tests.Unit
                 });
 
             return (mockLogger, logMessages, logExceptions);
+        }
+        [Theory]
+        [InlineData("int", 4, 10, 0, "[int]")]
+        [InlineData("bigint", 8, 19, 0, "[bigint]")]
+        [InlineData("varchar", 20, 0, 0, "[varchar](20)")]
+        [InlineData("VARCHAR", 20, 0, 0, "[VARCHAR](20)")]
+        [InlineData("varchar", -1, 0, 0, "[varchar](max)")]
+        [InlineData("nvarchar", 40, 0, 0, "[nvarchar](40)")]
+        [InlineData("nvarchar", -1, 0, 0, "[nvarchar](max)")]
+        [InlineData("nchar", 40, 0, 0, "[nchar](40)")]
+        [InlineData("char", 20, 0, 0, "[char](20)")]
+        [InlineData("binary", 20, 0, 0, "[binary](20)")]
+        [InlineData("varbinary", 20, 0, 0, "[varbinary](20)")]
+        [InlineData("varbinary", -1, 0, 0, "[varbinary](max)")]
+        [InlineData("numeric", 9, 18, 4, "[numeric](18,4)")]
+        [InlineData("decimal", 9, 18, 4, "[decimal](18,4)")]
+        [InlineData("NUMERIC", 9, 18, 4, "[NUMERIC]")]
+        [InlineData("DECIMAL", 9, 18, 4, "[DECIMAL]")]
+        [InlineData("datetime2", 8, 27, 7, "[datetime2]")]
+        [InlineData("AliasType", 9, 18, 4, "[AliasType]")]
+        [InlineData("Alias Type", 4, 10, 0, "[Alias Type]")]
+        [InlineData("Alias]Type", 4, 10, 0, "[Alias]]Type]")]
+        public void PrimaryKeyColumnTypeIsQuotedBeforeAddingFacets(string typeName, short length, byte precision, byte scale, string expected)
+        {
+            Assert.Equal(expected, SqlTriggerUtils.GetPrimaryKeyColumnType(typeName, length, precision, scale));
+        }
+
+        [Theory]
+        [InlineData("int); INSERT dbo.AliasRenameProbe VALUES(1); CREATE TABLE dbo.AliasRenameRest(ProductId int")]
+        [InlineData("int]); INSERT dbo.AliasRenameProbe VALUES(1);--")]
+        [InlineData("Alias'Type")]
+        [InlineData("Alias.Type")]
+        [InlineData("Alias[Type]")]
+        public void RenamedAliasTypeCannotAddSqlStatements(string typeName)
+        {
+            string type = SqlTriggerUtils.GetPrimaryKeyColumnType(typeName, 4, 10, 0);
+            string query = $"CREATE TABLE [Leases] ([ProductId] {type}, [Version] bigint, PRIMARY KEY ([ProductId]));";
+            var parser = new TSql150Parser(true);
+            using var reader = new StringReader(query);
+            TSqlScript script = Assert.IsType<TSqlScript>(parser.Parse(reader, out IList<ParseError> errors));
+
+            Assert.Empty(errors);
+            CreateTableStatement statement = Assert.IsType<CreateTableStatement>(Assert.Single(Assert.Single(script.Batches).Statements));
+            UserDataTypeReference aliasType = Assert.IsType<UserDataTypeReference>(statement.Definition.ColumnDefinitions[0].DataType);
+            Assert.Equal(typeName, Assert.Single(aliasType.Name.Identifiers).Value);
         }
     }
 }

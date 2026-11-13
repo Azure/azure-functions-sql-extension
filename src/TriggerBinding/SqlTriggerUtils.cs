@@ -34,7 +34,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         }
 
         /// <summary>
-        /// Gets the names and types of primary key columns of the user table.
+        /// Gets the names and SQL-escaped type declarations of primary key columns of the user table.
         /// </summary>
         /// <param name="connection">SQL connection used to connect to user database</param>
         /// <param name="userTableId">ID of the user table</param>
@@ -63,30 +63,17 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
             using (var getPrimaryKeyColumnsCommand = new SqlCommand(getPrimaryKeyColumnsQuery, connection))
             using (SqlDataReader reader = getPrimaryKeyColumnsCommand.ExecuteReaderWithLogging(logger))
             {
-                string[] variableLengthTypes = new[] { "varchar", "nvarchar", "nchar", "char", "binary", "varbinary" };
-                string[] variablePrecisionTypes = new[] { "numeric", "decimal" };
-
                 var primaryKeyColumns = new List<(string name, string type)>();
 
                 while (reader.Read())
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     string name = reader.GetString(NameIndex);
-                    string type = reader.GetString(TypeIndex);
-
-                    if (variableLengthTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
-                    {
-                        // Special "max" case. I'm actually not sure it's valid to have varchar(max) as a primary key because
-                        // it exceeds the byte limit of an index field (900 bytes), but just in case
-                        short length = reader.GetInt16(LengthIndex);
-                        type += length == -1 ? "(max)" : $"({length})";
-                    }
-                    else if (variablePrecisionTypes.Contains(type))
-                    {
-                        byte precision = reader.GetByte(PrecisionIndex);
-                        byte scale = reader.GetByte(ScaleIndex);
-                        type += $"({precision},{scale})";
-                    }
+                    string type = GetPrimaryKeyColumnType(
+                        reader.GetString(TypeIndex),
+                        reader.GetInt16(LengthIndex),
+                        reader.GetByte(PrecisionIndex),
+                        reader.GetByte(ScaleIndex));
 
                     primaryKeyColumns.Add((name, type));
                 }
@@ -98,6 +85,29 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
 
                 logger.LogDebug($"GetPrimaryKeyColumns ColumnNames(types) = {string.Join(", ", primaryKeyColumns.Select(col => $"'{col.name}({col.type})'"))}.");
                 return primaryKeyColumns;
+            }
+        }
+
+        internal static string GetPrimaryKeyColumnType(string typeName, short length, byte precision, byte scale)
+        {
+            // Alias type names are user-controlled, even when read from the system catalog.
+            string type = typeName.AsBracketQuotedString();
+            if (typeName == "numeric" || typeName == "decimal")
+            {
+                return type + $"({precision},{scale})";
+            }
+
+            switch (typeName.ToLowerInvariant())
+            {
+                case "varchar":
+                case "nvarchar":
+                case "nchar":
+                case "char":
+                case "binary":
+                case "varbinary":
+                    return type + (length == -1 ? "(max)" : $"({length})");
+                default:
+                    return type;
             }
         }
 
