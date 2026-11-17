@@ -95,19 +95,19 @@ steps:
 
 - task: UsePythonVersion@0
   inputs:
-    versionSpec: '3.11'
+    versionSpec: '3.9'
     addToPath: true
     architecture: 'x64'
 
 - script: |
-    python -m pip install "pylint<3.0"
-    python -m pip install pylintfileheader
-    python -m pylint --recursive=yes .
+    pip3 install "pylint<3.0"
+    pip3 install pylintfileheader
+    pylint --recursive=yes .
   workingDirectory: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/samples/samples-python
   displayName: Lint samples-python
 
 - script: |
-    python -m pip install -r requirements.txt
+    pip3 install -r requirements.txt
   workingDirectory: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/samples/samples-python
   displayName: Install samples-python dependencies
 
@@ -219,7 +219,6 @@ steps:
     SA_PASSWORD: '$(serverPassword)'
     NODE_MODULES_PATH: '$(nodeModulesPath)'
     AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
-    'languageWorkers:python:defaultExecutablePath': 'python'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
