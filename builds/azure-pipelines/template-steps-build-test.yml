@@ -95,19 +95,19 @@ steps:
 
 - task: UsePythonVersion@0
   inputs:
-    versionSpec: '3.9'
+    versionSpec: '3.11'
     addToPath: true
     architecture: 'x64'
 
 - script: |
-    pip3 install "pylint<3.0"
-    pip3 install pylintfileheader
-    pylint --recursive=yes .
+    python -m pip install "pylint<3.0"
+    python -m pip install pylintfileheader
+    python -m pylint --recursive=yes .
   workingDirectory: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/samples/samples-python
   displayName: Lint samples-python
 
 - script: |
-    pip3 install -r requirements.txt
+    python -m pip install -r requirements.txt
   workingDirectory: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/samples/samples-python
   displayName: Install samples-python dependencies
 
@@ -204,6 +204,8 @@ steps:
     NODE_MODULES_PATH: '$(nodeModulesPath)'
     AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
     LANGUAGES_TO_TEST: 'Java,JavaScript,OutOfProc,PowerShell,Python,Csx'
+    # Core Tools otherwise prefers the Windows py launcher over the interpreter selected above.
+    'languageWorkers:python:defaultExecutablePath': 'python'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
@@ -217,6 +219,7 @@ steps:
     SA_PASSWORD: '$(serverPassword)'
     NODE_MODULES_PATH: '$(nodeModulesPath)'
     AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
+    'languageWorkers:python:defaultExecutablePath': 'python'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
