@@ -977,10 +977,10 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private SqlCommand BuildAcquireLeasesCommand(SqlConnection connection, SqlTransaction transaction, IReadOnlyList<IReadOnlyDictionary<string, object>> rows)
         {
             // The column definitions to use for the CTE
+            // These are the internal column values that we use. Note that we use SYS_CHANGE_VERSION because that's
+            // the new version - the _az_func_ChangeVersion has the old version
             IEnumerable<string> cteColumnDefinitions = this._primaryKeyColumns
                 .Select(c => $"{c.name.AsBracketQuotedString()} {c.type}")
-                // These are the internal column values that we use. Note that we use SYS_CHANGE_VERSION because that's
-                // the new version - the _az_func_ChangeVersion has the old version
                 .Concat(new string[] { $"{SysChangeVersionColumnName} bigint", $"{LeasesTableAttemptCountColumnName} int" });
             IEnumerable<string> bracketedPrimaryKeys = this._primaryKeyColumns.Select(p => p.name.AsBracketQuotedString());
 
@@ -1051,9 +1051,9 @@ namespace Microsoft.Azure.WebJobs.Extensions.Sql
         private SqlCommand BuildReleaseLeasesCommand(SqlConnection connection, SqlTransaction transaction)
         {
             // The column definitions to use for the CTE
+            // Also bring in the SYS_CHANGE_VERSION column to compare against
             IEnumerable<string> cteColumnDefinitions = this._primaryKeyColumns
                 .Select(c => $"{c.name.AsBracketQuotedString()} {c.type}")
-                // Also bring in the SYS_CHANGE_VERSION column to compare against
                 .Append($"{SysChangeVersionColumnName} bigint");
             IEnumerable<string> bracketedPrimaryKeys = this._primaryKeyColumns.Select(p => p.name.AsBracketQuotedString());
 
