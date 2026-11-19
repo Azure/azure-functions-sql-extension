@@ -204,6 +204,8 @@ steps:
     NODE_MODULES_PATH: '$(nodeModulesPath)'
     AZUREFUNCTIONS_SQLBINDINGS_TELEMETRY_OPTOUT: '1'
     LANGUAGES_TO_TEST: 'Java,JavaScript,OutOfProc,PowerShell,Python,Csx'
+    # Core Tools otherwise prefers the Windows py launcher over the interpreter selected above.
+    'languageWorkers:python:defaultExecutablePath': 'python'
   inputs:
     command: test
     projects: '${{ parameters.solution }}'
