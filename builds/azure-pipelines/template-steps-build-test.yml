@@ -32,9 +32,10 @@ steps:
   inputs:
     workingFile: $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc
 
-# Use the latest stable v4 release, excluding prereleases and incompatible major versions.
+# The feed's latest tag can point to a preview, and npm also prefers that tag for "*".
+# Use >=0.0.0 to exclude prereleases without limiting the major version.
 # Override ignore-scripts for Azure Functions Core Tools installation.
-- script: npm install azure-functions-core-tools@4 --global --globalconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --ignore-scripts=false --loglevel verbose
+- script: npm install "azure-functions-core-tools@>=0.0.0" --global --globalconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --ignore-scripts=false --loglevel verbose
   displayName: 'Install Azure Functions Core Tools'
 
 - script: npm install azurite --global --globalconfig $(Build.SourcesDirectory)/${{ parameters.sourcesSubdirectory }}/.npmrc --loglevel verbose
