@@ -2,11 +2,11 @@
 
 ## Running Integration Tests
 Our integration tests are based on functions from the samples project. To run integration tests, you will need
-1. [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools) - This is used to start the functions runtime.
+1. [Azure Functions Core Tools v4](https://docs.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools) - This is used to start the functions runtime. CI installs the latest stable v4 release, excluding prereleases and incompatible major versions.
 
    Installation with npm:
    ```
-   npm install -g azure-functions-core-tools
+   npm install -g azure-functions-core-tools@4
    ```
 2. [Azurite Emulator for Local Azure Storage](https://docs.microsoft.com/azure/storage/common/storage-use-azurite?tabs=npm#install-and-run-azurite) - This is required to run non-HTTP binding functions.
 
@@ -33,7 +33,7 @@ Our integration tests are based on functions from the samples project. To run in
      To use an Azure SQL Database, set the `TEST_CONNECTION_STRING` environment variable to your Azure SQL Database connection string.
 
 ### Extension Bundle
-   If you've made any changes to the CSharp extension, you will need to run the CopySqlDllToExtensionBundle.Ps1 to update your local extension bundle so that the tests can run against your latest changes.
+   If you've made any changes to the CSharp extension, run [CopySqlDllToExtensionBundle.ps1](../scripts/CopySqlDllToExtensionBundle.ps1) from the repository root to update your local extension bundle so that the tests can run against your latest changes. The script downloads the bundle configured in `samples/samples-js/host.json` with `func bundles download`, resolves its path with `func bundles path`, and copies the locally built SQL extension into its `bin` directory. To restore the original bundle, run `func bundles download --force` from `samples/samples-js`.
 
 ### Running Java Tests
    Run the BuildJavaProjectsAndRunIntegrationTests.ps1 script in the scripts folder from the root of the repo to build the java projects and run the integration tests.
